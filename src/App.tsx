@@ -1,51 +1,135 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useMemo } from 'react'
+import { useImmer } from 'use-immer'
 import './App.css'
-import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { FactionSelect } from '@/components/FactionSelect'
+import { UnitRowDual } from '@/components/UnitRowDual'
+import { getUnitConfig } from '@/utils/getUnitConfig'
+import factions from '@/data/faction'
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+  type UnitType,
+  type UnitState,
+  type SideState,
+  type BattleState,
+  type FactionKey,
+  type Side,
+  UNIT_TYPES,
+} from '@/types'
+
+function createInitialUnits(): Record<UnitType, UnitState> {
+  return UNIT_TYPES.reduce(
+    (acc, unitType) => {
+      acc[unitType] = { count: 0, upgraded: false }
+      return acc
+    },
+    {} as Record<UnitType, UnitState>,
+  )
+}
+
+function createInitialSideState(): SideState {
+  return {
+    faction: Object.keys(factions)[0] as FactionKey,
+    units: createInitialUnits(),
+  }
+}
+
+function createInitialBattleState(): BattleState {
+  return {
+    attacker: createInitialSideState(),
+    defender: createInitialSideState(),
+  }
+}
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [battle, setBattle] = useImmer<BattleState>(createInitialBattleState)
+
+  const attackerConfig = useMemo(
+    () => getUnitConfig(battle.attacker.faction),
+    [battle.attacker.faction],
+  )
+  const defenderConfig = useMemo(
+    () => getUnitConfig(battle.defender.faction),
+    [battle.defender.faction],
+  )
+
+  const handleFactionChange = (side: Side, faction: FactionKey) => {
+    setBattle(draft => {
+      draft[side].faction = faction
+    })
+  }
+
+  const handleUnitCountChange = (side: Side, unit: UnitType, count: number) => {
+    setBattle(draft => {
+      draft[side].units[unit].count = count
+    })
+  }
+
+  const handleUpgradeToggle = (side: Side, unit: UnitType) => {
+    setBattle(draft => {
+      draft[side].units[unit].upgraded = !draft[side].units[unit].upgraded
+    })
+  }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-8 p-8">
-      <div className="flex gap-8">
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1 className="text-4xl font-bold">Vite + React</h1>
-      <Badge>shadcn/ui + Tailwind CSS</Badge>
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Counter Demo</CardTitle>
-          <CardDescription>
-            Testing shadcn/ui components with Tailwind CSS
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <Button onClick={() => setCount(count => count + 1)}>
-            count is {count}
-          </Button>
-          <p className="text-muted-foreground text-sm">
-            Edit <code>src/App.tsx</code> and save to test HMR
-          </p>
+    <div className="min-h-screen p-4">
+      <h1 className="mb-6 text-center text-2xl font-bold">
+        TI Battle Simulator
+      </h1>
+      <Card className="mx-auto max-w-lg">
+        <CardContent className="p-4">
+          {/* Header with faction selects */}
+          <div className="mb-4 flex items-center gap-4">
+            <div className="flex-1">
+              <div className="mb-2 text-center text-sm font-semibold text-blue-600 dark:text-blue-400">
+                Attacker
+              </div>
+              <FactionSelect
+                value={battle.attacker.faction}
+                onValueChange={faction =>
+                  handleFactionChange('attacker', faction)
+                }
+              />
+            </div>
+            <div className="flex-1">
+              <div className="mb-2 text-center text-sm font-semibold text-red-600 dark:text-red-400">
+                Defender
+              </div>
+              <FactionSelect
+                value={battle.defender.faction}
+                onValueChange={faction =>
+                  handleFactionChange('defender', faction)
+                }
+              />
+            </div>
+          </div>
+
+          {/* Unit rows */}
+          <div className="space-y-1">
+            {UNIT_TYPES.map(unitKey => (
+              <UnitRowDual
+                key={unitKey}
+                name={attackerConfig[unitKey].name}
+                attackerHasUpgrade={attackerConfig[unitKey].hasUpgrade}
+                defenderHasUpgrade={defenderConfig[unitKey].hasUpgrade}
+                attacker={battle.attacker.units[unitKey]}
+                defender={battle.defender.units[unitKey]}
+                onAttackerCountChange={count =>
+                  handleUnitCountChange('attacker', unitKey, count)
+                }
+                onAttackerUpgradeToggle={() =>
+                  handleUpgradeToggle('attacker', unitKey)
+                }
+                onDefenderCountChange={count =>
+                  handleUnitCountChange('defender', unitKey, count)
+                }
+                onDefenderUpgradeToggle={() =>
+                  handleUpgradeToggle('defender', unitKey)
+                }
+              />
+            ))}
+          </div>
         </CardContent>
       </Card>
-      <p className="text-muted-foreground text-sm">
-        Click on the Vite and React logos to learn more
-      </p>
     </div>
   )
 }

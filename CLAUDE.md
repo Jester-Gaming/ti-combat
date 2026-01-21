@@ -97,6 +97,10 @@ import { cn } from '@/lib/utils'
 <div className={cn('base-class', 'conditional-class', customClass)} />
 ```
 
+## Code Conventions
+
+- **Utilities**: One utility function per file in `src/utils/` (e.g., `getFactionUnitConfig.ts`)
+
 ## Architecture Notes
 
 The project is currently in scaffolding phase with standard Vite + React template structure. As the battle simulator grows, expect:
