@@ -1,0 +1,52 @@
+{
+  "name": "L1Z1X Mindnet",
+  "units": {
+    "FLAGSHIP": {
+      "BASE": {
+        "NAME": "[0.0.1]",
+        "DESCRIPTION": "During a space combat, hits produced by this ship and by your dreadnoughts in this system must be assigned to non-fighter ships if able.",
+        "COST": 8,
+        "COMBAT": [5, 2],
+        "MOVE": 1,
+        "CAPACITY": 5,
+        "ABILITIES": {
+          "SUSTAIN_DAMAGE": true
+        }
+      }
+    },
+    "MECH": {
+      "BASE": {
+        "NAME": "Annihilator",
+        "DESCRIPTION": "This unit may use its Bombardment ability to destroy 1 ground force on a planet that contains 1 or more of your units.",
+        "COST": 2,
+        "COMBAT": [6, 1],
+        "ABILITIES": {
+          "SUSTAIN_DAMAGE": true,
+          "BOMBARDMENT": [8, 1]
+        }
+      }
+    },
+    "DREADNOUGHT": {
+      "BASE": {
+        "NAME": "Super Dreadnought I",
+        "COST": 4,
+        "COMBAT": [5, 1],
+        "MOVE": 1,
+        "CAPACITY": 2,
+        "ABILITIES": {
+          "BOMBARDMENT": [5, 1],
+          "SUSTAIN_DAMAGE": true
+        }
+      },
+      "UPGRADED": {
+        "NAME": "Super Dreadnought II",
+        "DESCRIPTION": "This unit cannot be destroyed by Direct Hit action cards.",
+        "COMBAT": [4, 1],
+        "MOVE": 2,
+        "ABILITIES": {
+          "BOMBARDMENT": [4, 1]
+        }
+      }
+    }
+  }
+}

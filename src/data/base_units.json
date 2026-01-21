@@ -1,0 +1,126 @@
+{
+  "WAR_SUN": {
+    "BASE": null,
+    "UPGRADED": {
+      "COST": 12,
+      "COMBAT": [3, 3],
+      "MOVE": 2,
+      "CAPACITY": 6,
+      "ABILITIES": {
+        "SUSTAIN_DAMAGE": true,
+        "BOMBARDMENT": [3, 3]
+      }
+    }
+  },
+  "CRUISER": {
+    "BASE": {
+      "COST": 2,
+      "COMBAT": [7, 1],
+      "MOVE": 2,
+      "CAPACITY": null,
+      "ABILITIES": {}
+    },
+    "UPGRADED": {
+      "COMBAT": [6, 1],
+      "MOVE": 3,
+      "CAPACITY": 1
+    }
+  },
+  "DREADNOUGHT": {
+    "BASE": {
+      "COST": 4,
+      "COMBAT": [5, 1],
+      "MOVE": 1,
+      "CAPACITY": 1,
+      "ABILITIES": {
+        "SUSTAIN_DAMAGE": true,
+        "BOMBARDMENT": [5, 1]
+      }
+    },
+    "UPGRADED": {
+      "MOVE": 2
+    }
+  },
+  "DESTROYER": {
+    "BASE": {
+      "COST": 1,
+      "COMBAT": [9, 1],
+      "MOVE": 2,
+      "CAPACITY": null,
+      "ABILITIES": {
+        "AFB": [9, 2]
+      }
+    },
+    "UPGRADED": {
+      "COMBAT": [8, 1],
+      "ABILITIES": {
+        "AFB": [6, 3]
+      }
+    }
+  },
+  "PDS": {
+    "BASE": {
+      "COST": null,
+      "COMBAT": null,
+      "MOVE": null,
+      "CAPACITY": null,
+      "ABILITIES": {
+        "PLANETARY_SHIELD": true,
+        "SPACE_CANNON": [6, 1]
+      }
+    },
+    "UPGRADED": {
+      "ABILITIES": {
+        "SPACE_CANNON": [5, 1]
+      }
+    }
+  },
+  "CARRIER": {
+    "BASE": {
+      "COST": 3,
+      "COMBAT": [9, 1],
+      "MOVE": 1,
+      "CAPACITY": 4,
+      "ABILITIES": {}
+    },
+    "UPGRADED": {
+      "MOVE": 2,
+      "CAPACITY": 6
+    }
+  },
+  "FIGHTER": {
+    "BASE": {
+      "COST": 0.5,
+      "COMBAT": [9, 1],
+      "MOVE": null,
+      "CAPACITY": null,
+      "ABILITIES": {}
+    },
+    "UPGRADED": {
+      "COMBAT": [8, 1],
+      "MOVE": 2
+    }
+  },
+  "INFANTRY": {
+    "BASE": {
+      "COST": 0.5,
+      "COMBAT": [8, 1],
+      "MOVE": null,
+      "CAPACITY": null,
+      "ABILITIES": {}
+    },
+    "UPGRADED": {
+      "COMBAT": [7, 1]
+    }
+  },
+  "SPACE_DOCK": {
+    "BASE": {
+      "COST": null,
+      "COMBAT": null,
+      "MOVE": null,
+      "CAPACITY": null,
+      "ABILITIES": {}
+    },
+    "UPGRADED": {}
+  }
+}
