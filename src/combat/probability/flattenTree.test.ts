@@ -20,7 +20,6 @@ describe('flattenTree', () => {
       state: {
         attacker: makeSide(1),
         defender: makeSide(0),
-        round: 2,
       },
       probability: 1,
       children: [],
@@ -35,16 +34,16 @@ describe('flattenTree', () => {
 
   it('accumulates probability through tree', () => {
     const root: ProbabilityNode = {
-      state: { attacker: makeSide(1), defender: makeSide(1), round: 1 },
+      state: { attacker: makeSide(1), defender: makeSide(1) },
       probability: 1,
       children: [
         {
-          state: { attacker: makeSide(1), defender: makeSide(0), round: 2 },
+          state: { attacker: makeSide(1), defender: makeSide(0) },
           probability: 0.6,
           children: [],
         },
         {
-          state: { attacker: makeSide(0), defender: makeSide(1), round: 2 },
+          state: { attacker: makeSide(0), defender: makeSide(1) },
           probability: 0.4,
           children: [],
         },
@@ -60,16 +59,16 @@ describe('flattenTree', () => {
 
   it('merges identical outcomes', () => {
     const root: ProbabilityNode = {
-      state: { attacker: makeSide(2), defender: makeSide(1), round: 1 },
+      state: { attacker: makeSide(2), defender: makeSide(1) },
       probability: 1,
       children: [
         {
-          state: { attacker: makeSide(1), defender: makeSide(0), round: 2 },
+          state: { attacker: makeSide(1), defender: makeSide(0) },
           probability: 0.3,
           children: [],
         },
         {
-          state: { attacker: makeSide(1), defender: makeSide(0), round: 2 },
+          state: { attacker: makeSide(1), defender: makeSide(0) },
           probability: 0.2,
           children: [],
         },
@@ -87,10 +86,10 @@ describe('flattenTree', () => {
     // The 30% cycle probability should be redistributed to non-cycle outcomes
     // Expected: 70% / (1 - 30%) = 100%
 
-    const sameState = { attacker: makeSide(1), defender: makeSide(1), round: 1 }
+    const sameState = { attacker: makeSide(1), defender: makeSide(1) }
 
     const leafWin: ProbabilityNode = {
-      state: { attacker: makeSide(1), defender: makeSide(0), round: 2 },
+      state: { attacker: makeSide(1), defender: makeSide(0) },
       probability: 0.7,
       children: [],
     }
@@ -124,16 +123,16 @@ describe('flattenTree', () => {
     // User's example: 20% cycle, 20% outcome A, 60% outcome B
     // Expected: A = 25%, B = 75%
 
-    const sameState = { attacker: makeSide(1), defender: makeSide(1), round: 1 }
+    const sameState = { attacker: makeSide(1), defender: makeSide(1) }
 
     const outcomeA: ProbabilityNode = {
-      state: { attacker: makeSide(2), defender: makeSide(0), round: 2 },
+      state: { attacker: makeSide(2), defender: makeSide(0) },
       probability: 0.2,
       children: [],
     }
 
     const outcomeB: ProbabilityNode = {
-      state: { attacker: makeSide(1), defender: makeSide(0), round: 2 },
+      state: { attacker: makeSide(1), defender: makeSide(0) },
       probability: 0.6,
       children: [],
     }
@@ -180,25 +179,25 @@ describe('flattenTree', () => {
     // shared should get probability from BOTH paths: 0.4 + 0.6 = 1.0
 
     const shared: ProbabilityNode = {
-      state: { attacker: makeSide(1), defender: makeSide(0), round: 3 },
+      state: { attacker: makeSide(1), defender: makeSide(0) },
       probability: 1, // 100% once we reach A or B
       children: [],
     }
 
     const nodeA: ProbabilityNode = {
-      state: { attacker: makeSide(1), defender: makeSide(1), round: 2 },
+      state: { attacker: makeSide(1), defender: makeSide(1) },
       probability: 0.4,
       children: [shared], // Points to shared
     }
 
     const nodeB: ProbabilityNode = {
-      state: { attacker: makeSide(1), defender: makeSide(1), round: 2 },
+      state: { attacker: makeSide(1), defender: makeSide(1) },
       probability: 0.6,
       children: [shared], // Also points to shared (DAG!)
     }
 
     const root: ProbabilityNode = {
-      state: { attacker: makeSide(2), defender: makeSide(1), round: 1 },
+      state: { attacker: makeSide(2), defender: makeSide(1) },
       probability: 1,
       children: [nodeA, nodeB],
     }

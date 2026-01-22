@@ -1,4 +1,3 @@
-export { binomialCoeff } from './combinatorics'
 export {
   getDiceDistribution,
   type DiceRollOutcome,

@@ -1,3 +1,3 @@
-export { branchOnRoll, executeDiceRolls } from './branchOnRoll'
+export { executeDiceRolls } from './executeDiceRolls'
 export { flattenTree } from './flattenTree'
 export { getStateHash } from './getStateHash'

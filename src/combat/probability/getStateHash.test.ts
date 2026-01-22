@@ -21,7 +21,6 @@ describe('getStateHash', () => {
   ): CombatState => ({
     attacker: makeSide(attackerUnits),
     defender: makeSide(defenderUnits),
-    round: 1,
   })
 
   it('returns same hash for identical states', () => {

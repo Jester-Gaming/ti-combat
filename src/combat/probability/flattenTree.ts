@@ -94,8 +94,14 @@ export function flattenTree(root: ProbabilityNode): CombatOutcome[] {
         }
       }
 
-      const winner: CombatSide | 'draw' =
-        attackerCount > 0 ? 'attacker' : defenderCount > 0 ? 'defender' : 'draw'
+      let winner: CombatSide | 'draw'
+      if (attackerCount > 0) {
+        winner = 'attacker'
+      } else if (defenderCount > 0) {
+        winner = 'defender'
+      } else {
+        winner = 'draw'
+      }
 
       const key = generateKey(attackerSurvivors, defenderSurvivors)
       const result = new Map<string, RelativeOutcome>()

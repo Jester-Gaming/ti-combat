@@ -1,57 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { branchOnRoll, executeDiceRolls } from './branchOnRoll'
+import { executeDiceRolls } from './executeDiceRolls'
 import type { CombatState } from '../types'
-import type { DiceRollOutcome } from '../dice'
 import type { DieValue } from '@/types'
 
 const makeState = (): CombatState => ({
   attacker: { stats: {}, units: {}, pendingHits: 0 },
   defender: { stats: {}, units: {}, pendingHits: 0 },
-  round: 1,
-})
-
-describe('branchOnRoll', () => {
-  it('creates nodes for each dice outcome', () => {
-    const state = makeState()
-    const distribution: DiceRollOutcome[] = [
-      { hits: 0, probability: 0.8 },
-      { hits: 1, probability: 0.2 },
-    ]
-
-    const nodes = branchOnRoll(state, distribution, 'defender')
-
-    expect(nodes).toHaveLength(2)
-    expect(nodes[0].probability).toBeCloseTo(0.8)
-    expect(nodes[1].probability).toBeCloseTo(0.2)
-    expect(nodes[0].children).toEqual([])
-    expect(nodes[1].children).toEqual([])
-  })
-
-  it('assigns hits to the target side', () => {
-    const state = makeState()
-    const distribution: DiceRollOutcome[] = [
-      { hits: 0, probability: 0.5 },
-      { hits: 2, probability: 0.5 },
-    ]
-
-    const nodes = branchOnRoll(state, distribution, 'defender')
-
-    expect(nodes[0].state.defender.pendingHits).toBe(0)
-    expect(nodes[1].state.defender.pendingHits).toBe(2)
-  })
-
-  it('filters out zero-probability outcomes', () => {
-    const state = makeState()
-    const distribution: DiceRollOutcome[] = [
-      { hits: 0, probability: 0 },
-      { hits: 1, probability: 0.5 },
-      { hits: 2, probability: 0.5 },
-    ]
-
-    const nodes = branchOnRoll(state, distribution, 'defender')
-
-    expect(nodes).toHaveLength(2)
-  })
 })
 
 describe('executeDiceRolls', () => {

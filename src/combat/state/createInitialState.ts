@@ -8,7 +8,6 @@ export function createInitialCombatState(
   defenderCounts: Partial<Record<UnitType, number>>,
 ): CombatState {
   return {
-    round: 1,
     attacker: createSideState(attackerStats, attackerCounts),
     defender: createSideState(defenderStats, defenderCounts),
   }

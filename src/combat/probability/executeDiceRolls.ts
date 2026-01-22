@@ -6,7 +6,7 @@ import { getCombinedDiceDistribution, type DiceRollOutcome } from '../dice'
  * Branches a combat state into multiple tree nodes based on dice outcomes.
  * Returns nodes with empty children (to be filled by subsequent phases).
  */
-export function branchOnRoll(
+function branchOnRoll(
   state: CombatState,
   distribution: DiceRollOutcome[],
   targetSide: CombatSide,
@@ -44,25 +44,13 @@ export function executeDiceRolls(
   const attackerDist = getCombinedDiceDistribution(attackerDice)
   const defenderDist = getCombinedDiceDistribution(defenderDice)
 
-  // Branch on attacker's roll (hits go to defender)
-  const attackerNodes = branchOnRoll(state, attackerDist, 'defender')
-
-  // For each attacker outcome, branch on defender's roll
-  const finalNodes: ProbabilityNode[] = []
-  for (const node of attackerNodes) {
-    const defenderNodes = branchOnRoll(node.state, defenderDist, 'attacker')
-    for (const defNode of defenderNodes) {
-      finalNodes.push({
-        state: defNode.state,
-        probability: node.probability * defNode.probability,
-        children: [],
-        meta: {
-          ...node.meta,
-          ...defNode.meta,
-        },
-      })
-    }
-  }
-
-  return finalNodes
+  // Branch on attacker's roll (hits go to defender), then defender's roll
+  return branchOnRoll(state, attackerDist, 'defender').flatMap(attNode =>
+    branchOnRoll(attNode.state, defenderDist, 'attacker').map(defNode => ({
+      state: defNode.state,
+      probability: attNode.probability * defNode.probability,
+      children: [],
+      meta: { ...attNode.meta, ...defNode.meta },
+    })),
+  )
 }
