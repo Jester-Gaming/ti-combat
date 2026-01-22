@@ -1,10 +1,6 @@
-import { produce } from 'immer'
-import type { DieValue, UnitType, UnitStats } from '@/types'
-import type { CombatSideState, ProbabilityNode, CombatState } from './types'
-import { createInitialCombatState } from './state/createInitialState'
-import { checkCombatEnd } from './state/checkCombatEnd'
-import { destroyUnits } from './hitAssignment'
-import { executeDiceRolls, getStateHash } from './probability'
+import type { UnitType, UnitStats } from '@/types'
+import type { ProbabilityNode } from './types'
+import { CombatState, type StateWithProbability } from './state/CombatState'
 
 export interface EngineOptions {
   /** Maximum number of combat rounds before forcing termination */
@@ -45,7 +41,7 @@ export class CombatEngine {
     // Clear cache for new simulation
     this.subtreeCache.clear()
 
-    const initialState = createInitialCombatState(
+    const initialState = CombatState.create(
       attackerUnits,
       attackerCounts,
       defenderUnits,
@@ -59,7 +55,7 @@ export class CombatEngine {
     }
 
     // Check for immediate end
-    if (checkCombatEnd(initialState)) {
+    if (initialState.isFinished()) {
       return root // leaf node
     }
 
@@ -70,12 +66,12 @@ export class CombatEngine {
 
   private expandNode(node: ProbabilityNode, round: number): void {
     // Check combat end or max rounds
-    if (checkCombatEnd(node.state) || round > this.maxRounds) {
+    if (node.state.isFinished() || round > this.maxRounds) {
       return // leaf node, children stays []
     }
 
     // Check cache for this state at this round
-    const stateKey = getStateHash(node.state)
+    const stateKey = node.state.getHash()
     const cached = this.subtreeCache.get(stateKey)
     if (cached) {
       node.children = cached
@@ -99,90 +95,60 @@ export class CombatEngine {
    * Returns array of possible outcome nodes.
    */
   simulateRound(state: CombatState, round: number): ProbabilityNode[] {
-    let nodes: ProbabilityNode[] = [{ state, probability: 1, children: [] }]
-
-    const getAfb = (stats: UnitStats) => stats.ABILITIES?.AFB
-    const getCombat = (stats: UnitStats) => stats.COMBAT
+    let nodes: StateWithProbability[] = [{ state, probability: 1 }]
 
     // AFB phase (round 1 only)
     if (round === 1) {
       nodes = this.expandPhase(nodes, s => {
-        const attackerDice = this.collectDice(s.attacker, getAfb)
-        const defenderDice = this.collectDice(s.defender, getAfb)
-        return executeDiceRolls(s, attackerDice, defenderDice)
+        const attackerDice = s.collectDice('attacker', 'AFB')
+        const defenderDice = s.collectDice('defender', 'AFB')
+        return s.produceHits(attackerDice, defenderDice, 'AFB')
       })
-      nodes = this.applyToAllNodes(nodes, this.assignAfbHits.bind(this))
+      nodes = this.applyToAllNodes(nodes, s =>
+        s.assignHits('attacker', 'AFB').assignHits('defender', 'AFB'),
+      )
     }
 
     // Combat phase
     nodes = this.expandPhase(nodes, s => {
-      const attackerDice = this.collectDice(s.attacker, getCombat)
-      const defenderDice = this.collectDice(s.defender, getCombat)
-      return executeDiceRolls(s, attackerDice, defenderDice)
+      const attackerDice = s.collectDice('attacker', 'COMBAT')
+      const defenderDice = s.collectDice('defender', 'COMBAT')
+      return s.produceHits(attackerDice, defenderDice, 'COMBAT')
     })
-    nodes = this.applyToAllNodes(nodes, this.assignHits.bind(this))
+    nodes = this.applyToAllNodes(nodes, s =>
+      s.assignHits('attacker').assignHits('defender'),
+    )
 
-    return nodes
+    // Convert to ProbabilityNode format
+    return nodes.map(n => ({
+      state: n.state,
+      probability: n.probability,
+      children: [],
+      meta: n.meta,
+    }))
   }
 
   private expandPhase(
-    nodes: ProbabilityNode[],
-    phase: (state: CombatState) => ProbabilityNode[],
-  ): ProbabilityNode[] {
+    nodes: StateWithProbability[],
+    phase: (state: CombatState) => StateWithProbability[],
+  ): StateWithProbability[] {
     return nodes.flatMap(node => {
       const children = phase(node.state)
       return children.map(child => ({
-        ...child,
+        state: child.state,
         probability: child.probability * node.probability,
+        meta: child.meta,
       }))
     })
   }
 
   private applyToAllNodes(
-    nodes: ProbabilityNode[],
+    nodes: StateWithProbability[],
     transform: (state: CombatState) => CombatState,
-  ): ProbabilityNode[] {
+  ): StateWithProbability[] {
     return nodes.map(node => ({
       ...node,
       state: transform(node.state),
     }))
-  }
-
-  private collectDice(
-    side: CombatSideState,
-    getDieValue: (stats: UnitStats) => DieValue | null | undefined,
-  ): DieValue[] {
-    const diceByHitValue = new Map<number, number>()
-
-    for (const [type, units] of Object.entries(side.units)) {
-      if (!units || units.length === 0) continue
-
-      const stats = side.stats[type as keyof typeof side.stats]
-      const dieValue = stats && getDieValue(stats)
-      if (!dieValue) continue
-
-      const [hitValue, dicePerUnit] = dieValue
-      if (dicePerUnit <= 0) continue
-
-      const totalDice = units.length * dicePerUnit
-      const current = diceByHitValue.get(hitValue) ?? 0
-      diceByHitValue.set(hitValue, current + totalDice)
-    }
-
-    return Array.from(diceByHitValue, ([hitValue, count]) => [hitValue, count])
-  }
-
-  private assignAfbHits(state: CombatState): CombatState {
-    return produce(state, draft => {
-      draft.attacker = destroyUnits(draft.attacker, ['FIGHTER'])
-      draft.defender = destroyUnits(draft.defender, ['FIGHTER'])
-    })
-  }
-
-  private assignHits(state: CombatState): CombatState {
-    return produce(state, draft => {
-      draft.attacker = destroyUnits(draft.attacker)
-      draft.defender = destroyUnits(draft.defender)
-    })
   }
 }

@@ -1,23 +1,18 @@
-import type { UnitType, UnitStats } from '@/types'
+import type { CombatState as CombatStateClass } from './state/CombatState'
+
+// Re-export state classes and types
+export { CombatState, type StateWithProbability } from './state/CombatState'
+export { CombatSideState } from './state/CombatSideState'
+export type { HitSource, HitPool } from './state/HitPool'
 
 export type CombatSide = 'attacker' | 'defender'
+
+// Alias for use in interfaces below
+type CombatState = CombatStateClass
 
 /** Per-unit state (empty now, abilities add properties like sustained) */
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface Unit {}
-
-/** State for one side of combat */
-export interface CombatSideState {
-  stats: Partial<Record<UnitType, UnitStats>>
-  units: Partial<Record<UnitType, Unit[]>>
-  pendingHits: number
-}
-
-/** Full combat state at any point */
-export interface CombatState {
-  attacker: CombatSideState
-  defender: CombatSideState
-}
 
 /** A probability-weighted state */
 export interface ProbabilityState {

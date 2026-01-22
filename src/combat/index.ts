@@ -2,12 +2,16 @@
 export type {
   CombatSide,
   Unit,
-  CombatSideState,
-  CombatState,
   ProbabilityState,
   ProbabilityNode,
   CombatOutcome,
+  HitSource,
+  HitPool,
 } from './types'
+
+// State classes
+export { CombatState, type StateWithProbability } from './types'
+export { CombatSideState } from './types'
 
 export { flattenTree } from './probability'
 
