@@ -4,7 +4,12 @@ import './App.css'
 import { Card, CardContent } from '@/components/ui/card'
 import { FactionSelect } from '@/components/FactionSelect'
 import { UnitRowDual } from '@/components/UnitRowDual'
+import {
+  CombatResultBar,
+  type CombatResult,
+} from '@/components/CombatResultBar'
 import { getUnitConfig } from '@/utils/getUnitConfig'
+import { getSimulationUnits } from '@/utils/getSimulationUnits'
 import factions from '@/data/faction'
 import {
   type UnitType,
@@ -15,6 +20,7 @@ import {
   type Side,
   UNIT_TYPES,
 } from '@/types'
+import { CombatEngine, flattenTree } from './combat'
 
 function createInitialUnits(): Record<UnitType, UnitState> {
   return UNIT_TYPES.reduce(
@@ -42,7 +48,6 @@ function createInitialBattleState(): BattleState {
 
 function App() {
   const [battle, setBattle] = useImmer<BattleState>(createInitialBattleState)
-
   const attackerConfig = useMemo(
     () => getUnitConfig(battle.attacker.faction),
     [battle.attacker.faction],
@@ -51,6 +56,58 @@ function App() {
     () => getUnitConfig(battle.defender.faction),
     [battle.defender.faction],
   )
+
+  const combatResult = useMemo((): CombatResult | null => {
+    const attacker = getSimulationUnits(battle.attacker)
+    const defender = getSimulationUnits(battle.defender)
+
+    // Need at least one unit on each side to simulate
+    const hasAttackerUnits = Object.keys(attacker.counts).length > 0
+    const hasDefenderUnits = Object.keys(defender.counts).length > 0
+
+    if (!hasAttackerUnits || !hasDefenderUnits) {
+      return null
+    }
+
+    const engine = new CombatEngine()
+
+    console.time('Simulate')
+    const tree = engine.simulate(
+      attacker.stats,
+      attacker.counts,
+      defender.stats,
+      defender.counts,
+    )
+    console.timeEnd('Simulate')
+
+    console.log(tree)
+
+    console.time('Flatten')
+    const outcomes = flattenTree(tree)
+    console.log(outcomes)
+    console.timeEnd('Flatten')
+
+    // Sum probabilities by winner
+    let attackerWin = 0
+    let draw = 0
+    let defenderWin = 0
+
+    for (const outcome of outcomes) {
+      switch (outcome.winner) {
+        case 'attacker':
+          attackerWin += outcome.probability
+          break
+        case 'defender':
+          defenderWin += outcome.probability
+          break
+        case 'draw':
+          draw += outcome.probability
+          break
+      }
+    }
+
+    return { attackerWin, draw, defenderWin }
+  }, [battle])
 
   const handleFactionChange = (side: Side, faction: FactionKey) => {
     setBattle(draft => {
@@ -128,6 +185,9 @@ function App() {
               />
             ))}
           </div>
+
+          {/* Combat result */}
+          <CombatResultBar result={combatResult} />
         </CardContent>
       </Card>
     </div>
