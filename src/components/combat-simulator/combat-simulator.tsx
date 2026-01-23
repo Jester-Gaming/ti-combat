@@ -1,15 +1,15 @@
 import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useImmer } from 'use-immer'
 
-import { CombatEngine, flattenTree } from '@/combat'
 import {
-  nonEuclideanShielding,
-  participatingUnits,
-  sustainDamage,
-  unitPriority,
-} from '@/combat/abilities'
+  CombatEngine,
+  CombatSideState,
+  CombatState,
+  flattenTree,
+} from '@/combat'
+import { AbilitiesTracker, getAvailableAbilities } from '@/combat/abilities'
 import { AbilitiesPanel } from '@/components/abilities-panel'
 import { BattleCard } from '@/components/battle-card'
 import { GlassCard } from '@/components/ui/glass-card'
@@ -29,13 +29,6 @@ import { getUnitConfig } from '@/utils/get-unit-config'
 
 import { type CombatResult } from '../battle-card/components/combat-result-bar'
 import styles from './combat-simulator.module.css'
-
-const availableAbilities = [
-  participatingUnits,
-  unitPriority,
-  sustainDamage,
-  nonEuclideanShielding,
-]
 
 function createInitialUnits(): Record<UnitType, UnitState> {
   return UNIT_TYPES.reduce(
@@ -84,43 +77,68 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     [battle.defender.faction],
   )
 
-  const buildAbilitiesForSide = useCallback(
-    (side: Side) => {
-      return availableAbilities.map(ability => ({
-        ...ability,
-        params: {
-          ...ability.params,
-          ...abilityParams[side][ability.key],
-        },
-      }))
-    },
-    [abilityParams],
+  // Create CombatSideState for each side (used for abilities and combat)
+  const attackerSideState = useMemo(
+    () =>
+      new CombatSideState(
+        battle.attacker.faction,
+        getSimulationUnits(battle.attacker),
+      ),
+    [battle.attacker],
+  )
+  const defenderSideState = useMemo(
+    () =>
+      new CombatSideState(
+        battle.defender.faction,
+        getSimulationUnits(battle.defender),
+      ),
+    [battle.defender],
   )
 
-  const combatResult = useMemo((): CombatResult | null => {
-    const attacker = getSimulationUnits(battle.attacker)
-    const defender = getSimulationUnits(battle.defender)
+  // Get available abilities for each side
+  const attackerAbilities = useMemo(
+    () => getAvailableAbilities(attackerSideState),
+    [attackerSideState],
+  )
+  const defenderAbilities = useMemo(
+    () => getAvailableAbilities(defenderSideState),
+    [defenderSideState],
+  )
 
-    const hasAttackerUnits = Object.keys(attacker.counts).length > 0
-    const hasDefenderUnits = Object.keys(defender.counts).length > 0
+  // Create CombatState from battle configuration
+  const combatState = useMemo((): CombatState | null => {
+    const hasAttackerUnits = attackerSideState.countUnits() > 0
+    const hasDefenderUnits = defenderSideState.countUnits() > 0
 
     if (!hasAttackerUnits || !hasDefenderUnits) {
       return null
     }
 
-    const engine = new CombatEngine()
-
-    const tree = engine.simulate(
-      attacker.stats,
-      attacker.counts,
-      defender.stats,
-      defender.counts,
-      {
-        attackerAbilities: buildAbilitiesForSide('attacker'),
-        defenderAbilities: buildAbilitiesForSide('defender'),
+    const abilities = AbilitiesTracker.create({
+      attacker: {
+        abilities: attackerAbilities,
+        config: abilityParams.attacker,
       },
-    )
+      defender: {
+        abilities: defenderAbilities,
+        config: abilityParams.defender,
+      },
+    })
 
+    return new CombatState(attackerSideState, defenderSideState, abilities)
+  }, [
+    attackerSideState,
+    defenderSideState,
+    attackerAbilities,
+    defenderAbilities,
+    abilityParams,
+  ])
+
+  const combatResult = useMemo((): CombatResult | null => {
+    if (!combatState) return null
+
+    const engine = new CombatEngine()
+    const tree = engine.simulate(combatState)
     const outcomes = flattenTree(tree)
 
     let attackerWin = 0
@@ -142,7 +160,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     }
 
     return { attackerWin, draw, defenderWin }
-  }, [battle, buildAbilitiesForSide])
+  }, [combatState])
 
   const handleFactionChange = (side: Side, faction: FactionKey) => {
     setBattle(draft => {
@@ -189,7 +207,8 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           </GlowText>
         </div>
         <AbilitiesPanel
-          abilities={availableAbilities}
+          abilities={attackerAbilities}
+          sideState={attackerSideState}
           params={abilityParams.attacker}
           onParamsChange={(abilityName, params) =>
             handleAbilityParamsChange('attacker', abilityName, params)
@@ -223,7 +242,8 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           </GlowText>
         </div>
         <AbilitiesPanel
-          abilities={availableAbilities}
+          abilities={defenderAbilities}
+          sideState={defenderSideState}
           params={abilityParams.defender}
           onParamsChange={(abilityName, params) =>
             handleAbilityParamsChange('defender', abilityName, params)

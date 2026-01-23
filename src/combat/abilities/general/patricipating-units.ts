@@ -12,7 +12,7 @@ export const participatingUnits: Ability<Params> = {
   name: 'Participating units list',
   category: 'GENERAL',
   defaultCollapsed: true,
-  params: {
+  defaultParams: {
     space: [
       'FLAGSHIP',
       'WAR_SUN',

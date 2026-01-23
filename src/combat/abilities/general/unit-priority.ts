@@ -1,7 +1,19 @@
 import type { UnitType } from '@/types'
-import { UNIT_LIST_ITEMS } from '@/utils/get-unit-config'
+import { getUnitListItems } from '@/utils/get-unit-config'
 
+import type { CombatSideState } from '../../state/combat-side-state'
 import type { Ability } from '../types'
+
+/** Get units that exist on the side and can participate in combat */
+function getParticipatingUnitsForSide(side: CombatSideState): UnitType[] {
+  const result: UnitType[] = []
+  for (const [unitType, units] of Object.entries(side.units)) {
+    if (units && units.length > 0) {
+      result.push(unitType as UnitType)
+    }
+  }
+  return result
+}
 
 type Params = {
   unitPriority: UnitType[]
@@ -12,7 +24,7 @@ export const unitPriority: Ability<Params> = {
   name: 'Assign Hits Order',
   category: 'GENERAL',
   defaultCollapsed: true,
-  params: {
+  defaultParams: {
     unitPriority: [
       'FIGHTER',
       'INFANTRY',
@@ -26,12 +38,20 @@ export const unitPriority: Ability<Params> = {
     ],
   },
   invoke: [],
-  uiConfig: [
-    {
-      key: 'unitPriority',
-      label: 'Unit Priority',
-      type: 'order-list',
-      items: UNIT_LIST_ITEMS,
-    },
-  ],
+  uiConfig: side => {
+    const participatingUnits = getParticipatingUnitsForSide(side)
+
+    if (participatingUnits.length < 1) {
+      return []
+    }
+
+    return [
+      {
+        key: 'unitPriority' as const,
+        label: 'Unit Priority',
+        type: 'order-list' as const,
+        items: getUnitListItems(participatingUnits),
+      },
+    ]
+  },
 }

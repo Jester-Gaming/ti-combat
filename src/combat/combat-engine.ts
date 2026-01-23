@@ -1,21 +1,22 @@
-import type { UnitStats, UnitType } from '@/types'
+import { CombatState } from './state/combat-state'
 
-import type { AnyAbility } from './abilities'
-import {
-  CombatState,
-  type CombatStateOptions,
-  type StateWithProbability,
-} from './state/combat-state'
-import type { ProbabilityNode } from './types'
-
-export interface EngineOptions {
-  /** Maximum number of combat rounds before forcing termination */
-  maxRounds?: number
+/** A state with its probability and hit metadata */
+interface StateWithProbability {
+  state: CombatState
+  probability: number
+  meta?: { attacker: number; defender: number }
 }
 
-export interface SimulateOptions {
-  attackerAbilities?: AnyAbility[]
-  defenderAbilities?: AnyAbility[]
+/** A node in the probability tree */
+interface ProbabilityNode {
+  state: CombatState
+  probability: number
+  children: ProbabilityNode[]
+  meta?: Record<string, unknown>
+}
+
+interface EngineOptions {
+  maxRounds?: number
 }
 
 const DEFAULT_MAX_ROUNDS = 100
@@ -23,12 +24,11 @@ const DEFAULT_MAX_ROUNDS = 100
 /**
  * Combat simulation engine.
  *
- * Core combat mechanics (dice rolls, hit assignment) are handled directly.
- * Abilities are resolved via AbilitiesTracker at specific timing points.
+ * Orchestrates CombatState through combat rounds without directly modifying state.
+ * All state changes produce new immutable CombatState instances.
  *
  * Performance optimizations:
  * - Subtree caching: identical states share subtrees (DAG structure)
- * - Probability pruning: branches below threshold are not expanded
  */
 export class CombatEngine {
   private maxRounds: number
@@ -43,30 +43,9 @@ export class CombatEngine {
    * Simulate combat and return a probability tree (DAG with shared subtrees).
    * Tree preserves full branching history without merging.
    */
-  simulate(
-    attackerUnits: Partial<Record<UnitType, UnitStats>>,
-    attackerCounts: Partial<Record<UnitType, number>>,
-    defenderUnits: Partial<Record<UnitType, UnitStats>>,
-    defenderCounts: Partial<Record<UnitType, number>>,
-    options?: SimulateOptions,
-  ): ProbabilityNode {
+  simulate(initialState: CombatState): ProbabilityNode {
     // Clear cache for new simulation
     this.subtreeCache.clear()
-
-    const stateOptions: CombatStateOptions = {
-      abilities: {
-        attacker: options?.attackerAbilities,
-        defender: options?.defenderAbilities,
-      },
-    }
-
-    const initialState = CombatState.create(
-      attackerUnits,
-      attackerCounts,
-      defenderUnits,
-      defenderCounts,
-      stateOptions,
-    )
 
     // Run SETUP event for abilities (each ability called once)
     initialState.abilities.runSetup(initialState)
@@ -79,7 +58,7 @@ export class CombatEngine {
 
     // Check for immediate end
     if (initialState.isFinished()) {
-      return root // leaf node
+      return root
     }
 
     this.expandNode(root, 1)
@@ -88,36 +67,26 @@ export class CombatEngine {
   }
 
   private expandNode(node: ProbabilityNode, round: number): void {
-    // Check combat end or max rounds
     if (node.state.isFinished() || round > this.maxRounds) {
-      return // leaf node, children stays []
+      return
     }
 
-    // Check cache for this state at this round
     const stateKey = node.state.getHash()
     const cached = this.subtreeCache.get(stateKey)
     if (cached) {
       node.children = cached
-      return // Reuse existing subtree
+      return
     }
 
-    // Get children from this round
     node.children = this.simulateRound(node.state, round)
-
-    // Cache this subtree
     this.subtreeCache.set(stateKey, node.children)
 
-    // Recursively expand each child
     for (const child of node.children) {
       this.expandNode(child, round + 1)
     }
   }
 
-  /**
-   * Simulates a single round of combat.
-   * Returns array of possible outcome nodes.
-   */
-  simulateRound(state: CombatState, round: number): ProbabilityNode[] {
+  private simulateRound(state: CombatState, round: number): ProbabilityNode[] {
     let nodes: StateWithProbability[] = [{ state, probability: 1 }]
 
     // AFB phase (round 1 only)
@@ -138,7 +107,6 @@ export class CombatEngine {
     })
     nodes = this.applyToAllNodes(nodes, s => s.assignHits())
 
-    // Convert to ProbabilityNode format
     return nodes.map(n => ({
       state: n.state,
       probability: n.probability,

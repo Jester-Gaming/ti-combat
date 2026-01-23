@@ -2,7 +2,6 @@ import {
   closestCenter,
   DndContext,
   type DragEndEvent,
-  KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
@@ -10,13 +9,14 @@ import {
 import {
   arrayMove,
   SortableContext,
-  sortableKeyboardCoordinates,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { DragHandleDots2Icon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
+import { useEffect } from 'react'
+import { isShallowEqual, sortBy } from 'remeda'
 
 import styles from './order-list.module.css'
 
@@ -68,7 +68,7 @@ export interface OrderListItem {
 }
 
 interface OrderListProps {
-  items: readonly OrderListItem[]
+  items: OrderListItem[]
   value: string[]
   onChange: (values: string[]) => void
 }
@@ -78,34 +78,30 @@ export function OrderList({
   value,
   onChange,
 }: OrderListProps): React.ReactElement {
-  // Always use items as the source of truth for what to display
-  // Order by value, with items not in value appearing at the end
-  const itemValues = new Set(items.map(item => item.value))
-  const orderedValues = [
-    // First: values that exist in items, in value order
-    ...value.filter(v => itemValues.has(v)),
-    // Then: items not in value, in items order
-    ...items.map(item => item.value).filter(v => !value.includes(v)),
-  ]
-
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 3,
       },
     }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
   )
+
+  useEffect(() => {
+    const newValue = sortBy(items, item => value.indexOf(item.value)).map(
+      item => item.value,
+    )
+    if (!isShallowEqual(value, newValue)) {
+      onChange(newValue)
+    }
+  }, [items, value, onChange])
 
   function handleDragEnd(event: DragEndEvent): void {
     const { active, over } = event
 
     if (over && active.id !== over.id) {
-      const oldIndex = orderedValues.indexOf(active.id as string)
-      const newIndex = orderedValues.indexOf(over.id as string)
-      onChange(arrayMove(orderedValues, oldIndex, newIndex))
+      const oldIndex = value.indexOf(active.id as string)
+      const newIndex = value.indexOf(over.id as string)
+      onChange(arrayMove(value, oldIndex, newIndex))
     }
   }
 
@@ -115,12 +111,9 @@ export function OrderList({
       collisionDetection={closestCenter}
       onDragEnd={handleDragEnd}
     >
-      <SortableContext
-        items={orderedValues}
-        strategy={verticalListSortingStrategy}
-      >
+      <SortableContext items={value} strategy={verticalListSortingStrategy}>
         <div className={styles.list}>
-          {orderedValues.map((val, index) => {
+          {value.map((val, index) => {
             const item = items.find(i => i.value === val)
             return (
               <SortableItem

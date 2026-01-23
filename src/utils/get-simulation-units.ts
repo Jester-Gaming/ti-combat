@@ -1,3 +1,4 @@
+import type { Unit } from '@/combat'
 import {
   type SideState,
   UNIT_TYPES,
@@ -7,19 +8,15 @@ import {
 
 import { getFactionUnitConfig } from './get-faction-unit-config'
 
-export interface SimulationUnits {
-  stats: Partial<Record<UnitType, UnitStats>>
-  counts: Partial<Record<UnitType, number>>
-}
-
 /**
- * Converts a SideState to the format expected by simulateCombat.
- * Returns unit stats (with upgrades applied) and counts for units with count > 0.
+ * Converts a SideState to a unit map suitable for CombatSideState.
+ * Each unit has both stats (COMBAT, ABILITIES) and state (isDamaged).
  */
-export function getSimulationUnits(side: SideState): SimulationUnits {
+export function getSimulationUnits(
+  side: SideState,
+): Partial<Record<UnitType, Unit[]>> {
   const factionConfig = getFactionUnitConfig(side.faction)
-  const stats: Partial<Record<UnitType, UnitStats>> = {}
-  const counts: Partial<Record<UnitType, number>> = {}
+  const units: Partial<Record<UnitType, Unit[]>> = {}
 
   for (const unitType of UNIT_TYPES) {
     const unitState = side.units[unitType]
@@ -38,11 +35,14 @@ export function getSimulationUnits(side: SideState): SimulationUnits {
     )
     if (!effectiveStats) continue
 
-    stats[unitType] = effectiveStats
-    counts[unitType] = unitState.count
+    // Create unit instances with stats
+    units[unitType] = Array.from({ length: unitState.count }, () => ({
+      COMBAT: effectiveStats.COMBAT,
+      ABILITIES: effectiveStats.ABILITIES,
+    }))
   }
 
-  return { stats, counts }
+  return units
 }
 
 /**
@@ -54,7 +54,6 @@ function getEffectiveStats(
   upgradedStats: Partial<UnitStats> | undefined,
   isUpgraded: boolean,
 ): UnitStats | null {
-  // Use upgraded stats if unit is upgraded and has upgrades
   if (isUpgraded && upgradedStats) {
     return {
       ...baseStats,
@@ -66,12 +65,10 @@ function getEffectiveStats(
     }
   }
 
-  // Use base stats if available
   if (baseStats) {
     return { ...baseStats }
   }
 
-  // Fallback to upgraded-only units (e.g., War Sun with BASE: null)
   if (upgradedStats) {
     return { ...upgradedStats } as UnitStats
   }

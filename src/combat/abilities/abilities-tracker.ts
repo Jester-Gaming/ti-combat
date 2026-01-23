@@ -9,14 +9,24 @@ import type {
   SideAbilities,
 } from './types'
 
+/** Config for a single ability - params overrides */
+type AbilityConfig = Record<string, unknown>
+
+/** Config for all abilities on one side */
+type SideConfig = Record<string, AbilityConfig>
+
 class AbilityInstanceImpl implements AbilityInstance {
   private ability: AnyAbility
-  private modifiedParams: Record<string, unknown>
+  private _params: Record<string, unknown>
   private _enabled: boolean
 
-  constructor(ability: AnyAbility, params?: Record<string, unknown>) {
+  constructor(ability: AnyAbility, configParams?: AbilityConfig) {
     this.ability = ability
-    this.modifiedParams = params ?? { ...ability.params }
+    // Merge defaultParams with config overrides
+    this._params = {
+      ...ability.defaultParams,
+      ...configParams,
+    }
     this._enabled = true
   }
 
@@ -25,7 +35,7 @@ class AbilityInstanceImpl implements AbilityInstance {
   }
 
   get params(): Record<string, unknown> {
-    return this.modifiedParams
+    return this._params
   }
 
   get invoke(): AbilityInvoke[] {
@@ -37,7 +47,7 @@ class AbilityInstanceImpl implements AbilityInstance {
   }
 
   modifyParams(updates: Record<string, unknown>): void {
-    Object.assign(this.modifiedParams, updates)
+    Object.assign(this._params, updates)
   }
 
   setEnabled(enabled: boolean): void {
@@ -45,9 +55,7 @@ class AbilityInstanceImpl implements AbilityInstance {
   }
 
   clone(): AbilityInstanceImpl {
-    const cloned = new AbilityInstanceImpl(this.ability, {
-      ...this.modifiedParams,
-    })
+    const cloned = new AbilityInstanceImpl(this.ability, { ...this._params })
     cloned._enabled = this._enabled
     return cloned
   }
@@ -57,15 +65,22 @@ class AbilityInstanceImpl implements AbilityInstance {
 class SideAbilitiesImpl implements SideAbilities {
   private abilities: Map<string, AbilityInstanceImpl>
 
-  constructor(configs: AnyAbility[])
+  constructor(allAbilities: AnyAbility[], config: SideConfig)
   constructor(abilities: Map<string, AbilityInstanceImpl>)
-  constructor(arg: AnyAbility[] | Map<string, AbilityInstanceImpl>) {
+  constructor(
+    arg: AnyAbility[] | Map<string, AbilityInstanceImpl>,
+    config?: SideConfig,
+  ) {
     if (arg instanceof Map) {
       this.abilities = arg
     } else {
       this.abilities = new Map()
-      for (const config of arg) {
-        this.abilities.set(config.key, new AbilityInstanceImpl(config))
+      for (const ability of arg) {
+        const abilityConfig = config?.[ability.key]
+        this.abilities.set(
+          ability.key,
+          new AbilityInstanceImpl(ability, abilityConfig),
+        )
       }
     }
   }
@@ -107,9 +122,14 @@ class SideAbilitiesImpl implements SideAbilities {
   }
 }
 
+export interface SideAbilitiesOptions {
+  abilities: AnyAbility[]
+  config?: SideConfig
+}
+
 export interface AbilitiesTrackerOptions {
-  attacker?: AnyAbility[]
-  defender?: AnyAbility[]
+  attacker: SideAbilitiesOptions
+  defender: SideAbilitiesOptions
 }
 
 /** Manages abilities for both combat sides */
@@ -125,10 +145,11 @@ export class AbilitiesTracker {
     this.defenderAbilities = defender
   }
 
-  static create(options?: AbilitiesTrackerOptions): AbilitiesTracker {
+  static create(options: AbilitiesTrackerOptions): AbilitiesTracker {
+    const { attacker, defender } = options
     return new AbilitiesTracker(
-      new SideAbilitiesImpl(options?.attacker ?? []),
-      new SideAbilitiesImpl(options?.defender ?? []),
+      new SideAbilitiesImpl(attacker.abilities, attacker.config ?? {}),
+      new SideAbilitiesImpl(defender.abilities, defender.config ?? {}),
     )
   }
 

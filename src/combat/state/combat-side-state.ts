@@ -1,10 +1,26 @@
-import type { DieValue, UnitStats, UnitType } from '@/types'
+import type { DieValue, FactionKey, UnitAbilities, UnitType } from '@/types'
 
-import type { Unit } from '../types'
-import type { HitPool, HitSource } from './hit-pool'
-import { getValidTargets } from './hit-pool'
+/** Unit stats - defines the unit's capabilities */
+interface UnitStats {
+  COMBAT?: DieValue | null
+  ABILITIES?: UnitAbilities
+}
 
-export const DEFAULT_UNIT_SACRIFICE_ORDER: UnitType[] = [
+/** Unit instance state - runtime state of a single unit */
+interface UnitState {
+  isDamaged?: boolean
+}
+
+/** A single unit combining stats and runtime state */
+export type Unit = UnitStats & UnitState
+
+/** A pool of unassigned hits with valid targets */
+interface HitPool {
+  hits: number
+  validTargets: UnitType[]
+}
+
+const DEFAULT_UNIT_SACRIFICE_ORDER: UnitType[] = [
   'FIGHTER',
   'INFANTRY',
   'DESTROYER',
@@ -16,18 +32,18 @@ export const DEFAULT_UNIT_SACRIFICE_ORDER: UnitType[] = [
   'FLAGSHIP',
 ]
 
-/** Immutable combat side state with hit pool management */
+/** Immutable combat side state */
 export class CombatSideState {
-  readonly stats: Partial<Record<UnitType, UnitStats>>
+  readonly faction: FactionKey
   private readonly _units: Partial<Record<UnitType, Unit[]>>
   private readonly _hitPools: HitPool[]
 
   constructor(
-    stats: Partial<Record<UnitType, UnitStats>>,
+    faction: FactionKey,
     units: Partial<Record<UnitType, Unit[]>>,
     hitPools: HitPool[] = [],
   ) {
-    this.stats = stats
+    this.faction = faction
     this._units = units
     this._hitPools = hitPools
   }
@@ -52,9 +68,42 @@ export class CombatSideState {
     }
   }
 
+  /** Find a unit matching the predicate */
+  getUnit(unitType: UnitType, predicate: Partial<UnitState>): Unit | undefined {
+    const units = this._units[unitType]
+    if (!units) return undefined
+
+    return units.find(unit => {
+      for (const [key, value] of Object.entries(predicate)) {
+        if (unit[key as keyof UnitState] !== value) return false
+      }
+      return true
+    })
+  }
+
+  /** Destroy a specific unit, returns new state */
+  destroyUnit(unitType: UnitType, unit: Unit): CombatSideState {
+    const units = this._units[unitType]
+    if (!units) return this
+
+    const index = units.indexOf(unit)
+    if (index === -1) return this
+
+    const newUnits = { ...this._units }
+    const remaining = [...units.slice(0, index), ...units.slice(index + 1)]
+
+    if (remaining.length > 0) {
+      newUnits[unitType] = remaining
+    } else {
+      delete newUnits[unitType]
+    }
+
+    return new CombatSideState(this.faction, newUnits, this._hitPools)
+  }
+
   /** Collect dice for a specific combat phase, filtered by participating units */
   collectDice(
-    source: HitSource,
+    source: 'COMBAT' | 'AFB' | 'BOMBARDMENT' | 'SPACE_CANNON',
     participatingUnits: ReadonlySet<UnitType>,
   ): DieValue[] {
     const diceByHitValue = new Map<number, number>()
@@ -63,11 +112,12 @@ export class CombatSideState {
       if (!units || units.length === 0) continue
       if (!participatingUnits.has(type as UnitType)) continue
 
-      const stats = this.stats[type as keyof typeof this.stats]
-      if (!stats) continue
+      // Get stats from first unit of this type
+      const firstUnit = units[0]
+      if (!firstUnit) continue
 
       const dieValue =
-        source === 'COMBAT' ? stats.COMBAT : stats.ABILITIES?.[source]
+        source === 'COMBAT' ? firstUnit.COMBAT : firstUnit.ABILITIES?.[source]
       if (!dieValue) continue
 
       const [hitValue, dicePerUnit] = dieValue
@@ -82,13 +132,12 @@ export class CombatSideState {
   }
 
   /** Add hits to this side's hit pool */
-  addHits(source: HitSource, hits: number): CombatSideState {
+  addHits(hits: number, validTargets: UnitType[]): CombatSideState {
     if (hits === 0) return this
 
-    const validTargets = getValidTargets(source)
-    const newPool: HitPool = { source, hits, validTargets }
+    const newPool: HitPool = { hits, validTargets }
 
-    return new CombatSideState(this.stats, this._units, [
+    return new CombatSideState(this.faction, this._units, [
       ...this._hitPools,
       newPool,
     ])
@@ -99,9 +148,7 @@ export class CombatSideState {
     participatingUnits: ReadonlySet<UnitType>,
     unitPriority?: UnitType[],
   ): CombatSideState {
-    const poolsToProcess = this._hitPools
-
-    if (poolsToProcess.length === 0) {
+    if (this._hitPools.length === 0) {
       return this
     }
 
@@ -112,15 +159,14 @@ export class CombatSideState {
     )
     let currentUnits = { ...this._units }
 
-    for (const pool of poolsToProcess) {
-      const result = this.destroyUnitsFromPool(
+    for (const pool of this._hitPools) {
+      currentUnits = this.destroyUnitsFromPool(
         currentUnits,
         pool.hits,
         pool.validTargets,
         sacrificeOrder,
         participatingUnits,
       )
-      currentUnits = result.units
     }
 
     // Clean up empty unit arrays
@@ -131,7 +177,7 @@ export class CombatSideState {
       }
     }
 
-    return new CombatSideState(this.stats, cleanedUnits, [])
+    return new CombatSideState(this.faction, cleanedUnits, [])
   }
 
   private destroyUnitsFromPool(
@@ -140,8 +186,8 @@ export class CombatSideState {
     validTargets: UnitType[],
     sacrificeOrder: UnitType[],
     participatingUnits: ReadonlySet<UnitType>,
-  ): { units: Partial<Record<UnitType, Unit[]>>; remainingHits: number } {
-    if (hits <= 0) return { units, remainingHits: 0 }
+  ): Partial<Record<UnitType, Unit[]>> {
+    if (hits <= 0) return units
 
     const targetSet = validTargets.length > 0 ? new Set(validTargets) : null
 
@@ -180,16 +226,13 @@ export class CombatSideState {
       }
     }
 
-    return {
-      units: newUnits,
-      remainingHits: Math.max(0, hits - toDestroy.length),
-    }
+    return newUnits
   }
 
   /** Create a deep clone of this state */
   clone(): CombatSideState {
     return new CombatSideState(
-      this.stats,
+      this.faction,
       structuredClone(this._units),
       structuredClone(this._hitPools),
     )

@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
 import baseUnits from '@/data/base_units.json'
-import type { UnitDefinition, UnitStats, UnitType } from '@/types'
+import type { FactionKey, UnitDefinition, UnitStats, UnitType } from '@/types'
 
 import { CombatEngine } from './combat-engine'
 import { flattenTree } from './probability/flatten-tree'
+import type { Unit } from './state/combat-side-state'
+import { CombatSideState } from './state/combat-side-state'
+import { CombatState } from './state/combat-state'
 import type { CombatOutcome } from './types'
+
+const TEST_FACTION: FactionKey = 'ARBOREC'
 
 /**
  * Get stats for all units from base_units.json.
@@ -40,6 +45,28 @@ function getUnitStats(
 }
 
 /**
+ * Create unit arrays from stats and counts.
+ */
+function createUnits(
+  stats: Record<UnitType, UnitStats>,
+  counts: Partial<Record<UnitType, number>>,
+): Partial<Record<UnitType, Unit[]>> {
+  const units: Partial<Record<UnitType, Unit[]>> = {}
+
+  for (const [type, count] of Object.entries(counts)) {
+    if (count && count > 0) {
+      const unitStats = stats[type as UnitType]
+      units[type as UnitType] = Array.from({ length: count }, () => ({
+        COMBAT: unitStats?.COMBAT,
+        ABILITIES: unitStats?.ABILITIES,
+      }))
+    }
+  }
+
+  return units
+}
+
+/**
  * Sum probabilities by outcome type (win/draw/lose).
  */
 function summarizeOutcomes(outcomes: CombatOutcome[]): {
@@ -71,9 +98,12 @@ describe('CombatEngine', () => {
     it('2 cruisers vs 3 cruisers', () => {
       const engine = new CombatEngine()
 
-      const result = engine.simulate(units, { CRUISER: 2 }, units, {
-        CRUISER: 3,
-      })
+      const state = new CombatState(
+        new CombatSideState(TEST_FACTION, createUnits(units, { CRUISER: 2 })),
+        new CombatSideState(TEST_FACTION, createUnits(units, { CRUISER: 3 })),
+      )
+
+      const result = engine.simulate(state)
 
       const outcomes = flattenTree(result)
       const summary = summarizeOutcomes(outcomes)
@@ -91,10 +121,15 @@ describe('CombatEngine', () => {
     it('2 cruisers vs 1 dreadnought + 1 cruiser', () => {
       const engine = new CombatEngine()
 
-      const result = engine.simulate(units, { CRUISER: 2 }, units, {
-        DREADNOUGHT: 1,
-        CRUISER: 1,
-      })
+      const state = new CombatState(
+        new CombatSideState(TEST_FACTION, createUnits(units, { CRUISER: 2 })),
+        new CombatSideState(
+          TEST_FACTION,
+          createUnits(units, { DREADNOUGHT: 1, CRUISER: 1 }),
+        ),
+      )
+
+      const result = engine.simulate(state)
 
       const outcomes = flattenTree(result)
       const summary = summarizeOutcomes(outcomes)
@@ -111,11 +146,17 @@ describe('CombatEngine', () => {
 
     it('2 fighters vs upgraded destroyer (with AFB)', () => {
       const engine = new CombatEngine()
-      const defenderUnits = getUnitStats({ DESTROYER: true })
+      const defenderStats = getUnitStats({ DESTROYER: true })
 
-      const result = engine.simulate(units, { FIGHTER: 2 }, defenderUnits, {
-        DESTROYER: 1,
-      })
+      const state = new CombatState(
+        new CombatSideState(TEST_FACTION, createUnits(units, { FIGHTER: 2 })),
+        new CombatSideState(
+          TEST_FACTION,
+          createUnits(defenderStats, { DESTROYER: 1 }),
+        ),
+      )
+
+      const result = engine.simulate(state)
 
       const outcomes = flattenTree(result)
       const summary = summarizeOutcomes(outcomes)

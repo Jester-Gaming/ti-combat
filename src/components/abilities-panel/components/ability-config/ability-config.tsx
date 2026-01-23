@@ -1,34 +1,34 @@
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 
 import type { AnyAbility } from '@/combat/abilities'
+import type { CombatSideState } from '@/combat/state'
 import { Checkbox } from '@/components/ui/checkbox'
-import { CheckboxList } from '@/components/ui/checkbox-list'
-import { OrderList } from '@/components/ui/order-list'
 
+import { CheckboxList } from '../checkbox-list'
+import { OrderList } from '../order-list'
 import styles from './ability-config.module.css'
 
 interface AbilityConfigProps {
   ability: AnyAbility
+  sideState: CombatSideState
   params: Record<string, unknown>
   onParamsChange: (params: Record<string, unknown>) => void
 }
 
 export function AbilityConfig({
   ability,
+  sideState,
   params,
   onParamsChange,
 }: AbilityConfigProps): React.ReactElement {
-  const isEnabled = ability.enableUI ? !!params['ENABLED'] : true
-
-  // Merge params with defaults for uiConfig function
-  const effectiveParams = { ...ability.params, ...params }
-
-  // Resolve uiConfig (can be array or function)
-  const uiConfigItems =
-    typeof ability.uiConfig === 'function'
-      ? ability.uiConfig(effectiveParams)
-      : ability.uiConfig
+  const uiConfigItems = useMemo(() => {
+    if (!ability.uiConfig || typeof ability.uiConfig !== 'function') {
+      return ability.uiConfig
+    }
+    const effectiveParams = { ...ability.defaultParams, ...params }
+    return ability.uiConfig(sideState, effectiveParams)
+  }, [ability, sideState, params])
 
   const hasConfigItems = uiConfigItems && uiConfigItems.length > 0
   const showLabels = uiConfigItems && uiConfigItems.length > 1
@@ -67,8 +67,8 @@ export function AbilityConfig({
       </button>
       {ability.enableUI && (
         <Checkbox
-          checked={isEnabled}
-          onChange={checked => handleCheckboxChange('ENABLED', checked)}
+          checked={!!params.isEnabled}
+          onChange={checked => handleCheckboxChange('isEnabled', checked)}
         />
       )}
     </div>
@@ -81,7 +81,7 @@ export function AbilityConfig({
         <div className={styles.configItems}>
           {uiConfigItems!.map(config => {
             const key = config.key as string
-            const defaultValue = ability.params?.[key]
+            const defaultValue = ability.defaultParams?.[key]
 
             if (config.type === 'checkbox') {
               const value = params[key] ?? defaultValue ?? false

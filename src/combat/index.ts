@@ -2,17 +2,13 @@
 export type {
   CombatOutcome,
   CombatSide,
-  HitPool,
-  HitSource,
   ProbabilityNode,
-  ProbabilityState,
-  Unit,
+  SurvivorSide,
 } from './types'
 
 // State classes
 export { flattenTree } from './probability'
-export { CombatState, type StateWithProbability } from './types'
-export { CombatSideState } from './types'
+export { CombatSideState, CombatState, type Unit } from './state'
 
-// Engine (event-driven combat simulation)
-export { CombatEngine, type EngineOptions } from './combat-engine'
+// Engine
+export { CombatEngine } from './combat-engine'

@@ -1,12 +1,14 @@
 import { filter, groupBy, keys, pipe } from 'remeda'
 
 import type { AnyAbility } from '@/combat/abilities'
+import type { CombatSideState } from '@/combat/state'
 
 import styles from './abilities-panel.module.css'
 import { AbilityConfig } from './components/ability-config'
 
 interface AbilitiesPanelProps {
   abilities: AnyAbility[]
+  sideState: CombatSideState
   params: Record<string, Record<string, unknown>>
   onParamsChange: (abilityName: string, params: Record<string, unknown>) => void
 }
@@ -29,6 +31,7 @@ function compareCategories(a: string, b: string): number {
 
 export function AbilitiesPanel({
   abilities,
+  sideState,
   params,
   onParamsChange,
 }: AbilitiesPanelProps): React.ReactElement {
@@ -46,12 +49,13 @@ export function AbilitiesPanel({
     <div className={styles.container}>
       {categories.map(category => (
         <div key={category}>
-          <div className={styles.categoryLabel}>{category}</div>
+          <h6 className={styles.categoryLabel}>{category}</h6>
           <div className={styles.abilitiesList}>
             {groupedAbilities[category].map(ability => (
               <AbilityConfig
                 key={ability.key}
                 ability={ability}
+                sideState={sideState}
                 params={params[ability.key] ?? {}}
                 onParamsChange={newParams =>
                   onParamsChange(ability.key, newParams)

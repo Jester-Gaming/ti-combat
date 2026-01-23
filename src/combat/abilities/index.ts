@@ -2,7 +2,8 @@ export {
   AbilitiesTracker,
   type AbilitiesTrackerOptions,
 } from './abilities-tracker'
-export * from './general'
+import type { CombatSideState } from '../state'
+import { general } from './general'
 export { nonEuclideanShielding } from './non-euclidean-shielding'
 export type {
   Ability,
@@ -17,3 +18,10 @@ export type {
   UIConfigListItem,
   UIConfigOrderList,
 } from './types'
+
+export const allAbilities = [...general]
+
+export function getAvailableAbilities(side: CombatSideState) {
+  console.log(side)
+  return allAbilities
+}

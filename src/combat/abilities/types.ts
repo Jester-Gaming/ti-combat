@@ -45,14 +45,14 @@ export interface UIConfigOrderList<
   TParams = Record<string, unknown>,
 > extends UIConfigItemBase<TParams> {
   type: 'order-list'
-  items: readonly UIConfigListItem[]
+  items: UIConfigListItem[]
 }
 
 export interface UIConfigCheckboxList<
   TParams = Record<string, unknown>,
 > extends UIConfigItemBase<TParams> {
   type: 'checkbox-list'
-  items: readonly UIConfigListItem[]
+  items: UIConfigListItem[]
 }
 
 export type UIConfigItem<TParams = Record<string, unknown>> =
@@ -62,13 +62,13 @@ export type UIConfigItem<TParams = Record<string, unknown>> =
 
 export type UIConfig<Params = Record<string, unknown>> =
   | UIConfigItem<Params>[]
-  | ((params: Params) => UIConfigItem<Params>[])
+  | ((side: CombatSideState, params: Params) => UIConfigItem<Params>[])
 
 export interface Ability<Params = Record<string, unknown>> {
   key: string
   name: string // Display name for UI
   category: string
-  params?: Params
+  defaultParams?: Params
   enableUI?: boolean // Show enable checkbox in header, controls ENABLED param
   defaultCollapsed?: boolean // Start with config items collapsed
   uiConfig?: UIConfig<Params>

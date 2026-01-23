@@ -21,12 +21,6 @@ export interface UnitListItem {
   value: UnitType
 }
 
-/** Get all unit types as list items with labels */
-export const UNIT_LIST_ITEMS: UnitListItem[] = UNIT_TYPES.map(type => ({
-  label: UNIT_DISPLAY_NAMES[type],
-  value: type,
-}))
-
 /** Get unit list items for specific unit types */
 export function getUnitListItems(units: readonly UnitType[]): UnitListItem[] {
   return units.map(type => ({

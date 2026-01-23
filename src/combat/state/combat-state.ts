@@ -1,21 +1,37 @@
-import type { DieValue, UnitStats, UnitType } from '@/types'
+import type { DieValue, UnitType } from '@/types'
 
-import { AbilitiesTracker, type AbilitiesTrackerOptions } from '../abilities'
+import { AbilitiesTracker } from '../abilities'
 import { getCombinedDiceDistribution } from '../dice'
-import type { CombatSide, Unit } from '../types'
 import { CombatSideState } from './combat-side-state'
-import type { HitSource } from './hit-pool'
+
+/** Hit source determines dice collection */
+type HitSource = 'COMBAT' | 'AFB' | 'BOMBARDMENT' | 'SPACE_CANNON'
+
+/** Combat side identifier */
+type CombatSide = 'attacker' | 'defender'
 
 /** A state with its probability and hit metadata */
-export interface StateWithProbability {
+interface StateWithProbability {
   state: CombatState
   probability: number
   meta?: { attacker: number; defender: number }
 }
 
-/** Options for creating a CombatState */
-export interface CombatStateOptions {
-  abilities?: AbilitiesTrackerOptions
+/** Ground forces that can be targeted by bombardment */
+const GROUND_FORCE_TYPES: UnitType[] = ['INFANTRY', 'MECH']
+
+/** Valid targets by hit source */
+function getValidTargets(source: HitSource): UnitType[] {
+  switch (source) {
+    case 'COMBAT':
+      return [] // All ships valid (empty = all)
+    case 'AFB':
+      return ['FIGHTER']
+    case 'BOMBARDMENT':
+      return GROUND_FORCE_TYPES
+    case 'SPACE_CANNON':
+      return [] // All ships valid
+  }
 }
 
 /** Main combat state encapsulating both sides */
@@ -31,32 +47,12 @@ export class CombatState {
   ) {
     this.attacker = attacker
     this.defender = defender
-    this.abilities = abilities ?? AbilitiesTracker.create()
-  }
-
-  /** Factory method to create initial combat state */
-  static create(
-    attackerStats: Partial<Record<UnitType, UnitStats>>,
-    attackerCounts: Partial<Record<UnitType, number>>,
-    defenderStats: Partial<Record<UnitType, UnitStats>>,
-    defenderCounts: Partial<Record<UnitType, number>>,
-    options?: CombatStateOptions,
-  ): CombatState {
-    const attackerUnits = createUnitArrays(attackerCounts)
-    const defenderUnits = createUnitArrays(defenderCounts)
-
-    const abilities = AbilitiesTracker.create(options?.abilities)
-
-    return new CombatState(
-      new CombatSideState(attackerStats, attackerUnits),
-      new CombatSideState(defenderStats, defenderUnits),
-      abilities,
-    )
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  triggerEvent(_name: string, _context: unknown) {
-    // TODO: Implement event handling
+    this.abilities =
+      abilities ??
+      AbilitiesTracker.create({
+        attacker: { abilities: [] },
+        defender: { abilities: [] },
+      })
   }
 
   /** Collect dice for a side and source */
@@ -76,6 +72,7 @@ export class CombatState {
   ): StateWithProbability[] {
     const attackerDist = getCombinedDiceDistribution(attackerDice)
     const defenderDist = getCombinedDiceDistribution(defenderDice)
+    const validTargets = getValidTargets(source)
 
     const results: StateWithProbability[] = []
 
@@ -86,8 +83,16 @@ export class CombatState {
 
         let newState = this.clone()
         // Attacker hits go to defender, defender hits go to attacker
-        newState = newState.addHitsToSide('defender', source, attOutcome.hits)
-        newState = newState.addHitsToSide('attacker', source, defOutcome.hits)
+        newState = newState.addHitsToSide(
+          'defender',
+          attOutcome.hits,
+          validTargets,
+        )
+        newState = newState.addHitsToSide(
+          'attacker',
+          defOutcome.hits,
+          validTargets,
+        )
 
         results.push({
           state: newState,
@@ -103,12 +108,12 @@ export class CombatState {
   /** Add hits to a side's hit pool */
   addHitsToSide(
     side: CombatSide,
-    source: HitSource,
     hits: number,
+    validTargets: UnitType[],
   ): CombatState {
     if (hits === 0) return this
 
-    const newSideState = this[side].addHits(source, hits)
+    const newSideState = this[side].addHits(hits, validTargets)
     const [attacker, defender] =
       side === 'attacker'
         ? [newSideState, this.defender]
@@ -117,7 +122,7 @@ export class CombatState {
     return new CombatState(attacker, defender, this.abilities)
   }
 
-  /** Assign hits from pools for both sides, optionally filtering by source */
+  /** Assign hits from pools for both sides */
   assignHits(): CombatState {
     this.abilities.runAbilities('BEFORE_ASSIGN_HITS', this)
 
@@ -179,23 +184,8 @@ export class CombatState {
   }
 }
 
-function createUnitArrays(
-  counts: Partial<Record<UnitType, number>>,
-): Partial<Record<UnitType, Unit[]>> {
-  const units: Partial<Record<UnitType, Unit[]>> = {}
-
-  for (const [type, count] of Object.entries(counts)) {
-    if (count && count > 0) {
-      units[type as UnitType] = Array.from({ length: count }, () => ({}))
-    }
-  }
-
-  return units
-}
-
 function getSideHash(side: CombatSideState): string {
   const parts: string[] = []
-
   const sortedTypes = Object.keys(side.units).sort()
 
   for (const type of sortedTypes) {
