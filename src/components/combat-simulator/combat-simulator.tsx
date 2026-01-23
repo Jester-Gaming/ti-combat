@@ -4,7 +4,12 @@ import { useCallback, useMemo } from 'react'
 import { useImmer } from 'use-immer'
 
 import { CombatEngine, flattenTree } from '@/combat'
-import { nonEuclideanShielding, sustainDamage } from '@/combat/abilities'
+import {
+  nonEuclideanShielding,
+  participatingUnits,
+  sustainDamage,
+  unitPriority,
+} from '@/combat/abilities'
 import { AbilitiesPanel } from '@/components/abilities-panel'
 import { BattleCard } from '@/components/battle-card'
 import { GlassCard } from '@/components/ui/glass-card'
@@ -22,10 +27,15 @@ import {
 import { getSimulationUnits } from '@/utils/get-simulation-units'
 import { getUnitConfig } from '@/utils/get-unit-config'
 
+import { type CombatResult } from '../battle-card/components/combat-result-bar'
 import styles from './combat-simulator.module.css'
-import { type CombatResult } from './components/combat-result-bar'
 
-const availableAbilities = [sustainDamage, nonEuclideanShielding]
+const availableAbilities = [
+  participatingUnits,
+  unitPriority,
+  sustainDamage,
+  nonEuclideanShielding,
+]
 
 function createInitialUnits(): Record<UnitType, UnitState> {
   return UNIT_TYPES.reduce(

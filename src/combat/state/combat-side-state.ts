@@ -4,7 +4,7 @@ import type { Unit } from '../types'
 import type { HitPool, HitSource } from './hit-pool'
 import { getValidTargets } from './hit-pool'
 
-const UNIT_SACRIFICE_ORDER: UnitType[] = [
+export const DEFAULT_UNIT_SACRIFICE_ORDER: UnitType[] = [
   'FIGHTER',
   'INFANTRY',
   'DESTROYER',
@@ -21,31 +21,15 @@ export class CombatSideState {
   readonly stats: Partial<Record<UnitType, UnitStats>>
   private readonly _units: Partial<Record<UnitType, Unit[]>>
   private readonly _hitPools: HitPool[]
-  private readonly _participatingUnits: Set<UnitType>
 
   constructor(
     stats: Partial<Record<UnitType, UnitStats>>,
     units: Partial<Record<UnitType, Unit[]>>,
     hitPools: HitPool[] = [],
-    participatingUnits?: Set<UnitType>,
   ) {
     this.stats = stats
     this._units = units
     this._hitPools = hitPools
-    this._participatingUnits =
-      participatingUnits ?? this.computeParticipatingUnits(units)
-  }
-
-  private computeParticipatingUnits(
-    units: Partial<Record<UnitType, Unit[]>>,
-  ): Set<UnitType> {
-    const participating = new Set<UnitType>()
-    for (const [type, unitList] of Object.entries(units)) {
-      if (unitList && unitList.length > 0) {
-        participating.add(type as UnitType)
-      }
-    }
-    return participating
   }
 
   get units(): Partial<Record<UnitType, Unit[]>> {
@@ -54,10 +38,6 @@ export class CombatSideState {
 
   get hitPools(): readonly HitPool[] {
     return this._hitPools
-  }
-
-  get participatingUnits(): ReadonlySet<UnitType> {
-    return this._participatingUnits
   }
 
   /** Sum of all pending hits across all pools */
@@ -72,13 +52,16 @@ export class CombatSideState {
     }
   }
 
-  /** Collect dice for a specific combat phase */
-  collectDice(source: HitSource): DieValue[] {
+  /** Collect dice for a specific combat phase, filtered by participating units */
+  collectDice(
+    source: HitSource,
+    participatingUnits: ReadonlySet<UnitType>,
+  ): DieValue[] {
     const diceByHitValue = new Map<number, number>()
 
     for (const [type, units] of Object.entries(this._units)) {
       if (!units || units.length === 0) continue
-      if (!this._participatingUnits.has(type as UnitType)) continue
+      if (!participatingUnits.has(type as UnitType)) continue
 
       const stats = this.stats[type as keyof typeof this.stats]
       if (!stats) continue
@@ -105,22 +88,28 @@ export class CombatSideState {
     const validTargets = getValidTargets(source)
     const newPool: HitPool = { source, hits, validTargets }
 
-    return new CombatSideState(
-      this.stats,
-      this._units,
-      [...this._hitPools, newPool],
-      this._participatingUnits,
-    )
+    return new CombatSideState(this.stats, this._units, [
+      ...this._hitPools,
+      newPool,
+    ])
   }
 
-  /** Assign hits from pools, optionally filtering by source */
-  assignHits(): CombatSideState {
+  /** Assign hits from pools, filtered by participating units */
+  assignHits(
+    participatingUnits: ReadonlySet<UnitType>,
+    unitPriority?: UnitType[],
+  ): CombatSideState {
     const poolsToProcess = this._hitPools
 
     if (poolsToProcess.length === 0) {
       return this
     }
 
+    // Only consider participating units for hit assignment
+    const baseOrder = unitPriority ?? DEFAULT_UNIT_SACRIFICE_ORDER
+    const sacrificeOrder = baseOrder.filter(type =>
+      participatingUnits.has(type),
+    )
     let currentUnits = { ...this._units }
 
     for (const pool of poolsToProcess) {
@@ -128,6 +117,8 @@ export class CombatSideState {
         currentUnits,
         pool.hits,
         pool.validTargets,
+        sacrificeOrder,
+        participatingUnits,
       )
       currentUnits = result.units
     }
@@ -140,28 +131,26 @@ export class CombatSideState {
       }
     }
 
-    return new CombatSideState(
-      this.stats,
-      cleanedUnits,
-      [],
-      this._participatingUnits,
-    )
+    return new CombatSideState(this.stats, cleanedUnits, [])
   }
 
   private destroyUnitsFromPool(
     units: Partial<Record<UnitType, Unit[]>>,
     hits: number,
     validTargets: UnitType[],
+    sacrificeOrder: UnitType[],
+    participatingUnits: ReadonlySet<UnitType>,
   ): { units: Partial<Record<UnitType, Unit[]>>; remainingHits: number } {
     if (hits <= 0) return { units, remainingHits: 0 }
 
     const targetSet = validTargets.length > 0 ? new Set(validTargets) : null
 
-    // Build list of destroyable units in sacrifice order
+    // Build list of destroyable units in sacrifice order (only participating units)
     const destroyable: Array<{ type: UnitType }> = []
 
-    for (const type of UNIT_SACRIFICE_ORDER) {
+    for (const type of sacrificeOrder) {
       if (targetSet && !targetSet.has(type)) continue
+      if (!participatingUnits.has(type)) continue
       const typeUnits = units[type]
       if (!typeUnits) continue
 
@@ -203,15 +192,17 @@ export class CombatSideState {
       this.stats,
       structuredClone(this._units),
       structuredClone(this._hitPools),
-      new Set(this._participatingUnits),
     )
   }
 
-  /** Count total units */
-  countUnits(): number {
+  /** Count total units, optionally filtered by participating units */
+  countUnits(participatingUnits?: ReadonlySet<UnitType>): number {
     let total = 0
-    for (const units of Object.values(this._units)) {
-      if (units) total += units.length
+    for (const [type, units] of Object.entries(this._units)) {
+      if (!units) continue
+      if (participatingUnits && !participatingUnits.has(type as UnitType))
+        continue
+      total += units.length
     }
     return total
   }

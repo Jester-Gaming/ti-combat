@@ -15,6 +15,18 @@ function hasUI(ability: AnyAbility): boolean {
   return ability.enableUI === true || (ability.uiConfig?.length ?? 0) > 0
 }
 
+const CATEGORY_ORDER: Record<string, number> = {
+  GENERAL: 0,
+  FACTION: 1,
+}
+
+function compareCategories(a: string, b: string): number {
+  const orderA = CATEGORY_ORDER[a] ?? Infinity
+  const orderB = CATEGORY_ORDER[b] ?? Infinity
+  if (orderA !== orderB) return orderA - orderB
+  return a.localeCompare(b)
+}
+
 export function AbilitiesPanel({
   abilities,
   params,
@@ -26,7 +38,9 @@ export function AbilitiesPanel({
     groupBy(a => a.category),
   )
 
-  const categories = pipe(groupedAbilities, keys(), arr => arr.sort())
+  const categories = pipe(groupedAbilities, keys(), arr =>
+    arr.sort(compareCategories),
+  )
 
   return (
     <div className={styles.container}>

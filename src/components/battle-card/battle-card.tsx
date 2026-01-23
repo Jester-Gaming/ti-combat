@@ -2,12 +2,6 @@ import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { Fragment } from 'react'
 
-import { FactionSelect } from '@/components/battle-card/components/faction-select'
-import { UnitRowDual } from '@/components/battle-card/components/unit-row-dual'
-import {
-  type CombatResult,
-  CombatResultBar,
-} from '@/components/combat-simulator/components/combat-result-bar'
 import { GlassCard } from '@/components/ui/glass-card'
 import { GlowText } from '@/components/ui/glow-text'
 import {
@@ -20,6 +14,12 @@ import {
 import type { UnitConfig } from '@/utils/get-unit-config'
 
 import styles from './battle-card.module.css'
+import {
+  type CombatResult,
+  CombatResultBar,
+} from './components/combat-result-bar'
+import { FactionSelect } from './components/faction-select'
+import { UnitRowDual } from './components/unit-row-dual'
 
 interface BattleCardProps {
   battle: BattleState

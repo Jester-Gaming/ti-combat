@@ -11,14 +11,38 @@
   border-color: hsl(var(--side-color) / 30%);
 }
 
+.header {
+  @apply flex items-center gap-2;
+}
+
+.headerButton {
+  @apply flex flex-1 cursor-pointer items-center gap-1 rounded p-0 text-left transition-colors;
+  background: transparent;
+  border: none;
+}
+
+.headerButton:disabled {
+  cursor: default;
+}
+
+.headerButton:not(:disabled):hover .title {
+  color: hsl(var(--side-color));
+}
+
+.headerButton:not(:disabled):hover .collapseIcon {
+  color: hsl(var(--side-color));
+}
+
 .title {
   @apply text-xs font-medium tracking-wide;
   font-family: var(--font-heading);
   color: hsl(var(--muted-foreground));
+  transition: color 0.15s;
 }
 
-.headerLabel {
-  @apply flex cursor-pointer items-center gap-2;
+.collapseIcon {
+  @apply flex h-4 w-4 shrink-0 items-center justify-center transition-colors;
+  color: hsl(var(--muted-foreground) / 60%);
 }
 
 .configItems {
@@ -27,6 +51,10 @@
 
 .configItemLabel {
   @apply flex cursor-pointer items-center gap-2;
+}
+
+.configItemGroup {
+  @apply flex flex-col gap-1;
 }
 
 .configItemText {

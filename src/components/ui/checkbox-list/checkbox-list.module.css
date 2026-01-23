@@ -1,0 +1,35 @@
+@reference "tailwindcss";
+
+.list {
+  @apply flex flex-col gap-1;
+}
+
+.item {
+  --checkbox-color: var(--side-color);
+
+  @apply flex cursor-pointer items-center gap-2 rounded border px-2 py-1 text-[11px];
+  border-color: hsl(var(--side-color) / 15%);
+  background-color: hsl(var(--side-color) / 5%);
+  color: hsl(var(--muted-foreground));
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+}
+
+.checkboxWrapper {
+  @apply flex h-4 w-4 shrink-0 items-center justify-center;
+}
+
+.item:hover {
+  border-color: hsl(var(--side-color) / 30%);
+  background-color: hsl(var(--side-color) / 10%);
+}
+
+.selected {
+  border-color: hsl(var(--side-color) / 40%);
+  background-color: hsl(var(--side-color) / 12%);
+}
+
+.label {
+  @apply flex-1;
+}

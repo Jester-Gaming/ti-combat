@@ -359,8 +359,9 @@ describe('CombatSideState', () => {
         { FIGHTER: fighterStats, CRUISER: cruiserStats },
         { FIGHTER: [{}, {}], CRUISER: [{}, {}] },
       )
+      const participating = new Set(['FIGHTER', 'CRUISER'] as const)
       const withHits = side.addHits('COMBAT', 2)
-      const result = withHits.assignHits()
+      const result = withHits.assignHits(participating)
 
       expect(result.units.FIGHTER).toBeUndefined()
       expect(result.units.CRUISER).toHaveLength(2)
@@ -369,8 +370,9 @@ describe('CombatSideState', () => {
     it('preserves stats reference', () => {
       const stats = { FIGHTER: fighterStats }
       const side = new CombatSideState(stats, { FIGHTER: [{}, {}] })
+      const participating = new Set(['FIGHTER'] as const)
       const withHits = side.addHits('COMBAT', 1)
-      const result = withHits.assignHits()
+      const result = withHits.assignHits(participating)
 
       expect(result.stats).toBe(stats)
     })

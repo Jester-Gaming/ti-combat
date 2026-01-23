@@ -2,8 +2,8 @@ export {
   AbilitiesTracker,
   type AbilitiesTrackerOptions,
 } from './abilities-tracker'
+export * from './general'
 export { nonEuclideanShielding } from './non-euclidean-shielding'
-export { sustainDamage } from './sustain-damage'
 export type {
   Ability,
   AbilityContext,
@@ -12,5 +12,8 @@ export type {
   AbilityTiming,
   AnyAbility,
   SideAbilities,
+  UIConfigCheckboxList,
   UIConfigItem,
+  UIConfigListItem,
+  UIConfigOrderList,
 } from './types'

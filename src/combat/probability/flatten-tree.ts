@@ -1,3 +1,5 @@
+import type { UnitType } from '@/types'
+
 import type {
   CombatOutcome,
   CombatSide,
@@ -55,10 +57,18 @@ export function flattenTree(root: ProbabilityNode): CombatOutcome[] {
       return cached
     }
 
-    // Leaf node - extract survivors for performance
+    // Leaf node - extract survivors (only participating units)
     if (node.children.length === 0) {
-      const attackerSurvivors = extractSurvivors(node.state.attacker.units)
-      const defenderSurvivors = extractSurvivors(node.state.defender.units)
+      const attackerParticipating = node.state.getParticipatingUnits('attacker')
+      const defenderParticipating = node.state.getParticipatingUnits('defender')
+      const attackerSurvivors = extractSurvivors(
+        node.state.attacker.units,
+        attackerParticipating,
+      )
+      const defenderSurvivors = extractSurvivors(
+        node.state.defender.units,
+        defenderParticipating,
+      )
       const attackerCount = countSurvivors(attackerSurvivors)
       const defenderCount = countSurvivors(defenderSurvivors)
 
@@ -155,9 +165,11 @@ export function flattenTree(root: ProbabilityNode): CombatOutcome[] {
 
 function extractSurvivors(
   units: Partial<Record<string, unknown[]>>,
+  participatingUnits: ReadonlySet<UnitType>,
 ): SurvivorSide {
   const survivors: SurvivorSide = {}
   for (const unitType in units) {
+    if (!participatingUnits.has(unitType as UnitType)) continue
     const unitList = units[unitType]
     if (unitList && unitList.length > 0) {
       survivors[unitType] = unitList.length

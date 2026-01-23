@@ -1,6 +1,5 @@
 import type { CombatSideState } from '../state/combat-side-state'
 import type { CombatState } from '../state/combat-state'
-import type { CombatSide } from '../types'
 
 export type AbilityTiming = 'SETUP' | 'BEFORE_ASSIGN_HITS'
 
@@ -11,7 +10,6 @@ export interface SideAbilities {
 }
 
 export interface AbilityContext {
-  side: CombatSide
   my: CombatSideState
   opponent: CombatSideState
   state: CombatState
@@ -27,11 +25,44 @@ export interface AbilityInvoke<TParams = Record<string, unknown>> {
   call: (ctx: AbilityContext, params: TParams) => void
 }
 
-export interface UIConfigItem<TParams = Record<string, unknown>> {
+export interface UIConfigItemBase<TParams = Record<string, unknown>> {
   key: keyof TParams // Property name in params (e.g., 'riskDirectHit')
   label: string // Display label (e.g., 'Risk Direct Hit?')
-  type: 'checkbox' // UI control type (only checkbox for now)
 }
+
+export interface UIConfigCheckbox<
+  TParams = Record<string, unknown>,
+> extends UIConfigItemBase<TParams> {
+  type: 'checkbox'
+}
+
+export interface UIConfigListItem {
+  label: string
+  value: string
+}
+
+export interface UIConfigOrderList<
+  TParams = Record<string, unknown>,
+> extends UIConfigItemBase<TParams> {
+  type: 'order-list'
+  items: readonly UIConfigListItem[]
+}
+
+export interface UIConfigCheckboxList<
+  TParams = Record<string, unknown>,
+> extends UIConfigItemBase<TParams> {
+  type: 'checkbox-list'
+  items: readonly UIConfigListItem[]
+}
+
+export type UIConfigItem<TParams = Record<string, unknown>> =
+  | UIConfigCheckbox<TParams>
+  | UIConfigOrderList<TParams>
+  | UIConfigCheckboxList<TParams>
+
+export type UIConfig<Params = Record<string, unknown>> =
+  | UIConfigItem<Params>[]
+  | ((params: Params) => UIConfigItem<Params>[])
 
 export interface Ability<Params = Record<string, unknown>> {
   key: string
@@ -39,7 +70,8 @@ export interface Ability<Params = Record<string, unknown>> {
   category: string
   params?: Params
   enableUI?: boolean // Show enable checkbox in header, controls ENABLED param
-  uiConfig?: UIConfigItem<Params>[]
+  defaultCollapsed?: boolean // Start with config items collapsed
+  uiConfig?: UIConfig<Params>
   invoke: AbilityInvoke<Params>[]
 }
 

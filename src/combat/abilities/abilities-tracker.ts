@@ -223,7 +223,6 @@ export class AbilitiesTracker {
       side === 'attacker' ? 'defender' : 'attacker'
 
     return {
-      side,
       my: state[side],
       opponent: state[opponentSide],
       state,

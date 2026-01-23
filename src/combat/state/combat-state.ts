@@ -61,7 +61,8 @@ export class CombatState {
 
   /** Collect dice for a side and source */
   collectDice(side: CombatSide, source: HitSource): DieValue[] {
-    return this[side].collectDice(source)
+    const participatingUnits = this.getParticipatingUnits(side)
+    return this[side].collectDice(source, participatingUnits)
   }
 
   /**
@@ -119,10 +120,39 @@ export class CombatState {
   /** Assign hits from pools for both sides, optionally filtering by source */
   assignHits(): CombatState {
     this.abilities.runAbilities('BEFORE_ASSIGN_HITS', this)
-    const newAttacker = this.attacker.assignHits()
-    const newDefender = this.defender.assignHits()
+
+    const attackerParticipating = this.getParticipatingUnits('attacker')
+    const defenderParticipating = this.getParticipatingUnits('defender')
+    const attackerPriority = this.getUnitPriority('attacker')
+    const defenderPriority = this.getUnitPriority('defender')
+
+    const newAttacker = this.attacker.assignHits(
+      attackerParticipating,
+      attackerPriority,
+    )
+    const newDefender = this.defender.assignHits(
+      defenderParticipating,
+      defenderPriority,
+    )
 
     return new CombatState(newAttacker, newDefender, this.abilities)
+  }
+
+  /** Get participating units from PARTICIPATING_UNITS ability */
+  getParticipatingUnits(side: CombatSide): ReadonlySet<UnitType> {
+    const ability = this.abilities.forSide(side).get('PARTICIPATING_UNITS')
+    if (!ability) {
+      // Fallback: all units with count > 0 are participating
+      return new Set(Object.keys(this[side].units) as UnitType[])
+    }
+    return new Set(ability.params.space as UnitType[])
+  }
+
+  /** Get unit priority from UNIT_PRIORITY ability if present */
+  private getUnitPriority(side: CombatSide): UnitType[] | undefined {
+    const ability = this.abilities.forSide(side).get('UNIT_PRIORITY')
+    if (!ability) return undefined
+    return ability.params.unitPriority as UnitType[] | undefined
   }
 
   /** Create a deep clone of this state */
@@ -134,10 +164,12 @@ export class CombatState {
     )
   }
 
-  /** Check if combat is finished (one or both sides eliminated) */
+  /** Check if combat is finished (one or both sides' participating units eliminated) */
   isFinished(): boolean {
-    const attackerAlive = this.attacker.countUnits() > 0
-    const defenderAlive = this.defender.countUnits() > 0
+    const attackerParticipating = this.getParticipatingUnits('attacker')
+    const defenderParticipating = this.getParticipatingUnits('defender')
+    const attackerAlive = this.attacker.countUnits(attackerParticipating) > 0
+    const defenderAlive = this.defender.countUnits(defenderParticipating) > 0
     return !attackerAlive || !defenderAlive
   }
 

@@ -2,7 +2,7 @@ import { type FactionKey, UNIT_TYPES, type UnitType } from '@/types'
 
 import { getFactionUnitConfig } from './get-faction-unit-config'
 
-const UNIT_DISPLAY_NAMES: Record<UnitType, string> = {
+export const UNIT_DISPLAY_NAMES: Record<UnitType, string> = {
   FLAGSHIP: 'Flagship',
   WAR_SUN: 'War Sun',
   DREADNOUGHT: 'Dreadnought',
@@ -14,6 +14,25 @@ const UNIT_DISPLAY_NAMES: Record<UnitType, string> = {
   INFANTRY: 'Infantry',
   PDS: 'PDS',
   SPACE_DOCK: 'Space Dock',
+}
+
+export interface UnitListItem {
+  label: string
+  value: UnitType
+}
+
+/** Get all unit types as list items with labels */
+export const UNIT_LIST_ITEMS: UnitListItem[] = UNIT_TYPES.map(type => ({
+  label: UNIT_DISPLAY_NAMES[type],
+  value: type,
+}))
+
+/** Get unit list items for specific unit types */
+export function getUnitListItems(units: readonly UnitType[]): UnitListItem[] {
+  return units.map(type => ({
+    label: UNIT_DISPLAY_NAMES[type],
+    value: type,
+  }))
 }
 
 export interface UnitConfig {

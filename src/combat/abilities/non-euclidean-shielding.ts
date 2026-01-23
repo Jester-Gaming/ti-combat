@@ -22,7 +22,7 @@ export const nonEuclideanShielding: Ability<Params> = {
         const sustainDamage = ctx.abilities.my.get('SUSTAIN_DAMAGE')
         if (sustainDamage) {
           sustainDamage.modifyParams({
-            HIT_PER_SUSTAIN: 2,
+            hitPerSustain: 2,
           })
         }
       },
