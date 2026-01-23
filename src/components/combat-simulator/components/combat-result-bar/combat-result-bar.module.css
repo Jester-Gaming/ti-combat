@@ -1,0 +1,97 @@
+@reference "tailwindcss";
+
+.wrapper {
+  @apply mt-8;
+}
+
+.divider {
+  @apply mb-4 flex items-center gap-4;
+}
+
+.dividerLine {
+  @apply h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent;
+}
+
+.dividerLabel {
+  @apply text-xs tracking-widest uppercase;
+  font-family: var(--font-heading);
+  color: hsl(var(--muted-foreground));
+}
+
+.emptyState {
+  @apply flex h-14 items-center justify-center rounded-lg text-sm;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+}
+
+:global(.dark) .emptyState {
+  background: hsl(222deg 47% 9% / 85%);
+  border: 1px solid hsl(210deg 40% 96% / 10%);
+  backdrop-filter: blur(12px);
+}
+
+.emptyStateText {
+  @apply tracking-wide;
+  font-family: var(--font-heading);
+}
+
+.resultBar {
+  @apply flex h-14 overflow-hidden rounded-lg border border-white/10;
+}
+
+.segment {
+  @apply flex items-center justify-center transition-all duration-500;
+}
+
+.segmentAttacker {
+  @apply border-r border-[hsla(186,100%,50%,0.3)] bg-gradient-to-b from-[hsla(186,100%,50%,0.3)] to-[hsla(186,100%,40%,0.2)];
+}
+
+.segmentDraw {
+  @apply bg-gradient-to-b from-white/10 to-white/5;
+}
+
+.segmentDefender {
+  @apply border-l border-[hsla(32,95%,55%,0.3)] bg-gradient-to-b from-[hsla(32,95%,55%,0.3)] to-[hsla(32,95%,45%,0.2)];
+}
+
+.segmentContent {
+  @apply flex flex-col items-center;
+}
+
+.percentage {
+  @apply text-lg font-bold tabular-nums;
+  font-family: var(--font-heading);
+}
+
+.percentageAttacker {
+  color: hsl(var(--attacker));
+}
+
+:global(.dark) .percentageAttacker {
+  text-shadow: 0 0 10px hsl(var(--attacker) / 50%);
+}
+
+.percentageDraw {
+  color: hsl(var(--muted-foreground));
+}
+
+.percentageDefender {
+  color: hsl(var(--defender));
+}
+
+:global(.dark) .percentageDefender {
+  text-shadow: 0 0 10px hsl(var(--defender) / 50%);
+}
+
+.label {
+  @apply text-[10px] tracking-widest uppercase opacity-70;
+  font-family: var(--font-heading);
+}
+
+.labelDraw {
+  @apply text-[10px] tracking-widest uppercase opacity-70;
+  font-family: var(--font-heading);
+  color: hsl(var(--muted-foreground));
+}

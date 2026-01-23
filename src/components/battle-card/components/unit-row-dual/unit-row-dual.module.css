@@ -1,0 +1,44 @@
+@reference "tailwindcss";
+
+.row {
+  @apply relative flex items-center justify-between gap-4 rounded px-2 py-2 transition-all;
+}
+
+.row::before {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: '';
+  background: linear-gradient(
+    90deg,
+    hsl(var(--attacker) / 0%) 0%,
+    hsl(var(--muted)) 50%,
+    hsl(var(--defender) / 0%) 100%
+  );
+  border-radius: inherit;
+  opacity: 0%;
+  transition: opacity 0.2s ease;
+}
+
+.row:hover::before {
+  opacity: 50%;
+}
+
+:global(.dark) .row::before {
+  background: linear-gradient(
+    90deg,
+    hsl(186deg 100% 50% / 0%) 0%,
+    hsl(186deg 100% 50% / 3%) 50%,
+    hsl(32deg 95% 55% / 0%) 100%
+  );
+}
+
+:global(.dark) .row:hover::before {
+  opacity: 100%;
+}
+
+.unitName {
+  @apply min-w-28 text-center text-sm font-medium tracking-wide uppercase;
+  font-family: var(--font-heading);
+  color: hsl(var(--muted-foreground));
+}

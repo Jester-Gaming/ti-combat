@@ -1,5 +1,5 @@
+export { getCombinedDiceDistribution } from './get-combined-dice-distribution'
 export {
-  getDiceDistribution,
   type DiceRollOutcome,
-} from './getDiceDistribution'
-export { getCombinedDiceDistribution } from './getCombinedDiceDistribution'
+  getDiceDistribution,
+} from './get-dice-distribution'

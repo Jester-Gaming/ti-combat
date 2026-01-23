@@ -1,9 +1,9 @@
-import type { CombatState as CombatStateClass } from './state/CombatState'
+import type { CombatState as CombatStateClass } from './state/combat-state'
 
 // Re-export state classes and types
-export { CombatState, type StateWithProbability } from './state/CombatState'
-export { CombatSideState } from './state/CombatSideState'
-export type { HitSource, HitPool } from './state/HitPool'
+export { CombatSideState } from './state/combat-side-state'
+export { CombatState, type StateWithProbability } from './state/combat-state'
+export type { HitPool, HitSource } from './state/hit-pool'
 
 export type CombatSide = 'attacker' | 'defender'
 

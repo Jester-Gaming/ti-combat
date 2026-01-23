@@ -1,0 +1,64 @@
+@reference "tailwindcss";
+
+.battleCard {
+  @apply min-w-0 flex-1 rounded-lg p-6;
+}
+
+.factionSelectors {
+  @apply mb-6 grid grid-cols-2 gap-8;
+}
+
+.factionSelector {
+  /* Container for faction selector */
+}
+
+.factionLabel {
+  @apply mb-2 block text-center text-xs font-semibold tracking-widest uppercase;
+  font-family: var(--font-heading);
+}
+
+.divider {
+  @apply mb-6 flex items-center gap-4;
+}
+
+.dividerLineAttacker {
+  @apply h-px flex-1 bg-gradient-to-r from-transparent via-[hsla(186,100%,50%,0.3)] to-transparent;
+}
+
+.dividerLineDefender {
+  @apply h-px flex-1 bg-gradient-to-r from-transparent via-[hsla(32,95%,55%,0.3)] to-transparent;
+}
+
+.dividerLabel {
+  @apply text-xs tracking-widest uppercase;
+  font-family: var(--font-heading);
+  color: hsl(var(--muted-foreground));
+}
+
+.unitRows {
+  @apply space-y-1;
+}
+
+.sectionDivider {
+  @apply my-3 flex items-center gap-3;
+}
+
+.sectionDividerLine {
+  @apply h-px flex-1;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted-foreground) / 0%) 0%,
+    hsl(var(--muted-foreground) / 30%) 50%,
+    hsl(var(--muted-foreground) / 0%) 100%
+  );
+}
+
+.sectionDividerLabel {
+  @apply text-[10px] tracking-widest uppercase;
+  font-family: var(--font-heading);
+  color: hsl(var(--muted-foreground) / 60%);
+}
+
+.combatResult {
+  /* Container for combat result */
+}

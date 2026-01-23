@@ -1,1 +1,1 @@
-export { flattenTree } from './flattenTree'
+export { flattenTree } from './flatten-tree'

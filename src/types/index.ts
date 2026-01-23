@@ -1,22 +1,14 @@
 import baseUnits from '@/data/base_units.json'
 import factions from '@/data/faction'
 
-// Generate UnitType from base_units.json keys + faction-specific units
-const allUnitTypes = new Set<string>(Object.keys(baseUnits))
-
-// Add faction-specific unit types (FLAGSHIP, MECH)
-Object.values(factions).forEach(faction => {
-  Object.keys(faction.units).forEach(unitType => allUnitTypes.add(unitType))
-})
-
 export type UnitType = keyof typeof baseUnits | 'FLAGSHIP' | 'MECH'
 
 export const UNIT_TYPES: UnitType[] = [
   'FLAGSHIP',
   'WAR_SUN',
   'DREADNOUGHT',
-  'CRUISER',
   'CARRIER',
+  'CRUISER',
   'DESTROYER',
   'FIGHTER',
   'MECH',

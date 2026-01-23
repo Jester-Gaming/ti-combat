@@ -1,0 +1,29 @@
+@reference "tailwindcss";
+
+.wrapper {
+  @apply inline-flex cursor-pointer;
+}
+
+.hiddenInput {
+  @apply sr-only;
+}
+
+.hiddenInput:focus-visible + .checkbox {
+  outline: 2px solid hsl(var(--checkbox-color, var(--foreground)) / 50%);
+  outline-offset: 2px;
+}
+
+.checkbox {
+  @apply flex h-4 w-4 shrink-0 items-center justify-center rounded border border-white/20 bg-white/5 transition-all;
+  user-select: none;
+}
+
+.checked {
+  background-color: hsl(var(--checkbox-color, var(--foreground)) / 20%);
+  border-color: hsl(var(--checkbox-color, var(--foreground)));
+}
+
+.checkIcon {
+  @apply h-3 w-3;
+  color: hsl(var(--checkbox-color, var(--foreground)));
+}

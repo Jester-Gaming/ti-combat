@@ -1,0 +1,29 @@
+@reference "tailwindcss";
+
+.layout {
+  @apply mx-auto flex w-full max-w-5xl flex-1 items-start gap-6;
+}
+
+.sidePanel {
+  @apply w-52 shrink-0 rounded-lg p-4;
+}
+
+.sidePanelAttacker {
+  --side-color: var(--attacker);
+  border-color: hsl(var(--attacker) / 30%);
+}
+
+.sidePanelDefender {
+  --side-color: var(--defender);
+  border-color: hsl(var(--defender) / 30%);
+}
+
+.sidePanelHeader {
+  @apply mb-4 border-b pb-3;
+  border-color: hsl(var(--side-color) / 30%);
+}
+
+.sidePanelTitle {
+  @apply text-center text-sm font-semibold tracking-widest uppercase;
+  font-family: var(--font-heading);
+}

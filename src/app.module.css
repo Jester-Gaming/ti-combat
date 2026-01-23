@@ -1,0 +1,151 @@
+@reference "tailwindcss";
+
+/* Starfield background */
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 30%;
+  }
+  50% {
+    opacity: 100%;
+  }
+}
+
+.starfield {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: none;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+:global(.dark) .starfield {
+  display: block;
+}
+
+.starfield::before,
+.starfield::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgb(255 255 255 / 80%), transparent),
+    radial-gradient(1px 1px at 30% 40%, rgb(255 255 255 / 60%), transparent),
+    radial-gradient(2px 2px at 50% 10%, rgb(255 255 255 / 90%), transparent),
+    radial-gradient(1px 1px at 70% 60%, rgb(255 255 255 / 50%), transparent),
+    radial-gradient(1px 1px at 90% 30%, rgb(255 255 255 / 70%), transparent),
+    radial-gradient(2px 2px at 15% 80%, rgb(255 255 255 / 80%), transparent),
+    radial-gradient(1px 1px at 45% 90%, rgb(255 255 255 / 60%), transparent),
+    radial-gradient(1px 1px at 85% 70%, rgb(255 255 255 / 50%), transparent);
+  background-size: 400px 400px;
+  animation: twinkle 4s ease-in-out infinite;
+}
+
+.starfield::after {
+  background-image:
+    radial-gradient(1px 1px at 25% 15%, rgb(255 255 255 / 70%), transparent),
+    radial-gradient(2px 2px at 55% 35%, rgb(255 255 255 / 60%), transparent),
+    radial-gradient(1px 1px at 75% 55%, rgb(255 255 255 / 80%), transparent),
+    radial-gradient(1px 1px at 35% 75%, rgb(255 255 255 / 50%), transparent),
+    radial-gradient(
+      1.5px 1.5px at 95% 25%,
+      rgb(255 255 255 / 90%),
+      transparent
+    ),
+    radial-gradient(1px 1px at 5% 95%, rgb(255 255 255 / 60%), transparent);
+  background-size: 350px 350px;
+  animation: twinkle 6s ease-in-out infinite reverse;
+  animation-delay: -2s;
+}
+
+/* Nebula gradient overlay */
+.nebulaOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: none;
+  pointer-events: none;
+}
+
+:global(.dark) .nebulaOverlay {
+  display: block;
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 20% 80%,
+      hsl(270deg 60% 30% / 15%),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 80% 20%,
+      hsl(186deg 60% 30% / 10%),
+      transparent
+    ),
+    radial-gradient(
+      ellipse 100% 60% at 50% 100%,
+      hsl(222deg 50% 10% / 80%),
+      transparent
+    );
+}
+
+/* Animation for page load */
+@keyframes fadeUp {
+  from {
+    opacity: 0%;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 100%;
+    transform: translateY(0);
+  }
+}
+
+.animateFadeUp {
+  animation: fadeUp 0.5s ease-out forwards;
+}
+
+.animateDelay100 {
+  opacity: 0%;
+  animation-delay: 0.1s;
+}
+
+.animateDelay200 {
+  opacity: 0%;
+  animation-delay: 0.2s;
+}
+
+.animateDelay300 {
+  opacity: 0%;
+  animation-delay: 0.3s;
+}
+
+.animateDelay400 {
+  opacity: 0%;
+  animation-delay: 0.4s;
+}
+
+.root {
+  @apply relative min-h-screen overflow-hidden;
+}
+
+.mainContent {
+  @apply relative z-10 flex min-h-screen flex-col px-4 py-6;
+}
+
+.header {
+  @apply mb-8 flex items-center justify-center;
+}
+
+.title {
+  @apply text-lg tracking-wide;
+  font-family: var(--font-heading);
+  color: hsl(var(--muted-foreground));
+}
+
+.themeButton {
+  @apply ml-4 flex h-8 w-8 items-center justify-center rounded;
+}
+
+.themeIcon {
+  @apply h-4 w-4;
+}

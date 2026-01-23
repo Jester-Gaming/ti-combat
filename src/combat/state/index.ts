@@ -1,4 +1,4 @@
-export { CombatState, type StateWithProbability } from './CombatState'
-export { CombatSideState } from './CombatSideState'
-export type { HitSource, HitPool } from './HitPool'
-export { getValidTargets, SHIP_TYPES, GROUND_FORCE_TYPES } from './HitPool'
+export { CombatSideState } from './combat-side-state'
+export { CombatState, type StateWithProbability } from './combat-state'
+export type { HitPool, HitSource } from './hit-pool'
+export { getValidTargets, GROUND_FORCE_TYPES, SHIP_TYPES } from './hit-pool'

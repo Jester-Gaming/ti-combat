@@ -1,0 +1,154 @@
+@reference "tailwindcss";
+
+.side {
+  @apply contents;
+}
+
+.controls {
+  @apply flex items-center gap-1;
+}
+
+/* Attacker: [△] [+] 0 [-] (natural order) */
+
+/* Defender: [-] 0 [+] [△] (reversed) */
+.sideDefender .controls {
+  flex-direction: row-reverse;
+}
+
+.button {
+  @apply flex h-7 w-7 items-center justify-center rounded text-sm font-medium transition-all;
+  position: relative;
+  color: hsl(var(--foreground));
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
+}
+
+.button:hover {
+  background: hsl(var(--muted));
+}
+
+.button:active {
+  transform: scale(0.98);
+}
+
+:global(.dark) .button {
+  background: hsl(222deg 30% 15% / 80%);
+  border: 1px solid hsl(210deg 40% 96% / 15%);
+}
+
+:global(.dark) .button:hover {
+  background: hsl(222deg 30% 20% / 90%);
+}
+
+.sideAttacker .button:hover,
+.sideAttacker .upgradeButton:hover {
+  border-color: hsl(var(--attacker) / 50%);
+}
+
+.sideDefender .button:hover,
+.sideDefender .upgradeButton:hover {
+  border-color: hsl(var(--defender) / 50%);
+}
+
+:global(.dark) .sideAttacker .button:hover,
+:global(.dark) .sideAttacker .upgradeButton:hover {
+  border-color: hsl(186deg 100% 50% / 40%);
+  box-shadow: 0 0 10px hsl(186deg 100% 50% / 20%);
+}
+
+:global(.dark) .sideDefender .button:hover,
+:global(.dark) .sideDefender .upgradeButton:hover {
+  border-color: hsl(32deg 95% 55% / 40%);
+  box-shadow: 0 0 10px hsl(32deg 95% 55% / 20%);
+}
+
+.buttonDisabled {
+  @apply cursor-not-allowed opacity-30;
+}
+
+.upgradeButton {
+  @apply flex h-7 w-7 items-center justify-center rounded text-xs transition-all;
+  position: relative;
+  color: hsl(var(--foreground));
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
+}
+
+.upgradeButton:hover {
+  background: hsl(var(--muted));
+}
+
+.upgradeButton:active {
+  transform: scale(0.98);
+}
+
+:global(.dark) .upgradeButton {
+  background: hsl(222deg 30% 15% / 80%);
+  border: 1px solid hsl(210deg 40% 96% / 15%);
+}
+
+:global(.dark) .upgradeButton:hover {
+  background: hsl(222deg 30% 20% / 90%);
+}
+
+.sideAttacker .upgradeActive {
+  color: hsl(var(--attacker));
+  border-color: hsl(186deg 100% 50% / 50%);
+}
+
+.sideDefender .upgradeActive {
+  color: hsl(var(--defender));
+  border-color: hsl(32deg 95% 55% / 50%);
+}
+
+.upgradePlaceholder {
+  @apply h-7 w-7;
+}
+
+.buttonIcon {
+  @apply h-3 w-3;
+}
+
+.upgradeIcon {
+  @apply h-4 w-4;
+}
+
+.upgradeIconInactive {
+  @apply h-4 w-4 opacity-40;
+}
+
+.countInput {
+  @apply h-7 w-10 rounded px-1 text-center text-sm tabular-nums;
+  font-family: var(--font-heading);
+  color: hsl(var(--foreground));
+  background: hsl(var(--input));
+  border: 1px solid hsl(var(--border));
+  transition: all 0.15s ease;
+  appearance: textfield;
+  appearance: textfield;
+}
+
+.countInput::-webkit-outer-spin-button,
+.countInput::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.countInput:focus {
+  outline: none;
+}
+
+:global(.dark) .countInput {
+  background: hsl(222deg 30% 10% / 80%);
+  border: 1px solid hsl(210deg 40% 96% / 15%);
+}
+
+.sideAttacker .countInput:focus {
+  border-color: hsl(186deg 100% 50% / 50%);
+  box-shadow: 0 0 0 2px hsl(186deg 100% 50% / 15%);
+}
+
+.sideDefender .countInput:focus {
+  border-color: hsl(32deg 95% 55% / 50%);
+  box-shadow: 0 0 0 2px hsl(32deg 95% 55% / 15%);
+}

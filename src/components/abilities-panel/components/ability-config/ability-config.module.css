@@ -1,0 +1,35 @@
+@reference "tailwindcss";
+
+.container {
+  --checkbox-color: var(--side-color);
+
+  @apply rounded border p-2 transition-all;
+  border-color: hsl(var(--side-color) / 15%);
+}
+
+.container:hover {
+  border-color: hsl(var(--side-color) / 30%);
+}
+
+.title {
+  @apply text-xs font-medium tracking-wide;
+  font-family: var(--font-heading);
+  color: hsl(var(--muted-foreground));
+}
+
+.headerLabel {
+  @apply flex cursor-pointer items-center gap-2;
+}
+
+.configItems {
+  @apply mt-2 space-y-2;
+}
+
+.configItemLabel {
+  @apply flex cursor-pointer items-center gap-2;
+}
+
+.configItemText {
+  @apply text-[11px];
+  color: hsl(var(--muted-foreground));
+}

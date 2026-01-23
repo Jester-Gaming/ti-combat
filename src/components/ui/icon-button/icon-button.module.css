@@ -1,0 +1,29 @@
+@reference "tailwindcss";
+
+.button {
+  position: relative;
+  color: hsl(var(--foreground));
+  background: hsl(var(--secondary));
+  border: 1px solid hsl(var(--border));
+  transition: all 0.15s ease;
+}
+
+.button:hover {
+  background: hsl(var(--muted));
+  border-color: hsl(var(--btn-color, var(--border)) / 50%);
+}
+
+.button:active {
+  transform: scale(0.98);
+}
+
+:global(.dark) .button {
+  background: hsl(222deg 30% 15% / 80%);
+  border: 1px solid hsl(210deg 40% 96% / 15%);
+}
+
+:global(.dark) .button:hover {
+  background: hsl(222deg 30% 20% / 90%);
+  border-color: hsl(var(--btn-color, 210 40% 96%) / 40%);
+  box-shadow: 0 0 10px hsl(var(--btn-color, 210 40% 96%) / 20%);
+}

@@ -1,13 +1,13 @@
+import type { CombatSideState } from '../state/combat-side-state'
+import type { CombatState } from '../state/combat-state'
 import type { CombatSide } from '../types'
-import type { CombatSideState } from '../state/CombatSideState'
-import type { CombatState } from '../state/CombatState'
 
 export type AbilityTiming = 'SETUP' | 'BEFORE_ASSIGN_HITS'
 
 /** Per-side abilities accessor for use within ability context */
 export interface SideAbilities {
-  get(name: string): AbilityInstance | undefined
-  has(name: string): boolean
+  get(key: string): AbilityInstance | undefined
+  has(key: string): boolean
 }
 
 export interface AbilityContext {
@@ -27,14 +27,27 @@ export interface AbilityInvoke<TParams = Record<string, unknown>> {
   call: (ctx: AbilityContext, params: TParams) => void
 }
 
-export interface Ability {
-  name: string
-  params?: Record<string, unknown>
-  invoke: AbilityInvoke[]
+export interface UIConfigItem<TParams = Record<string, unknown>> {
+  key: keyof TParams // Property name in params (e.g., 'riskDirectHit')
+  label: string // Display label (e.g., 'Risk Direct Hit?')
+  type: 'checkbox' // UI control type (only checkbox for now)
 }
 
+export interface Ability<Params = Record<string, unknown>> {
+  key: string
+  name: string // Display name for UI
+  category: string
+  params?: Params
+  enableUI?: boolean // Show enable checkbox in header, controls ENABLED param
+  uiConfig?: UIConfigItem<Params>[]
+  invoke: AbilityInvoke<Params>[]
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AnyAbility = Ability<any>
+
 export interface AbilityInstance {
-  readonly name: string
+  readonly key: string
   readonly params: Record<string, unknown>
   readonly invoke: AbilityInvoke[]
   readonly enabled: boolean

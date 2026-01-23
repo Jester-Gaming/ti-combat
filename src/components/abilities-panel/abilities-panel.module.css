@@ -1,0 +1,15 @@
+@reference "tailwindcss";
+
+.container {
+  @apply space-y-4;
+}
+
+.categoryLabel {
+  @apply mb-2 text-[10px] font-semibold tracking-widest uppercase;
+  font-family: var(--font-heading);
+  color: hsl(var(--muted-foreground));
+}
+
+.abilitiesList {
+  @apply space-y-2;
+}
