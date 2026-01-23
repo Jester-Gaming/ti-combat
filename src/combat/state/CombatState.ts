@@ -3,6 +3,7 @@ import type { CombatSide, Unit } from '../types'
 import { getCombinedDiceDistribution } from '../dice'
 import { CombatSideState } from './CombatSideState'
 import type { HitSource } from './HitPool'
+import { AbilitiesTracker, type AbilitiesTrackerOptions } from '../abilities'
 
 /** A state with its probability and hit metadata */
 export interface StateWithProbability {
@@ -11,14 +12,25 @@ export interface StateWithProbability {
   meta?: { attacker: number; defender: number }
 }
 
+/** Options for creating a CombatState */
+export interface CombatStateOptions {
+  abilities?: AbilitiesTrackerOptions
+}
+
 /** Main combat state encapsulating both sides */
 export class CombatState {
   readonly attacker: CombatSideState
   readonly defender: CombatSideState
+  readonly abilities: AbilitiesTracker
 
-  constructor(attacker: CombatSideState, defender: CombatSideState) {
+  constructor(
+    attacker: CombatSideState,
+    defender: CombatSideState,
+    abilities?: AbilitiesTracker,
+  ) {
     this.attacker = attacker
     this.defender = defender
+    this.abilities = abilities ?? new AbilitiesTracker()
   }
 
   /** Factory method to create initial combat state */
@@ -27,14 +39,22 @@ export class CombatState {
     attackerCounts: Partial<Record<UnitType, number>>,
     defenderStats: Partial<Record<UnitType, UnitStats>>,
     defenderCounts: Partial<Record<UnitType, number>>,
+    options?: CombatStateOptions,
   ): CombatState {
     const attackerUnits = createUnitArrays(attackerCounts)
     const defenderUnits = createUnitArrays(defenderCounts)
 
+    const abilities = new AbilitiesTracker(options?.abilities)
+
     return new CombatState(
       new CombatSideState(attackerStats, attackerUnits),
       new CombatSideState(defenderStats, defenderUnits),
+      abilities,
     )
+  }
+
+  triggerEvent(name: string, context: unknown) {
+    console.log('TRIGGER', name, context)
   }
 
   /** Collect dice for a side and source */
@@ -88,22 +108,26 @@ export class CombatState {
     const newSideState = this[side].addHits(source, hits)
 
     return side === 'attacker'
-      ? new CombatState(newSideState, this.defender)
-      : new CombatState(this.attacker, newSideState)
+      ? new CombatState(newSideState, this.defender, this.abilities)
+      : new CombatState(this.attacker, newSideState, this.abilities)
   }
 
-  /** Assign hits from pools for a side, optionally filtering by source */
-  assignHits(side: CombatSide, poolFilter?: HitSource): CombatState {
-    const newSideState = this[side].assignHits(poolFilter)
+  /** Assign hits from pools for both sides, optionally filtering by source */
+  assignHits(): CombatState {
+    this.abilities.runAbilities('BEFORE_ASSIGN_HITS', this)
+    const newAttacker = this.attacker.assignHits()
+    const newDefender = this.defender.assignHits()
 
-    return side === 'attacker'
-      ? new CombatState(newSideState, this.defender)
-      : new CombatState(this.attacker, newSideState)
+    return new CombatState(newAttacker, newDefender, this.abilities)
   }
 
   /** Create a deep clone of this state */
   clone(): CombatState {
-    return new CombatState(this.attacker.clone(), this.defender.clone())
+    return new CombatState(
+      this.attacker.clone(),
+      this.defender.clone(),
+      this.abilities.clone(),
+    )
   }
 
   /** Check if combat is finished (one or both sides eliminated) */

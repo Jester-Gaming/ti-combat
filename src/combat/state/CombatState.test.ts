@@ -196,36 +196,41 @@ describe('CombatState', () => {
   })
 
   describe('assignHits', () => {
-    it('destroys units based on pending hits', () => {
+    it('destroys units based on pending hits for both sides', () => {
       let state = CombatState.create(
         { FIGHTER: fighterStats },
         { FIGHTER: 2 },
         { CRUISER: cruiserStats },
-        { CRUISER: 1 },
+        { CRUISER: 2 },
       )
 
       state = state.addHitsToSide('attacker', 'COMBAT', 1)
-      state = state.assignHits('attacker')
+      state = state.addHitsToSide('defender', 'COMBAT', 1)
+      state = state.assignHits()
 
       expect(state.attacker.units.FIGHTER).toHaveLength(1)
+      expect(state.defender.units.CRUISER).toHaveLength(1)
     })
 
     it('respects AFB pool filter (only targets fighters)', () => {
       let state = CombatState.create(
         { FIGHTER: fighterStats, CRUISER: cruiserStats },
         { FIGHTER: 1, CRUISER: 1 },
-        {},
-        {},
+        { FIGHTER: fighterStats },
+        { FIGHTER: 2 },
       )
 
       state = state.addHitsToSide('attacker', 'AFB', 2)
-      state = state.assignHits('attacker', 'AFB')
+      state = state.addHitsToSide('defender', 'AFB', 1)
+      state = state.assignHits()
 
       // AFB only targets fighters, so cruiser survives
       expect(state.attacker.units.FIGHTER).toBeUndefined()
       expect(state.attacker.units.CRUISER).toHaveLength(1)
-      // 1 hit was applied to fighter, 1 hit remains
-      expect(state.attacker.pendingHits).toBe(1)
+      // Hit pools are cleared after assignHits (remaining hits are lost)
+      expect(state.attacker.pendingHits).toBe(0)
+      // Defender had 2 fighters, 1 hit applied
+      expect(state.defender.units.FIGHTER).toHaveLength(1)
     })
   })
 

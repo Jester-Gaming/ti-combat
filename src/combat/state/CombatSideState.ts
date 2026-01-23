@@ -64,6 +64,13 @@ export class CombatSideState {
     return this._hitPools.reduce((sum, pool) => sum + pool.hits, 0)
   }
 
+  /** Reduce hits from the first pool (mutable operation for ability calls) */
+  reduceHits(amount: number): void {
+    if (this._hitPools.length > 0 && amount > 0) {
+      ;(this._hitPools[0] as { hits: number }).hits -= amount
+    }
+  }
+
   /** Collect dice for a specific combat phase */
   collectDice(source: HitSource): DieValue[] {
     const getDieValue = (stats: UnitStats): DieValue | null | undefined => {
@@ -116,21 +123,14 @@ export class CombatSideState {
   }
 
   /** Assign hits from pools, optionally filtering by source */
-  assignHits(poolFilter?: HitSource): CombatSideState {
-    const poolsToProcess = poolFilter
-      ? this._hitPools.filter(p => p.source === poolFilter)
-      : this._hitPools
-
-    const remainingPools = poolFilter
-      ? this._hitPools.filter(p => p.source !== poolFilter)
-      : []
+  assignHits(): CombatSideState {
+    const poolsToProcess = this._hitPools
 
     if (poolsToProcess.length === 0) {
       return this
     }
 
     let currentUnits = { ...this._units }
-    let totalRemainingHits = 0
 
     for (const pool of poolsToProcess) {
       const result = this.destroyUnitsFromPool(
@@ -139,7 +139,6 @@ export class CombatSideState {
         pool.validTargets,
       )
       currentUnits = result.units
-      totalRemainingHits += result.remainingHits
     }
 
     // Clean up empty unit arrays
@@ -150,23 +149,10 @@ export class CombatSideState {
       }
     }
 
-    // Add back remaining hits as a generic pool if any remain
-    const finalPools =
-      totalRemainingHits > 0
-        ? [
-            ...remainingPools,
-            {
-              source: 'COMBAT' as HitSource,
-              hits: totalRemainingHits,
-              validTargets: [],
-            },
-          ]
-        : remainingPools
-
     return new CombatSideState(
       this.stats,
       cleanedUnits,
-      finalPools,
+      [],
       this._participatingUnits,
     )
   }

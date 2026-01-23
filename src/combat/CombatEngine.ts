@@ -1,19 +1,29 @@
 import type { UnitType, UnitStats } from '@/types'
 import type { ProbabilityNode } from './types'
-import { CombatState, type StateWithProbability } from './state/CombatState'
+import {
+  CombatState,
+  type CombatStateOptions,
+  type StateWithProbability,
+} from './state/CombatState'
+import type { Ability } from './abilities'
 
 export interface EngineOptions {
   /** Maximum number of combat rounds before forcing termination */
   maxRounds?: number
 }
 
-const DEFAULT_MAX_ROUNDS = 100
+export interface SimulateOptions {
+  attackerAbilities?: Ability[]
+  defenderAbilities?: Ability[]
+}
+
+const DEFAULT_MAX_ROUNDS = 10
 
 /**
  * Combat simulation engine.
  *
  * Core combat mechanics (dice rolls, hit assignment) are handled directly.
- * EventBus is used only for ability hooks at specific timing points.
+ * Abilities are resolved via AbilitiesTracker at specific timing points.
  *
  * Performance optimizations:
  * - Subtree caching: identical states share subtrees (DAG structure)
@@ -37,16 +47,28 @@ export class CombatEngine {
     attackerCounts: Partial<Record<UnitType, number>>,
     defenderUnits: Partial<Record<UnitType, UnitStats>>,
     defenderCounts: Partial<Record<UnitType, number>>,
+    options?: SimulateOptions,
   ): ProbabilityNode {
     // Clear cache for new simulation
     this.subtreeCache.clear()
+
+    const stateOptions: CombatStateOptions = {
+      abilities: {
+        attacker: options?.attackerAbilities,
+        defender: options?.defenderAbilities,
+      },
+    }
 
     const initialState = CombatState.create(
       attackerUnits,
       attackerCounts,
       defenderUnits,
       defenderCounts,
+      stateOptions,
     )
+
+    // Run SETUP event for abilities (each ability called once)
+    initialState.abilities.runSetup(initialState)
 
     const root: ProbabilityNode = {
       state: initialState,
@@ -104,9 +126,7 @@ export class CombatEngine {
         const defenderDice = s.collectDice('defender', 'AFB')
         return s.produceHits(attackerDice, defenderDice, 'AFB')
       })
-      nodes = this.applyToAllNodes(nodes, s =>
-        s.assignHits('attacker', 'AFB').assignHits('defender', 'AFB'),
-      )
+      nodes = this.applyToAllNodes(nodes, s => s.assignHits())
     }
 
     // Combat phase
@@ -115,9 +135,7 @@ export class CombatEngine {
       const defenderDice = s.collectDice('defender', 'COMBAT')
       return s.produceHits(attackerDice, defenderDice, 'COMBAT')
     })
-    nodes = this.applyToAllNodes(nodes, s =>
-      s.assignHits('attacker').assignHits('defender'),
-    )
+    nodes = this.applyToAllNodes(nodes, s => s.assignHits())
 
     // Convert to ProbabilityNode format
     return nodes.map(n => ({

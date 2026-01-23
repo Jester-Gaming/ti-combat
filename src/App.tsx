@@ -21,6 +21,7 @@ import {
   UNIT_TYPES,
 } from '@/types'
 import { CombatEngine, flattenTree } from './combat'
+import { sustainDamage } from './combat/abilities'
 
 function createInitialUnits(): Record<UnitType, UnitState> {
   return UNIT_TYPES.reduce(
@@ -77,6 +78,10 @@ function App() {
       attacker.counts,
       defender.stats,
       defender.counts,
+      {
+        attackerAbilities: [sustainDamage],
+        defenderAbilities: [sustainDamage],
+      },
     )
     console.timeEnd('Simulate')
 

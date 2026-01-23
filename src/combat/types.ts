@@ -11,8 +11,10 @@ export type CombatSide = 'attacker' | 'defender'
 type CombatState = CombatStateClass
 
 /** Per-unit state (empty now, abilities add properties like sustained) */
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export interface Unit {}
+
+export interface Unit {
+  isDamaged?: boolean
+}
 
 /** A probability-weighted state */
 export interface ProbabilityState {
