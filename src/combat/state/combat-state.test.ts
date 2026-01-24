@@ -66,8 +66,8 @@ describe('CombatState', () => {
       const attackerDice = state.collectDice('attacker', 'COMBAT')
       const defenderDice = state.collectDice('defender', 'COMBAT')
 
-      expect(attackerDice).toEqual([[9, 3]])
-      expect(defenderDice).toEqual([[7, 2]])
+      expect(attackerDice).toEqual([[9, 3, 'FIGHTER']])
+      expect(defenderDice).toEqual([[7, 2, 'CRUISER']])
     })
 
     it('collects AFB dice from units with AFB ability', () => {
@@ -79,7 +79,7 @@ describe('CombatState', () => {
       )
 
       const dice = state.collectDice('attacker', 'AFB')
-      expect(dice).toEqual([[9, 4]]) // 2 destroyers * 2 dice each
+      expect(dice).toEqual([[9, 4, 'DESTROYER']]) // 2 destroyers * 2 dice each
     })
 
     it('returns empty array for no matching units', () => {
@@ -107,8 +107,8 @@ describe('CombatState', () => {
       )
 
       // 1 die at 9+ (20% hit chance)
-      const attackerDice: DieValue[] = [[9, 1]]
-      const defenderDice: DieValue[] = [[9, 1]]
+      const attackerDice: DieValue[] = [[9, 1, 'FIGHTER']]
+      const defenderDice: DieValue[] = [[9, 1, 'CRUISER']]
 
       const results = state.produceHits(attackerDice, defenderDice, 'COMBAT')
 
@@ -127,7 +127,7 @@ describe('CombatState', () => {
       )
 
       // 1 die at 1+ (100% hit chance)
-      const attackerDice: DieValue[] = [[1, 1]]
+      const attackerDice: DieValue[] = [[1, 1, 'FIGHTER']]
       const defenderDice: DieValue[] = []
 
       const results = state.produceHits(attackerDice, defenderDice, 'COMBAT')
@@ -148,7 +148,7 @@ describe('CombatState', () => {
       )
 
       const attackerDice: DieValue[] = []
-      const defenderDice: DieValue[] = [[1, 1]]
+      const defenderDice: DieValue[] = [[1, 1, 'CRUISER']]
 
       const results = state.produceHits(attackerDice, defenderDice, 'COMBAT')
 
@@ -167,8 +167,8 @@ describe('CombatState', () => {
         }),
       )
 
-      const attackerDice: DieValue[] = [[9, 2]]
-      const defenderDice: DieValue[] = [[7, 1]]
+      const attackerDice: DieValue[] = [[9, 2, 'FIGHTER']]
+      const defenderDice: DieValue[] = [[7, 1, 'CRUISER']]
 
       const results = state.produceHits(attackerDice, defenderDice, 'COMBAT')
       const totalProb = results.reduce(
@@ -207,8 +207,8 @@ describe('CombatState', () => {
         }),
       )
 
-      const attackerDice: DieValue[] = [[1, 1]]
-      const defenderDice: DieValue[] = [[1, 1]]
+      const attackerDice: DieValue[] = [[1, 1, 'FIGHTER']]
+      const defenderDice: DieValue[] = [[1, 1, 'CRUISER']]
 
       const results = state.produceHits(attackerDice, defenderDice, 'COMBAT')
 

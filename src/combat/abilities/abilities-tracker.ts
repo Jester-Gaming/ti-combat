@@ -201,13 +201,27 @@ export class AbilitiesTracker {
   /**
    * Run alternating resolution for abilities at given timing.
    * Loop stops when 2 consecutive skips occur.
+   * Optionally accepts a context object that gets passed to ability calls.
+   * Each invoke is called at most once per timing phase unless multi: true.
    */
-  runAbilities(timing: AbilityTiming, state: CombatState): void {
+  runAbilities<TContext = undefined>(
+    timing: AbilityTiming,
+    state: CombatState,
+    context?: TContext,
+  ): void {
+    // Track which invokes have been called (keyed by "side:abilityKey:invokeIndex")
+    const calledInvokes = new Set<string>()
     let consecutiveSkips = 0
     let currentSide: CombatSide = 'attacker'
 
     while (consecutiveSkips < 2) {
-      const resolved = this.tryResolveOneAbility(timing, currentSide, state)
+      const resolved = this.tryResolveOneAbility(
+        timing,
+        currentSide,
+        state,
+        context,
+        calledInvokes,
+      )
 
       if (resolved) {
         consecutiveSkips = 0
@@ -219,20 +233,32 @@ export class AbilitiesTracker {
     }
   }
 
-  private tryResolveOneAbility(
+  private tryResolveOneAbility<TContext>(
     timing: AbilityTiming,
     side: CombatSide,
     state: CombatState,
+    context: TContext | undefined,
+    calledInvokes: Set<string>,
   ): boolean {
     const sideAbilities = this.getSideAbilities(side)
     const invokes = sideAbilities.getInvokesForTiming(timing)
     const ctx = this.buildContext(side, state)
 
     for (const { ability, invoke } of invokes) {
+      const invokeKey = `${side}:${ability.key}:${ability.invoke.indexOf(invoke)}`
+
+      // Skip if already called and not multi
+      if (!invoke.multi && calledInvokes.has(invokeKey)) {
+        continue
+      }
+
       const params = ability.params
-      const canCall = invoke.isCallable ? invoke.isCallable(ctx, params) : true
+      const canCall = invoke.isCallable
+        ? invoke.isCallable(ctx, params, context)
+        : true
       if (canCall) {
-        invoke.call(ctx, params)
+        invoke.call(ctx, params, context)
+        calledInvokes.add(invokeKey)
         return true
       }
     }

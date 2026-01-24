@@ -1,7 +1,46 @@
+import type { DieValue } from '@/types'
+
 import type { CombatSideState } from '../state/combat-side-state'
 import type { CombatState } from '../state/combat-state'
 
-export type AbilityTiming = 'SETUP' | 'BEFORE_ASSIGN_HITS'
+export type AbilityTiming = 'SETUP' | 'BEFORE_ASSIGN_HITS' | 'BEFORE_DICE_ROLL'
+
+// Raw dice data passed to BEFORE_DICE_ROLL abilities
+// Abilities determine my/opponent using ctx.my === ctx.state.attacker
+export interface DiceData {
+  attackerDice: DieValue[]
+  defenderDice: DieValue[]
+}
+
+/** Get my dice from DiceData based on AbilityContext */
+export function getMyDice(ctx: AbilityContext, diceData: DiceData): DieValue[] {
+  return ctx.my === ctx.state.attacker
+    ? diceData.attackerDice
+    : diceData.defenderDice
+}
+
+/** Get opponent dice from DiceData based on AbilityContext */
+export function getOpponentDice(
+  ctx: AbilityContext,
+  diceData: DiceData,
+): DieValue[] {
+  return ctx.my === ctx.state.attacker
+    ? diceData.defenderDice
+    : diceData.attackerDice
+}
+
+/** Set my dice in DiceData based on AbilityContext */
+export function setMyDice(
+  ctx: AbilityContext,
+  diceData: DiceData,
+  dice: DieValue[],
+): void {
+  if (ctx.my === ctx.state.attacker) {
+    diceData.attackerDice = dice
+  } else {
+    diceData.defenderDice = dice
+  }
+}
 
 /** Per-side abilities accessor for use within ability context */
 export interface SideAbilities {
@@ -19,10 +58,19 @@ export interface AbilityContext {
   }
 }
 
-export interface AbilityInvoke<TParams = Record<string, unknown>> {
+export interface AbilityInvoke<
+  TParams = Record<string, unknown>,
+  TContext = unknown,
+> {
   timing: AbilityTiming
-  isCallable?: (ctx: AbilityContext, params: TParams) => boolean
-  call: (ctx: AbilityContext, params: TParams) => void
+  /** If true, this invoke can be called multiple times per timing phase. Default: false */
+  multi?: boolean
+  isCallable?: (
+    ctx: AbilityContext,
+    params: TParams,
+    context?: TContext,
+  ) => boolean
+  call: (ctx: AbilityContext, params: TParams, context?: TContext) => void
 }
 
 export interface UIConfigItemBase<TParams = Record<string, unknown>> {

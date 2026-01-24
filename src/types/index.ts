@@ -17,15 +17,20 @@ export const UNIT_TYPES: UnitType[] = [
   'SPACE_DOCK',
 ]
 
-// Combat roll: [hitValue, diceCount]
-export type DieValue = [number, number]
+// Unit dice definition: [hitValue, dicePerUnit]
+// Used in unit stats for COMBAT, AFB, etc.
+export type UnitDieValue = [number, number]
+
+// Collected dice for combat: [hitValue, totalDiceCount, source]
+// Source tracks which unit type generated the dice (for unit-specific modifiers)
+export type DieValue = [number, number, UnitType]
 
 // Unit abilities
 export interface UnitAbilities {
   SUSTAIN_DAMAGE?: boolean
-  BOMBARDMENT?: DieValue
-  AFB?: DieValue
-  SPACE_CANNON?: DieValue
+  BOMBARDMENT?: UnitDieValue
+  AFB?: UnitDieValue
+  SPACE_CANNON?: UnitDieValue
   PLANETARY_SHIELD?: boolean
   PRODUCTION?: number
 }
@@ -35,7 +40,7 @@ export interface UnitStats {
   NAME?: string
   DESCRIPTION?: string
   COST?: number | null
-  COMBAT?: DieValue | null
+  COMBAT?: UnitDieValue | null
   MOVE?: number | null
   CAPACITY?: number | null
   ABILITIES?: UnitAbilities

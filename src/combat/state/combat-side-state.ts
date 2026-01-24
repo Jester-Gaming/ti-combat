@@ -1,8 +1,14 @@
-import type { DieValue, FactionKey, UnitAbilities, UnitType } from '@/types'
+import type {
+  DieValue,
+  FactionKey,
+  UnitAbilities,
+  UnitDieValue,
+  UnitType,
+} from '@/types'
 
 /** Unit stats - defines the unit's capabilities */
 interface UnitStats {
-  COMBAT?: DieValue | null
+  COMBAT?: UnitDieValue | null
   ABILITIES?: UnitAbilities
 }
 
@@ -106,7 +112,7 @@ export class CombatSideState {
     source: 'COMBAT' | 'AFB' | 'BOMBARDMENT' | 'SPACE_CANNON',
     participatingUnits: ReadonlySet<UnitType>,
   ): DieValue[] {
-    const diceByHitValue = new Map<number, number>()
+    const result: DieValue[] = []
 
     for (const [type, units] of Object.entries(this._units)) {
       if (!units || units.length === 0) continue
@@ -124,11 +130,10 @@ export class CombatSideState {
       if (dicePerUnit <= 0) continue
 
       const totalDice = units.length * dicePerUnit
-      const current = diceByHitValue.get(hitValue) ?? 0
-      diceByHitValue.set(hitValue, current + totalDice)
+      result.push([hitValue, totalDice, type as UnitType])
     }
 
-    return Array.from(diceByHitValue, ([hitValue, count]) => [hitValue, count])
+    return result
   }
 
   /** Add hits to this side's hit pool */

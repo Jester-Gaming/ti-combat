@@ -1,6 +1,6 @@
 import type { DieValue, UnitType } from '@/types'
 
-import { AbilitiesTracker } from '../abilities'
+import { AbilitiesTracker, type DiceData } from '../abilities'
 import { getCombinedDiceDistribution } from '../dice'
 import { CombatSideState } from './combat-side-state'
 
@@ -70,8 +70,17 @@ export class CombatState {
     defenderDice: DieValue[],
     source: HitSource,
   ): StateWithProbability[] {
-    const attackerDist = getCombinedDiceDistribution(attackerDice)
-    const defenderDist = getCombinedDiceDistribution(defenderDice)
+    // Create mutable DiceData for abilities to modify
+    const diceData: DiceData = {
+      attackerDice: [...attackerDice],
+      defenderDice: [...defenderDice],
+    }
+
+    // Run BEFORE_DICE_ROLL abilities with alternating mechanism
+    this.abilities.runAbilities('BEFORE_DICE_ROLL', this, diceData)
+
+    const attackerDist = getCombinedDiceDistribution(diceData.attackerDice)
+    const defenderDist = getCombinedDiceDistribution(diceData.defenderDice)
     const validTargets = getValidTargets(source)
 
     const results: StateWithProbability[] = []

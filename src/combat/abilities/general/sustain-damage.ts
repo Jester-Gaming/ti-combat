@@ -96,6 +96,7 @@ export const sustainDamage: Ability<Params> = {
   invoke: [
     {
       timing: 'BEFORE_ASSIGN_HITS',
+      multi: true,
       isCallable: (ctx: AbilityContext, params: Params) => {
         const hasHits = ctx.my.pendingHits > 0
         if (!hasHits) return false

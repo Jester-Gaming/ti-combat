@@ -3,12 +3,10 @@
 ## Agenda
 
 - Publicize Weapon Schematics
-- Prophecy of Ixth
 - Conventions of War
 
 ## Environment
 
-- Nebula
 - Scar
 
 ## Relics
