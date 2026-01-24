@@ -9,7 +9,7 @@ import {
 import { getFactionUnitConfig } from './get-faction-unit-config'
 
 /**
- * Converts a SideState to a unit map suitable for CombatSideState.
+ * Converts a SideState to a unit map suitable for SideState.
  * Each unit has both stats (COMBAT, ABILITIES) and state (isDamaged).
  */
 export function getSimulationUnits(

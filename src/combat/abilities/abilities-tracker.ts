@@ -1,15 +1,19 @@
-import type { CombatState } from '../state/combat-state'
-import type { CombatSide } from '../types'
+import { getOpponentSide } from '../state/side-state-ops'
+import type {
+  AbilitiesConfig,
+  CombatSide,
+  CombatStateData,
+  SideAbilitiesConfig,
+} from '../state/types'
 import type {
   Ability,
-  AbilityContext,
-  AbilityInstance,
   AbilityInvoke,
+  AbilityReadContext,
   AbilityTiming,
   InternalTimingContextMap,
   OwnOpponentContext,
-  SideAbilities,
   SidedContext,
+  StateChange,
   TimingContextMap,
 } from './types'
 
@@ -28,7 +32,7 @@ function toOwnOpponent<T>(
   sided: SidedContext<T>,
   side: CombatSide,
 ): OwnOpponentContext<T> {
-  const opponent = side === 'attacker' ? 'defender' : 'attacker'
+  const opponent = getOpponentSide(side)
   return {
     own: sided[side],
     opponent: sided[opponent],
@@ -52,288 +56,187 @@ function toSided<T>(
   }
 }
 
-/** Config for a single ability - params overrides */
-type AbilityConfig = Record<string, unknown>
+/** Get merged params for an ability */
+function getAbilityMergedParams(
+  ability: Ability,
+  sideConfig: SideAbilitiesConfig,
+): Record<string, unknown> {
+  return { ...ability.defaultParams, ...sideConfig.config?.[ability.key] }
+}
 
-/** Config for all abilities on one side */
-type SideConfig = Record<string, AbilityConfig>
+/** Get invokes for a timing from ability definitions */
+function getInvokesForTiming<T extends AbilityTiming>(
+  timing: T,
+  sideConfig: SideAbilitiesConfig,
+): Array<{
+  ability: Ability
+  invoke: AbilityInvoke
+  params: Record<string, unknown>
+}> {
+  const results: Array<{
+    ability: Ability
+    invoke: AbilityInvoke
+    params: Record<string, unknown>
+  }> = []
 
-class AbilityInstanceImpl implements AbilityInstance {
-  private ability: Ability
-  private _params: Record<string, unknown>
-  private _enabled: boolean
+  for (const ability of sideConfig.abilities as Ability[]) {
+    const params = getAbilityMergedParams(ability, sideConfig)
 
-  constructor(ability: Ability, configParams?: AbilityConfig) {
-    this.ability = ability
-    // Merge defaultParams with config overrides
-    this._params = {
-      ...ability.defaultParams,
-      ...configParams,
+    for (const invoke of ability.invoke) {
+      if (invoke.timing === timing) {
+        results.push({
+          ability,
+          invoke,
+          params,
+        })
+      }
     }
-    this._enabled = true
   }
 
-  get key(): string {
-    return this.ability.key
-  }
+  return results
+}
 
-  get params(): Record<string, unknown> {
-    return this._params
-  }
-
-  get invoke(): AbilityInvoke[] {
-    return this.ability.invoke
-  }
-
-  get enabled(): boolean {
-    return this._enabled
-  }
-
-  modifyParams(updates: Record<string, unknown>): void {
-    Object.assign(this._params, updates)
-  }
-
-  setEnabled(enabled: boolean): void {
-    this._enabled = enabled
-  }
-
-  clone(): AbilityInstanceImpl {
-    const cloned = new AbilityInstanceImpl(this.ability, { ...this._params })
-    cloned._enabled = this._enabled
-    return cloned
+/** Build read context for ability execution */
+function buildReadContext(
+  side: CombatSide,
+  state: CombatStateData,
+): AbilityReadContext {
+  const opponentSide = getOpponentSide(side)
+  return {
+    own: state[side],
+    opponent: state[opponentSide],
+    state,
+    side,
   }
 }
 
-/** Per-side abilities collection */
-class SideAbilitiesImpl implements SideAbilities {
-  private abilities: Map<string, AbilityInstanceImpl>
+/** Get ability params for a side */
+export function getAbilityParams(
+  abilities: AbilitiesConfig,
+  side: CombatSide,
+  key: string,
+): Record<string, unknown> | undefined {
+  const sideConfig = abilities[side]
+  const ability = (sideConfig.abilities as Ability[]).find(a => a.key === key)
+  if (!ability) return undefined
+  return { ...ability.defaultParams, ...sideConfig.config?.[key] }
+}
 
-  constructor(allAbilities: Ability[], config: SideConfig)
-  constructor(abilities: Map<string, AbilityInstanceImpl>)
-  constructor(
-    arg: Ability[] | Map<string, AbilityInstanceImpl>,
-    config?: SideConfig,
-  ) {
-    if (arg instanceof Map) {
-      this.abilities = arg
+/** Check if ability exists on a side */
+export function hasAbility(
+  abilities: AbilitiesConfig,
+  side: CombatSide,
+  key: string,
+): boolean {
+  return (abilities[side].abilities as Ability[]).some(a => a.key === key)
+}
+
+export interface RunAbilitiesResult<T extends AbilityTiming> {
+  state: CombatStateData
+  context: TimingContextMap[T]
+}
+
+/**
+ * Run alternating resolution for abilities at given timing.
+ * Returns new state and modified context.
+ */
+export function runAbilities<T extends AbilityTiming>(
+  timing: T,
+  state: CombatStateData,
+  context?: TimingContextMap[T],
+): RunAbilitiesResult<T> {
+  const calledInvokes = new Set<AbilityInvoke>()
+  let consecutiveSkips = 0
+  let currentSide: CombatSide = 'attacker'
+  let currentState = state
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let workingContext: any = context
+
+  while (consecutiveSkips < 2) {
+    const result = tryResolveOneAbility(
+      timing,
+      currentSide,
+      currentState,
+      workingContext,
+      calledInvokes,
+    )
+
+    if (result) {
+      currentState = result.state
+      if (result.context !== undefined) {
+        workingContext = result.context
+      }
+      consecutiveSkips = 0
     } else {
-      this.abilities = new Map()
-      for (const ability of arg) {
-        const abilityConfig = config?.[ability.key]
-        this.abilities.set(
-          ability.key,
-          new AbilityInstanceImpl(ability, abilityConfig),
+      consecutiveSkips += 1
+    }
+
+    currentSide = getOpponentSide(currentSide)
+  }
+
+  return {
+    state: currentState,
+    context: workingContext as TimingContextMap[T],
+  }
+}
+
+function tryResolveOneAbility<T extends AbilityTiming>(
+  timing: T,
+  side: CombatSide,
+  state: CombatStateData,
+  context: TimingContextMap[T] | undefined,
+  calledInvokes: Set<AbilityInvoke>,
+): StateChange | null {
+  const sideConfig = state.abilities[side]
+  const invokes = getInvokesForTiming(timing, sideConfig)
+  const readCtx = buildReadContext(side, state)
+
+  for (const { invoke, params } of invokes) {
+    if (!invoke.multi && calledInvokes.has(invoke)) {
+      continue
+    }
+
+    // Transform sided context to own/opponent for the ability
+    let internalContext: InternalTimingContextMap[T] | undefined
+    if (context !== undefined && isSidedContext(context)) {
+      internalContext = toOwnOpponent(
+        context,
+        side,
+      ) as InternalTimingContextMap[T]
+    } else {
+      internalContext = context as InternalTimingContextMap[T] | undefined
+    }
+
+    // Use type assertion since we know the invoke matches the timing
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const inv = invoke as any
+    const canCall = inv.isCallable
+      ? inv.isCallable(readCtx, params, internalContext)
+      : true
+
+    if (canCall) {
+      const result: StateChange = inv.call(readCtx, params, internalContext)
+      calledInvokes.add(invoke)
+
+      // Transform own/opponent context back to sided
+      let resultContext = result.context
+      if (
+        context !== undefined &&
+        result.context !== undefined &&
+        isSidedContext(context)
+      ) {
+        resultContext = toSided(
+          result.context as OwnOpponentContext<unknown>,
+          side,
         )
       }
-    }
-  }
 
-  get(key: string): AbilityInstance | undefined {
-    return this.abilities.get(key)
-  }
-
-  has(key: string): boolean {
-    return this.abilities.has(key)
-  }
-
-  getInvokesForTiming(
-    timing: AbilityTiming,
-  ): Array<{ ability: AbilityInstanceImpl; invoke: AbilityInvoke }> {
-    const results: Array<{
-      ability: AbilityInstanceImpl
-      invoke: AbilityInvoke
-    }> = []
-
-    for (const ability of this.abilities.values()) {
-      if (!ability.enabled) continue
-      for (const inv of ability.invoke) {
-        if (inv.timing === timing) {
-          results.push({ ability, invoke: inv })
-        }
+      return {
+        state: result.state,
+        context: resultContext,
       }
     }
-
-    return results
   }
 
-  clone(): SideAbilitiesImpl {
-    const clonedMap = new Map<string, AbilityInstanceImpl>()
-    for (const [key, instance] of this.abilities) {
-      clonedMap.set(key, instance.clone())
-    }
-    return new SideAbilitiesImpl(clonedMap)
-  }
-}
-
-export interface SideAbilitiesOptions {
-  abilities: Ability[]
-  config?: SideConfig
-}
-
-export interface AbilitiesTrackerOptions {
-  attacker: SideAbilitiesOptions
-  defender: SideAbilitiesOptions
-}
-
-/** Manages abilities for both combat sides */
-export class AbilitiesTracker {
-  private attackerAbilities: SideAbilitiesImpl
-  private defenderAbilities: SideAbilitiesImpl
-
-  private constructor(
-    attacker: SideAbilitiesImpl,
-    defender: SideAbilitiesImpl,
-  ) {
-    this.attackerAbilities = attacker
-    this.defenderAbilities = defender
-  }
-
-  static create(options: AbilitiesTrackerOptions): AbilitiesTracker {
-    const { attacker, defender } = options
-    return new AbilitiesTracker(
-      new SideAbilitiesImpl(attacker.abilities, attacker.config ?? {}),
-      new SideAbilitiesImpl(defender.abilities, defender.config ?? {}),
-    )
-  }
-
-  /** Get abilities for a specific side */
-  forSide(side: CombatSide): SideAbilities {
-    return this.getSideAbilities(side)
-  }
-
-  private getSideAbilities(side: CombatSide): SideAbilitiesImpl {
-    return side === 'attacker' ? this.attackerAbilities : this.defenderAbilities
-  }
-
-  /** Clone the tracker with all ability instances */
-  clone(): AbilitiesTracker {
-    return AbilitiesTracker.fromCloned(
-      this.attackerAbilities.clone(),
-      this.defenderAbilities.clone(),
-    )
-  }
-
-  private static fromCloned(
-    attacker: SideAbilitiesImpl,
-    defender: SideAbilitiesImpl,
-  ): AbilitiesTracker {
-    return new AbilitiesTracker(attacker, defender)
-  }
-
-  /**
-   * Run alternating resolution for abilities at given timing.
-   * Loop stops when 2 consecutive skips occur.
-   * Context is required for timings that need it (e.g., BEFORE_DICE_ROLL).
-   * Each invoke is called at most once per timing phase unless multi: true.
-   *
-   * For sided context (attacker/defender), transforms to own/opponent for abilities,
-   * then transforms back to attacker/defender and returns the modified context.
-   */
-  runAbilities<T extends AbilityTiming>(
-    timing: T,
-    state: CombatState,
-    context?: TimingContextMap[T],
-  ): TimingContextMap[T] {
-    // Track which invokes have been called
-    const calledInvokes = new Set<AbilityInvoke>()
-    let consecutiveSkips = 0
-    let currentSide: CombatSide = 'attacker'
-
-    // Create a working copy of sided context that we'll transform for each ability
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const workingContext: any = context
-
-    while (consecutiveSkips < 2) {
-      const resolved = this.tryResolveOneAbility(
-        timing,
-        currentSide,
-        state,
-        workingContext,
-        calledInvokes,
-      )
-
-      if (resolved) {
-        consecutiveSkips = 0
-      } else {
-        consecutiveSkips += 1
-      }
-
-      currentSide = currentSide === 'attacker' ? 'defender' : 'attacker'
-    }
-
-    return workingContext as TimingContextMap[T]
-  }
-
-  private tryResolveOneAbility<T extends AbilityTiming>(
-    timing: T,
-    side: CombatSide,
-    state: CombatState,
-    context: TimingContextMap[T] | undefined,
-    calledInvokes: Set<AbilityInvoke>,
-  ): boolean {
-    const sideAbilities = this.getSideAbilities(side)
-    const invokes = sideAbilities.getInvokesForTiming(timing)
-    const ctx = this.buildContext(side, state)
-
-    for (const { ability, invoke } of invokes) {
-      if (!invoke.multi && calledInvokes.has(invoke)) {
-        continue
-      }
-
-      const params = ability.params
-
-      // Transform sided context to own/opponent for the ability
-      let internalContext: InternalTimingContextMap[T] | undefined
-      if (context !== undefined && isSidedContext(context)) {
-        internalContext = toOwnOpponent(
-          context,
-          side,
-        ) as InternalTimingContextMap[T]
-      } else {
-        internalContext = context as InternalTimingContextMap[T] | undefined
-      }
-
-      // Use type assertion since we know the invoke matches the timing
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const inv = invoke as any
-      const canCall = inv.isCallable
-        ? inv.isCallable(ctx, params, internalContext)
-        : true
-      if (canCall) {
-        inv.call(ctx, params, internalContext)
-
-        // Transform own/opponent back to sided and update the original context
-        if (
-          context !== undefined &&
-          internalContext !== undefined &&
-          isSidedContext(context)
-        ) {
-          const updated = toSided(
-            internalContext as OwnOpponentContext<unknown>,
-            side,
-          )
-          Object.assign(context, updated)
-        }
-
-        calledInvokes.add(invoke)
-        return true
-      }
-    }
-    return false
-  }
-
-  private buildContext(side: CombatSide, state: CombatState): AbilityContext {
-    const opponentSide: CombatSide =
-      side === 'attacker' ? 'defender' : 'attacker'
-
-    return {
-      own: state[side],
-      opponent: state[opponentSide],
-      state,
-      abilities: {
-        own: this.getSideAbilities(side),
-        opponent: this.getSideAbilities(opponentSide),
-      },
-    }
-  }
+  return null
 }

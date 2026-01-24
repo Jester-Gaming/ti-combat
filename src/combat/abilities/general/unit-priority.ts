@@ -1,11 +1,11 @@
 import type { UnitType } from '@/types'
 import { getUnitListItems } from '@/utils/get-unit-config'
 
-import type { CombatSideState } from '../../state/combat-side-state'
+import type { SideState } from '../../state/types'
 import type { Ability } from '../types'
 
 /** Get units that exist on the side and can participate in combat */
-function getParticipatingUnitsForSide(side: CombatSideState): UnitType[] {
+function getParticipatingUnitsForSide(side: SideState): UnitType[] {
   const result: UnitType[] = []
   for (const [unitType, units] of Object.entries(side.units)) {
     if (units && units.length > 0) {

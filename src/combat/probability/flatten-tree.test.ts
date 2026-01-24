@@ -2,9 +2,8 @@ import { describe, expect, it } from 'vitest'
 
 import type { FactionKey } from '@/types'
 
-import type { Unit } from '../state/combat-side-state'
-import { CombatSideState } from '../state/combat-side-state'
 import { CombatState } from '../state/combat-state'
+import type { SideState, Unit } from '../state/types'
 import type { ProbabilityNode } from '../types'
 import { flattenTree } from './flatten-tree'
 
@@ -16,19 +15,19 @@ describe('flattenTree', () => {
   const createUnits = (count: number): Unit[] =>
     Array.from({ length: count }, () => ({ ...fighterStats }))
 
+  const createSideState = (fighters: number): SideState => ({
+    faction: TEST_FACTION,
+    units: fighters > 0 ? { FIGHTER: createUnits(fighters) } : {},
+    hitPools: [],
+  })
+
   const makeState = (
     attackerFighters: number,
     defenderFighters: number,
   ): CombatState => {
     return new CombatState(
-      new CombatSideState(
-        TEST_FACTION,
-        attackerFighters > 0 ? { FIGHTER: createUnits(attackerFighters) } : {},
-      ),
-      new CombatSideState(
-        TEST_FACTION,
-        defenderFighters > 0 ? { FIGHTER: createUnits(defenderFighters) } : {},
-      ),
+      createSideState(attackerFighters),
+      createSideState(defenderFighters),
     )
   }
 

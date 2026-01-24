@@ -1,6 +1,6 @@
 import type { CombatState } from './state/combat-state'
 
-export type CombatSide = 'attacker' | 'defender'
+export type { CombatSide } from './state/types'
 
 /** A node in the probability tree */
 export interface ProbabilityNode {
@@ -19,6 +19,6 @@ export interface SurvivorSide {
 export interface CombatOutcome {
   attacker: SurvivorSide
   defender: SurvivorSide
-  winner: CombatSide | 'draw'
+  winner: 'attacker' | 'defender' | 'draw'
   probability: number
 }

@@ -1,8 +1,10 @@
 export {
-  AbilitiesTracker,
-  type AbilitiesTrackerOptions,
+  getAbilityParams,
+  hasAbility,
+  runAbilities,
+  type RunAbilitiesResult,
 } from './abilities-tracker'
-import type { CombatSide } from '../types'
+import type { CombatSide } from '../state/types'
 import agenda from './agenda'
 import environment from './environment'
 import general from './general'
@@ -14,12 +16,14 @@ export type {
   AbilityContext,
   AbilityInstance,
   AbilityInvoke,
+  AbilityReadContext,
   AbilityTiming,
   DiceData,
   OwnOpponentContext,
   SideAbilities,
   SidedContext,
   SidedDiceData,
+  StateChange,
 } from './types'
 
 export const allAbilities = [...general, ...environment, ...agenda]

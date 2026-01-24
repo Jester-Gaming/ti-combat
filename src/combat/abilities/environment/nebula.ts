@@ -1,6 +1,11 @@
 import type { DieValue } from '@/types'
 
-import type { Ability, AbilityContext, DiceData } from '../types'
+import type {
+  Ability,
+  AbilityReadContext,
+  DiceData,
+  StateChange,
+} from '../types'
 
 type Params = {
   isEnabled: boolean
@@ -26,11 +31,21 @@ export const nebula: Ability<Params> = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (_: AbilityContext, params: Params) => {
+      isCallable: (_: AbilityReadContext, params: Params) => {
         return params.isEnabled
       },
-      call: (_ctx: AbilityContext, _params: Params, diceData: DiceData) => {
-        diceData.own = applyDiceBonus(diceData.own)
+      call: (
+        ctx: AbilityReadContext,
+        _params: Params,
+        diceData: DiceData,
+      ): StateChange<DiceData> => {
+        return {
+          state: ctx.state as typeof ctx.state & object,
+          context: {
+            own: applyDiceBonus(diceData.own),
+            opponent: diceData.opponent,
+          },
+        }
       },
     },
   ],

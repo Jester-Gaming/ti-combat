@@ -2,9 +2,15 @@ import { describe, expect, it } from 'vitest'
 
 import type { DieValue, FactionKey } from '@/types'
 
-import type { Unit } from './combat-side-state'
-import { CombatSideState } from './combat-side-state'
 import { CombatState } from './combat-state'
+import {
+  addHits,
+  assignHits,
+  countUnits,
+  destroyUnit,
+  getUnit,
+} from './side-state-ops'
+import type { SideState, Unit } from './types'
 
 // Test faction constant
 const TEST_FACTION: FactionKey = 'ARBOREC'
@@ -12,6 +18,15 @@ const TEST_FACTION: FactionKey = 'ARBOREC'
 // Helper to create units with stats
 function createUnits(stats: Partial<Unit>, count: number): Unit[] {
   return Array.from({ length: count }, () => ({ ...stats }))
+}
+
+// Helper to create a side state
+function createSideState(units: Partial<Record<string, Unit[]>>): SideState {
+  return {
+    faction: TEST_FACTION,
+    units: units as SideState['units'],
+    hitPools: [],
+  }
 }
 
 describe('CombatState', () => {
@@ -25,12 +40,8 @@ describe('CombatState', () => {
   describe('constructor', () => {
     it('creates state with unit counts', () => {
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 2),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
       )
 
       expect(state.attacker.units.FIGHTER).toHaveLength(2)
@@ -39,28 +50,20 @@ describe('CombatState', () => {
 
     it('creates state with empty hit pools', () => {
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 1),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
       )
 
-      expect(state.attacker.pendingHits).toBe(0)
-      expect(state.defender.pendingHits).toBe(0)
+      expect(state.attacker.hitPools).toHaveLength(0)
+      expect(state.defender.hitPools).toHaveLength(0)
     })
   })
 
   describe('collectDice', () => {
     it('collects combat dice from units', () => {
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 3),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 2),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 3) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
       )
 
       const attackerDice = state.collectDice('attacker', 'COMBAT')
@@ -72,10 +75,8 @@ describe('CombatState', () => {
 
     it('collects AFB dice from units with AFB ability', () => {
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          DESTROYER: createUnits(destroyerStats, 2),
-        }),
-        new CombatSideState(TEST_FACTION, {}),
+        createSideState({ DESTROYER: createUnits(destroyerStats, 2) }),
+        createSideState({}),
       )
 
       const dice = state.collectDice('attacker', 'AFB')
@@ -84,10 +85,8 @@ describe('CombatState', () => {
 
     it('returns empty array for no matching units', () => {
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 1),
-        }),
-        new CombatSideState(TEST_FACTION, {}),
+        createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
+        createSideState({}),
       )
 
       const dice = state.collectDice('attacker', 'AFB')
@@ -98,12 +97,8 @@ describe('CombatState', () => {
   describe('produceHits', () => {
     it('creates multiple outcome states', () => {
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 1),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
       )
 
       // 1 die at 9+ (20% hit chance)
@@ -118,12 +113,8 @@ describe('CombatState', () => {
 
     it('assigns attacker hits to defender hit pool', () => {
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 1),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
       )
 
       // 1 die at 1+ (100% hit chance)
@@ -133,18 +124,14 @@ describe('CombatState', () => {
       const results = state.produceHits(attackerDice, defenderDice, 'COMBAT')
 
       expect(results).toHaveLength(1)
-      expect(results[0].state.defender.pendingHits).toBe(1)
-      expect(results[0].state.attacker.pendingHits).toBe(0)
+      expect(results[0].state.defender.hitPools[0]?.hits).toBe(1)
+      expect(results[0].state.attacker.hitPools).toHaveLength(0)
     })
 
     it('assigns defender hits to attacker hit pool', () => {
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 1),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
       )
 
       const attackerDice: DieValue[] = []
@@ -153,18 +140,14 @@ describe('CombatState', () => {
       const results = state.produceHits(attackerDice, defenderDice, 'COMBAT')
 
       expect(results).toHaveLength(1)
-      expect(results[0].state.attacker.pendingHits).toBe(1)
-      expect(results[0].state.defender.pendingHits).toBe(0)
+      expect(results[0].state.attacker.hitPools[0]?.hits).toBe(1)
+      expect(results[0].state.defender.hitPools).toHaveLength(0)
     })
 
     it('probabilities sum to 1', () => {
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 2),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
       )
 
       const attackerDice: DieValue[] = [[9, 2, 'FIGHTER']]
@@ -181,30 +164,22 @@ describe('CombatState', () => {
 
     it('handles empty dice lists', () => {
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 1),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
       )
 
       const results = state.produceHits([], [], 'COMBAT')
 
       expect(results).toHaveLength(1)
       expect(results[0].probability).toBe(1)
-      expect(results[0].state.attacker.pendingHits).toBe(0)
-      expect(results[0].state.defender.pendingHits).toBe(0)
+      expect(results[0].state.attacker.hitPools).toHaveLength(0)
+      expect(results[0].state.defender.hitPools).toHaveLength(0)
     })
 
     it('includes hit counts in meta', () => {
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 1),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
       )
 
       const attackerDice: DieValue[] = [[1, 1, 'FIGHTER']]
@@ -218,13 +193,9 @@ describe('CombatState', () => {
 
   describe('assignHits', () => {
     it('destroys units based on pending hits for both sides', () => {
-      let state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 2),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 2),
-        }),
+      let state: CombatState = new CombatState(
+        createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
       )
 
       state = state.addHitsToSide('attacker', 1, [])
@@ -236,14 +207,12 @@ describe('CombatState', () => {
     })
 
     it('respects AFB pool filter (only targets fighters)', () => {
-      let state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
+      let state: CombatState = new CombatState(
+        createSideState({
           FIGHTER: createUnits(fighterStats, 1),
           CRUISER: createUnits(cruiserStats, 1),
         }),
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 2),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
       )
 
       state = state.addHitsToSide('attacker', 2, ['FIGHTER'])
@@ -254,7 +223,7 @@ describe('CombatState', () => {
       expect(state.attacker.units.FIGHTER).toBeUndefined()
       expect(state.attacker.units.CRUISER).toHaveLength(1)
       // Hit pools are cleared after assignHits (remaining hits are lost)
-      expect(state.attacker.pendingHits).toBe(0)
+      expect(state.attacker.hitPools).toHaveLength(0)
       // Defender had 2 fighters, 1 hit applied
       expect(state.defender.units.FIGHTER).toHaveLength(1)
     })
@@ -263,10 +232,8 @@ describe('CombatState', () => {
   describe('isFinished', () => {
     it('returns true when attacker eliminated', () => {
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, {}),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
+        createSideState({}),
+        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
       )
 
       expect(state.isFinished()).toBe(true)
@@ -274,10 +241,8 @@ describe('CombatState', () => {
 
     it('returns true when defender eliminated', () => {
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 1),
-        }),
-        new CombatSideState(TEST_FACTION, {}),
+        createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
+        createSideState({}),
       )
 
       expect(state.isFinished()).toBe(true)
@@ -285,12 +250,8 @@ describe('CombatState', () => {
 
     it('returns false when both sides have units', () => {
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 1),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
       )
 
       expect(state.isFinished()).toBe(false)
@@ -300,20 +261,12 @@ describe('CombatState', () => {
   describe('getHash', () => {
     it('returns same hash for identical states', () => {
       const state1 = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 2),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
       )
       const state2 = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 2),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
       )
 
       expect(state1.getHash()).toBe(state2.getHash())
@@ -321,122 +274,130 @@ describe('CombatState', () => {
 
     it('returns different hash for different unit counts', () => {
       const state1 = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 2),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
       )
       const state2 = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 1),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
       )
 
       expect(state1.getHash()).not.toBe(state2.getHash())
     })
   })
 
-  describe('clone', () => {
-    it('creates independent copy', () => {
+  describe('immutability', () => {
+    it('addHitsToSide creates new state', () => {
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, {
-          FIGHTER: createUnits(fighterStats, 2),
-        }),
-        new CombatSideState(TEST_FACTION, {
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
+        createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
       )
 
-      const clone = state.clone()
-
-      // Clone has same hash
-      expect(clone.getHash()).toBe(state.getHash())
-
-      // But modifying clone doesn't affect original
-      const modified = clone.addHitsToSide('attacker', 1, [])
-      expect(state.attacker.pendingHits).toBe(0)
-      expect(modified.attacker.pendingHits).toBe(1)
+      const modified = state.addHitsToSide('attacker', 1, [])
+      expect(state.attacker.hitPools).toHaveLength(0)
+      expect(modified.attacker.hitPools).toHaveLength(1)
     })
   })
 })
 
-describe('CombatSideState', () => {
+describe('SideState operations', () => {
   const fighterStats: Partial<Unit> = { COMBAT: [9, 1], ABILITIES: {} }
   const cruiserStats: Partial<Unit> = { COMBAT: [7, 1], ABILITIES: {} }
 
+  function createSideState(units: Partial<Record<string, Unit[]>>): SideState {
+    return {
+      faction: TEST_FACTION,
+      units: units as SideState['units'],
+      hitPools: [],
+    }
+  }
+
+  // Helper to create a minimal CombatState for testing
+  function wrapSide(side: SideState): {
+    attacker: SideState
+    defender: SideState
+    abilities: {
+      attacker: { abilities: [] }
+      defender: { abilities: [] }
+    }
+  } {
+    return {
+      attacker: side,
+      defender: createSideState({}),
+      abilities: { attacker: { abilities: [] }, defender: { abilities: [] } },
+    }
+  }
+
   describe('addHits', () => {
-    it('returns same instance for zero hits', () => {
-      const side = new CombatSideState(TEST_FACTION, {
-        FIGHTER: [{ ...fighterStats }],
-      })
-      const result = side.addHits(0, [])
-      expect(result).toBe(side)
+    it('returns same state for zero hits', () => {
+      const state = wrapSide(
+        createSideState({ FIGHTER: [{ ...fighterStats }] }),
+      )
+      const result = addHits(state, 'attacker', 0, [])
+      expect(result).toBe(state)
     })
 
     it('adds hits to pool', () => {
-      const side = new CombatSideState(TEST_FACTION, {
-        FIGHTER: [{ ...fighterStats }],
-      })
-      const result = side.addHits(2, [])
-      expect(result.pendingHits).toBe(2)
+      const state = wrapSide(
+        createSideState({ FIGHTER: [{ ...fighterStats }] }),
+      )
+      const result = addHits(state, 'attacker', 2, [])
+      expect(result.attacker.hitPools[0]?.hits).toBe(2)
     })
   })
 
   describe('assignHits', () => {
     it('destroys cheapest units first', () => {
-      const side = new CombatSideState(TEST_FACTION, {
-        FIGHTER: [{ ...fighterStats }, { ...fighterStats }],
-        CRUISER: [{ ...cruiserStats }, { ...cruiserStats }],
-      })
+      const state = wrapSide(
+        createSideState({
+          FIGHTER: [{ ...fighterStats }, { ...fighterStats }],
+          CRUISER: [{ ...cruiserStats }, { ...cruiserStats }],
+        }),
+      )
       const participating = new Set(['FIGHTER', 'CRUISER'] as const)
-      const withHits = side.addHits(2, [])
-      const result = withHits.assignHits(participating)
+      const withHits = addHits(state, 'attacker', 2, [])
+      const result = assignHits(withHits, 'attacker', participating)
 
-      expect(result.units.FIGHTER).toBeUndefined()
-      expect(result.units.CRUISER).toHaveLength(2)
+      expect(result.attacker.units.FIGHTER).toBeUndefined()
+      expect(result.attacker.units.CRUISER).toHaveLength(2)
     })
   })
 
   describe('countUnits', () => {
     it('counts total units across all types', () => {
-      const side = new CombatSideState(TEST_FACTION, {
+      const side = createSideState({
         FIGHTER: [{ ...fighterStats }, { ...fighterStats }],
         CRUISER: [{ ...cruiserStats }],
       })
-      expect(side.countUnits()).toBe(3)
+      expect(countUnits(side)).toBe(3)
     })
 
     it('returns 0 for empty state', () => {
-      const side = new CombatSideState(TEST_FACTION, {})
-      expect(side.countUnits()).toBe(0)
+      const side = createSideState({})
+      expect(countUnits(side)).toBe(0)
     })
   })
 
   describe('getUnit', () => {
     it('finds unit matching predicate', () => {
-      const side = new CombatSideState(TEST_FACTION, {
+      const side = createSideState({
         FIGHTER: [
           { ...fighterStats, isDamaged: true },
           { ...fighterStats, isDamaged: false },
         ],
       })
 
-      const undamaged = side.getUnit('FIGHTER', { isDamaged: false })
+      const undamaged = getUnit(side, 'FIGHTER', { isDamaged: false })
       expect(undamaged).toBeDefined()
-      expect(undamaged?.isDamaged).toBe(false)
+      expect(undamaged?.unit.isDamaged).toBe(false)
     })
 
     it('returns undefined when no match', () => {
-      const side = new CombatSideState(TEST_FACTION, {
+      const side = createSideState({
         FIGHTER: [{ ...fighterStats, isDamaged: true }],
       })
 
-      const undamaged = side.getUnit('FIGHTER', { isDamaged: false })
+      const undamaged = getUnit(side, 'FIGHTER', { isDamaged: false })
       expect(undamaged).toBeUndefined()
     })
   })
@@ -445,23 +406,18 @@ describe('CombatSideState', () => {
     it('removes specific unit', () => {
       const unit1 = { ...fighterStats }
       const unit2 = { ...fighterStats }
-      const side = new CombatSideState(TEST_FACTION, {
-        FIGHTER: [unit1, unit2],
-      })
+      const state = wrapSide(createSideState({ FIGHTER: [unit1, unit2] }))
 
-      const result = side.destroyUnit('FIGHTER', unit1)
-      expect(result.units.FIGHTER).toHaveLength(1)
-      expect(result.units.FIGHTER?.[0]).toBe(unit2)
+      const result = destroyUnit(state, 'attacker', 'FIGHTER', 0)
+      expect(result.attacker.units.FIGHTER).toHaveLength(1)
     })
 
     it('removes unit type when last unit destroyed', () => {
       const unit = { ...fighterStats }
-      const side = new CombatSideState(TEST_FACTION, {
-        FIGHTER: [unit],
-      })
+      const state = wrapSide(createSideState({ FIGHTER: [unit] }))
 
-      const result = side.destroyUnit('FIGHTER', unit)
-      expect(result.units.FIGHTER).toBeUndefined()
+      const result = destroyUnit(state, 'attacker', 'FIGHTER', 0)
+      expect(result.attacker.units.FIGHTER).toBeUndefined()
     })
   })
 })

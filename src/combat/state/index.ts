@@ -1,2 +1,10 @@
-export { CombatSideState, type Unit } from './combat-side-state'
-export { CombatState } from './combat-state'
+export { CombatState, type StateWithProbability } from './combat-state'
+export type {
+  CombatSide,
+  CombatStateData,
+  HitPool,
+  SideState,
+  Unit,
+  UnitState,
+  UnitStats,
+} from './types'

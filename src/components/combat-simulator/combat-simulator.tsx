@@ -5,11 +5,12 @@ import { useImmer } from 'use-immer'
 
 import {
   CombatEngine,
-  CombatSideState,
   CombatState,
   flattenTree,
+  type SideState as CombatSideState,
 } from '@/combat'
-import { AbilitiesTracker, getAvailableAbilities } from '@/combat/abilities'
+import { getAvailableAbilities } from '@/combat/abilities'
+import { countUnits } from '@/combat/state/side-state-ops'
 import { AbilitiesPanel } from '@/components/abilities-panel'
 import { BattleCard } from '@/components/battle-card'
 import { GlassCard } from '@/components/ui/glass-card'
@@ -77,21 +78,21 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     [battle.defender.faction],
   )
 
-  // Create CombatSideState for each side (used for abilities and combat)
-  const attackerSideState = useMemo(
-    () =>
-      new CombatSideState(
-        battle.attacker.faction,
-        getSimulationUnits(battle.attacker),
-      ),
+  // Create SideState for each side (used for abilities and combat)
+  const attackerSideState: CombatSideState = useMemo(
+    () => ({
+      faction: battle.attacker.faction,
+      units: getSimulationUnits(battle.attacker),
+      hitPools: [],
+    }),
     [battle.attacker],
   )
-  const defenderSideState = useMemo(
-    () =>
-      new CombatSideState(
-        battle.defender.faction,
-        getSimulationUnits(battle.defender),
-      ),
+  const defenderSideState: CombatSideState = useMemo(
+    () => ({
+      faction: battle.defender.faction,
+      units: getSimulationUnits(battle.defender),
+      hitPools: [],
+    }),
     [battle.defender],
   )
 
@@ -100,15 +101,15 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
   const defenderAbilities = useMemo(() => getAvailableAbilities('defender'), [])
 
   // Create CombatState from battle configuration
-  const combatState = useMemo((): CombatState | null => {
-    const hasAttackerUnits = attackerSideState.countUnits() > 0
-    const hasDefenderUnits = defenderSideState.countUnits() > 0
+  const combatState = useMemo(() => {
+    const hasAttackerUnits = countUnits(attackerSideState) > 0
+    const hasDefenderUnits = countUnits(defenderSideState) > 0
 
     if (!hasAttackerUnits || !hasDefenderUnits) {
       return null
     }
 
-    const abilities = AbilitiesTracker.create({
+    return new CombatState(attackerSideState, defenderSideState, {
       attacker: {
         abilities: attackerAbilities,
         config: abilityParams.attacker,
@@ -118,8 +119,6 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
         config: abilityParams.defender,
       },
     })
-
-    return new CombatState(attackerSideState, defenderSideState, abilities)
   }, [
     attackerSideState,
     defenderSideState,

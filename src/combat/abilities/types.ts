@@ -1,7 +1,6 @@
 import type { DieValue } from '@/types'
 
-import type { CombatSideState } from '../state/combat-side-state'
-import type { CombatState } from '../state/combat-state'
+import type { CombatSide, CombatStateData, SideState } from '../state/types'
 
 // Sided context (external API - attacker/defender perspective)
 export interface SidedContext<T> {
@@ -38,16 +37,32 @@ export interface InternalTimingContextMap {
 
 export type AbilityTiming = keyof TimingContextMap
 
+/** Read-only context for ability execution */
+export interface AbilityReadContext {
+  readonly own: Readonly<SideState>
+  readonly opponent: Readonly<SideState>
+  readonly state: Readonly<CombatStateData>
+  readonly side: CombatSide
+}
+
+/** Result of an ability call - new state and optional modified timing context */
+export interface StateChange<TContext = unknown> {
+  state: CombatStateData
+  context?: TContext
+}
+
 /** Per-side abilities accessor for use within ability context */
 export interface SideAbilities {
   get(key: string): AbilityInstance | undefined
   has(key: string): boolean
 }
 
+/** Legacy mutable context - still used during transition */
 export interface AbilityContext {
-  own: CombatSideState
-  opponent: CombatSideState
-  state: CombatState
+  own: SideState
+  opponent: SideState
+  state: CombatStateData
+  side: CombatSide
   abilities: {
     own: SideAbilities
     opponent: SideAbilities
@@ -62,20 +77,23 @@ type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
   multi?: boolean
 } & (InternalTimingContextMap[T] extends void
   ? {
-      isCallable?: (ctx: AbilityContext, params: TParams) => boolean
-      call: (ctx: AbilityContext, params: TParams) => void
+      isCallable?: (ctx: AbilityReadContext, params: TParams) => boolean
+      call: (
+        ctx: AbilityReadContext,
+        params: TParams,
+      ) => StateChange<InternalTimingContextMap[T]>
     }
   : {
       isCallable?: (
-        ctx: AbilityContext,
+        ctx: AbilityReadContext,
         params: TParams,
         context: InternalTimingContextMap[T],
       ) => boolean
       call: (
-        ctx: AbilityContext,
+        ctx: AbilityReadContext,
         params: TParams,
         context: InternalTimingContextMap[T],
-      ) => void
+      ) => StateChange<InternalTimingContextMap[T]>
     })
 
 // Union of all timing invoke types (auto-generated)
@@ -121,7 +139,7 @@ type UIConfigItem<TParams = Record<string, unknown>> =
 
 type UIConfig<Params = Record<string, unknown>> =
   | UIConfigItem<Params>[]
-  | ((side: CombatSideState, params: Params) => UIConfigItem<Params>[])
+  | ((side: SideState, params: Params) => UIConfigItem<Params>[])
 
 /** Conditions for when an ability is available */
 export interface AbilityCondition {
@@ -148,6 +166,4 @@ export interface AbilityInstance {
   readonly params: Record<string, unknown>
   readonly invoke: AbilityInvoke[]
   readonly enabled: boolean
-  modifyParams(updates: Record<string, unknown>): void
-  setEnabled(enabled: boolean): void
 }

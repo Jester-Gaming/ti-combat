@@ -5,9 +5,8 @@ import type { FactionKey, UnitDefinition, UnitStats, UnitType } from '@/types'
 
 import { CombatEngine } from './combat-engine'
 import { flattenTree } from './probability/flatten-tree'
-import type { Unit } from './state/combat-side-state'
-import { CombatSideState } from './state/combat-side-state'
 import { CombatState } from './state/combat-state'
+import type { SideState, Unit } from './state/types'
 import type { CombatOutcome } from './types'
 
 const TEST_FACTION: FactionKey = 'ARBOREC'
@@ -67,6 +66,17 @@ function createUnits(
 }
 
 /**
+ * Create a SideState from units.
+ */
+function createSideState(units: Partial<Record<UnitType, Unit[]>>): SideState {
+  return {
+    faction: TEST_FACTION,
+    units,
+    hitPools: [],
+  }
+}
+
+/**
  * Sum probabilities by outcome type (win/draw/lose).
  */
 function summarizeOutcomes(outcomes: CombatOutcome[]): {
@@ -99,8 +109,8 @@ describe('CombatEngine', () => {
       const engine = new CombatEngine()
 
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, createUnits(units, { CRUISER: 2 })),
-        new CombatSideState(TEST_FACTION, createUnits(units, { CRUISER: 3 })),
+        createSideState(createUnits(units, { CRUISER: 2 })),
+        createSideState(createUnits(units, { CRUISER: 3 })),
       )
 
       const result = engine.simulate(state)
@@ -122,11 +132,8 @@ describe('CombatEngine', () => {
       const engine = new CombatEngine()
 
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, createUnits(units, { CRUISER: 2 })),
-        new CombatSideState(
-          TEST_FACTION,
-          createUnits(units, { DREADNOUGHT: 1, CRUISER: 1 }),
-        ),
+        createSideState(createUnits(units, { CRUISER: 2 })),
+        createSideState(createUnits(units, { DREADNOUGHT: 1, CRUISER: 1 })),
       )
 
       const result = engine.simulate(state)
@@ -149,11 +156,8 @@ describe('CombatEngine', () => {
       const defenderStats = getUnitStats({ DESTROYER: true })
 
       const state = new CombatState(
-        new CombatSideState(TEST_FACTION, createUnits(units, { FIGHTER: 2 })),
-        new CombatSideState(
-          TEST_FACTION,
-          createUnits(defenderStats, { DESTROYER: 1 }),
-        ),
+        createSideState(createUnits(units, { FIGHTER: 2 })),
+        createSideState(createUnits(defenderStats, { DESTROYER: 1 })),
       )
 
       const result = engine.simulate(state)

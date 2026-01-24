@@ -1,17 +1,30 @@
 import type { DieValue, UnitType } from '@/types'
 
-import { AbilitiesTracker, type SidedDiceData } from '../abilities'
+import {
+  getAbilityParams,
+  runAbilities,
+  type SidedDiceData,
+} from '../abilities'
 import { getCombinedDiceDistribution } from '../dice'
-import { CombatSideState } from './combat-side-state'
+import {
+  addHits,
+  assignHits as assignHitsSide,
+  collectDice,
+  countUnits,
+  getOpponentSide,
+} from './side-state-ops'
+import type {
+  AbilitiesConfig,
+  CombatSide,
+  CombatStateData,
+  SideState,
+} from './types'
 
 /** Hit source determines dice collection */
 type HitSource = 'COMBAT' | 'AFB' | 'BOMBARDMENT' | 'SPACE_CANNON'
 
-/** Combat side identifier */
-type CombatSide = 'attacker' | 'defender'
-
 /** A state with its probability and hit metadata */
-interface StateWithProbability {
+export interface StateWithProbability {
   state: CombatState
   probability: number
   meta?: { attacker: number; defender: number }
@@ -34,31 +47,62 @@ function getValidTargets(source: HitSource): UnitType[] {
   }
 }
 
-/** Main combat state encapsulating both sides */
-export class CombatState {
-  readonly attacker: CombatSideState
-  readonly defender: CombatSideState
-  readonly abilities: AbilitiesTracker
+const EMPTY_ABILITIES: AbilitiesConfig = {
+  attacker: { abilities: [] },
+  defender: { abilities: [] },
+}
+
+/** Main combat state class */
+export class CombatState implements CombatStateData {
+  readonly data: CombatStateData
+
+  get attacker(): SideState {
+    return this.data.attacker
+  }
+  get defender(): SideState {
+    return this.data.defender
+  }
+  get abilities(): AbilitiesConfig {
+    return this.data.abilities
+  }
 
   constructor(
-    attacker: CombatSideState,
-    defender: CombatSideState,
-    abilities?: AbilitiesTracker,
+    attacker: SideState,
+    defender: SideState,
+    abilities?: AbilitiesConfig,
   ) {
-    this.attacker = attacker
-    this.defender = defender
-    this.abilities =
-      abilities ??
-      AbilitiesTracker.create({
-        attacker: { abilities: [] },
-        defender: { abilities: [] },
-      })
+    this.data = {
+      attacker,
+      defender,
+      abilities: abilities ?? EMPTY_ABILITIES,
+    }
+  }
+
+  private static fromData(data: CombatStateData): CombatState {
+    return new CombatState(data.attacker, data.defender, data.abilities)
   }
 
   /** Collect dice for a side and source */
   collectDice(side: CombatSide, source: HitSource): DieValue[] {
     const participatingUnits = this.getParticipatingUnits(side)
-    return this[side].collectDice(source, participatingUnits)
+    return collectDice(this[side], source, participatingUnits)
+  }
+
+  /** Get participating units from PARTICIPATING_UNITS ability */
+  getParticipatingUnits(side: CombatSide): ReadonlySet<UnitType> {
+    const params = getAbilityParams(this.abilities, side, 'PARTICIPATING_UNITS')
+    if (!params) {
+      // Fallback: all units with count > 0 are participating
+      return new Set(Object.keys(this.data[side].units) as UnitType[])
+    }
+    return new Set(params.space as UnitType[])
+  }
+
+  /** Get unit priority from UNIT_PRIORITY ability if present */
+  private getUnitPriority(side: CombatSide): UnitType[] | undefined {
+    const params = getAbilityParams(this.abilities, side, 'UNIT_PRIORITY')
+    if (!params) return undefined
+    return params.unitPriority as UnitType[] | undefined
   }
 
   /**
@@ -77,10 +121,9 @@ export class CombatState {
     }
 
     // Run BEFORE_DICE_ROLL abilities with alternating mechanism
-    // Abilities receive own/opponent, but we pass/receive attacker/defender
-    const modifiedDice = this.abilities.runAbilities(
+    const { state: newStateData, context: modifiedDice } = runAbilities(
       'BEFORE_DICE_ROLL',
-      this,
+      this.data,
       sidedDiceData,
     )
 
@@ -95,21 +138,22 @@ export class CombatState {
         const probability = attOutcome.probability * defOutcome.probability
         if (probability === 0) continue
 
-        let newState = this.clone()
         // Attacker hits go to defender, defender hits go to attacker
-        newState = newState.addHitsToSide(
+        let resultData = addHits(
+          newStateData,
           'defender',
           attOutcome.hits,
           validTargets,
         )
-        newState = newState.addHitsToSide(
+        resultData = addHits(
+          resultData,
           'attacker',
           defOutcome.hits,
           validTargets,
         )
 
         results.push({
-          state: newState,
+          state: CombatState.fromData(resultData),
           probability,
           meta: { attacker: defOutcome.hits, defender: attOutcome.hits },
         })
@@ -127,68 +171,45 @@ export class CombatState {
   ): CombatState {
     if (hits === 0) return this
 
-    const newSideState = this[side].addHits(hits, validTargets)
-    const [attacker, defender] =
-      side === 'attacker'
-        ? [newSideState, this.defender]
-        : [this.attacker, newSideState]
-
-    return new CombatState(attacker, defender, this.abilities)
+    const newData = addHits(this.data, side, hits, validTargets)
+    return CombatState.fromData(newData)
   }
 
   /** Assign hits from pools for both sides */
   assignHits(): CombatState {
-    this.abilities.runAbilities('BEFORE_ASSIGN_HITS', this)
+    const { state: afterAbilities } = runAbilities(
+      'BEFORE_ASSIGN_HITS',
+      this.data,
+    )
 
-    const attackerParticipating = this.getParticipatingUnits('attacker')
-    const defenderParticipating = this.getParticipatingUnits('defender')
-    const attackerPriority = this.getUnitPriority('attacker')
-    const defenderPriority = this.getUnitPriority('defender')
+    const tempState = CombatState.fromData(afterAbilities)
+    const attackerParticipating = tempState.getParticipatingUnits('attacker')
+    const defenderParticipating = tempState.getParticipatingUnits('defender')
+    const attackerPriority = tempState.getUnitPriority('attacker')
+    const defenderPriority = tempState.getUnitPriority('defender')
 
-    const newAttacker = this.attacker.assignHits(
+    let resultData = assignHitsSide(
+      afterAbilities,
+      'attacker',
       attackerParticipating,
       attackerPriority,
     )
-    const newDefender = this.defender.assignHits(
+    resultData = assignHitsSide(
+      resultData,
+      'defender',
       defenderParticipating,
       defenderPriority,
     )
 
-    return new CombatState(newAttacker, newDefender, this.abilities)
-  }
-
-  /** Get participating units from PARTICIPATING_UNITS ability */
-  getParticipatingUnits(side: CombatSide): ReadonlySet<UnitType> {
-    const ability = this.abilities.forSide(side).get('PARTICIPATING_UNITS')
-    if (!ability) {
-      // Fallback: all units with count > 0 are participating
-      return new Set(Object.keys(this[side].units) as UnitType[])
-    }
-    return new Set(ability.params.space as UnitType[])
-  }
-
-  /** Get unit priority from UNIT_PRIORITY ability if present */
-  private getUnitPriority(side: CombatSide): UnitType[] | undefined {
-    const ability = this.abilities.forSide(side).get('UNIT_PRIORITY')
-    if (!ability) return undefined
-    return ability.params.unitPriority as UnitType[] | undefined
-  }
-
-  /** Create a deep clone of this state */
-  clone(): CombatState {
-    return new CombatState(
-      this.attacker.clone(),
-      this.defender.clone(),
-      this.abilities.clone(),
-    )
+    return CombatState.fromData(resultData)
   }
 
   /** Check if combat is finished (one or both sides' participating units eliminated) */
   isFinished(): boolean {
     const attackerParticipating = this.getParticipatingUnits('attacker')
     const defenderParticipating = this.getParticipatingUnits('defender')
-    const attackerAlive = this.attacker.countUnits(attackerParticipating) > 0
-    const defenderAlive = this.defender.countUnits(defenderParticipating) > 0
+    const attackerAlive = countUnits(this.attacker, attackerParticipating) > 0
+    const defenderAlive = countUnits(this.defender, defenderParticipating) > 0
     return !attackerAlive || !defenderAlive
   }
 
@@ -196,9 +217,15 @@ export class CombatState {
   getHash(): string {
     return `${getSideHash(this.attacker)}|${getSideHash(this.defender)}`
   }
+
+  /** Run SETUP abilities */
+  runSetup(): CombatState {
+    const { state: newData } = runAbilities('SETUP', this.data)
+    return CombatState.fromData(newData)
+  }
 }
 
-function getSideHash(side: CombatSideState): string {
+function getSideHash(side: SideState): string {
   const parts: string[] = []
   const sortedTypes = Object.keys(side.units).sort()
 
@@ -212,3 +239,7 @@ function getSideHash(side: CombatSideState): string {
 
   return parts.join(',')
 }
+
+// Re-export types and utilities
+export type { CombatSide, CombatStateData, SideState }
+export { getOpponentSide }

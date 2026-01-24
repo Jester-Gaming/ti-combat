@@ -1,11 +1,16 @@
 import type { UnitType } from '@/types'
 import { getUnitListItems } from '@/utils/get-unit-config'
 
-import type { CombatSideState, Unit } from '../../state/combat-side-state'
-import type { Ability, AbilityContext } from '../types'
+import {
+  getPendingHits,
+  reduceHits,
+  updateUnit,
+} from '../../state/side-state-ops'
+import type { SideState, Unit } from '../../state/types'
+import type { Ability, AbilityReadContext, StateChange } from '../types'
 
 /** Get units that are present on the side and have sustain damage ability */
-function getSustainUnitsForSide(side: CombatSideState): UnitType[] {
+function getSustainUnitsForSide(side: SideState): UnitType[] {
   const result: UnitType[] = []
   for (const [unitType, units] of Object.entries(side.units)) {
     if (units && units.length > 0) {
@@ -26,19 +31,19 @@ type Params = {
 
 /** Find the first undamaged unit that can sustain, following priority order */
 function findUnitToSustain(
-  ctx: AbilityContext,
+  sideState: SideState,
   allowedUnits: Set<UnitType>,
   priority: UnitType[],
-): { type: UnitType; unit: Unit } | null {
+): { type: UnitType; unit: Unit; index: number } | null {
   for (const unitType of priority) {
     if (!allowedUnits.has(unitType)) continue
 
-    const units = ctx.own.units[unitType]
+    const units = sideState.units[unitType]
     if (!units) continue
 
-    const undamaged = units.find(unit => !unit.isDamaged)
-    if (undamaged) {
-      return { type: unitType, unit: undamaged }
+    const index = units.findIndex(unit => !unit.isDamaged)
+    if (index >= 0) {
+      return { type: unitType, unit: units[index], index }
     }
   }
   return null
@@ -97,24 +102,37 @@ export const sustainDamage: Ability<Params> = {
     {
       timing: 'BEFORE_ASSIGN_HITS',
       multi: true,
-      isCallable: (ctx: AbilityContext, params: Params) => {
-        const hasHits = ctx.own.pendingHits > 0
+      isCallable: (ctx: AbilityReadContext, params: Params) => {
+        const hasHits = getPendingHits(ctx.own) > 0
         if (!hasHits) return false
 
         const allowedUnits = new Set(params.units)
         const priority = params.unitPriority
-        return findUnitToSustain(ctx, allowedUnits, priority) !== null
+        return findUnitToSustain(ctx.own, allowedUnits, priority) !== null
       },
-      call: (ctx: AbilityContext, params: Params) => {
+      call: (ctx: AbilityReadContext, params: Params): StateChange<void> => {
         const hitPerSustain = params.hitPerSustain ?? 1
         const allowedUnits = new Set(params.units)
         const priority = params.unitPriority
-        const target = findUnitToSustain(ctx, allowedUnits, priority)
+        const target = findUnitToSustain(ctx.own, allowedUnits, priority)
 
-        if (target) {
-          target.unit.isDamaged = true
-          ctx.own.reduceHits(hitPerSustain)
+        if (!target) {
+          return { state: ctx.state as typeof ctx.state & object }
         }
+
+        let newState = updateUnit(
+          ctx.state as typeof ctx.state & object,
+          ctx.side,
+          target.type,
+          target.index,
+          {
+            isDamaged: true,
+            usedSustainThisRound: true,
+          },
+        )
+        newState = reduceHits(newState, ctx.side, hitPerSustain)
+
+        return { state: newState }
       },
     },
   ],

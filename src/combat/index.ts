@@ -6,9 +6,9 @@ export type {
   SurvivorSide,
 } from './types'
 
-// State classes
+// State
 export { flattenTree } from './probability'
-export { CombatSideState, CombatState, type Unit } from './state'
+export { CombatState, type SideState, type Unit } from './state'
 
 // Engine
 export { CombatEngine } from './combat-engine'

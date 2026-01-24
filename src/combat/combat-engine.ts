@@ -1,11 +1,4 @@
-import { CombatState } from './state/combat-state'
-
-/** A state with its probability and hit metadata */
-interface StateWithProbability {
-  state: CombatState
-  probability: number
-  meta?: { attacker: number; defender: number }
-}
+import { CombatState, type StateWithProbability } from './state/combat-state'
 
 /** A node in the probability tree */
 interface ProbabilityNode {
@@ -48,16 +41,16 @@ export class CombatEngine {
     this.subtreeCache.clear()
 
     // Run SETUP event for abilities (each ability called once)
-    initialState.abilities.runAbilities('SETUP', initialState)
+    const stateAfterSetup = initialState.runSetup()
 
     const root: ProbabilityNode = {
-      state: initialState,
+      state: stateAfterSetup,
       probability: 1,
       children: [],
     }
 
     // Check for immediate end
-    if (initialState.isFinished()) {
+    if (stateAfterSetup.isFinished()) {
       return root
     }
 
