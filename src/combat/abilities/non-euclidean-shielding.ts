@@ -16,10 +16,10 @@ export const nonEuclideanShielding: Ability<Params> = {
     {
       timing: 'SETUP',
       isCallable: (ctx: AbilityContext, params: Params) => {
-        return params.isEnabled && ctx.abilities.my.has('SUSTAIN_DAMAGE')
+        return params.isEnabled && ctx.abilities.own.has('SUSTAIN_DAMAGE')
       },
       call: (ctx: AbilityContext) => {
-        const sustainDamage = ctx.abilities.my.get('SUSTAIN_DAMAGE')
+        const sustainDamage = ctx.abilities.own.get('SUSTAIN_DAMAGE')
         if (sustainDamage) {
           sustainDamage.modifyParams({
             hitPerSustain: 2,

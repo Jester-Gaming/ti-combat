@@ -1,19 +1,19 @@
 import { filter, groupBy, keys, pipe } from 'remeda'
 
-import type { AnyAbility } from '@/combat/abilities'
+import type { Ability } from '@/combat/abilities'
 import type { CombatSideState } from '@/combat/state'
 
 import styles from './abilities-panel.module.css'
 import { AbilityConfig } from './components/ability-config'
 
 interface AbilitiesPanelProps {
-  abilities: AnyAbility[]
+  abilities: Ability[]
   sideState: CombatSideState
   params: Record<string, Record<string, unknown>>
   onParamsChange: (abilityName: string, params: Record<string, unknown>) => void
 }
 
-function hasUI(ability: AnyAbility): boolean {
+function hasUI(ability: Ability): boolean {
   return ability.enableUI === true || (ability.uiConfig?.length ?? 0) > 0
 }
 

@@ -1,7 +1,7 @@
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons'
 import { useMemo, useState } from 'react'
 
-import type { AnyAbility } from '@/combat/abilities'
+import type { Ability } from '@/combat/abilities'
 import type { CombatSideState } from '@/combat/state'
 import { Checkbox } from '@/components/ui/checkbox'
 
@@ -10,7 +10,7 @@ import { OrderList } from '../order-list'
 import styles from './ability-config.module.css'
 
 interface AbilityConfigProps {
-  ability: AnyAbility
+  ability: Ability
   sideState: CombatSideState
   params: Record<string, unknown>
   onParamsChange: (params: Record<string, unknown>) => void

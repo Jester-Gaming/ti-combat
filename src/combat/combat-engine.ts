@@ -48,7 +48,7 @@ export class CombatEngine {
     this.subtreeCache.clear()
 
     // Run SETUP event for abilities (each ability called once)
-    initialState.abilities.runSetup(initialState)
+    initialState.abilities.runAbilities('SETUP', initialState)
 
     const root: ProbabilityNode = {
       state: initialState,

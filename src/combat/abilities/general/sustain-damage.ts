@@ -33,7 +33,7 @@ function findUnitToSustain(
   for (const unitType of priority) {
     if (!allowedUnits.has(unitType)) continue
 
-    const units = ctx.my.units[unitType]
+    const units = ctx.own.units[unitType]
     if (!units) continue
 
     const undamaged = units.find(unit => !unit.isDamaged)
@@ -98,7 +98,7 @@ export const sustainDamage: Ability<Params> = {
       timing: 'BEFORE_ASSIGN_HITS',
       multi: true,
       isCallable: (ctx: AbilityContext, params: Params) => {
-        const hasHits = ctx.my.pendingHits > 0
+        const hasHits = ctx.own.pendingHits > 0
         if (!hasHits) return false
 
         const allowedUnits = new Set(params.units)
@@ -113,7 +113,7 @@ export const sustainDamage: Ability<Params> = {
 
         if (target) {
           target.unit.isDamaged = true
-          ctx.my.reduceHits(hitPerSustain)
+          ctx.own.reduceHits(hitPerSustain)
         }
       },
     },

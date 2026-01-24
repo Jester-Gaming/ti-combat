@@ -3,44 +3,40 @@ import type { DieValue } from '@/types'
 import type { CombatSideState } from '../state/combat-side-state'
 import type { CombatState } from '../state/combat-state'
 
-export type AbilityTiming = 'SETUP' | 'BEFORE_ASSIGN_HITS' | 'BEFORE_DICE_ROLL'
-
-// Raw dice data passed to BEFORE_DICE_ROLL abilities
-// Abilities determine my/opponent using ctx.my === ctx.state.attacker
-export interface DiceData {
-  attackerDice: DieValue[]
-  defenderDice: DieValue[]
+// Sided context (external API - attacker/defender perspective)
+export interface SidedContext<T> {
+  attacker: T
+  defender: T
 }
 
-/** Get my dice from DiceData based on AbilityContext */
-export function getMyDice(ctx: AbilityContext, diceData: DiceData): DieValue[] {
-  return ctx.my === ctx.state.attacker
-    ? diceData.attackerDice
-    : diceData.defenderDice
+// Own/Opponent context (ability perspective - relative to current side)
+export interface OwnOpponentContext<T> {
+  own: T
+  opponent: T
 }
 
-/** Get opponent dice from DiceData based on AbilityContext */
-export function getOpponentDice(
-  ctx: AbilityContext,
-  diceData: DiceData,
-): DieValue[] {
-  return ctx.my === ctx.state.attacker
-    ? diceData.defenderDice
-    : diceData.attackerDice
+// Internal DiceData uses own/opponent (ability perspective)
+export type DiceData = OwnOpponentContext<DieValue[]>
+
+// Sided version for external API
+export type SidedDiceData = SidedContext<DieValue[]>
+
+// Single source of truth - map timing to context type (external API uses sided format)
+// void = no context, other type = required context
+export interface TimingContextMap {
+  SETUP: void
+  BEFORE_DICE_ROLL: SidedDiceData
+  BEFORE_ASSIGN_HITS: void
 }
 
-/** Set my dice in DiceData based on AbilityContext */
-export function setMyDice(
-  ctx: AbilityContext,
-  diceData: DiceData,
-  dice: DieValue[],
-): void {
-  if (ctx.my === ctx.state.attacker) {
-    diceData.attackerDice = dice
-  } else {
-    diceData.defenderDice = dice
-  }
+// Internal map for ability calls (uses own/opponent)
+export interface InternalTimingContextMap {
+  SETUP: void
+  BEFORE_DICE_ROLL: DiceData
+  BEFORE_ASSIGN_HITS: void
 }
+
+export type AbilityTiming = keyof TimingContextMap
 
 /** Per-side abilities accessor for use within ability context */
 export interface SideAbilities {
@@ -49,70 +45,86 @@ export interface SideAbilities {
 }
 
 export interface AbilityContext {
-  my: CombatSideState
+  own: CombatSideState
   opponent: CombatSideState
   state: CombatState
   abilities: {
-    my: SideAbilities
+    own: SideAbilities
     opponent: SideAbilities
   }
 }
 
-export interface AbilityInvoke<
-  TParams = Record<string, unknown>,
-  TContext = unknown,
-> {
-  timing: AbilityTiming
+// Auto-generate invoke type for each timing
+// Uses InternalTimingContextMap for ability perspective (own/opponent)
+type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
+  timing: T
   /** If true, this invoke can be called multiple times per timing phase. Default: false */
   multi?: boolean
-  isCallable?: (
-    ctx: AbilityContext,
-    params: TParams,
-    context?: TContext,
-  ) => boolean
-  call: (ctx: AbilityContext, params: TParams, context?: TContext) => void
-}
+} & (InternalTimingContextMap[T] extends void
+  ? {
+      isCallable?: (ctx: AbilityContext, params: TParams) => boolean
+      call: (ctx: AbilityContext, params: TParams) => void
+    }
+  : {
+      isCallable?: (
+        ctx: AbilityContext,
+        params: TParams,
+        context: InternalTimingContextMap[T],
+      ) => boolean
+      call: (
+        ctx: AbilityContext,
+        params: TParams,
+        context: InternalTimingContextMap[T],
+      ) => void
+    })
 
-export interface UIConfigItemBase<TParams = Record<string, unknown>> {
+// Union of all timing invoke types (auto-generated)
+export type AbilityInvoke<TParams = Record<string, unknown>> = {
+  [K in AbilityTiming]: AbilityInvokeFor<TParams, K>
+}[AbilityTiming]
+
+interface UIConfigItemBase<TParams = Record<string, unknown>> {
   key: keyof TParams // Property name in params (e.g., 'riskDirectHit')
   label: string // Display label (e.g., 'Risk Direct Hit?')
 }
 
-export interface UIConfigCheckbox<
+interface UIConfigCheckbox<
   TParams = Record<string, unknown>,
 > extends UIConfigItemBase<TParams> {
   type: 'checkbox'
 }
 
-export interface UIConfigListItem {
-  label: string
-  value: string
-}
-
-export interface UIConfigOrderList<
+interface UIConfigOrderList<
   TParams = Record<string, unknown>,
 > extends UIConfigItemBase<TParams> {
   type: 'order-list'
-  items: UIConfigListItem[]
+  items: {
+    label: string
+    value: string
+  }[]
 }
 
-export interface UIConfigCheckboxList<
+interface UIConfigCheckboxList<
   TParams = Record<string, unknown>,
 > extends UIConfigItemBase<TParams> {
   type: 'checkbox-list'
-  items: UIConfigListItem[]
+  items: {
+    label: string
+    value: string
+  }[]
 }
 
-export type UIConfigItem<TParams = Record<string, unknown>> =
+type UIConfigItem<TParams = Record<string, unknown>> =
   | UIConfigCheckbox<TParams>
   | UIConfigOrderList<TParams>
   | UIConfigCheckboxList<TParams>
 
-export type UIConfig<Params = Record<string, unknown>> =
+type UIConfig<Params = Record<string, unknown>> =
   | UIConfigItem<Params>[]
   | ((side: CombatSideState, params: Params) => UIConfigItem<Params>[])
 
-export interface Ability<Params = Record<string, unknown>> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface Ability<Params extends Record<string, unknown> = any> {
   key: string
   name: string // Display name for UI
   category: string
@@ -122,9 +134,6 @@ export interface Ability<Params = Record<string, unknown>> {
   uiConfig?: UIConfig<Params>
   invoke: AbilityInvoke<Params>[]
 }
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type AnyAbility = Ability<any>
 
 export interface AbilityInstance {
   readonly key: string

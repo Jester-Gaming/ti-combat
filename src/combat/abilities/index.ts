@@ -13,15 +13,12 @@ export type {
   AbilityInstance,
   AbilityInvoke,
   AbilityTiming,
-  AnyAbility,
   DiceData,
+  OwnOpponentContext,
   SideAbilities,
-  UIConfigCheckboxList,
-  UIConfigItem,
-  UIConfigListItem,
-  UIConfigOrderList,
+  SidedContext,
+  SidedDiceData,
 } from './types'
-export { getMyDice, getOpponentDice, setMyDice } from './types'
 
 export const allAbilities = [...general, ...environment, ...agenda]
 
