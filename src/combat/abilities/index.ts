@@ -2,13 +2,15 @@ export {
   AbilitiesTracker,
   type AbilitiesTrackerOptions,
 } from './abilities-tracker'
-import type { CombatSideState } from '../state'
+import type { CombatSide } from '../types'
 import agenda from './agenda'
 import environment from './environment'
 import general from './general'
+import type { Ability } from './types'
 export { nonEuclideanShielding } from './non-euclidean-shielding'
 export type {
   Ability,
+  AbilityCondition,
   AbilityContext,
   AbilityInstance,
   AbilityInvoke,
@@ -22,7 +24,10 @@ export type {
 
 export const allAbilities = [...general, ...environment, ...agenda]
 
-export function getAvailableAbilities(side: CombatSideState) {
-  console.log(side)
-  return allAbilities
+export function getAvailableAbilities(side: CombatSide): Ability[] {
+  return allAbilities.filter(ability => {
+    if (!ability.condition) return true
+    if (ability.condition.onlyDefender && side !== 'defender') return false
+    return true
+  })
 }

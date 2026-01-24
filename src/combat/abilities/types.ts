@@ -123,6 +123,12 @@ type UIConfig<Params = Record<string, unknown>> =
   | UIConfigItem<Params>[]
   | ((side: CombatSideState, params: Params) => UIConfigItem<Params>[])
 
+/** Conditions for when an ability is available */
+export interface AbilityCondition {
+  /** Ability is only available to the defender */
+  onlyDefender?: boolean
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface Ability<Params extends Record<string, unknown> = any> {
   key: string
@@ -132,6 +138,8 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   enableUI?: boolean // Show enable checkbox in header, controls ENABLED param
   defaultCollapsed?: boolean // Start with config items collapsed
   uiConfig?: UIConfig<Params>
+  /** Conditions restricting which side can use this ability */
+  condition?: AbilityCondition
   invoke: AbilityInvoke<Params>[]
 }
 

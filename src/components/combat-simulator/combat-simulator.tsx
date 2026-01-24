@@ -96,14 +96,8 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
   )
 
   // Get available abilities for each side
-  const attackerAbilities = useMemo(
-    () => getAvailableAbilities(attackerSideState),
-    [attackerSideState],
-  )
-  const defenderAbilities = useMemo(
-    () => getAvailableAbilities(defenderSideState),
-    [defenderSideState],
-  )
+  const attackerAbilities = useMemo(() => getAvailableAbilities('attacker'), [])
+  const defenderAbilities = useMemo(() => getAvailableAbilities('defender'), [])
 
   // Create CombatState from battle configuration
   const combatState = useMemo((): CombatState | null => {

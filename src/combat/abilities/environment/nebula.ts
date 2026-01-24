@@ -22,6 +22,7 @@ export const nebula: Ability<Params> = {
     isEnabled: false,
   },
   enableUI: true,
+  condition: { onlyDefender: true },
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
