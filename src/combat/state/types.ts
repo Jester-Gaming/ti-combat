@@ -13,7 +13,7 @@ export type CombatPhase =
 /** Unit stats - defines the unit's capabilities */
 export interface UnitStats {
   COMBAT?: UnitDieValue | null
-  ABILITIES?: UnitAbilities
+  UNIT_ABILITIES?: UnitAbilities
 }
 
 /** Unit instance state - runtime state of a single unit */

@@ -14,7 +14,7 @@ function getSustainUnitsForSide(side: SideState): UnitType[] {
   const result: UnitType[] = []
   for (const [unitType, units] of Object.entries(side.units)) {
     if (units && units.length > 0) {
-      const hasSustain = units.some(u => u.ABILITIES?.SUSTAIN_DAMAGE)
+      const hasSustain = units.some(u => u.UNIT_ABILITIES?.SUSTAIN_DAMAGE)
       if (hasSustain) {
         result.push(unitType as UnitType)
       }

@@ -43,7 +43,7 @@ export interface UnitStats {
   COMBAT?: UnitDieValue | null
   MOVE?: number | null
   CAPACITY?: number | null
-  ABILITIES?: UnitAbilities
+  UNIT_ABILITIES?: UnitAbilities
 }
 
 // Upgraded unit stats (partial, inherits from BASE)
@@ -58,10 +58,17 @@ export interface UnitDefinition {
 // Faction unit definitions
 export type FactionUnits = Partial<Record<UnitType, UnitDefinition>>
 
+// Faction abilities configuration
+export interface FactionAbilities {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  faction: readonly any[]
+}
+
 // Faction data structure
 export interface Faction {
   name: string
   units: FactionUnits
+  abilities?: FactionAbilities
 }
 
 // Base units data structure

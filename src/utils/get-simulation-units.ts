@@ -10,7 +10,7 @@ import { getFactionUnitConfig } from './get-faction-unit-config'
 
 /**
  * Converts a SideState to a unit map suitable for SideState.
- * Each unit has both stats (COMBAT, ABILITIES) and state (isDamaged).
+ * Each unit has both stats (COMBAT, UNIT_ABILITIES) and state (isDamaged).
  */
 export function getSimulationUnits(
   side: SideState,
@@ -38,7 +38,7 @@ export function getSimulationUnits(
     // Create unit instances with stats
     units[unitType] = Array.from({ length: unitState.count }, () => ({
       COMBAT: effectiveStats.COMBAT,
-      ABILITIES: effectiveStats.ABILITIES,
+      UNIT_ABILITIES: effectiveStats.UNIT_ABILITIES,
     }))
   }
 
@@ -58,9 +58,9 @@ function getEffectiveStats(
     return {
       ...baseStats,
       ...upgradedStats,
-      ABILITIES: {
-        ...baseStats?.ABILITIES,
-        ...upgradedStats.ABILITIES,
+      UNIT_ABILITIES: {
+        ...baseStats?.UNIT_ABILITIES,
+        ...upgradedStats.UNIT_ABILITIES,
       },
     }
   }

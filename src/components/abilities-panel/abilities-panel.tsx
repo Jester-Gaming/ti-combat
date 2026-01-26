@@ -51,7 +51,7 @@ export function AbilitiesPanel({
         <div key={category}>
           <h6 className={styles.categoryLabel}>{category}</h6>
           <div className={styles.abilitiesList}>
-            {groupedAbilities[category].map(ability => (
+            {groupedAbilities[category]?.map(ability => (
               <AbilityConfig
                 key={ability.key}
                 ability={ability}

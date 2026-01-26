@@ -1,6 +1,6 @@
 import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useImmer } from 'use-immer'
 
 import {
@@ -97,8 +97,46 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
   )
 
   // Get available abilities for each side
-  const attackerAbilities = useMemo(() => getAvailableAbilities('attacker'), [])
-  const defenderAbilities = useMemo(() => getAvailableAbilities('defender'), [])
+  const attackerAbilities = useMemo(
+    () => getAvailableAbilities('attacker', battle.attacker.faction),
+    [battle.attacker.faction],
+  )
+  const defenderAbilities = useMemo(
+    () => getAvailableAbilities('defender', battle.defender.faction),
+    [battle.defender.faction],
+  )
+
+  // Initialize ability params with defaults when abilities change
+  useEffect(() => {
+    setAbilityParams(draft => {
+      const attackerKeys = new Set(attackerAbilities.map(a => a.key))
+      const defenderKeys = new Set(defenderAbilities.map(a => a.key))
+
+      // Initialize new abilities with defaults, preserve existing params
+      for (const ability of attackerAbilities) {
+        if (!draft.attacker[ability.key] && ability.defaultParams) {
+          draft.attacker[ability.key] = { ...ability.defaultParams }
+        }
+      }
+      for (const ability of defenderAbilities) {
+        if (!draft.defender[ability.key] && ability.defaultParams) {
+          draft.defender[ability.key] = { ...ability.defaultParams }
+        }
+      }
+
+      // Remove params for abilities that no longer exist
+      for (const key of Object.keys(draft.attacker)) {
+        if (!attackerKeys.has(key)) {
+          delete draft.attacker[key]
+        }
+      }
+      for (const key of Object.keys(draft.defender)) {
+        if (!defenderKeys.has(key)) {
+          delete draft.defender[key]
+        }
+      }
+    })
+  }, [attackerAbilities, defenderAbilities, setAbilityParams])
 
   // Create CombatState from battle configuration
   const combatState = useMemo(() => {

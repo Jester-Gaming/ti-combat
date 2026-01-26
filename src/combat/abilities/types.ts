@@ -159,11 +159,12 @@ export interface AbilityCondition {
   onlyDefender?: boolean
 }
 
+type AbilityCategory = 'GENERAL' | 'FACTION' | 'AGENDA' | 'ENVIRONMENT'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface Ability<Params extends Record<string, unknown> = any> {
   key: string
   name: string // Display name for UI
-  category: string
+  category: AbilityCategory
   defaultParams?: Params
   enableUI?: boolean // Show enable checkbox in header, controls ENABLED param
   defaultCollapsed?: boolean // Start with config items collapsed

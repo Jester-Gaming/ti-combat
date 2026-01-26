@@ -1,0 +1,33 @@
+import type { Faction } from '@/types'
+
+export const empyrean: Faction = {
+  name: 'Empyrean',
+  units: {
+    FLAGSHIP: {
+      BASE: {
+        NAME: 'Dynamo',
+        DESCRIPTION:
+          "After any player's unit in this system or an adjacent system uses Sustain Damage, you may spend 2 influence to repair that unit.",
+        COST: 8,
+        COMBAT: [5, 2],
+        MOVE: 1,
+        CAPACITY: 3,
+        UNIT_ABILITIES: {
+          SUSTAIN_DAMAGE: true,
+        },
+      },
+    },
+    MECH: {
+      BASE: {
+        NAME: 'Watcher',
+        DESCRIPTION:
+          "You may remove this unit from a system that contains or is adjacent to another player's units to cancel an action card played by that player.",
+        COST: 2,
+        COMBAT: [6, 1],
+        UNIT_ABILITIES: {
+          SUSTAIN_DAMAGE: true,
+        },
+      },
+    },
+  },
+}

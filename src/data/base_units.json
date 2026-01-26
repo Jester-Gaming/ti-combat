@@ -6,7 +6,7 @@
       "COMBAT": [3, 3],
       "MOVE": 2,
       "CAPACITY": 6,
-      "ABILITIES": {
+      "UNIT_ABILITIES": {
         "SUSTAIN_DAMAGE": true,
         "BOMBARDMENT": [3, 3]
       }
@@ -18,7 +18,7 @@
       "COMBAT": [7, 1],
       "MOVE": 2,
       "CAPACITY": null,
-      "ABILITIES": {}
+      "UNIT_ABILITIES": {}
     },
     "UPGRADED": {
       "COMBAT": [6, 1],
@@ -32,7 +32,7 @@
       "COMBAT": [5, 1],
       "MOVE": 1,
       "CAPACITY": 1,
-      "ABILITIES": {
+      "UNIT_ABILITIES": {
         "SUSTAIN_DAMAGE": true,
         "BOMBARDMENT": [5, 1]
       }
@@ -47,13 +47,13 @@
       "COMBAT": [9, 1],
       "MOVE": 2,
       "CAPACITY": null,
-      "ABILITIES": {
+      "UNIT_ABILITIES": {
         "AFB": [9, 2]
       }
     },
     "UPGRADED": {
       "COMBAT": [8, 1],
-      "ABILITIES": {
+      "UNIT_ABILITIES": {
         "AFB": [6, 3]
       }
     }
@@ -64,13 +64,13 @@
       "COMBAT": null,
       "MOVE": null,
       "CAPACITY": null,
-      "ABILITIES": {
+      "UNIT_ABILITIES": {
         "PLANETARY_SHIELD": true,
         "SPACE_CANNON": [6, 1]
       }
     },
     "UPGRADED": {
-      "ABILITIES": {
+      "UNIT_ABILITIES": {
         "SPACE_CANNON": [5, 1]
       }
     }
@@ -81,7 +81,7 @@
       "COMBAT": [9, 1],
       "MOVE": 1,
       "CAPACITY": 4,
-      "ABILITIES": {}
+      "UNIT_ABILITIES": {}
     },
     "UPGRADED": {
       "MOVE": 2,
@@ -94,7 +94,7 @@
       "COMBAT": [9, 1],
       "MOVE": null,
       "CAPACITY": null,
-      "ABILITIES": {}
+      "UNIT_ABILITIES": {}
     },
     "UPGRADED": {
       "COMBAT": [8, 1],
@@ -107,7 +107,7 @@
       "COMBAT": [8, 1],
       "MOVE": null,
       "CAPACITY": null,
-      "ABILITIES": {}
+      "UNIT_ABILITIES": {}
     },
     "UPGRADED": {
       "COMBAT": [7, 1]
@@ -119,7 +119,7 @@
       "COMBAT": null,
       "MOVE": null,
       "CAPACITY": null,
-      "ABILITIES": {}
+      "UNIT_ABILITIES": {}
     },
     "UPGRADED": {}
   }

@@ -30,11 +30,11 @@ function createSideState(units: Partial<Record<string, Unit[]>>): SideState {
 }
 
 describe('CombatState', () => {
-  const fighterStats: Partial<Unit> = { COMBAT: [9, 1], ABILITIES: {} }
-  const cruiserStats: Partial<Unit> = { COMBAT: [7, 1], ABILITIES: {} }
+  const fighterStats: Partial<Unit> = { COMBAT: [9, 1], UNIT_ABILITIES: {} }
+  const cruiserStats: Partial<Unit> = { COMBAT: [7, 1], UNIT_ABILITIES: {} }
   const destroyerStats: Partial<Unit> = {
     COMBAT: [9, 1],
-    ABILITIES: { AFB: [9, 2] },
+    UNIT_ABILITIES: { AFB: [9, 2] },
   }
 
   describe('constructor', () => {
@@ -301,8 +301,8 @@ describe('CombatState', () => {
 })
 
 describe('SideState operations', () => {
-  const fighterStats: Partial<Unit> = { COMBAT: [9, 1], ABILITIES: {} }
-  const cruiserStats: Partial<Unit> = { COMBAT: [7, 1], ABILITIES: {} }
+  const fighterStats: Partial<Unit> = { COMBAT: [9, 1], UNIT_ABILITIES: {} }
+  const cruiserStats: Partial<Unit> = { COMBAT: [7, 1], UNIT_ABILITIES: {} }
 
   function createSideState(units: Partial<Record<string, Unit[]>>): SideState {
     return {

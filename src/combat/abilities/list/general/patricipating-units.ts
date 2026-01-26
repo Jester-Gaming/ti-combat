@@ -1,6 +1,6 @@
 import type { UnitType } from '@/types'
 
-import type { Ability } from '../types'
+import type { Ability } from '../../types'
 
 type Params = {
   space: UnitType[]

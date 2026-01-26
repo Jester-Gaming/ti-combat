@@ -1,0 +1,55 @@
+import type { Faction } from '@/types'
+
+export const crimson_rebellion: Faction = {
+  name: 'Crimson Rebellion',
+  units: {
+    FLAGSHIP: {
+      BASE: {
+        NAME: 'Artemiris',
+        DESCRIPTION:
+          "While this unit is in a system that contains an active breach, other players' units in systems with active breaches lose all of their unit abilities.",
+        COST: 8,
+        COMBAT: [5, 2],
+        MOVE: 1,
+        CAPACITY: 3,
+        UNIT_ABILITIES: {
+          SUSTAIN_DAMAGE: true,
+        },
+      },
+    },
+    MECH: {
+      BASE: {
+        NAME: 'Revenant',
+        DESCRIPTION:
+          'Deploy: During the "Commit Ground Forces" step of your tactical action in a system that contains an active breach, you may commit 1 mech, even if you have no units in the system.',
+        COST: 2,
+        COMBAT: [6, 1],
+        UNIT_ABILITIES: {
+          SUSTAIN_DAMAGE: true,
+        },
+      },
+    },
+    DESTROYER: {
+      BASE: {
+        NAME: 'Exile I',
+        DESCRIPTION:
+          "At the end of any player's combat in this unit's system or an adjacent system, you may place 1 inactive breach in that system.",
+        COST: 1,
+        COMBAT: [8, 1],
+        MOVE: 2,
+        UNIT_ABILITIES: {
+          AFB: [9, 2],
+        },
+      },
+      UPGRADED: {
+        NAME: 'Exile II',
+        DESCRIPTION:
+          "At the end of any player's combat in this unit's system or up to 2 systems away, you may place 1 active or inactive breach in that system.",
+        COMBAT: [7, 1],
+        UNIT_ABILITIES: {
+          AFB: [6, 3],
+        },
+      },
+    },
+  },
+}

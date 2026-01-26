@@ -151,7 +151,9 @@ export function collectDice(
     if (!firstUnit) continue
 
     const dieValue =
-      source === 'COMBAT' ? firstUnit.COMBAT : firstUnit.ABILITIES?.[source]
+      source === 'COMBAT'
+        ? firstUnit.COMBAT
+        : firstUnit.UNIT_ABILITIES?.[source]
     if (!dieValue) continue
 
     const [hitValue, dicePerUnit] = dieValue

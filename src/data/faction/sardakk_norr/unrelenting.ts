@@ -5,7 +5,7 @@ import type {
   AbilityReadContext,
   DiceData,
   StateChange,
-} from '../../types'
+} from '../../../combat/abilities/types'
 
 type Params = {
   isEnabled: boolean
@@ -19,15 +19,14 @@ function applyDiceBonus(dice: DieValue[]): DieValue[] {
   ])
 }
 
-export const nebula: Ability<Params> = {
-  key: 'NEBULA',
-  name: 'Nebula',
-  category: 'ENVIRONMENT',
+export const unrelenting: Ability<Params> = {
+  key: 'UNRELENTING',
+  name: 'Unrelenting',
+  category: 'FACTION',
   defaultParams: {
-    isEnabled: false,
+    isEnabled: true,
   },
   enableUI: true,
-  condition: { onlyDefender: true },
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',

@@ -11,7 +11,7 @@ import { flattenTree } from './flatten-tree'
 const TEST_FACTION: FactionKey = 'ARBOREC'
 
 describe('flattenTree', () => {
-  const fighterStats: Partial<Unit> = { COMBAT: [9, 1], ABILITIES: {} }
+  const fighterStats: Partial<Unit> = { COMBAT: [9, 1], UNIT_ABILITIES: {} }
 
   const createUnits = (count: number): Unit[] =>
     Array.from({ length: count }, () => ({ ...fighterStats }))

@@ -28,9 +28,9 @@ function getUnitStats(
       result[unitType as UnitType] = {
         ...def.BASE,
         ...def.UPGRADED,
-        ABILITIES: {
-          ...(def.BASE as UnitStats | null)?.ABILITIES,
-          ...def.UPGRADED.ABILITIES,
+        UNIT_ABILITIES: {
+          ...(def.BASE as UnitStats | null)?.UNIT_ABILITIES,
+          ...def.UPGRADED.UNIT_ABILITIES,
         },
       } as UnitStats
     } else if (def.BASE) {
@@ -57,7 +57,7 @@ function createUnits(
       const unitStats = stats[type as UnitType]
       units[type as UnitType] = Array.from({ length: count }, () => ({
         COMBAT: unitStats?.COMBAT,
-        ABILITIES: unitStats?.ABILITIES,
+        UNIT_ABILITIES: unitStats?.UNIT_ABILITIES,
       }))
     }
   }

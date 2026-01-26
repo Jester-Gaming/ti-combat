@@ -34,6 +34,7 @@ export default defineConfig([
   },
   {
     files: ['src/**/*'],
+    ignores: ['src/data/faction/**'],
     plugins: {
       'check-file': checkFile,
     },
