@@ -159,7 +159,12 @@ export interface AbilityCondition {
   onlyDefender?: boolean
 }
 
-type AbilityCategory = 'GENERAL' | 'FACTION' | 'AGENDA' | 'ENVIRONMENT'
+type AbilityCategory =
+  | 'GENERAL'
+  | 'FACTION'
+  | 'AGENDA'
+  | 'ENVIRONMENT'
+  | 'TECHNOLOGY'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface Ability<Params extends Record<string, unknown> = any> {
   key: string

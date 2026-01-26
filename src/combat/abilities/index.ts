@@ -5,6 +5,7 @@ import type { CombatSide } from '../state/types'
 import agenda from './list/agenda'
 import environment from './list/environment'
 import general from './list/general'
+import technology from './list/technology'
 import type { Ability } from './types'
 
 export {
@@ -30,7 +31,12 @@ export type {
   StateChange,
 } from './types'
 
-export const allAbilities = [...general, ...environment, ...agenda]
+export const allAbilities = [
+  ...general,
+  ...environment,
+  ...agenda,
+  ...technology,
+]
 
 export function getAvailableAbilities(
   side: CombatSide,

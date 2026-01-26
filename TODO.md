@@ -37,7 +37,6 @@
 - Magen Defense Grid
 - Magen Defense Grid Ω\ΩΩ
 - Duranium Armor
-- Assault Cannon
 - X-89 Bacterial Weapon Ω
 - X-89 Bacterial Weapon ΩΩ
 - Antimass Deflectors

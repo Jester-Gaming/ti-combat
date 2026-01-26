@@ -74,10 +74,12 @@ export function AbilityConfig({
     </div>
   )
 
+  const isAbilityEnabled = !ability.enableUI || !!params.isEnabled
+
   return (
     <div className={styles.container}>
       {header}
-      {hasConfigItems && !isCollapsed && (
+      {hasConfigItems && !isCollapsed && isAbilityEnabled && (
         <div className={styles.configItems}>
           {uiConfigItems!.map(config => {
             const key = config.key as string
