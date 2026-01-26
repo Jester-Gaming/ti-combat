@@ -6,6 +6,7 @@ import {
   type SidedDiceData,
 } from '../abilities'
 import { getCombinedDiceDistribution } from '../dice'
+import { getInitialPhase, getNextPhase } from './phase-utils'
 import {
   addHits,
   assignHits as assignHitsSide,
@@ -15,6 +16,7 @@ import {
 } from './side-state-ops'
 import type {
   AbilitiesConfig,
+  CombatPhase,
   CombatSide,
   CombatStateData,
   SideState,
@@ -65,21 +67,31 @@ export class CombatState implements CombatStateData {
   get abilities(): AbilitiesConfig {
     return this.data.abilities
   }
+  get phase(): CombatPhase {
+    return this.data.phase
+  }
 
   constructor(
     attacker: SideState,
     defender: SideState,
     abilities?: AbilitiesConfig,
+    phase?: CombatPhase,
   ) {
     this.data = {
       attacker,
       defender,
       abilities: abilities ?? EMPTY_ABILITIES,
+      phase: phase ?? getInitialPhase(),
     }
   }
 
   private static fromData(data: CombatStateData): CombatState {
-    return new CombatState(data.attacker, data.defender, data.abilities)
+    return new CombatState(
+      data.attacker,
+      data.defender,
+      data.abilities,
+      data.phase,
+    )
   }
 
   /** Collect dice for a side and source */
@@ -215,13 +227,206 @@ export class CombatState implements CombatStateData {
 
   /** Generate a hash for state comparison and caching */
   getHash(): string {
-    return `${getSideHash(this.attacker)}|${getSideHash(this.defender)}`
+    return `${this.phase}|${getSideHash(this.attacker)}|${getSideHash(this.defender)}`
   }
 
   /** Run SETUP abilities */
   runSetup(): CombatState {
     const { state: newData } = runAbilities('SETUP', this.data)
     return CombatState.fromData(newData)
+  }
+
+  /**
+   * Advance the combat state by one phase.
+   * Returns all possible outcomes with their probabilities.
+   * @param round Current round number (used for AFB phase skipping on round > 1)
+   */
+  advance(round: number = 1): StateWithProbability[] {
+    switch (this.phase) {
+      case 'START_OF_ROUND':
+        return this.processStartOfRound(round)
+      case 'AFB_ROLL':
+        return this.processAfbRoll(round)
+      case 'AFB_ASSIGN_HITS':
+        return this.processAfbAssignHits(round)
+      case 'DICE_ROLL':
+        return this.processDiceRoll(round)
+      case 'ASSIGN_HITS':
+        return this.processAssignHits(round)
+      case 'END_OF_ROUND':
+        return this.processEndOfRound()
+      case 'AFTER_ROUND':
+        return this.processAfterRound()
+    }
+  }
+
+  /** Transition to the next phase, creating a new state */
+  private transitionToNextPhase(
+    data: CombatStateData,
+    round: number,
+  ): CombatState {
+    const { phase } = getNextPhase(data.phase, round)
+    return CombatState.fromData({ ...data, phase })
+  }
+
+  /** Process START_OF_ROUND phase - triggers START_OF_ROUND abilities */
+  private processStartOfRound(round: number): StateWithProbability[] {
+    const { state: newData } = runAbilities('START_OF_ROUND', this.data)
+    const nextState = this.transitionToNextPhase(newData, round)
+    return [{ state: nextState, probability: 1 }]
+  }
+
+  /** Process AFB_ROLL phase - collect dice, run abilities, branch on outcomes */
+  private processAfbRoll(round: number): StateWithProbability[] {
+    const attackerDice = this.collectDice('attacker', 'AFB')
+    const defenderDice = this.collectDice('defender', 'AFB')
+
+    const sidedDiceData: SidedDiceData = {
+      attacker: [...attackerDice],
+      defender: [...defenderDice],
+    }
+
+    // Run BEFORE_AFB_ROLL abilities
+    const { state: afterBefore, context: beforeDice } = runAbilities(
+      'BEFORE_AFB_ROLL',
+      this.data,
+      sidedDiceData,
+    )
+
+    // Run WHEN_AFB_ROLL abilities (can modify dice)
+    const { state: afterWhen, context: modifiedDice } = runAbilities(
+      'WHEN_AFB_ROLL',
+      afterBefore,
+      beforeDice,
+    )
+
+    const attackerDist = getCombinedDiceDistribution(modifiedDice.attacker)
+    const defenderDist = getCombinedDiceDistribution(modifiedDice.defender)
+    const validTargets = getValidTargets('AFB')
+
+    const results: StateWithProbability[] = []
+
+    for (const attOutcome of attackerDist) {
+      for (const defOutcome of defenderDist) {
+        const probability = attOutcome.probability * defOutcome.probability
+        if (probability === 0) continue
+
+        // Attacker hits go to defender, defender hits go to attacker
+        let resultData = addHits(
+          afterWhen,
+          'defender',
+          attOutcome.hits,
+          validTargets,
+        )
+        resultData = addHits(
+          resultData,
+          'attacker',
+          defOutcome.hits,
+          validTargets,
+        )
+
+        const nextState = this.transitionToNextPhase(resultData, round)
+        results.push({
+          state: nextState,
+          probability,
+          meta: { attacker: defOutcome.hits, defender: attOutcome.hits },
+        })
+      }
+    }
+
+    return results
+  }
+
+  /** Process AFB_ASSIGN_HITS phase - assign AFB hits */
+  private processAfbAssignHits(round: number): StateWithProbability[] {
+    const afterAssign = this.assignHits()
+    const nextState = this.transitionToNextPhase(afterAssign.data, round)
+    return [{ state: nextState, probability: 1 }]
+  }
+
+  /** Process DICE_ROLL phase - collect dice, run abilities, branch on outcomes */
+  private processDiceRoll(round: number): StateWithProbability[] {
+    const attackerDice = this.collectDice('attacker', 'COMBAT')
+    const defenderDice = this.collectDice('defender', 'COMBAT')
+
+    const sidedDiceData: SidedDiceData = {
+      attacker: [...attackerDice],
+      defender: [...defenderDice],
+    }
+
+    // Run BEFORE_DICE_ROLL abilities
+    const { state: afterBefore, context: beforeDice } = runAbilities(
+      'BEFORE_DICE_ROLL',
+      this.data,
+      sidedDiceData,
+    )
+
+    // Run WHEN_DICE_ROLL abilities (can modify dice)
+    const { state: afterWhen, context: modifiedDice } = runAbilities(
+      'WHEN_DICE_ROLL',
+      afterBefore,
+      beforeDice,
+    )
+
+    const attackerDist = getCombinedDiceDistribution(modifiedDice.attacker)
+    const defenderDist = getCombinedDiceDistribution(modifiedDice.defender)
+    const validTargets = getValidTargets('COMBAT')
+
+    const results: StateWithProbability[] = []
+
+    for (const attOutcome of attackerDist) {
+      for (const defOutcome of defenderDist) {
+        const probability = attOutcome.probability * defOutcome.probability
+        if (probability === 0) continue
+
+        // Attacker hits go to defender, defender hits go to attacker
+        let resultData = addHits(
+          afterWhen,
+          'defender',
+          attOutcome.hits,
+          validTargets,
+        )
+        resultData = addHits(
+          resultData,
+          'attacker',
+          defOutcome.hits,
+          validTargets,
+        )
+
+        const nextState = this.transitionToNextPhase(resultData, round)
+
+        results.push({
+          state: nextState,
+          probability,
+          meta: { attacker: defOutcome.hits, defender: attOutcome.hits },
+        })
+      }
+    }
+
+    return results
+  }
+
+  /** Process ASSIGN_HITS phase - assign combat hits */
+  private processAssignHits(round: number): StateWithProbability[] {
+    const afterAssign = this.assignHits()
+    const nextState = this.transitionToNextPhase(afterAssign.data, round)
+    return [{ state: nextState, probability: 1 }]
+  }
+
+  /** Process END_OF_ROUND phase - triggers END_OF_ROUND abilities */
+  private processEndOfRound(): StateWithProbability[] {
+    const { state: newData } = runAbilities('END_OF_ROUND', this.data)
+    // Round doesn't matter for END_OF_ROUND -> AFTER_ROUND transition
+    const nextState = this.transitionToNextPhase(newData, 1)
+    return [{ state: nextState, probability: 1 }]
+  }
+
+  /** Process AFTER_ROUND phase - triggers AFTER_ROUND abilities */
+  private processAfterRound(): StateWithProbability[] {
+    const { state: newData } = runAbilities('AFTER_ROUND', this.data)
+    // Round doesn't matter for AFTER_ROUND -> START_OF_ROUND transition
+    const nextState = this.transitionToNextPhase(newData, 1)
+    return [{ state: nextState, probability: 1 }]
   }
 }
 
@@ -235,6 +440,14 @@ function getSideHash(side: SideState): string {
 
     const unitStates = units.map(u => JSON.stringify(u)).join(',')
     parts.push(`${type}:[${unitStates}]`)
+  }
+
+  // Include hitPools in hash
+  if (side.hitPools.length > 0) {
+    const poolsHash = side.hitPools
+      .map(p => `${p.hits}:${[...p.validTargets].sort().join('+')}`)
+      .join(';')
+    parts.push(`pools:[${poolsHash}]`)
   }
 
   return parts.join(',')

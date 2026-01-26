@@ -6,6 +6,7 @@ export type { CombatSide } from './state/types'
 export interface ProbabilityNode {
   state: CombatState
   probability: number
+  round: number
   children: ProbabilityNode[]
   meta?: Record<string, unknown>
 }

@@ -170,9 +170,9 @@ describe('CombatEngine', () => {
       expect(total).toBeCloseTo(1.0, 10)
 
       // Expected values from simulation
-      expect(summary.attackerWin).toBeCloseTo(0.18216, 5)
-      expect(summary.draw).toBeCloseTo(0.05764, 5)
-      expect(summary.defenderWin).toBeCloseTo(0.76021, 5)
+      expect(summary.attackerWin).toBeCloseTo(0.21467, 5)
+      expect(summary.draw).toBeCloseTo(0.057065, 5)
+      expect(summary.defenderWin).toBeCloseTo(0.72826, 5)
     })
   })
 })

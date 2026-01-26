@@ -1,5 +1,15 @@
 import type { FactionKey, UnitAbilities, UnitDieValue, UnitType } from '@/types'
 
+/** Combat phase in the phase-based state machine */
+export type CombatPhase =
+  | 'START_OF_ROUND'
+  | 'AFB_ROLL'
+  | 'AFB_ASSIGN_HITS'
+  | 'DICE_ROLL'
+  | 'ASSIGN_HITS'
+  | 'END_OF_ROUND'
+  | 'AFTER_ROUND'
+
 /** Unit stats - defines the unit's capabilities */
 export interface UnitStats {
   COMBAT?: UnitDieValue | null
@@ -46,6 +56,7 @@ export interface CombatStateData {
   attacker: SideState
   defender: SideState
   abilities: AbilitiesConfig
+  phase: CombatPhase
 }
 
 /** Combat side identifier */

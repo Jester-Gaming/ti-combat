@@ -1,12 +1,5 @@
-import { CombatState, type StateWithProbability } from './state/combat-state'
-
-/** A node in the probability tree */
-interface ProbabilityNode {
-  state: CombatState
-  probability: number
-  children: ProbabilityNode[]
-  meta?: Record<string, unknown>
-}
+import { CombatState } from './state/combat-state'
+import type { ProbabilityNode } from './types'
 
 interface EngineOptions {
   maxRounds?: number
@@ -17,11 +10,13 @@ const DEFAULT_MAX_ROUNDS = 100
 /**
  * Combat simulation engine.
  *
- * Orchestrates CombatState through combat rounds without directly modifying state.
+ * Orchestrates CombatState through combat phases without directly modifying state.
  * All state changes produce new immutable CombatState instances.
  *
  * Performance optimizations:
  * - Subtree caching: identical states share subtrees (DAG structure)
+ * - Node collapsing: single deterministic outcomes update nodes in-place instead
+ *   of creating child nodes, reducing tree depth
  */
 export class CombatEngine {
   private maxRounds: number
@@ -46,6 +41,7 @@ export class CombatEngine {
     const root: ProbabilityNode = {
       state: stateAfterSetup,
       probability: 1,
+      round: 1,
       children: [],
     }
 
@@ -54,81 +50,80 @@ export class CombatEngine {
       return root
     }
 
-    this.expandNode(root, 1)
+    this.expandNode(root)
 
     return root
   }
 
-  private expandNode(node: ProbabilityNode, round: number): void {
-    if (node.state.isFinished() || round > this.maxRounds) {
-      return
-    }
+  private expandNode(node: ProbabilityNode): void {
+    // Loop to collapse deterministic single-outcome transitions
+    while (true) {
+      if (node.state.isFinished() || node.round > this.maxRounds) {
+        return
+      }
 
-    const stateKey = node.state.getHash()
-    const cached = this.subtreeCache.get(stateKey)
-    if (cached) {
-      node.children = cached
-      return
-    }
+      // Cache key includes round for proper AFB handling and flatten-tree compatibility
+      const stateKey = `${node.round}|${node.state.getHash()}`
+      const cached = this.subtreeCache.get(stateKey)
 
-    node.children = this.simulateRound(node.state, round)
-    this.subtreeCache.set(stateKey, node.children)
+      if (cached) {
+        // Reuse cached subtree directly (creates DAG structure, prevents infinite loops)
+        node.children = cached
+        return
+      }
 
-    for (const child of node.children) {
-      this.expandNode(child, round + 1)
-    }
-  }
+      // Advance the state by one phase
+      const outcomes = node.state.advance(node.round)
 
-  private simulateRound(state: CombatState, round: number): ProbabilityNode[] {
-    let nodes: StateWithProbability[] = [{ state, probability: 1 }]
+      // Optimization: if single deterministic outcome, collapse into current node
+      if (outcomes.length === 1 && outcomes[0].probability === 1) {
+        const outcome = outcomes[0]
 
-    // AFB phase (round 1 only)
-    if (round === 1) {
-      nodes = this.expandPhase(nodes, s => {
-        const attackerDice = s.collectDice('attacker', 'AFB')
-        const defenderDice = s.collectDice('defender', 'AFB')
-        return s.produceHits(attackerDice, defenderDice, 'AFB')
+        // Determine round for next iteration
+        const nextRound =
+          outcome.state.phase === 'START_OF_ROUND' &&
+          node.state.phase === 'AFTER_ROUND'
+            ? node.round + 1
+            : node.round
+
+        // Update node in place and continue loop
+        node.state = outcome.state
+        node.round = nextRound
+        // Accumulate meta if present
+        if (outcome.meta) {
+          node.meta = { ...node.meta, ...outcome.meta }
+        }
+        // Continue loop to process next phase
+        continue
+      }
+
+      // Multiple outcomes or probabilistic: create child nodes
+      node.children = outcomes.map(outcome => {
+        const childRound =
+          outcome.state.phase === 'START_OF_ROUND' &&
+          node.state.phase === 'AFTER_ROUND'
+            ? node.round + 1
+            : node.round
+
+        return {
+          state: outcome.state,
+          probability: outcome.probability,
+          round: childRound,
+          children: [],
+          meta: outcome.meta,
+        }
       })
-      nodes = this.applyToAllNodes(nodes, s => s.assignHits())
+
+      // Cache the subtree before expansion
+      this.subtreeCache.set(stateKey, node.children)
+
+      // Recursively expand children
+      for (const child of node.children) {
+        this.expandNode(child)
+      }
+
+      // Exit loop after processing branching node
+      break
     }
-
-    // Combat phase
-    nodes = this.expandPhase(nodes, s => {
-      const attackerDice = s.collectDice('attacker', 'COMBAT')
-      const defenderDice = s.collectDice('defender', 'COMBAT')
-      return s.produceHits(attackerDice, defenderDice, 'COMBAT')
-    })
-    nodes = this.applyToAllNodes(nodes, s => s.assignHits())
-
-    return nodes.map(n => ({
-      state: n.state,
-      probability: n.probability,
-      children: [],
-      meta: n.meta,
-    }))
-  }
-
-  private expandPhase(
-    nodes: StateWithProbability[],
-    phase: (state: CombatState) => StateWithProbability[],
-  ): StateWithProbability[] {
-    return nodes.flatMap(node => {
-      const children = phase(node.state)
-      return children.map(child => ({
-        state: child.state,
-        probability: child.probability * node.probability,
-        meta: child.meta,
-      }))
-    })
-  }
-
-  private applyToAllNodes(
-    nodes: StateWithProbability[],
-    transform: (state: CombatState) => CombatState,
-  ): StateWithProbability[] {
-    return nodes.map(node => ({
-      ...node,
-      state: transform(node.state),
-    }))
   }
 }

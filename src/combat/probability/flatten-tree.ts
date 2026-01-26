@@ -142,6 +142,7 @@ export function flattenTree(root: ProbabilityNode): CombatOutcome[] {
 
     // Cache and return (already merged)
     cache.set(node, outcomes)
+
     return outcomes
   }
 

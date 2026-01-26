@@ -10,7 +10,7 @@ import {
   destroyUnit,
   getUnit,
 } from './side-state-ops'
-import type { SideState, Unit } from './types'
+import type { CombatStateData, SideState, Unit } from './types'
 
 // Test faction constant
 const TEST_FACTION: FactionKey = 'ARBOREC'
@@ -313,18 +313,12 @@ describe('SideState operations', () => {
   }
 
   // Helper to create a minimal CombatState for testing
-  function wrapSide(side: SideState): {
-    attacker: SideState
-    defender: SideState
-    abilities: {
-      attacker: { abilities: [] }
-      defender: { abilities: [] }
-    }
-  } {
+  function wrapSide(side: SideState): CombatStateData {
     return {
       attacker: side,
       defender: createSideState({}),
       abilities: { attacker: { abilities: [] }, defender: { abilities: [] } },
+      phase: 'START_OF_ROUND',
     }
   }
 

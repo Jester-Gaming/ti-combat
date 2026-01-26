@@ -24,15 +24,27 @@ export type SidedDiceData = SidedContext<DieValue[]>
 // void = no context, other type = required context
 export interface TimingContextMap {
   SETUP: void
+  START_OF_ROUND: void
+  BEFORE_AFB_ROLL: SidedDiceData
+  WHEN_AFB_ROLL: SidedDiceData
   BEFORE_DICE_ROLL: SidedDiceData
+  WHEN_DICE_ROLL: SidedDiceData
   BEFORE_ASSIGN_HITS: void
+  END_OF_ROUND: void
+  AFTER_ROUND: void
 }
 
 // Internal map for ability calls (uses own/opponent)
 export interface InternalTimingContextMap {
   SETUP: void
+  START_OF_ROUND: void
+  BEFORE_AFB_ROLL: DiceData
+  WHEN_AFB_ROLL: DiceData
   BEFORE_DICE_ROLL: DiceData
+  WHEN_DICE_ROLL: DiceData
   BEFORE_ASSIGN_HITS: void
+  END_OF_ROUND: void
+  AFTER_ROUND: void
 }
 
 export type AbilityTiming = keyof TimingContextMap

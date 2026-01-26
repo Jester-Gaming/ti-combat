@@ -192,6 +192,7 @@ export function assignHits(
   unitPriority?: UnitType[],
 ): CombatStateData {
   const sideState = state[side]
+
   if (sideState.hitPools.length === 0) {
     return state
   }
