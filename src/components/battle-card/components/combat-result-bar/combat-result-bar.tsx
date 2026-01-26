@@ -26,19 +26,22 @@ export function CombatResultBar({ result }: CombatResultBarProps) {
       {segments ? (
         <div className={clsx(styles.resultBar)}>
           {segments.map(
-            ({ key, pct, label, segmentClass, percentageClass, labelClass }) =>
-              pct > 0 && (
+            ({ key, percent: percent, label, segmentClass }) =>
+              percent > 0 && (
                 <div
                   key={key}
                   className={clsx(styles.segment, segmentClass)}
-                  style={{ width: `${pct}%` }}
+                  style={{ width: `${percent}%` }}
+                  title={`${percent}%`}
                 >
-                  <span className={styles.segmentContent}>
-                    <span className={clsx(styles.percentage, percentageClass)}>
-                      {pct}%
+                  {percent > 5 && (
+                    <span className={styles.segmentContent}>
+                      <span className={clsx(styles.percentage)}>
+                        {percent}%
+                      </span>
+                      <span className={styles.label}>{label}</span>
                     </span>
-                    <span className={labelClass}>{label}</span>
-                  </span>
+                  )}
                 </div>
               ),
           )}
@@ -82,27 +85,21 @@ function buildSegments(result: CombatResult) {
   return [
     {
       key: 'attacker',
-      pct: attackerPct,
+      percent: attackerPct,
       label: 'Attacker',
       segmentClass: styles.segmentAttacker,
-      percentageClass: styles.percentageAttacker,
-      labelClass: styles.label,
     },
     {
       key: 'draw',
-      pct: drawPct,
+      percent: drawPct,
       label: 'Draw',
       segmentClass: styles.segmentDraw,
-      percentageClass: styles.percentageDraw,
-      labelClass: styles.labelDraw,
     },
     {
       key: 'defender',
-      pct: defenderPct,
+      percent: defenderPct,
       label: 'Defender',
       segmentClass: styles.segmentDefender,
-      percentageClass: styles.percentageDefender,
-      labelClass: styles.label,
     },
   ]
 }

@@ -46,14 +46,30 @@
 
 .segmentAttacker {
   @apply border-r border-[hsla(186,100%,50%,0.3)] bg-gradient-to-b from-[hsla(186,100%,50%,0.3)] to-[hsla(186,100%,40%,0.2)];
+
+  .percentage {
+    color: hsl(var(--attacker));
+  }
 }
 
 .segmentDraw {
   @apply bg-gradient-to-b from-white/10 to-white/5;
+
+  .label {
+    color: hsl(var(--muted-foreground));
+  }
+
+  .percentage {
+    color: hsl(var(--muted-foreground));
+  }
 }
 
 .segmentDefender {
   @apply border-l border-[hsla(32,95%,55%,0.3)] bg-gradient-to-b from-[hsla(32,95%,55%,0.3)] to-[hsla(32,95%,45%,0.2)];
+
+  .percentage {
+    color: hsl(var(--defender));
+  }
 }
 
 .segmentContent {
@@ -65,33 +81,7 @@
   font-family: var(--font-heading);
 }
 
-.percentageAttacker {
-  color: hsl(var(--attacker));
-}
-
-:global(.dark) .percentageAttacker {
-  text-shadow: 0 0 10px hsl(var(--attacker) / 50%);
-}
-
-.percentageDraw {
-  color: hsl(var(--muted-foreground));
-}
-
-.percentageDefender {
-  color: hsl(var(--defender));
-}
-
-:global(.dark) .percentageDefender {
-  text-shadow: 0 0 10px hsl(var(--defender) / 50%);
-}
-
 .label {
   @apply text-[10px] tracking-widest uppercase opacity-70;
   font-family: var(--font-heading);
-}
-
-.labelDraw {
-  @apply text-[10px] tracking-widest uppercase opacity-70;
-  font-family: var(--font-heading);
-  color: hsl(var(--muted-foreground));
 }
