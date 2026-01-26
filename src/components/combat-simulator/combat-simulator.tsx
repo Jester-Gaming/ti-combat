@@ -131,8 +131,14 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     if (!combatState) return null
 
     const engine = new CombatEngine()
+    console.time('Simulate')
     const tree = engine.simulate(combatState)
+    console.timeEnd('Simulate')
+    console.info('Simulate tree', tree)
+    console.time('Flatten')
     const outcomes = flattenTree(tree)
+    console.timeEnd('Flatten')
+    console.info('Outcomes list', outcomes)
 
     let attackerWin = 0
     let draw = 0

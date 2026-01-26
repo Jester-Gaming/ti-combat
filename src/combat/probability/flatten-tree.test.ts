@@ -5,6 +5,7 @@ import type { FactionKey } from '@/types'
 import { CombatState } from '../state/combat-state'
 import type { SideState, Unit } from '../state/types'
 import type { ProbabilityNode } from '../types'
+import { generateNodeId } from '../utils/generate-node-id'
 import { flattenTree } from './flatten-tree'
 
 const TEST_FACTION: FactionKey = 'ARBOREC'
@@ -33,8 +34,10 @@ describe('flattenTree', () => {
 
   it('returns single outcome for leaf node', () => {
     const root: ProbabilityNode = {
+      id: generateNodeId(),
       state: makeState(1, 0),
       probability: 1,
+      round: 1,
       children: [],
     }
 
@@ -47,17 +50,23 @@ describe('flattenTree', () => {
 
   it('accumulates probability through tree', () => {
     const root: ProbabilityNode = {
+      id: generateNodeId(),
       state: makeState(1, 1),
       probability: 1,
+      round: 1,
       children: [
         {
+          id: generateNodeId(),
           state: makeState(1, 0),
           probability: 0.6,
+          round: 1,
           children: [],
         },
         {
+          id: generateNodeId(),
           state: makeState(0, 1),
           probability: 0.4,
+          round: 1,
           children: [],
         },
       ],
@@ -72,17 +81,23 @@ describe('flattenTree', () => {
 
   it('merges identical outcomes', () => {
     const root: ProbabilityNode = {
+      id: generateNodeId(),
       state: makeState(2, 1),
       probability: 1,
+      round: 1,
       children: [
         {
+          id: generateNodeId(),
           state: makeState(1, 0),
           probability: 0.3,
+          round: 1,
           children: [],
         },
         {
+          id: generateNodeId(),
           state: makeState(1, 0),
           probability: 0.2,
+          round: 1,
           children: [],
         },
       ],
@@ -102,22 +117,28 @@ describe('flattenTree', () => {
     const sameState = makeState(1, 1)
 
     const leafWin: ProbabilityNode = {
+      id: generateNodeId(),
       state: makeState(1, 0),
       probability: 0.7,
+      round: 1,
       children: [],
     }
 
     // Cycle node: when 0-0 hits happen, combat continues with same state
     // Its children are the SAME as root's children (shared reference = cycle)
     const cycleNode: ProbabilityNode = {
+      id: generateNodeId(),
       state: sameState,
       probability: 0.3,
+      round: 1,
       children: [], // Will be set to root.children below
     }
 
     const root: ProbabilityNode = {
+      id: generateNodeId(),
       state: sameState,
       probability: 1,
+      round: 1,
       children: [leafWin, cycleNode],
     }
 
@@ -139,26 +160,34 @@ describe('flattenTree', () => {
     const sameState = makeState(1, 1)
 
     const outcomeA: ProbabilityNode = {
+      id: generateNodeId(),
       state: makeState(2, 0),
       probability: 0.2,
+      round: 1,
       children: [],
     }
 
     const outcomeB: ProbabilityNode = {
+      id: generateNodeId(),
       state: makeState(1, 0),
       probability: 0.6,
+      round: 1,
       children: [],
     }
 
     const cycleNode: ProbabilityNode = {
+      id: generateNodeId(),
       state: sameState,
       probability: 0.2,
+      round: 1,
       children: [], // Will create cycle
     }
 
     const root: ProbabilityNode = {
+      id: generateNodeId(),
       state: sameState,
       probability: 1,
+      round: 1,
       children: [outcomeA, outcomeB, cycleNode],
     }
 
@@ -192,26 +221,34 @@ describe('flattenTree', () => {
     // shared should get probability from BOTH paths: 0.4 + 0.6 = 1.0
 
     const shared: ProbabilityNode = {
+      id: generateNodeId(),
       state: makeState(1, 0),
       probability: 1, // 100% once we reach A or B
+      round: 1,
       children: [],
     }
 
     const nodeA: ProbabilityNode = {
+      id: generateNodeId(),
       state: makeState(1, 1),
       probability: 0.4,
+      round: 1,
       children: [shared], // Points to shared
     }
 
     const nodeB: ProbabilityNode = {
+      id: generateNodeId(),
       state: makeState(1, 1),
       probability: 0.6,
+      round: 1,
       children: [shared], // Also points to shared (DAG!)
     }
 
     const root: ProbabilityNode = {
+      id: generateNodeId(),
       state: makeState(2, 1),
       probability: 1,
+      round: 1,
       children: [nodeA, nodeB],
     }
 

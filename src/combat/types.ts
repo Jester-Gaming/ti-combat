@@ -4,6 +4,7 @@ export type { CombatSide } from './state/types'
 
 /** A node in the probability tree */
 export interface ProbabilityNode {
+  id: string
   state: CombatState
   probability: number
   round: number

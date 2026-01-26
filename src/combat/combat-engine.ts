@@ -1,5 +1,6 @@
 import { CombatState } from './state/combat-state'
 import type { ProbabilityNode } from './types'
+import { generateNodeId } from './utils/generate-node-id'
 
 interface EngineOptions {
   maxRounds?: number
@@ -21,6 +22,7 @@ const DEFAULT_MAX_ROUNDS = 100
 export class CombatEngine {
   private maxRounds: number
   private subtreeCache: Map<string, ProbabilityNode[]>
+  private outcomes: number = 0
 
   constructor(options: EngineOptions = {}) {
     this.maxRounds = options.maxRounds ?? DEFAULT_MAX_ROUNDS
@@ -33,12 +35,14 @@ export class CombatEngine {
    */
   simulate(initialState: CombatState): ProbabilityNode {
     // Clear cache for new simulation
+    this.outcomes = 0
     this.subtreeCache.clear()
 
     // Run SETUP event for abilities (each ability called once)
     const stateAfterSetup = initialState.runSetup()
 
     const root: ProbabilityNode = {
+      id: generateNodeId(),
       state: stateAfterSetup,
       probability: 1,
       round: 1,
@@ -51,6 +55,7 @@ export class CombatEngine {
     }
 
     this.expandNode(root)
+    console.info('Total', this.outcomes)
 
     return root
   }
@@ -59,11 +64,19 @@ export class CombatEngine {
     // Loop to collapse deterministic single-outcome transitions
     while (true) {
       if (node.state.isFinished() || node.round > this.maxRounds) {
+        this.outcomes++
         return
       }
 
       // Cache key includes round for proper AFB handling and flatten-tree compatibility
-      const stateKey = `${node.round}|${node.state.getHash()}`
+      const roundKey =
+        node.round === 1 &&
+        ['START_OF_ROUND', 'AFB_ROLL', 'AFB_ASSIGN_HITS'].includes(
+          node.state.phase,
+        )
+          ? 'EARLY'
+          : 'NORMAL'
+      const stateKey = `${roundKey}|${node.state.getHash()}`
       const cached = this.subtreeCache.get(stateKey)
 
       if (cached) {
@@ -106,6 +119,7 @@ export class CombatEngine {
             : node.round
 
         return {
+          id: generateNodeId(),
           state: outcome.state,
           probability: outcome.probability,
           round: childRound,
