@@ -1,3 +1,5 @@
+import type { UnitType } from '@/types'
+
 import { getOpponentSide } from '../state/side-state-ops'
 import type {
   AbilitiesConfig,
@@ -16,6 +18,11 @@ import type {
   StateChange,
   TimingContextMap,
 } from './types'
+
+/** Source of an ability - either from config or from a unit */
+export type AbilitySource =
+  | { type: 'config' }
+  | { type: 'unit'; unitType: UnitType; unitIndex: number }
 
 // Type guard to detect sided objects (attacker/defender)
 function isSidedContext<T>(ctx: unknown): ctx is SidedContext<T> {
@@ -56,6 +63,46 @@ function toSided<T>(
   }
 }
 
+/** Collect unit abilities from units on the field */
+function collectUnitAbilities(
+  state: CombatStateData,
+  side: CombatSide,
+): Array<{
+  ability: Ability
+  unitType: UnitType
+  unitIndex: number
+}> {
+  const results: Array<{
+    ability: Ability
+    unitType: UnitType
+    unitIndex: number
+  }> = []
+
+  const sideState = state[side]
+  const unitEntries = Object.entries(sideState.units) as Array<
+    [UnitType, NonNullable<(typeof sideState.units)[UnitType]>]
+  >
+
+  for (const [unitType, units] of unitEntries) {
+    if (!units) continue
+
+    for (let unitIndex = 0; unitIndex < units.length; unitIndex++) {
+      const unit = units[unitIndex]
+      if (unit.ABILITIES) {
+        for (const ability of unit.ABILITIES) {
+          results.push({
+            ability,
+            unitType,
+            unitIndex,
+          })
+        }
+      }
+    }
+  }
+
+  return results
+}
+
 /** Get merged params for an ability */
 function getAbilityMergedParams(
   ability: Ability,
@@ -64,21 +111,26 @@ function getAbilityMergedParams(
   return { ...ability.defaultParams, ...sideConfig.config?.[ability.key] }
 }
 
-/** Get invokes for a timing from ability definitions */
+/** Get invokes for a timing from ability definitions and unit abilities */
 function getInvokesForTiming<T extends AbilityTiming>(
   timing: T,
-  sideConfig: SideAbilitiesConfig,
+  side: CombatSide,
+  state: CombatStateData,
 ): Array<{
   ability: Ability
   invoke: AbilityInvoke
   params: Record<string, unknown>
+  source: AbilitySource
 }> {
   const results: Array<{
     ability: Ability
     invoke: AbilityInvoke
     params: Record<string, unknown>
+    source: AbilitySource
   }> = []
 
+  // 1. Collect regular abilities from config
+  const sideConfig = state.abilities[side]
   for (const ability of sideConfig.abilities as Ability[]) {
     const params = getAbilityMergedParams(ability, sideConfig)
 
@@ -88,6 +140,22 @@ function getInvokesForTiming<T extends AbilityTiming>(
           ability,
           invoke,
           params,
+          source: { type: 'config' },
+        })
+      }
+    }
+  }
+
+  // 2. Collect unit abilities from units on field
+  const unitAbilities = collectUnitAbilities(state, side)
+  for (const { ability, unitType, unitIndex } of unitAbilities) {
+    for (const invoke of ability.invoke) {
+      if (invoke.timing === timing) {
+        results.push({
+          ability,
+          invoke,
+          params: ability.defaultParams ?? {},
+          source: { type: 'unit', unitType, unitIndex },
         })
       }
     }
@@ -136,6 +204,12 @@ export interface RunAbilitiesResult<T extends AbilityTiming> {
   context: TimingContextMap[T]
 }
 
+/** Invocation tracker for both config and unit abilities */
+interface InvocationTracker {
+  configAbilities: Set<AbilityInvoke>
+  unitAbilities: Map<string, Set<number>> // "abilityKey:unitType" -> Set<unitIndex>
+}
+
 /**
  * Run alternating resolution for abilities at given timing.
  * Returns new state and modified context.
@@ -145,7 +219,10 @@ export function runAbilities<T extends AbilityTiming>(
   state: CombatStateData,
   context?: TimingContextMap[T],
 ): RunAbilitiesResult<T> {
-  const calledInvokes = new Set<AbilityInvoke>()
+  const tracker: InvocationTracker = {
+    configAbilities: new Set(),
+    unitAbilities: new Map(),
+  }
   let consecutiveSkips = 0
   let currentSide: CombatSide = 'attacker'
   let currentState = state
@@ -158,7 +235,7 @@ export function runAbilities<T extends AbilityTiming>(
       currentSide,
       currentState,
       workingContext,
-      calledInvokes,
+      tracker,
     )
 
     if (result) {
@@ -185,15 +262,30 @@ function tryResolveOneAbility<T extends AbilityTiming>(
   side: CombatSide,
   state: CombatStateData,
   context: TimingContextMap[T] | undefined,
-  calledInvokes: Set<AbilityInvoke>,
+  tracker: InvocationTracker,
 ): StateChange | null {
-  const sideConfig = state.abilities[side]
-  const invokes = getInvokesForTiming(timing, sideConfig)
+  const invokes = getInvokesForTiming(timing, side, state)
   const readCtx = buildReadContext(side, state)
 
-  for (const { invoke, params } of invokes) {
-    if (!invoke.multi && calledInvokes.has(invoke)) {
-      continue
+  for (const { invoke, params, source } of invokes) {
+    // Check if already invoked
+    if (source.type === 'config') {
+      if (!invoke.multi && tracker.configAbilities.has(invoke)) {
+        continue
+      }
+    } else {
+      // Unit ability - check if unit still exists
+      const currentUnits = state[side].units[source.unitType]
+      if (!currentUnits || currentUnits.length <= source.unitIndex) {
+        continue // Unit destroyed
+      }
+
+      // Check if this unit instance already invoked
+      const key = `${invoke.timing}:${source.unitType}`
+      const invokedIndices = tracker.unitAbilities.get(key)
+      if (invokedIndices?.has(source.unitIndex)) {
+        continue
+      }
     }
 
     // Transform sided context to own/opponent for the ability
@@ -216,7 +308,16 @@ function tryResolveOneAbility<T extends AbilityTiming>(
 
     if (canCall) {
       const result: StateChange = inv.call(readCtx, params, internalContext)
-      calledInvokes.add(invoke)
+
+      // Mark as invoked
+      if (source.type === 'config') {
+        tracker.configAbilities.add(invoke)
+      } else {
+        const key = `${invoke.timing}:${source.unitType}`
+        const invokedIndices = tracker.unitAbilities.get(key) ?? new Set()
+        invokedIndices.add(source.unitIndex)
+        tracker.unitAbilities.set(key, invokedIndices)
+      }
 
       // Transform own/opponent context back to sided
       let resultContext = result.context
@@ -240,3 +341,5 @@ function tryResolveOneAbility<T extends AbilityTiming>(
 
   return null
 }
+
+export { collectUnitAbilities }

@@ -61,18 +61,13 @@ export const assaultCannon: Ability<Params> = {
       call: (ctx: AbilityReadContext, params: Params): StateChange<void> => {
         const targetType = findTarget(ctx, params.targetPriority)
         if (!targetType) {
-          return { state: ctx.state as typeof ctx.state & object }
+          return { state: ctx.state }
         }
 
         const opponentSide = getOpponentSide(ctx.side)
 
         // Destroy the first unit of the target type
-        const newState = destroyUnit(
-          ctx.state as typeof ctx.state & object,
-          opponentSide,
-          targetType,
-          0,
-        )
+        const newState = destroyUnit(ctx.state, opponentSide, targetType, 0)
 
         return { state: newState }
       },

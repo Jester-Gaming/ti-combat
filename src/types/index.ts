@@ -44,6 +44,8 @@ export interface UnitStats {
   MOVE?: number | null
   CAPACITY?: number | null
   UNIT_ABILITIES?: UnitAbilities
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ABILITIES?: readonly any[] // Use any to avoid circular dependency
 }
 
 // Upgraded unit stats (partial, inherits from BASE)

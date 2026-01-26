@@ -133,6 +133,7 @@ export class CombatState implements CombatStateData {
     }
 
     // Run BEFORE_DICE_ROLL abilities with alternating mechanism
+
     const { state: newStateData, context: modifiedDice } = runAbilities(
       'BEFORE_DICE_ROLL',
       this.data,

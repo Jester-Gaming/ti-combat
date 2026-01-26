@@ -119,11 +119,11 @@ export const sustainDamage: Ability<Params> = {
         const target = findUnitToSustain(ctx.own, allowedUnits, priority)
 
         if (!target) {
-          return { state: ctx.state as typeof ctx.state & object }
+          return { state: ctx.state }
         }
 
         let newState = updateUnit(
-          ctx.state as typeof ctx.state & object,
+          ctx.state,
           ctx.side,
           target.type,
           target.index,

@@ -38,7 +38,7 @@ export const prophecyOfIxth: Ability<Params> = {
         })
 
         return {
-          state: ctx.state as typeof ctx.state & object,
+          state: ctx.state,
           context: {
             own: modifiedDice,
             opponent: diceData.opponent,

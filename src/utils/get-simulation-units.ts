@@ -36,10 +36,10 @@ export function getSimulationUnits(
     if (!effectiveStats) continue
 
     // Create unit instances with stats
-    units[unitType] = Array.from({ length: unitState.count }, () => ({
-      COMBAT: effectiveStats.COMBAT,
-      UNIT_ABILITIES: effectiveStats.UNIT_ABILITIES,
-    }))
+    units[unitType] = Array.from(
+      { length: unitState.count },
+      () => effectiveStats,
+    )
   }
 
   return units

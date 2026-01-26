@@ -1,5 +1,7 @@
 import type { FactionKey, UnitAbilities, UnitDieValue, UnitType } from '@/types'
 
+import type { Ability } from '../abilities/types'
+
 /** Combat phase in the phase-based state machine */
 export type CombatPhase =
   | 'START_OF_ROUND'
@@ -14,6 +16,7 @@ export type CombatPhase =
 export interface UnitStats {
   COMBAT?: UnitDieValue | null
   UNIT_ABILITIES?: UnitAbilities
+  ABILITIES?: readonly Ability[]
 }
 
 /** Unit instance state - runtime state of a single unit */

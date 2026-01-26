@@ -40,7 +40,7 @@ export const nebula: Ability<Params> = {
         diceData: DiceData,
       ): StateChange<DiceData> => {
         return {
-          state: ctx.state as typeof ctx.state & object,
+          state: ctx.state,
           context: {
             own: applyDiceBonus(diceData.own),
             opponent: diceData.opponent,
