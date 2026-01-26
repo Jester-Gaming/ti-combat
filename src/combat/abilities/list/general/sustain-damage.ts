@@ -41,7 +41,9 @@ function findUnitToSustain(
     const units = sideState.units[unitType]
     if (!units) continue
 
-    const index = units.findIndex(unit => !unit.isDamaged)
+    const index = units.findIndex(
+      unit => !unit.isDamaged && unit.UNIT_ABILITIES?.SUSTAIN_DAMAGE,
+    )
     if (index >= 0) {
       return { type: unitType, unit: units[index], index }
     }

@@ -2,7 +2,6 @@
 
 ## Agenda
 
-- Publicize Weapon Schematics
 - Conventions of War
 
 ## Environment
@@ -105,7 +104,7 @@
 
 ### L1
 
-– Harrow
+– Harrow
 
 - Flagship
 - Comander
