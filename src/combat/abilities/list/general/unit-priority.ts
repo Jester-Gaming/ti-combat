@@ -1,19 +1,8 @@
 import type { UnitType } from '@/types'
 import { getUnitListItems } from '@/utils/get-unit-config'
 
-import type { SideState } from '../../state/types'
-import type { Ability } from '../types'
-
-/** Get units that exist on the side and can participate in combat */
-function getParticipatingUnitsForSide(side: SideState): UnitType[] {
-  const result: UnitType[] = []
-  for (const [unitType, units] of Object.entries(side.units)) {
-    if (units && units.length > 0) {
-      result.push(unitType as UnitType)
-    }
-  }
-  return result
-}
+import type { Ability } from '../../types'
+import { getParticipatingUnits } from '../../utils/get-participating-units'
 
 type Params = {
   unitPriority: UnitType[]
@@ -39,11 +28,7 @@ export const unitPriority: Ability<Params> = {
   },
   invoke: [],
   uiConfig: side => {
-    const participatingUnits = getParticipatingUnitsForSide(side)
-
-    if (participatingUnits.length < 1) {
-      return []
-    }
+    const participatingUnits = getParticipatingUnits(side)
 
     return [
       {

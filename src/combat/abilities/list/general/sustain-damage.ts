@@ -5,9 +5,9 @@ import {
   getPendingHits,
   reduceHits,
   updateUnit,
-} from '../../state/side-state-ops'
-import type { SideState, Unit } from '../../state/types'
-import type { Ability, AbilityReadContext, StateChange } from '../types'
+} from '../../../state/side-state-ops'
+import type { SideState, Unit } from '../../../state/types'
+import type { Ability, AbilityReadContext, StateChange } from '../../types'
 
 /** Get units that are present on the side and have sustain damage ability */
 function getSustainUnitsForSide(side: SideState): UnitType[] {

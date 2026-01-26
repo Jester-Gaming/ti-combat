@@ -5,7 +5,7 @@ import type {
   AbilityReadContext,
   DiceData,
   StateChange,
-} from '../types'
+} from '../../types'
 
 type Params = {
   isEnabled: boolean

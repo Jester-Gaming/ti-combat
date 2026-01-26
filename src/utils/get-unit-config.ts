@@ -21,12 +21,23 @@ export interface UnitListItem {
   value: UnitType
 }
 
+const unitList = [
+  { value: 'FLAGSHIP', label: 'Flagship' },
+  { value: 'WAR_SUN', label: 'War Sun' },
+  { value: 'DREADNOUGHT', label: 'Dreadnought' },
+  { value: 'CRUISER', label: 'Cruiser' },
+  { value: 'CARRIER', label: 'Carrier' },
+  { value: 'DESTROYER', label: 'Destroyer' },
+  { value: 'FIGHTER', label: 'Fighter' },
+  { value: 'MECH', label: 'Mech' },
+  { value: 'INFANTRY', label: 'Infantry' },
+  { value: 'PDS', label: 'PDS' },
+  { value: 'SPACE_DOCK', label: 'Space Dock' },
+] as const
+
 /** Get unit list items for specific unit types */
 export function getUnitListItems(units: readonly UnitType[]): UnitListItem[] {
-  return units.map(type => ({
-    label: UNIT_DISPLAY_NAMES[type],
-    value: type,
-  }))
+  return unitList.filter(unit => units.includes(unit.value))
 }
 
 export interface UnitConfig {

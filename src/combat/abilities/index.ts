@@ -5,9 +5,9 @@ export {
   type RunAbilitiesResult,
 } from './abilities-tracker'
 import type { CombatSide } from '../state/types'
-import agenda from './agenda'
-import environment from './environment'
-import general from './general'
+import agenda from './list/agenda'
+import environment from './list/environment'
+import general from './list/general'
 import type { Ability } from './types'
 export { nonEuclideanShielding } from './non-euclidean-shielding'
 export type {
