@@ -6,7 +6,12 @@ import {
   type SidedDiceData,
 } from '../abilities'
 import { getCombinedDiceDistribution } from '../dice'
-import { getInitialPhase, getNextPhase } from './phase-utils'
+import {
+  getInitialPhase,
+  getNextPhase,
+  getNextPhaseIdentifier,
+  getPhaseKey,
+} from './phase-utils'
 import {
   addHits,
   assignHits as assignHitsSide,
@@ -16,9 +21,11 @@ import {
 } from './side-state-ops'
 import type {
   AbilitiesConfig,
+  CombatMode,
   CombatPhase,
   CombatSide,
   CombatStateData,
+  PhaseIdentifier,
   SideState,
 } from './types'
 
@@ -71,17 +78,29 @@ export class CombatState implements CombatStateData {
     return this.data.phase
   }
 
+  get combatMode(): CombatMode | undefined {
+    return this.data.combatMode
+  }
+
+  get currentPhase(): PhaseIdentifier | undefined {
+    return this.data.currentPhase
+  }
+
   constructor(
     attacker: SideState,
     defender: SideState,
     abilities?: AbilitiesConfig,
     phase?: CombatPhase,
+    combatMode?: CombatMode,
+    currentPhase?: PhaseIdentifier,
   ) {
     this.data = {
       attacker,
       defender,
       abilities: abilities ?? EMPTY_ABILITIES,
       phase: phase ?? getInitialPhase(),
+      combatMode,
+      currentPhase,
     }
   }
 
@@ -91,6 +110,8 @@ export class CombatState implements CombatStateData {
       data.defender,
       data.abilities,
       data.phase,
+      data.combatMode,
+      data.currentPhase,
     )
   }
 
@@ -228,7 +249,42 @@ export class CombatState implements CombatStateData {
 
   /** Generate a hash for state comparison and caching */
   getHash(): string {
-    return `${this.phase}|${getSideHash(this.attacker)}|${getSideHash(this.defender)}`
+    // Include two-tier phase if available, otherwise fall back to legacy phase
+    const phaseHash = this.currentPhase
+      ? getPhaseKey(this.currentPhase)
+      : this.phase
+    return `${phaseHash}|${getSideHash(this.attacker)}|${getSideHash(this.defender)}`
+  }
+
+  /**
+   * Transition to the next phase using the two-tier system.
+   * This is a forward-looking method that will be used once the combat engine
+   * is updated to use the two-tier system.
+   */
+  transitionPhase(): CombatState {
+    if (!this.combatMode || !this.currentPhase) {
+      throw new Error(
+        'Two-tier phase system not initialized. Set combatMode and currentPhase.',
+      )
+    }
+
+    const { phase: nextPhase } = getNextPhaseIdentifier(
+      this.currentPhase,
+      this.combatMode,
+    )
+
+    return CombatState.fromData({
+      ...this.data,
+      currentPhase: nextPhase,
+    })
+  }
+
+  /**
+   * Check if combat has reached the COMPLETE meta-phase.
+   * For two-tier system usage.
+   */
+  isComplete(): boolean {
+    return this.currentPhase?.meta === 'COMPLETE'
   }
 
   /** Run SETUP abilities */
