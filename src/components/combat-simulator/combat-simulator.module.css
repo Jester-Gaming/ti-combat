@@ -27,3 +27,11 @@
   @apply text-center text-sm font-semibold tracking-widest uppercase;
   font-family: var(--font-heading);
 }
+
+.centerColumn {
+  @apply flex flex-1 flex-col;
+}
+
+.combatModeSection {
+  @apply mb-4 flex justify-center;
+}

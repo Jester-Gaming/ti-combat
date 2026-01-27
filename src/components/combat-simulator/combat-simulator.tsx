@@ -1,6 +1,6 @@
 import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useImmer } from 'use-immer'
 
 import {
@@ -11,10 +11,12 @@ import {
 } from '@/combat'
 import { getAvailableAbilities } from '@/combat/abilities'
 import { countUnits } from '@/combat/state/side-state-ops'
+import type { CombatMode } from '@/combat/state/types'
 import { AbilitiesPanel } from '@/components/abilities-panel'
 import { BattleCard } from '@/components/battle-card'
 import { GlassCard } from '@/components/ui/glass-card'
 import { GlowText } from '@/components/ui/glow-text'
+import { ToggleGroup } from '@/components/ui/toggle-group'
 import factions from '@/data/faction'
 import {
   type BattleState,
@@ -59,7 +61,13 @@ interface CombatSimulatorProps {
   className?: string
 }
 
+const combatModeOptions = [
+  { value: 'SPACE' as const, label: 'Space Combat' },
+  { value: 'GROUND' as const, label: 'Ground Combat' },
+]
+
 export function CombatSimulator({ className }: CombatSimulatorProps) {
+  const [combatMode, setCombatMode] = useState<CombatMode>('SPACE')
   const [battle, setBattle] = useImmer<BattleState>(createInitialBattleState)
   const [abilityParams, setAbilityParams] = useImmer<{
     attacker: Record<string, Record<string, unknown>>
@@ -147,22 +155,29 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
       return null
     }
 
-    return new CombatState(attackerSideState, defenderSideState, {
-      attacker: {
-        abilities: attackerAbilities,
-        config: abilityParams.attacker,
+    return new CombatState(
+      attackerSideState,
+      defenderSideState,
+      {
+        attacker: {
+          abilities: attackerAbilities,
+          config: abilityParams.attacker,
+        },
+        defender: {
+          abilities: defenderAbilities,
+          config: abilityParams.defender,
+        },
       },
-      defender: {
-        abilities: defenderAbilities,
-        config: abilityParams.defender,
-      },
-    })
+      undefined, // phase - use default
+      combatMode, // pass the combat mode from UI state
+    )
   }, [
     attackerSideState,
     defenderSideState,
     attackerAbilities,
     defenderAbilities,
     abilityParams,
+    combatMode,
   ])
 
   const combatResult = useMemo((): CombatResult | null => {
@@ -253,16 +268,28 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
         />
       </GlassCard>
 
-      {/* Center: Main battle card */}
-      <BattleCard
-        battle={battle}
-        attackerConfig={attackerConfig}
-        defenderConfig={defenderConfig}
-        combatResult={combatResult}
-        onFactionChange={handleFactionChange}
-        onUnitCountChange={handleUnitCountChange}
-        onUpgradeToggle={handleUpgradeToggle}
-      />
+      {/* Center column: Combat mode toggle and battle card */}
+      <div className={styles.centerColumn}>
+        {/* Combat Mode Toggle */}
+        <div className={styles.combatModeSection}>
+          <ToggleGroup
+            options={combatModeOptions}
+            value={combatMode}
+            onChange={setCombatMode}
+          />
+        </div>
+
+        {/* Main battle card */}
+        <BattleCard
+          battle={battle}
+          attackerConfig={attackerConfig}
+          defenderConfig={defenderConfig}
+          combatResult={combatResult}
+          onFactionChange={handleFactionChange}
+          onUnitCountChange={handleUnitCountChange}
+          onUpgradeToggle={handleUpgradeToggle}
+        />
+      </div>
 
       {/* Right panel: Defender abilities */}
       <GlassCard

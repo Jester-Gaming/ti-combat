@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { DieValue, FactionKey } from '@/types'
 
+import { participatingUnits } from '../abilities/list/general/patricipating-units'
 import { CombatState } from './combat-state'
 import {
   addHits,
@@ -296,6 +297,147 @@ describe('CombatState', () => {
       const modified = state.addHitsToSide('attacker', 1, [])
       expect(state.attacker.hitPools).toHaveLength(0)
       expect(modified.attacker.hitPools).toHaveLength(1)
+    })
+  })
+
+  describe('getParticipatingUnits with combatMode', () => {
+    const infantryStats: Partial<Unit> = { COMBAT: [8, 1], UNIT_ABILITIES: {} }
+    const mechStats: Partial<Unit> = { COMBAT: [6, 1], UNIT_ABILITIES: {} }
+
+    it('returns only ship types when combatMode is SPACE', () => {
+      const state = new CombatState(
+        createSideState({
+          CRUISER: createUnits(cruiserStats, 2),
+          FIGHTER: createUnits(fighterStats, 3),
+          INFANTRY: createUnits(infantryStats, 4),
+          MECH: createUnits(mechStats, 1),
+        }),
+        createSideState({}),
+        {
+          attacker: { abilities: [participatingUnits] },
+          defender: { abilities: [] },
+        },
+        'START_OF_ROUND',
+        'SPACE', // combatMode
+      )
+
+      const participating = state.getParticipatingUnits('attacker')
+
+      // Should include space units
+      expect(participating.has('CRUISER')).toBe(true)
+      expect(participating.has('FIGHTER')).toBe(true)
+      expect(participating.has('FLAGSHIP')).toBe(true)
+      expect(participating.has('DREADNOUGHT')).toBe(true)
+
+      // Should NOT include ground forces
+      expect(participating.has('INFANTRY')).toBe(false)
+      expect(participating.has('MECH')).toBe(false)
+    })
+
+    it('returns only ground force types when combatMode is GROUND', () => {
+      const state = new CombatState(
+        createSideState({
+          CRUISER: createUnits(cruiserStats, 2),
+          FIGHTER: createUnits(fighterStats, 3),
+          INFANTRY: createUnits(infantryStats, 4),
+          MECH: createUnits(mechStats, 1),
+        }),
+        createSideState({}),
+        {
+          attacker: { abilities: [participatingUnits] },
+          defender: { abilities: [] },
+        },
+        'START_OF_ROUND',
+        'GROUND', // combatMode
+      )
+
+      const participating = state.getParticipatingUnits('attacker')
+
+      // Should include ground forces
+      expect(participating.has('INFANTRY')).toBe(true)
+      expect(participating.has('MECH')).toBe(true)
+
+      // Should NOT include ships
+      expect(participating.has('CRUISER')).toBe(false)
+      expect(participating.has('FIGHTER')).toBe(false)
+      expect(participating.has('FLAGSHIP')).toBe(false)
+      expect(participating.has('DREADNOUGHT')).toBe(false)
+    })
+
+    it('defaults to space units when combatMode is undefined (backward compatibility)', () => {
+      const state = new CombatState(
+        createSideState({
+          CRUISER: createUnits(cruiserStats, 2),
+          INFANTRY: createUnits(infantryStats, 4),
+        }),
+        createSideState({}),
+        {
+          attacker: { abilities: [participatingUnits] },
+          defender: { abilities: [] },
+        },
+        'START_OF_ROUND',
+        // combatMode is undefined
+      )
+
+      const participating = state.getParticipatingUnits('attacker')
+
+      // Should include space units (default behavior)
+      expect(participating.has('CRUISER')).toBe(true)
+      expect(participating.has('FIGHTER')).toBe(true)
+
+      // Should NOT include ground forces
+      expect(participating.has('INFANTRY')).toBe(false)
+      expect(participating.has('MECH')).toBe(false)
+    })
+
+    it('dice collection respects combat mode (ground combat excludes ships)', () => {
+      const state = new CombatState(
+        createSideState({
+          CRUISER: createUnits(cruiserStats, 2), // Ships have combat value
+          INFANTRY: createUnits(infantryStats, 4), // Ground forces have combat value
+        }),
+        createSideState({}),
+        {
+          attacker: { abilities: [participatingUnits] },
+          defender: { abilities: [] },
+        },
+        'START_OF_ROUND',
+        'GROUND', // Ground combat mode
+      )
+
+      const dice = state.collectDice('attacker', 'COMBAT')
+
+      // Should only collect dice from ground forces (infantry)
+      // Infantry has COMBAT: [8, 1], so 4 infantry = [[8, 4, 'INFANTRY']]
+      expect(dice).toHaveLength(1)
+      expect(dice[0]).toEqual([8, 4, 'INFANTRY'])
+
+      // Cruisers should NOT contribute dice (they are not participating in ground combat)
+    })
+
+    it('dice collection respects combat mode (space combat excludes ground forces)', () => {
+      const state = new CombatState(
+        createSideState({
+          CRUISER: createUnits(cruiserStats, 2),
+          INFANTRY: createUnits(infantryStats, 4),
+        }),
+        createSideState({}),
+        {
+          attacker: { abilities: [participatingUnits] },
+          defender: { abilities: [] },
+        },
+        'START_OF_ROUND',
+        'SPACE', // Space combat mode
+      )
+
+      const dice = state.collectDice('attacker', 'COMBAT')
+
+      // Should only collect dice from ships (cruisers)
+      // Cruiser has COMBAT: [7, 1], so 2 cruisers = [[7, 2, 'CRUISER']]
+      expect(dice).toHaveLength(1)
+      expect(dice[0]).toEqual([7, 2, 'CRUISER'])
+
+      // Infantry should NOT contribute dice (they are not participating in space combat)
     })
   })
 })
