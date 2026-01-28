@@ -602,6 +602,215 @@ describe('CombatState', () => {
   })
 })
 
+describe('Bombardment', () => {
+  const dreadnoughtStats: Partial<Unit> = {
+    COMBAT: [5, 1],
+    UNIT_ABILITIES: { BOMBARDMENT: [5, 1] },
+  }
+  const warSunStats: Partial<Unit> = {
+    COMBAT: [3, 3],
+    UNIT_ABILITIES: { BOMBARDMENT: [3, 3] },
+  }
+  const infantryStats: Partial<Unit> = { COMBAT: [8, 1], UNIT_ABILITIES: {} }
+  const mechStats: Partial<Unit> = { COMBAT: [6, 1], UNIT_ABILITIES: {} }
+  const cruiserStats: Partial<Unit> = { COMBAT: [7, 1], UNIT_ABILITIES: {} }
+
+  it('attacker Dreadnought bombards defender Infantry', () => {
+    const state = new CombatState(
+      createSideState({ DREADNOUGHT: createUnits(dreadnoughtStats, 2) }),
+      createSideState({ INFANTRY: createUnits(infantryStats, 3) }),
+      {
+        attacker: { abilities: [participatingUnits] },
+        defender: { abilities: [participatingUnits] },
+      },
+      'START_OF_ROUND',
+      'GROUND',
+      { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' },
+    )
+
+    const results = state.advance(1)
+
+    // Multiple outcomes based on hit probabilities
+    // Dreadnought BOMBARDMENT: [5, 1] means hit on 5+, so 60% hit chance per die
+    // 2 dreadnoughts = 2 dice total
+    expect(results.length).toBeGreaterThan(1)
+
+    // All outcomes should have hits assigned to defender
+    for (const result of results) {
+      // meta.defender contains hits from attacker's bombardment
+      const bombardmentHits = result.meta?.defender ?? 0
+      // Should have hit pools on defender (if hits occurred)
+      if (bombardmentHits > 0) {
+        expect(result.state.defender.hitPools.length).toBeGreaterThan(0)
+      }
+    }
+
+    // Probabilities should sum to 1
+    const totalProb = results.reduce((sum, r) => sum + r.probability, 0)
+    expect(totalProb).toBeCloseTo(1.0, 10)
+  })
+
+  it('multiple ships combine dice into single pool', () => {
+    // 2 Dreadnoughts (2 dice) + 1 War Sun (3 dice) = 5 dice total
+    const state = new CombatState(
+      createSideState({
+        DREADNOUGHT: createUnits(dreadnoughtStats, 2),
+        WAR_SUN: createUnits(warSunStats, 1),
+      }),
+      createSideState({ INFANTRY: createUnits(infantryStats, 5) }),
+      {
+        attacker: { abilities: [participatingUnits] },
+        defender: { abilities: [participatingUnits] },
+      },
+      'START_OF_ROUND',
+      'GROUND',
+      { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' },
+    )
+
+    const results = state.advance(1)
+
+    // With 5 dice, we can get 0-5 hits, so should have multiple outcomes
+    expect(results.length).toBeGreaterThan(1)
+
+    // Find max hits in any outcome
+    const maxHits = Math.max(...results.map(r => r.meta?.defender ?? 0))
+    // With 5 dice, max hits should be at least 2 (very likely some hit)
+    // But can go up to 5
+    expect(maxHits).toBeLessThanOrEqual(5)
+
+    // Probabilities should sum to 1
+    const totalProb = results.reduce((sum, r) => sum + r.probability, 0)
+    expect(totalProb).toBeCloseTo(1.0, 10)
+  })
+
+  it('bombardment only targets ground forces (Infantry/Mech)', () => {
+    // Defender has Infantry, Mech, AND Cruiser
+    // Cruiser should NOT be targeted by bombardment
+    const state = new CombatState(
+      createSideState({ DREADNOUGHT: createUnits(dreadnoughtStats, 2) }),
+      createSideState({
+        INFANTRY: createUnits(infantryStats, 2),
+        MECH: createUnits(mechStats, 1),
+        CRUISER: createUnits(cruiserStats, 1),
+      }),
+      {
+        attacker: { abilities: [participatingUnits] },
+        defender: { abilities: [participatingUnits] },
+      },
+      'START_OF_ROUND',
+      'GROUND',
+      { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' },
+    )
+
+    const results = state.advance(1)
+
+    // All outcomes should have hit pools targeting ground forces only
+    for (const result of results) {
+      for (const pool of result.state.defender.hitPools) {
+        // Valid targets should be ground forces, not ships
+        const targets = [...pool.validTargets]
+        expect(targets).toContain('INFANTRY')
+        expect(targets).toContain('MECH')
+        expect(targets).not.toContain('CRUISER')
+        expect(targets).not.toContain('FIGHTER')
+        expect(targets).not.toContain('DREADNOUGHT')
+      }
+    }
+  })
+
+  it('only attacker fires (one-way bombardment)', () => {
+    // Defender also has ships with Bombardment, but should NOT fire back
+    const state = new CombatState(
+      createSideState({ DREADNOUGHT: createUnits(dreadnoughtStats, 1) }),
+      createSideState({
+        INFANTRY: createUnits(infantryStats, 2),
+        DREADNOUGHT: createUnits(dreadnoughtStats, 2), // Defender has Dreadnoughts too
+      }),
+      {
+        attacker: { abilities: [participatingUnits] },
+        defender: { abilities: [participatingUnits] },
+      },
+      'START_OF_ROUND',
+      'GROUND',
+      { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' },
+    )
+
+    const results = state.advance(1)
+
+    // All outcomes should have:
+    // - meta.defender = attacker's bombardment hits (goes to defender)
+    // - meta.attacker = 0 (defender doesn't fire back)
+    for (const result of results) {
+      expect(result.meta?.attacker).toBe(0) // No hits from defender
+      // Attacker should have no hit pools (defender didn't fire)
+      expect(result.state.attacker.hitPools).toHaveLength(0)
+    }
+  })
+
+  it('ships without Bombardment ability produce 0 dice', () => {
+    // Cruisers don't have Bombardment ability
+    const state = new CombatState(
+      createSideState({ CRUISER: createUnits(cruiserStats, 3) }),
+      createSideState({ INFANTRY: createUnits(infantryStats, 3) }),
+      {
+        attacker: { abilities: [participatingUnits] },
+        defender: { abilities: [participatingUnits] },
+      },
+      'START_OF_ROUND',
+      'GROUND',
+      { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' },
+    )
+
+    const results = state.advance(1)
+
+    // Should have single outcome (no dice = deterministic 0 hits)
+    expect(results).toHaveLength(1)
+    expect(results[0].probability).toBe(1)
+    expect(results[0].meta?.defender).toBe(0) // No bombardment hits
+    expect(results[0].state.defender.hitPools).toHaveLength(0)
+  })
+
+  it('transitions correctly through micro-phases', () => {
+    const state = new CombatState(
+      createSideState({ DREADNOUGHT: createUnits(dreadnoughtStats, 1) }),
+      createSideState({ INFANTRY: createUnits(infantryStats, 2) }),
+      {
+        attacker: { abilities: [participatingUnits] },
+        defender: { abilities: [participatingUnits] },
+      },
+      'START_OF_ROUND',
+      'GROUND',
+      { meta: 'BOMBARDMENT', micro: 'START' },
+    )
+
+    // START -> DICE_ROLL (skips AFB)
+    const afterStart = state.advance(1)
+    expect(afterStart).toHaveLength(1)
+    expect(afterStart[0].state.currentPhase?.meta).toBe('BOMBARDMENT')
+    expect(afterStart[0].state.currentPhase?.micro).toBe('DICE_ROLL')
+
+    // DICE_ROLL -> ASSIGN_HITS (with probability branching)
+    const afterDice = afterStart[0].state.advance(1)
+    expect(afterDice.length).toBeGreaterThan(0)
+    for (const outcome of afterDice) {
+      expect(outcome.state.currentPhase?.meta).toBe('BOMBARDMENT')
+      expect(outcome.state.currentPhase?.micro).toBe('ASSIGN_HITS')
+    }
+
+    // ASSIGN_HITS -> END
+    const afterAssign = afterDice[0].state.advance(1)
+    expect(afterAssign).toHaveLength(1)
+    expect(afterAssign[0].state.currentPhase?.meta).toBe('BOMBARDMENT')
+    expect(afterAssign[0].state.currentPhase?.micro).toBe('END')
+
+    // END -> SPACE_CANNON_DEFENSE (next meta-phase)
+    const afterEnd = afterAssign[0].state.advance(1)
+    expect(afterEnd).toHaveLength(1)
+    expect(afterEnd[0].state.currentPhase?.meta).toBe('SPACE_CANNON_DEFENSE')
+    expect(afterEnd[0].state.currentPhase?.micro).toBe('START')
+  })
+})
+
 describe('SideState operations', () => {
   const fighterStats: Partial<Unit> = { COMBAT: [9, 1], UNIT_ABILITIES: {} }
   const cruiserStats: Partial<Unit> = { COMBAT: [7, 1], UNIT_ABILITIES: {} }

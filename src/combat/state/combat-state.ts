@@ -887,14 +887,32 @@ export class CombatState implements CombatStateData {
    * Process Bombardment dice roll phase.
    * Only attacker fires at defender's ground forces.
    *
-   * Note: No ability hooks (BEFORE_BOMBARDMENT, etc.) are implemented yet.
-   * This is a simple pass-through that uses dice directly.
+   * Bombardment is ONE-WAY: only attacker fires (ships bombarding planet).
+   * Defender array stays empty unlike Space Cannon which is bidirectional.
+   *
+   * Ability hooks:
+   * - BEFORE_BOMBARDMENT: May add dice (e.g., Plasma Scoring)
+   * - WHEN_BOMBARDMENT: May modify dice
    */
   private processBombardment(round: number): StateWithProbability[] {
     // Only attacker has bombardment - defender doesn't fire back
     const attackerDice = this.collectDice('attacker', 'BOMBARDMENT')
 
-    const attackerDist = getCombinedDiceDistribution(attackerDice)
+    // Bombardment is ONE-WAY: only attacker fires, defender array is empty
+    const sidedDiceData: SidedDiceData = {
+      attacker: [...attackerDice],
+      defender: [], // Empty - Bombardment is one-way (attacker only)
+    }
+
+    // Run BEFORE_BOMBARDMENT abilities (may add dice, e.g., Plasma Scoring)
+    const { state: afterBefore, context: beforeDice } =
+      this.runAbilitiesFiltered('BEFORE_BOMBARDMENT', sidedDiceData)
+
+    // Run WHEN_BOMBARDMENT abilities (may modify dice)
+    const { state: afterWhen, context: modifiedDice } =
+      this.runAbilitiesFiltered('WHEN_BOMBARDMENT', beforeDice, afterBefore)
+
+    const attackerDist = getCombinedDiceDistribution(modifiedDice.attacker)
 
     // Bombardment targets ground forces
     const validTargets = getValidTargets('BOMBARDMENT')
@@ -907,7 +925,7 @@ export class CombatState implements CombatStateData {
 
       // Attacker bombardment hits go to defender's ground forces
       const resultData = addHits(
-        this.data,
+        afterWhen,
         'defender',
         attOutcome.hits,
         validTargets,

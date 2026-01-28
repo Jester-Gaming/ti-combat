@@ -233,4 +233,186 @@ describe('CombatEngine', () => {
       expect(summary.attackerWin).toBeGreaterThan(summary.defenderWin)
     })
   })
+
+  describe('Bombardment win conditions', () => {
+    it('ends combat immediately if Bombardment destroys all ground forces', () => {
+      const engine = new CombatEngine()
+      const combatMode: CombatMode = 'GROUND'
+      const initialPhase = getInitialPhaseIdentifier(combatMode)
+
+      // Create custom units with guaranteed bombardment hits
+      // Bombardment [1, 10] = 10 dice hitting on 1+ (100% hit rate per die)
+      const dreadnoughtWithGuaranteedBombardment: Partial<
+        Record<UnitType, Unit[]>
+      > = {
+        DREADNOUGHT: [
+          {
+            COMBAT: [5, 1],
+            UNIT_ABILITIES: { BOMBARDMENT: [1, 10] }, // 10 dice at 1+ (guaranteed 10 hits)
+          },
+        ],
+      }
+
+      const state = new CombatState(
+        createSideState(dreadnoughtWithGuaranteedBombardment),
+        createSideState(createUnits(units, { INFANTRY: 1 })),
+        undefined, // abilities
+        undefined, // phase (legacy)
+        combatMode,
+        initialPhase,
+      )
+
+      const result = engine.simulate(state)
+      const outcomes = flattenTree(result)
+      const summary = summarizeOutcomes(outcomes)
+
+      // With guaranteed 10 hits from Bombardment vs 1 Infantry,
+      // attacker should always win
+      expect(summary.attackerWin).toBeCloseTo(1.0, 10)
+      expect(summary.defenderWin).toBe(0)
+      expect(summary.draw).toBe(0)
+    })
+
+    it('continues to ground combat when Bombardment leaves survivors', () => {
+      const engine = new CombatEngine()
+      const combatMode: CombatMode = 'GROUND'
+      const initialPhase = getInitialPhaseIdentifier(combatMode)
+
+      // Dreadnought with weak bombardment (1 die hitting on 5+ = 60%)
+      const dreadnoughtWithWeakBombardment: Partial<Record<UnitType, Unit[]>> =
+        {
+          DREADNOUGHT: [
+            {
+              COMBAT: [5, 1],
+              UNIT_ABILITIES: { BOMBARDMENT: [5, 1] }, // 1 die at 5+ (60% hit)
+            },
+          ],
+          INFANTRY: [
+            {
+              COMBAT: [8, 1],
+              UNIT_ABILITIES: {},
+            },
+          ],
+        }
+
+      const state = new CombatState(
+        createSideState(dreadnoughtWithWeakBombardment),
+        createSideState(createUnits(units, { INFANTRY: 5 })),
+        undefined, // abilities
+        undefined, // phase (legacy)
+        combatMode,
+        initialPhase,
+      )
+
+      const result = engine.simulate(state)
+      const outcomes = flattenTree(result)
+      const summary = summarizeOutcomes(outcomes)
+
+      // Verify probabilities sum to 1
+      const total = summary.attackerWin + summary.draw + summary.defenderWin
+      expect(total).toBeCloseTo(1.0, 10)
+
+      // With only 1 bombardment die vs 5 infantry, the combat should
+      // continue to ground combat and defender should have a chance to win
+      expect(summary.defenderWin).toBeGreaterThan(0)
+    })
+
+    it('War Sun bombardment kills lone Infantry with high probability', () => {
+      const engine = new CombatEngine()
+      const combatMode: CombatMode = 'GROUND'
+      const initialPhase = getInitialPhaseIdentifier(combatMode)
+
+      // War Sun has BOMBARDMENT: [3, 3] = 3 dice hitting on 3+ (80% each)
+      // Against 1 Infantry, probability of at least 1 hit: 1 - 0.2^3 = 99.2%
+      const warSunUnits: Partial<Record<UnitType, Unit[]>> = {
+        WAR_SUN: [
+          {
+            COMBAT: [3, 3],
+            UNIT_ABILITIES: { BOMBARDMENT: [3, 3] },
+          },
+        ],
+        INFANTRY: [
+          {
+            COMBAT: [8, 1],
+            UNIT_ABILITIES: {},
+          },
+        ],
+      }
+
+      const state = new CombatState(
+        createSideState(warSunUnits),
+        createSideState(createUnits(units, { INFANTRY: 1 })),
+        undefined, // abilities
+        undefined, // phase (legacy)
+        combatMode,
+        initialPhase,
+      )
+
+      const result = engine.simulate(state)
+      const outcomes = flattenTree(result)
+      const summary = summarizeOutcomes(outcomes)
+
+      // Verify probabilities sum to 1
+      const total = summary.attackerWin + summary.draw + summary.defenderWin
+      expect(total).toBeCloseTo(1.0, 10)
+
+      // With 3 dice at 80% each, high probability of killing the lone Infantry
+      // Attacker should win most of the time
+      expect(summary.attackerWin).toBeGreaterThan(0.9)
+    })
+
+    it('ground combat flow: BOMBARDMENT -> SPACE_CANNON_DEFENSE -> GROUND_COMBAT', () => {
+      const engine = new CombatEngine()
+      const combatMode: CombatMode = 'GROUND'
+      const initialPhase = getInitialPhaseIdentifier(combatMode)
+
+      // Simple ground combat with Dreadnought bombardment
+      const attackerUnits: Partial<Record<UnitType, Unit[]>> = {
+        DREADNOUGHT: [
+          {
+            COMBAT: [5, 1],
+            UNIT_ABILITIES: { BOMBARDMENT: [10, 1] }, // Weak bombardment (miss on 1-9)
+          },
+        ],
+        INFANTRY: [
+          {
+            COMBAT: [8, 1],
+            UNIT_ABILITIES: {},
+          },
+          {
+            COMBAT: [8, 1],
+            UNIT_ABILITIES: {},
+          },
+        ],
+      }
+
+      const state = new CombatState(
+        createSideState(attackerUnits),
+        createSideState(createUnits(units, { INFANTRY: 2 })),
+        undefined,
+        undefined,
+        combatMode,
+        initialPhase,
+      )
+
+      // Verify initial phase is BOMBARDMENT
+      expect(state.currentPhase?.meta).toBe('BOMBARDMENT')
+
+      const result = engine.simulate(state)
+      const outcomes = flattenTree(result)
+
+      // flattenTree returns CombatOutcome which has winner/attacker/defender/probability
+      // We verify the combat completed properly by checking we have valid outcomes
+      expect(outcomes.length).toBeGreaterThan(0)
+
+      const summary = summarizeOutcomes(outcomes)
+      const total = summary.attackerWin + summary.draw + summary.defenderWin
+      expect(total).toBeCloseTo(1.0, 10)
+
+      // Combat should have some attacker wins and some defender wins
+      // (2 infantry vs 2 infantry with weak bombardment)
+      expect(summary.attackerWin).toBeGreaterThan(0)
+      expect(summary.defenderWin).toBeGreaterThan(0)
+    })
+  })
 })

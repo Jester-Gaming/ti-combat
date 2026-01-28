@@ -29,6 +29,8 @@ export interface TimingContextMap {
   WHEN_AFB_ROLL: SidedDiceData
   BEFORE_SPACE_CANNON: SidedDiceData
   WHEN_SPACE_CANNON: SidedDiceData
+  BEFORE_BOMBARDMENT: SidedDiceData
+  WHEN_BOMBARDMENT: SidedDiceData
   BEFORE_DICE_ROLL: SidedDiceData
   WHEN_DICE_ROLL: SidedDiceData
   BEFORE_ASSIGN_HITS: void
@@ -44,6 +46,8 @@ export interface InternalTimingContextMap {
   WHEN_AFB_ROLL: DiceData
   BEFORE_SPACE_CANNON: DiceData
   WHEN_SPACE_CANNON: DiceData
+  BEFORE_BOMBARDMENT: DiceData
+  WHEN_BOMBARDMENT: DiceData
   BEFORE_DICE_ROLL: DiceData
   WHEN_DICE_ROLL: DiceData
   BEFORE_ASSIGN_HITS: void
