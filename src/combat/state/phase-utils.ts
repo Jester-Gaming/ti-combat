@@ -118,7 +118,10 @@ export function getNextMicroPhase(
 
   let nextMicro = MICRO_PHASE_ORDER[currentIndex + 1]
 
-  // AFB skip logic: AFB only fires in round 1 of SPACE_COMBAT
+  // AFB skip logic:
+  // - AFB is a round-1 only step within SPACE_COMBAT
+  // - All other meta-phases (SPACE_CANNON_OFFENSE, BOMBARDMENT, etc.) skip AFB
+  // - This ensures Space Cannon Offense flows: START -> DICE_ROLL -> ASSIGN_HITS -> END
   if (nextMicro === 'AFB') {
     const shouldSkipAFB = current.meta !== 'SPACE_COMBAT' || round > 1
     if (shouldSkipAFB) {

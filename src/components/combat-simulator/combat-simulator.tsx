@@ -10,6 +10,7 @@ import {
   type SideState as CombatSideState,
 } from '@/combat'
 import { getAvailableAbilities } from '@/combat/abilities'
+import { getInitialPhaseIdentifier } from '@/combat/state/phase-utils'
 import { countUnits } from '@/combat/state/side-state-ops'
 import type { CombatMode } from '@/combat/state/types'
 import { AbilitiesPanel } from '@/components/abilities-panel'
@@ -155,6 +156,11 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
       return null
     }
 
+    // Compute initial phase for two-tier phase system
+    const initialPhase = combatMode
+      ? getInitialPhaseIdentifier(combatMode)
+      : undefined
+
     return new CombatState(
       attackerSideState,
       defenderSideState,
@@ -168,8 +174,9 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           config: abilityParams.defender,
         },
       },
-      undefined, // phase - use default
+      undefined, // phase (legacy)
       combatMode, // pass the combat mode from UI state
+      initialPhase, // currentPhase (two-tier)
     )
   }, [
     attackerSideState,

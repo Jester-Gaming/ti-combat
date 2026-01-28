@@ -10,6 +10,8 @@ import type { AbilityTiming, TimingContextMap } from '../abilities/types'
 import { getCombinedDiceDistribution } from '../dice'
 import {
   getInitialPhase,
+  getNextMetaPhase,
+  getNextMicroPhase,
   getNextPhase,
   getNextPhaseIdentifier,
   getPhaseKey,
@@ -346,8 +348,39 @@ export class CombatState implements CombatStateData {
     return CombatState.fromData(resultData)
   }
 
-  /** Check if combat is finished (one or both sides' participating units eliminated) */
+  /**
+   * Check if combat is finished.
+   *
+   * For two-tier system: During pre-combat phases (SPACE_CANNON_OFFENSE, BOMBARDMENT,
+   * SPACE_CANNON_DEFENSE), combat is only "finished" if we've reached COMPLETE.
+   * This ensures Space Cannon fires even if one side has no ships.
+   *
+   * For combat phases (SPACE_COMBAT, GROUND_COMBAT): Combat ends when one or both
+   * sides have no participating units remaining.
+   */
   isFinished(): boolean {
+    // Two-tier system: check meta-phase for pre-combat handling
+    if (this.currentPhase) {
+      const { meta } = this.currentPhase
+
+      // Pre-combat phases should complete even if one side has no combat units
+      // (e.g., Space Cannon Offense should fire even if defender has only PDS)
+      const isPreCombatPhase =
+        meta === 'SPACE_CANNON_OFFENSE' ||
+        meta === 'BOMBARDMENT' ||
+        meta === 'SPACE_CANNON_DEFENSE'
+
+      if (isPreCombatPhase) {
+        return false // Never finish during pre-combat phases
+      }
+
+      // COMPLETE means combat is done
+      if (meta === 'COMPLETE') {
+        return true
+      }
+    }
+
+    // Standard check: combat ends when either side has no participating units
     const attackerParticipating = this.getParticipatingUnits('attacker')
     const defenderParticipating = this.getParticipatingUnits('defender')
     const attackerAlive = countUnits(this.attacker, attackerParticipating) > 0
@@ -407,6 +440,103 @@ export class CombatState implements CombatStateData {
    * @param round Current round number (used for AFB phase skipping on round > 1)
    */
   advance(round: number = 1): StateWithProbability[] {
+    // Use two-tier system if currentPhase is set
+    if (this.currentPhase) {
+      return this.advanceTwoTier(round)
+    }
+    // Legacy system
+    return this.advanceLegacy(round)
+  }
+
+  /**
+   * Advance using the two-tier phase system.
+   * Handles meta-phase routing to appropriate processing methods.
+   */
+  private advanceTwoTier(round: number): StateWithProbability[] {
+    if (!this.currentPhase || !this.combatMode) {
+      throw new Error('Two-tier phase system not initialized')
+    }
+
+    const { meta } = this.currentPhase
+
+    switch (meta) {
+      case 'SPACE_CANNON_OFFENSE':
+        return this.advanceSpaceCannonOffense(round)
+
+      case 'SPACE_COMBAT':
+        return this.advanceSpaceCombat(round)
+
+      case 'BOMBARDMENT':
+        return this.advanceBombardment(round)
+
+      case 'SPACE_CANNON_DEFENSE':
+        return this.advanceSpaceCannonDefense(round)
+
+      case 'GROUND_COMBAT':
+        return this.advanceGroundCombat(round)
+
+      case 'COMPLETE':
+        // Combat finished - return self with probability 1
+        return [{ state: this, probability: 1 }]
+
+      default:
+        // Unhandled meta-phase: fall back to legacy system
+        // This allows incremental migration
+        return this.advanceLegacy(round)
+    }
+  }
+
+  /**
+   * Advance Space Cannon Offense meta-phase through micro-phases.
+   * Flow: START -> DICE_ROLL -> ASSIGN_HITS -> END
+   * (AFB is skipped for non-SPACE_COMBAT meta-phases)
+   */
+  private advanceSpaceCannonOffense(round: number): StateWithProbability[] {
+    const micro = this.currentPhase!.micro
+
+    switch (micro) {
+      case 'START':
+        return this.transitionMicroPhase(round) // START -> DICE_ROLL (skips AFB)
+      case 'DICE_ROLL':
+        return this.processSpaceCannonOffense(round)
+      case 'ASSIGN_HITS':
+        return this.processSpaceCannonAssignHits(round)
+      case 'END':
+        return this.transitionMetaPhase()
+      default:
+        return this.transitionMicroPhase(round)
+    }
+  }
+
+  /**
+   * Advance Space Combat meta-phase through micro-phases.
+   * Routes to existing combat methods via two-tier wrappers.
+   * Flow: START -> AFB (round 1 only) -> DICE_ROLL -> ASSIGN_HITS -> END
+   */
+  private advanceSpaceCombat(round: number): StateWithProbability[] {
+    const micro = this.currentPhase!.micro
+
+    switch (micro) {
+      case 'START':
+        return this.processStartOfRoundTwoTier(round)
+      case 'AFB':
+        return this.processAfbRollTwoTier(round)
+      case 'DICE_ROLL':
+        return this.processDiceRollTwoTier(round)
+      case 'ASSIGN_HITS':
+        return this.processAssignHitsTwoTier(round)
+      case 'END':
+        return this.processEndOfRoundTwoTier()
+      default:
+        return this.transitionMicroPhase(round)
+    }
+  }
+
+  /**
+   * Legacy advance method - original switch statement.
+   * Used when currentPhase is not set (backward compatibility).
+   */
+  private advanceLegacy(round: number): StateWithProbability[] {
     switch (this.phase) {
       case 'START_OF_ROUND':
         return this.processStartOfRound(round)
@@ -580,6 +710,472 @@ export class CombatState implements CombatStateData {
     // Round doesn't matter for AFTER_ROUND -> START_OF_ROUND transition
     const nextState = this.transitionToNextPhase(newData, 1)
     return [{ state: nextState, probability: 1 }]
+  }
+
+  // ===========================================================================
+  // TWO-TIER PHASE TRANSITION HELPERS
+  // ===========================================================================
+
+  /** Transition to the next micro-phase within the current meta-phase */
+  private transitionMicroPhase(round: number): StateWithProbability[] {
+    return this.transitionMicroPhaseWithData(this.data, round)
+  }
+
+  /** Transition to the next micro-phase with new state data */
+  private transitionMicroPhaseWithData(
+    data: CombatStateData,
+    round: number,
+  ): StateWithProbability[] {
+    const { phase } = getNextMicroPhase(this.currentPhase!, round)
+    const nextState = CombatState.fromData({ ...data, currentPhase: phase })
+    return [{ state: nextState, probability: 1 }]
+  }
+
+  /** Transition to the next meta-phase (from END micro-phase) */
+  private transitionMetaPhase(): StateWithProbability[] {
+    return this.transitionMetaPhaseWithData(this.data)
+  }
+
+  /**
+   * Transition to the next meta-phase with new state data.
+   *
+   * Before transitioning to a combat phase (SPACE_COMBAT, GROUND_COMBAT),
+   * checks if both sides have participating units. If not, skips to COMPLETE.
+   */
+  private transitionMetaPhaseWithData(
+    data: CombatStateData,
+  ): StateWithProbability[] {
+    const { phase } = getNextMetaPhase(this.currentPhase!, this.combatMode!)
+
+    // Check if we should skip to COMPLETE due to one side having no combat units
+    let finalPhase = phase
+    if (phase.meta === 'SPACE_COMBAT' || phase.meta === 'GROUND_COMBAT') {
+      // Create temporary state to check participating units with current data
+      const tempState = CombatState.fromData({ ...data, currentPhase: phase })
+      const attackerParticipating = tempState.getParticipatingUnits('attacker')
+      const defenderParticipating = tempState.getParticipatingUnits('defender')
+      const attackerHasUnits =
+        countUnits(data.attacker, attackerParticipating) > 0
+      const defenderHasUnits =
+        countUnits(data.defender, defenderParticipating) > 0
+
+      // If either side has no units for combat, skip to COMPLETE
+      if (!attackerHasUnits || !defenderHasUnits) {
+        finalPhase = { meta: 'COMPLETE', micro: 'END' }
+      }
+    }
+
+    const nextState = CombatState.fromData({
+      ...data,
+      currentPhase: finalPhase,
+    })
+    // Note: incrementRound is returned but caller manages round counting
+    return [{ state: nextState, probability: 1 }]
+  }
+
+  // ===========================================================================
+  // SPACE CANNON OFFENSE PROCESSING
+  // ===========================================================================
+
+  /**
+   * Process Space Cannon Offense phase - BIDIRECTIONAL fire.
+   *
+   * Both attacker AND defender fire at each other's ships before space combat.
+   * This is different from Space Cannon Defense where only defender fires.
+   *
+   * NO skip logic - always process the phase even if no units have Space Cannon.
+   * Abilities (BEFORE_SPACE_CANNON) may add dice even when initial arrays are empty.
+   *
+   * @param round Current combat round (always 1 for Space Cannon Offense)
+   */
+  private processSpaceCannonOffense(round: number): StateWithProbability[] {
+    // Collect dice from BOTH sides - may be empty, that's OK
+    const attackerDice = this.collectDice('attacker', 'SPACE_CANNON')
+    const defenderDice = this.collectDice('defender', 'SPACE_CANNON')
+
+    const sidedDiceData: SidedDiceData = {
+      attacker: [...attackerDice],
+      defender: [...defenderDice],
+    }
+
+    // Run BEFORE_SPACE_CANNON abilities (may add dice)
+    const { state: afterBefore, context: beforeDice } =
+      this.runAbilitiesFiltered('BEFORE_SPACE_CANNON', sidedDiceData)
+
+    // Run WHEN_SPACE_CANNON abilities (can modify dice)
+    const { state: afterWhen, context: modifiedDice } =
+      this.runAbilitiesFiltered('WHEN_SPACE_CANNON', beforeDice, afterBefore)
+
+    // Calculate probability distributions
+    // Empty arrays produce a single outcome with 0 hits and probability 1
+    const attackerDist = getCombinedDiceDistribution(modifiedDice.attacker)
+    const defenderDist = getCombinedDiceDistribution(modifiedDice.defender)
+
+    // Space Cannon Offense targets all ships (empty validTargets = all)
+    const validTargets = getValidTargets('SPACE_CANNON')
+
+    const results: StateWithProbability[] = []
+
+    // Cross-product of outcomes for bidirectional fire
+    for (const attOutcome of attackerDist) {
+      for (const defOutcome of defenderDist) {
+        const probability = attOutcome.probability * defOutcome.probability
+        if (probability === 0) continue
+
+        // Cross-assignment: attacker hits -> defender's ships
+        let resultData = addHits(
+          afterWhen,
+          'defender',
+          attOutcome.hits,
+          validTargets,
+        )
+        // Cross-assignment: defender hits -> attacker's ships
+        resultData = addHits(
+          resultData,
+          'attacker',
+          defOutcome.hits,
+          validTargets,
+        )
+
+        // Transition to next micro-phase (ASSIGN_HITS)
+        const nextState = this.transitionMicroPhaseWithData(resultData, round)
+
+        results.push({
+          state: nextState[0].state,
+          probability,
+          meta: { attacker: defOutcome.hits, defender: attOutcome.hits },
+        })
+      }
+    }
+
+    return results
+  }
+
+  /** Process Space Cannon hit assignment phase */
+  private processSpaceCannonAssignHits(round: number): StateWithProbability[] {
+    const afterAssign = this.assignHits()
+    return this.transitionMicroPhaseWithData(afterAssign.data, round)
+  }
+
+  // ===========================================================================
+  // BOMBARDMENT PROCESSING (GROUND COMBAT FLOW)
+  // ===========================================================================
+
+  /**
+   * Advance Bombardment meta-phase through micro-phases.
+   * Flow: START -> DICE_ROLL -> ASSIGN_HITS -> END
+   * Only attacker fires (ships bombarding defender's ground forces).
+   */
+  private advanceBombardment(round: number): StateWithProbability[] {
+    const micro = this.currentPhase!.micro
+
+    switch (micro) {
+      case 'START':
+        return this.transitionMicroPhase(round) // START -> DICE_ROLL (skips AFB)
+      case 'DICE_ROLL':
+        return this.processBombardment(round)
+      case 'ASSIGN_HITS':
+        return this.processBombardmentAssignHits(round)
+      case 'END':
+        return this.transitionMetaPhase()
+      default:
+        return this.transitionMicroPhase(round)
+    }
+  }
+
+  /**
+   * Process Bombardment dice roll phase.
+   * Only attacker fires at defender's ground forces.
+   *
+   * Note: No ability hooks (BEFORE_BOMBARDMENT, etc.) are implemented yet.
+   * This is a simple pass-through that uses dice directly.
+   */
+  private processBombardment(round: number): StateWithProbability[] {
+    // Only attacker has bombardment - defender doesn't fire back
+    const attackerDice = this.collectDice('attacker', 'BOMBARDMENT')
+
+    const attackerDist = getCombinedDiceDistribution(attackerDice)
+
+    // Bombardment targets ground forces
+    const validTargets = getValidTargets('BOMBARDMENT')
+
+    const results: StateWithProbability[] = []
+
+    for (const attOutcome of attackerDist) {
+      const probability = attOutcome.probability
+      if (probability === 0) continue
+
+      // Attacker bombardment hits go to defender's ground forces
+      const resultData = addHits(
+        this.data,
+        'defender',
+        attOutcome.hits,
+        validTargets,
+      )
+
+      const nextState = this.transitionMicroPhaseWithData(resultData, round)
+
+      results.push({
+        state: nextState[0].state,
+        probability,
+        meta: { attacker: 0, defender: attOutcome.hits },
+      })
+    }
+
+    return results
+  }
+
+  /** Process Bombardment hit assignment phase */
+  private processBombardmentAssignHits(round: number): StateWithProbability[] {
+    const afterAssign = this.assignHits()
+    return this.transitionMicroPhaseWithData(afterAssign.data, round)
+  }
+
+  // ===========================================================================
+  // SPACE CANNON DEFENSE PROCESSING (GROUND COMBAT FLOW)
+  // ===========================================================================
+
+  /**
+   * Advance Space Cannon Defense meta-phase through micro-phases.
+   * Flow: START -> DICE_ROLL -> ASSIGN_HITS -> END
+   * Only defender fires (PDS defending against invading ground forces).
+   */
+  private advanceSpaceCannonDefense(round: number): StateWithProbability[] {
+    const micro = this.currentPhase!.micro
+
+    switch (micro) {
+      case 'START':
+        return this.transitionMicroPhase(round) // START -> DICE_ROLL (skips AFB)
+      case 'DICE_ROLL':
+        return this.processSpaceCannonDefense(round)
+      case 'ASSIGN_HITS':
+        return this.processSpaceCannonDefenseAssignHits(round)
+      case 'END':
+        return this.transitionMetaPhase()
+      default:
+        return this.transitionMicroPhase(round)
+    }
+  }
+
+  /**
+   * Process Space Cannon Defense dice roll phase.
+   * Only defender fires at attacker's invading ground forces.
+   */
+  private processSpaceCannonDefense(round: number): StateWithProbability[] {
+    // Only defender has Space Cannon Defense - attacker doesn't fire back
+    const defenderDice = this.collectDice('defender', 'SPACE_CANNON')
+
+    const sidedDiceData: SidedDiceData = {
+      attacker: [], // Attacker doesn't fire during Space Cannon Defense
+      defender: [...defenderDice],
+    }
+
+    // Run BEFORE_SPACE_CANNON abilities (may add dice)
+    const { state: afterBefore, context: beforeDice } =
+      this.runAbilitiesFiltered('BEFORE_SPACE_CANNON', sidedDiceData)
+
+    // Run WHEN_SPACE_CANNON abilities (can modify dice)
+    const { state: afterWhen, context: modifiedDice } =
+      this.runAbilitiesFiltered('WHEN_SPACE_CANNON', beforeDice, afterBefore)
+
+    const defenderDist = getCombinedDiceDistribution(modifiedDice.defender)
+
+    // Space Cannon Defense targets all units (ground forces in this case)
+    const validTargets = getValidTargets('SPACE_CANNON')
+
+    const results: StateWithProbability[] = []
+
+    for (const defOutcome of defenderDist) {
+      const probability = defOutcome.probability
+      if (probability === 0) continue
+
+      // Defender Space Cannon hits go to attacker's ground forces
+      const resultData = addHits(
+        afterWhen,
+        'attacker',
+        defOutcome.hits,
+        validTargets,
+      )
+
+      const nextState = this.transitionMicroPhaseWithData(resultData, round)
+
+      results.push({
+        state: nextState[0].state,
+        probability,
+        meta: { attacker: defOutcome.hits, defender: 0 },
+      })
+    }
+
+    return results
+  }
+
+  /** Process Space Cannon Defense hit assignment phase */
+  private processSpaceCannonDefenseAssignHits(
+    round: number,
+  ): StateWithProbability[] {
+    const afterAssign = this.assignHits()
+    return this.transitionMicroPhaseWithData(afterAssign.data, round)
+  }
+
+  // ===========================================================================
+  // GROUND COMBAT PROCESSING
+  // ===========================================================================
+
+  /**
+   * Advance Ground Combat meta-phase through micro-phases.
+   * Flow: START -> DICE_ROLL -> ASSIGN_HITS -> END (loops for multiple rounds)
+   * Similar to Space Combat but without AFB.
+   */
+  private advanceGroundCombat(round: number): StateWithProbability[] {
+    const micro = this.currentPhase!.micro
+
+    switch (micro) {
+      case 'START':
+        return this.processStartOfRoundTwoTier(round)
+      case 'DICE_ROLL':
+        return this.processDiceRollTwoTier(round)
+      case 'ASSIGN_HITS':
+        return this.processAssignHitsTwoTier(round)
+      case 'END':
+        return this.processEndOfRoundTwoTier()
+      default:
+        return this.transitionMicroPhase(round)
+    }
+  }
+
+  // ===========================================================================
+  // TWO-TIER WRAPPER METHODS FOR SPACE COMBAT
+  // ===========================================================================
+
+  /** Process START_OF_ROUND for two-tier system */
+  private processStartOfRoundTwoTier(round: number): StateWithProbability[] {
+    const { state: newData } = this.runAbilitiesFiltered('START_OF_ROUND')
+    return this.transitionMicroPhaseWithData(newData, round)
+  }
+
+  /** Process AFB_ROLL for two-tier system */
+  private processAfbRollTwoTier(round: number): StateWithProbability[] {
+    const attackerDice = this.collectDice('attacker', 'AFB')
+    const defenderDice = this.collectDice('defender', 'AFB')
+
+    const sidedDiceData: SidedDiceData = {
+      attacker: [...attackerDice],
+      defender: [...defenderDice],
+    }
+
+    // Run BEFORE_AFB_ROLL abilities
+    const { state: afterBefore, context: beforeDice } =
+      this.runAbilitiesFiltered('BEFORE_AFB_ROLL', sidedDiceData)
+
+    // Run WHEN_AFB_ROLL abilities (can modify dice)
+    const { state: afterWhen, context: modifiedDice } =
+      this.runAbilitiesFiltered('WHEN_AFB_ROLL', beforeDice, afterBefore)
+
+    const attackerDist = getCombinedDiceDistribution(modifiedDice.attacker)
+    const defenderDist = getCombinedDiceDistribution(modifiedDice.defender)
+    const validTargets = getValidTargets('AFB')
+
+    const results: StateWithProbability[] = []
+
+    for (const attOutcome of attackerDist) {
+      for (const defOutcome of defenderDist) {
+        const probability = attOutcome.probability * defOutcome.probability
+        if (probability === 0) continue
+
+        // Attacker hits go to defender, defender hits go to attacker
+        let resultData = addHits(
+          afterWhen,
+          'defender',
+          attOutcome.hits,
+          validTargets,
+        )
+        resultData = addHits(
+          resultData,
+          'attacker',
+          defOutcome.hits,
+          validTargets,
+        )
+
+        const nextState = this.transitionMicroPhaseWithData(resultData, round)
+        results.push({
+          state: nextState[0].state,
+          probability,
+          meta: { attacker: defOutcome.hits, defender: attOutcome.hits },
+        })
+      }
+    }
+
+    return results
+  }
+
+  /** Process DICE_ROLL for two-tier system */
+  private processDiceRollTwoTier(round: number): StateWithProbability[] {
+    const attackerDice = this.collectDice('attacker', 'COMBAT')
+    const defenderDice = this.collectDice('defender', 'COMBAT')
+
+    const sidedDiceData: SidedDiceData = {
+      attacker: [...attackerDice],
+      defender: [...defenderDice],
+    }
+
+    // Run BEFORE_DICE_ROLL abilities
+    const { state: afterBefore, context: beforeDice } =
+      this.runAbilitiesFiltered('BEFORE_DICE_ROLL', sidedDiceData)
+
+    // Run WHEN_DICE_ROLL abilities (can modify dice)
+    const { state: afterWhen, context: modifiedDice } =
+      this.runAbilitiesFiltered('WHEN_DICE_ROLL', beforeDice, afterBefore)
+
+    const attackerDist = getCombinedDiceDistribution(modifiedDice.attacker)
+    const defenderDist = getCombinedDiceDistribution(modifiedDice.defender)
+    const validTargets = getValidTargets('COMBAT')
+
+    const results: StateWithProbability[] = []
+
+    for (const attOutcome of attackerDist) {
+      for (const defOutcome of defenderDist) {
+        const probability = attOutcome.probability * defOutcome.probability
+        if (probability === 0) continue
+
+        // Attacker hits go to defender, defender hits go to attacker
+        let resultData = addHits(
+          afterWhen,
+          'defender',
+          attOutcome.hits,
+          validTargets,
+        )
+        resultData = addHits(
+          resultData,
+          'attacker',
+          defOutcome.hits,
+          validTargets,
+        )
+
+        const nextState = this.transitionMicroPhaseWithData(resultData, round)
+
+        results.push({
+          state: nextState[0].state,
+          probability,
+          meta: { attacker: defOutcome.hits, defender: attOutcome.hits },
+        })
+      }
+    }
+
+    return results
+  }
+
+  /** Process ASSIGN_HITS for two-tier system */
+  private processAssignHitsTwoTier(round: number): StateWithProbability[] {
+    const afterAssign = this.assignHits()
+    return this.transitionMicroPhaseWithData(afterAssign.data, round)
+  }
+
+  /** Process END_OF_ROUND for two-tier system */
+  private processEndOfRoundTwoTier(): StateWithProbability[] {
+    const { state: newData } = this.runAbilitiesFiltered('END_OF_ROUND')
+    // END micro-phase transitions to next meta-phase or loops for next round
+    // getNextMetaPhase handles the loop back for combat phases
+    return this.transitionMetaPhaseWithData(newData)
   }
 }
 

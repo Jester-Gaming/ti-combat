@@ -6,7 +6,8 @@ import type { FactionKey, UnitDefinition, UnitStats, UnitType } from '@/types'
 import { CombatEngine } from './combat-engine'
 import { flattenTree } from './probability/flatten-tree'
 import { CombatState } from './state/combat-state'
-import type { SideState, Unit } from './state/types'
+import { getInitialPhaseIdentifier } from './state/phase-utils'
+import type { CombatMode, SideState, Unit } from './state/types'
 import type { CombatOutcome } from './types'
 
 const TEST_FACTION: FactionKey = 'ARBOREC'
@@ -173,6 +174,63 @@ describe('CombatEngine', () => {
       expect(summary.attackerWin).toBeCloseTo(0.21467, 5)
       expect(summary.draw).toBeCloseTo(0.057065, 5)
       expect(summary.defenderWin).toBeCloseTo(0.72826, 5)
+    })
+
+    it('1 infantry vs 1 infantry (ground combat)', () => {
+      const engine = new CombatEngine()
+      const combatMode: CombatMode = 'GROUND'
+      const initialPhase = getInitialPhaseIdentifier(combatMode)
+
+      const state = new CombatState(
+        createSideState(createUnits(units, { INFANTRY: 1 })),
+        createSideState(createUnits(units, { INFANTRY: 1 })),
+        undefined, // abilities
+        undefined, // phase (legacy)
+        combatMode,
+        initialPhase,
+      )
+
+      const result = engine.simulate(state)
+
+      const outcomes = flattenTree(result)
+      const summary = summarizeOutcomes(outcomes)
+
+      // Verify probabilities sum to 1
+      const total = summary.attackerWin + summary.draw + summary.defenderWin
+      expect(total).toBeCloseTo(1.0, 10)
+
+      // 1 infantry vs 1 infantry should be roughly symmetric
+      // Infantry has COMBAT: [8, 1] meaning 30% hit chance (rolls 8+)
+      // Both sides have equal chance, with some draw probability
+      expect(summary.attackerWin).toBeCloseTo(summary.defenderWin, 1)
+      expect(summary.draw).toBeGreaterThan(0)
+    })
+
+    it('2 infantry vs 1 infantry (ground combat)', () => {
+      const engine = new CombatEngine()
+      const combatMode: CombatMode = 'GROUND'
+      const initialPhase = getInitialPhaseIdentifier(combatMode)
+
+      const state = new CombatState(
+        createSideState(createUnits(units, { INFANTRY: 2 })),
+        createSideState(createUnits(units, { INFANTRY: 1 })),
+        undefined, // abilities
+        undefined, // phase (legacy)
+        combatMode,
+        initialPhase,
+      )
+
+      const result = engine.simulate(state)
+
+      const outcomes = flattenTree(result)
+      const summary = summarizeOutcomes(outcomes)
+
+      // Verify probabilities sum to 1
+      const total = summary.attackerWin + summary.draw + summary.defenderWin
+      expect(total).toBeCloseTo(1.0, 10)
+
+      // 2 infantry should beat 1 infantry most of the time
+      expect(summary.attackerWin).toBeGreaterThan(summary.defenderWin)
     })
   })
 })

@@ -257,6 +257,79 @@ describe('CombatState', () => {
 
       expect(state.isFinished()).toBe(false)
     })
+
+    describe('pre-combat phases (ships vs PDS-only)', () => {
+      const pdsStats: Partial<Unit> = {
+        UNIT_ABILITIES: { SPACE_CANNON: [6, 1] },
+      }
+
+      it('returns false during SPACE_CANNON_OFFENSE even if defender has only PDS', () => {
+        const state = new CombatState(
+          createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
+          createSideState({ PDS: createUnits(pdsStats, 2) }),
+          {
+            attacker: { abilities: [participatingUnits] },
+            defender: { abilities: [participatingUnits] },
+          },
+          'START_OF_ROUND',
+          'SPACE',
+          { meta: 'SPACE_CANNON_OFFENSE', micro: 'START' },
+        )
+
+        // Combat should NOT be finished during Space Cannon phase
+        // even though defender has no ships (only PDS)
+        expect(state.isFinished()).toBe(false)
+      })
+
+      it('returns false during SPACE_CANNON_OFFENSE even if attacker has only PDS', () => {
+        const state = new CombatState(
+          createSideState({ PDS: createUnits(pdsStats, 2) }),
+          createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
+          {
+            attacker: { abilities: [participatingUnits] },
+            defender: { abilities: [participatingUnits] },
+          },
+          'START_OF_ROUND',
+          'SPACE',
+          { meta: 'SPACE_CANNON_OFFENSE', micro: 'DICE_ROLL' },
+        )
+
+        expect(state.isFinished()).toBe(false)
+      })
+
+      it('returns true when at COMPLETE phase', () => {
+        const state = new CombatState(
+          createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
+          createSideState({ PDS: createUnits(pdsStats, 2) }),
+          {
+            attacker: { abilities: [participatingUnits] },
+            defender: { abilities: [participatingUnits] },
+          },
+          'START_OF_ROUND',
+          'SPACE',
+          { meta: 'COMPLETE', micro: 'END' },
+        )
+
+        expect(state.isFinished()).toBe(true)
+      })
+
+      it('returns true during SPACE_COMBAT if one side has no ships', () => {
+        const state = new CombatState(
+          createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
+          createSideState({ PDS: createUnits(pdsStats, 2) }),
+          {
+            attacker: { abilities: [participatingUnits] },
+            defender: { abilities: [participatingUnits] },
+          },
+          'START_OF_ROUND',
+          'SPACE',
+          { meta: 'SPACE_COMBAT', micro: 'START' },
+        )
+
+        // During SPACE_COMBAT, defender has 0 participating units (PDS is not a ship)
+        expect(state.isFinished()).toBe(true)
+      })
+    })
   })
 
   describe('getHash', () => {
@@ -438,6 +511,93 @@ describe('CombatState', () => {
       expect(dice[0]).toEqual([7, 2, 'CRUISER'])
 
       // Infantry should NOT contribute dice (they are not participating in space combat)
+    })
+  })
+
+  describe('phase transitions (ships vs PDS-only)', () => {
+    const pdsStats: Partial<Unit> = {
+      UNIT_ABILITIES: { SPACE_CANNON: [6, 1] },
+    }
+
+    it('skips to COMPLETE when transitioning from SPACE_CANNON_OFFENSE if defender has only PDS', () => {
+      // Attacker has ships, defender has only PDS
+      const state = new CombatState(
+        createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
+        createSideState({ PDS: createUnits(pdsStats, 2) }),
+        {
+          attacker: { abilities: [participatingUnits] },
+          defender: { abilities: [participatingUnits] },
+        },
+        'START_OF_ROUND',
+        'SPACE',
+        { meta: 'SPACE_CANNON_OFFENSE', micro: 'END' },
+      )
+
+      // Advancing from END should transition to next meta-phase
+      const outcomes = state.advance(1)
+
+      expect(outcomes).toHaveLength(1)
+      expect(outcomes[0].probability).toBe(1)
+      // Should skip SPACE_COMBAT and go to COMPLETE
+      expect(outcomes[0].state.currentPhase?.meta).toBe('COMPLETE')
+    })
+
+    it('skips to COMPLETE when transitioning from SPACE_CANNON_OFFENSE if attacker has only PDS', () => {
+      // Attacker has only PDS, defender has ships
+      const state = new CombatState(
+        createSideState({ PDS: createUnits(pdsStats, 2) }),
+        createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
+        {
+          attacker: { abilities: [participatingUnits] },
+          defender: { abilities: [participatingUnits] },
+        },
+        'START_OF_ROUND',
+        'SPACE',
+        { meta: 'SPACE_CANNON_OFFENSE', micro: 'END' },
+      )
+
+      const outcomes = state.advance(1)
+
+      expect(outcomes).toHaveLength(1)
+      expect(outcomes[0].state.currentPhase?.meta).toBe('COMPLETE')
+    })
+
+    it('proceeds to SPACE_COMBAT when both sides have ships', () => {
+      const state = new CombatState(
+        createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
+        createSideState({ DESTROYER: createUnits(destroyerStats, 2) }),
+        {
+          attacker: { abilities: [participatingUnits] },
+          defender: { abilities: [participatingUnits] },
+        },
+        'START_OF_ROUND',
+        'SPACE',
+        { meta: 'SPACE_CANNON_OFFENSE', micro: 'END' },
+      )
+
+      const outcomes = state.advance(1)
+
+      expect(outcomes).toHaveLength(1)
+      expect(outcomes[0].state.currentPhase?.meta).toBe('SPACE_COMBAT')
+    })
+
+    it('collects Space Cannon dice from PDS during SPACE_CANNON_OFFENSE', () => {
+      const state = new CombatState(
+        createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
+        createSideState({ PDS: createUnits(pdsStats, 3) }),
+        {
+          attacker: { abilities: [participatingUnits] },
+          defender: { abilities: [participatingUnits] },
+        },
+        'START_OF_ROUND',
+        'SPACE',
+        { meta: 'SPACE_CANNON_OFFENSE', micro: 'START' },
+      )
+
+      // Defender's PDS should contribute dice for Space Cannon
+      const dice = state.collectDice('defender', 'SPACE_CANNON')
+      expect(dice).toHaveLength(1)
+      expect(dice[0]).toEqual([6, 3, 'PDS']) // 3 PDS with [6, 1] each
     })
   })
 })

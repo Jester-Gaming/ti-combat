@@ -143,9 +143,16 @@ export function collectDice(
 ): DieValue[] {
   const result: DieValue[] = []
 
+  // SPACE_CANNON and BOMBARDMENT are pre-combat abilities that fire regardless of
+  // combat participation. PDS fires Space Cannon but is not a combat participant.
+  // Ships with Bombardment fire at ground forces but may not participate in ground combat.
+  const skipParticipatingFilter =
+    source === 'SPACE_CANNON' || source === 'BOMBARDMENT'
+
   for (const [type, units] of Object.entries(sideState.units)) {
     if (!units || units.length === 0) continue
-    if (!participatingUnits.has(type as UnitType)) continue
+    if (!skipParticipatingFilter && !participatingUnits.has(type as UnitType))
+      continue
 
     const firstUnit = units[0]
     if (!firstUnit) continue
