@@ -47,6 +47,7 @@ export class CombatEngine {
       probability: 1,
       round: 0,
       children: [],
+      log: [],
     }
 
     // Check for immediate end
@@ -94,8 +95,8 @@ export class CombatEngine {
         node.state = outcome.state
         node.round = getNextRound(node.round, outcome.state)
 
-        if (outcome.meta) {
-          node.meta = { ...node.meta, ...outcome.meta }
+        if (outcome.log) {
+          node.log = [...node.log, ...outcome.log]
         }
 
         continue
@@ -108,7 +109,7 @@ export class CombatEngine {
         probability: outcome.probability,
         round: getNextRound(node.round, outcome.state),
         children: [],
-        meta: outcome.meta,
+        log: outcome.log ?? [],
       }))
 
       // Cache the subtree before expansion

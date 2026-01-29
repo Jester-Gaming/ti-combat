@@ -2,6 +2,8 @@ import type { CombatState } from './state/combat-state'
 
 export type { CombatSide } from './state/types'
 
+export type LogEntry = [string, ...unknown[]]
+
 /** A node in the probability tree */
 export interface ProbabilityNode {
   id: string
@@ -9,7 +11,7 @@ export interface ProbabilityNode {
   probability: number
   round: number
   children: ProbabilityNode[]
-  meta?: Record<string, unknown>
+  log: LogEntry[]
 }
 
 /** Survivor counts for one side */

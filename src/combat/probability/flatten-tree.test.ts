@@ -46,6 +46,7 @@ describe('flattenTree', () => {
       probability: 1,
       round: 1,
       children: [],
+      log: [],
     }
 
     const outcomes = flattenTree(root)
@@ -68,6 +69,7 @@ describe('flattenTree', () => {
           probability: 0.6,
           round: 1,
           children: [],
+          log: [],
         },
         {
           id: crypto.randomUUID(),
@@ -75,8 +77,10 @@ describe('flattenTree', () => {
           probability: 0.4,
           round: 1,
           children: [],
+          log: [],
         },
       ],
+      log: [],
     }
 
     const outcomes = flattenTree(root)
@@ -99,6 +103,7 @@ describe('flattenTree', () => {
           probability: 0.3,
           round: 1,
           children: [],
+          log: [],
         },
         {
           id: crypto.randomUUID(),
@@ -106,8 +111,10 @@ describe('flattenTree', () => {
           probability: 0.2,
           round: 1,
           children: [],
+          log: [],
         },
       ],
+      log: [],
     }
 
     const outcomes = flattenTree(root)
@@ -129,6 +136,7 @@ describe('flattenTree', () => {
       probability: 0.7,
       round: 1,
       children: [],
+      log: [],
     }
 
     // Cycle node: when 0-0 hits happen, combat continues with same state
@@ -139,6 +147,7 @@ describe('flattenTree', () => {
       probability: 0.3,
       round: 1,
       children: [], // Will be set to root.children below
+      log: [],
     }
 
     const root: ProbabilityNode = {
@@ -147,6 +156,7 @@ describe('flattenTree', () => {
       probability: 1,
       round: 1,
       children: [leafWin, cycleNode],
+      log: [],
     }
 
     // Create the cycle: cycleNode's children point to root's children
@@ -172,6 +182,7 @@ describe('flattenTree', () => {
       probability: 0.2,
       round: 1,
       children: [],
+      log: [],
     }
 
     const outcomeB: ProbabilityNode = {
@@ -180,6 +191,7 @@ describe('flattenTree', () => {
       probability: 0.6,
       round: 1,
       children: [],
+      log: [],
     }
 
     const cycleNode: ProbabilityNode = {
@@ -188,6 +200,7 @@ describe('flattenTree', () => {
       probability: 0.2,
       round: 1,
       children: [], // Will create cycle
+      log: [],
     }
 
     const root: ProbabilityNode = {
@@ -196,6 +209,7 @@ describe('flattenTree', () => {
       probability: 1,
       round: 1,
       children: [outcomeA, outcomeB, cycleNode],
+      log: [],
     }
 
     cycleNode.children = root.children
@@ -233,6 +247,7 @@ describe('flattenTree', () => {
       probability: 1, // 100% once we reach A or B
       round: 1,
       children: [],
+      log: [],
     }
 
     const nodeA: ProbabilityNode = {
@@ -241,6 +256,7 @@ describe('flattenTree', () => {
       probability: 0.4,
       round: 1,
       children: [shared], // Points to shared
+      log: [],
     }
 
     const nodeB: ProbabilityNode = {
@@ -249,6 +265,7 @@ describe('flattenTree', () => {
       probability: 0.6,
       round: 1,
       children: [shared], // Also points to shared (DAG!)
+      log: [],
     }
 
     const root: ProbabilityNode = {
@@ -257,6 +274,7 @@ describe('flattenTree', () => {
       probability: 1,
       round: 1,
       children: [nodeA, nodeB],
+      log: [],
     }
 
     const outcomes = flattenTree(root)

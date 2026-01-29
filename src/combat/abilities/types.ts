@@ -163,6 +163,7 @@ export interface AbilityCallContext {
     own: SideApi
     opponent: SideApi
   }
+  log(...data: unknown[]): void
 }
 
 /** Per-side abilities accessor for use within ability context */

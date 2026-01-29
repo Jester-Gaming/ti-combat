@@ -8,6 +8,7 @@ import {
 } from '../abilities'
 import type { AbilityTiming, TimingContextMap } from '../abilities/types'
 import { getCombinedDiceDistribution } from '../dice'
+import type { LogEntry } from '../types'
 import {
   getFirstMicroPhase,
   getInitialPhaseIdentifier,
@@ -34,11 +35,11 @@ import type {
   SideState,
 } from './types'
 
-/** A state with its probability and hit metadata */
+/** A state with its probability and log entries */
 export interface StateWithProbability {
   state: CombatState
   probability: number
-  meta?: { attacker: number; defender: number }
+  log?: LogEntry[]
 }
 
 interface UnitAbilityPhaseConfig {
@@ -262,11 +263,17 @@ export class CombatState implements CombatStateData {
     return {
       state: mergedState,
       context: result.context,
+      log: result.log,
     }
   }
 
   assignHits(): CombatState {
-    const { state: afterAbilities } = this.runAbilities('BEFORE_ASSIGN_HITS')
+    return this.assignHitsInternal().state
+  }
+
+  private assignHitsInternal(): { state: CombatState; log: LogEntry[] } {
+    const { state: afterAbilities, log: beforeLog } =
+      this.runAbilities('BEFORE_ASSIGN_HITS')
 
     const tempState = CombatState.fromData(afterAbilities)
     const attackerParticipating = tempState.getParticipatingUnits('attacker')
@@ -299,20 +306,24 @@ export class CombatState implements CombatStateData {
       ),
     }
 
+    const log: LogEntry[] = [...beforeLog]
+
     if (
       destroyedContext.attacker.length === 0 &&
       destroyedContext.defender.length === 0
     ) {
-      return CombatState.fromData(resultData)
+      return { state: CombatState.fromData(resultData), log }
     }
 
-    const { state: afterDestroy } = this.runAbilities(
+    const { state: afterDestroy, log: afterDestroyLog } = this.runAbilities(
       'AFTER_DESTROY',
       destroyedContext,
       resultData,
     )
 
-    return CombatState.fromData(afterDestroy)
+    log.push(...afterDestroyLog)
+
+    return { state: CombatState.fromData(afterDestroy), log }
   }
 
   isFinished(): boolean {
@@ -423,9 +434,11 @@ export class CombatState implements CombatStateData {
     stateData: CombatStateData,
     modifiedDice: SidedDiceData,
     validTargets: UnitType[],
+    prependLog?: LogEntry[],
   ): StateWithProbability[] {
     const attackerDist = getCombinedDiceDistribution(modifiedDice.attacker)
     const defenderDist = getCombinedDiceDistribution(modifiedDice.defender)
+    const { meta: metaPhase } = this.currentPhase
 
     const results: StateWithProbability[] = []
 
@@ -448,12 +461,16 @@ export class CombatState implements CombatStateData {
           validTargets,
         )
 
-        const nextState = this.transitionPhaseWithData(resultData)
+        const log: LogEntry[] = [...(prependLog ?? [])]
+        log.push([metaPhase, 'DICE_ROLL', 'attacker', attOutcome.hits])
+        log.push([metaPhase, 'DICE_ROLL', 'defender', defOutcome.hits])
+
+        const nextState = this.transitionPhaseWithData(resultData, log)
 
         results.push({
           state: nextState[0].state,
           probability,
-          meta: { attacker: defOutcome.hits, defender: attOutcome.hits },
+          log: nextState[0].log,
         })
       }
     }
@@ -472,6 +489,7 @@ export class CombatState implements CombatStateData {
 
   private transitionPhaseWithData(
     data: CombatStateData,
+    log?: LogEntry[],
   ): StateWithProbability[] {
     // At last micro-phase, transition to next meta-phase
     if (isLastMicroPhase(this.currentPhase)) {
@@ -492,13 +510,13 @@ export class CombatState implements CombatStateData {
         ...data,
         currentPhase: finalPhase,
       })
-      return [{ state: nextState, probability: 1 }]
+      return [{ state: nextState, probability: 1, log }]
     }
 
     // Otherwise, transition to next micro-phase
     const { phase } = getNextMicroPhase(this.currentPhase)
     const nextState = CombatState.fromData({ ...data, currentPhase: phase })
-    return [{ state: nextState, probability: 1 }]
+    return [{ state: nextState, probability: 1, log }]
   }
 
   // ===========================================================================
@@ -540,15 +558,21 @@ export class CombatState implements CombatStateData {
     }
 
     // All unit ability timings use SidedDiceData context
-    const { state: afterWhen, context: modifiedDice } = this.runAbilities(
-      'BEFORE_UNIT_ABILITY_ROLL',
-      sidedDiceData,
-    ) as { state: CombatStateData; context: SidedDiceData }
+    const {
+      state: afterWhen,
+      context: modifiedDice,
+      log: abilityLog,
+    } = this.runAbilities('BEFORE_UNIT_ABILITY_ROLL', sidedDiceData) as {
+      state: CombatStateData
+      context: SidedDiceData
+      log: LogEntry[]
+    }
 
     return this.rollDiceOutcomes(
       afterWhen,
       modifiedDice,
       this.getValidTargetsForPhase(),
+      abilityLog.length > 0 ? abilityLog : undefined,
     )
   }
 
@@ -566,7 +590,7 @@ export class CombatState implements CombatStateData {
       round === 1
         ? (['START_OF_COMBAT_ROUND', 'START_OF_COMBAT'] as const)
         : (['START_OF_COMBAT_ROUND'] as const)
-    const { state: newData } = this.runAbilities([...timings])
+    const { state: newData, log } = this.runAbilities([...timings])
 
     // In round 1 of SPACE_COMBAT, transition to AFB meta-phase
     if (round === 1 && this.currentPhase.meta === 'SPACE_COMBAT') {
@@ -574,10 +598,19 @@ export class CombatState implements CombatStateData {
         ...newData,
         currentPhase: { meta: 'AFB', micro: getFirstMicroPhase('AFB') },
       })
-      return [{ state: nextState, probability: 1 }]
+      return [
+        {
+          state: nextState,
+          probability: 1,
+          log: log.length > 0 ? log : undefined,
+        },
+      ]
     }
 
-    return this.transitionPhaseWithData(newData)
+    return this.transitionPhaseWithData(
+      newData,
+      log.length > 0 ? log : undefined,
+    )
   }
 
   private processDiceRoll(): StateWithProbability[] {
@@ -589,31 +622,39 @@ export class CombatState implements CombatStateData {
       defender: defenderDice,
     }
 
-    const { state: afterWhen, context: modifiedDice } = this.runAbilities(
-      'BEFORE_DICE_ROLL',
-      sidedDiceData,
-    )
+    const {
+      state: afterWhen,
+      context: modifiedDice,
+      log: abilityLog,
+    } = this.runAbilities('BEFORE_DICE_ROLL', sidedDiceData)
 
     return this.rollDiceOutcomes(
       afterWhen,
       modifiedDice,
       this.getValidTargetsForPhase(),
+      abilityLog.length > 0 ? abilityLog : undefined,
     )
   }
 
   private processAssignHits(): StateWithProbability[] {
-    const afterAssign = this.assignHits()
+    const { state: afterAssign, log } = this.assignHitsInternal()
 
-    return this.transitionPhaseWithData(afterAssign.data)
+    return this.transitionPhaseWithData(
+      afterAssign.data,
+      log.length > 0 ? log : undefined,
+    )
   }
 
   private processEndOfRound(): StateWithProbability[] {
     const timings = this.isLastRound()
       ? (['END_OF_COMBAT_ROUND', 'END_OF_COMBAT'] as const)
       : (['END_OF_COMBAT_ROUND'] as const)
-    const { state: newData } = this.runAbilities([...timings])
+    const { state: newData, log } = this.runAbilities([...timings])
 
-    return this.transitionPhaseWithData(newData)
+    return this.transitionPhaseWithData(
+      newData,
+      log.length > 0 ? log : undefined,
+    )
   }
 
   /** Check if this is the last round (one side has 0 participating units) */

@@ -8,6 +8,7 @@ import type {
   CombatStateData,
   SideAbilitiesConfig,
 } from '../state/types'
+import type { LogEntry } from '../types'
 import { buildCallContext, buildReadContext } from './ability-api'
 import { buildDiceApi, buildDiceReadApi } from './dice-api'
 import type {
@@ -201,6 +202,7 @@ export function hasAbility(
 export interface RunAbilitiesResult<T extends AbilityTiming> {
   state: CombatStateData
   context: TimingContextMap[T]
+  log: LogEntry[]
 }
 
 /** Invocation tracker for a single side's abilities */
@@ -216,6 +218,7 @@ interface AbilityResult {
   state: CombatStateData
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context?: any
+  log: LogEntry[]
 }
 
 /**
@@ -238,6 +241,7 @@ export function runAbilities<T extends AbilityTiming>(
   let currentState = state
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let workingContext: any = context
+  const accumulatedLog: LogEntry[] = []
 
   while (consecutiveSkips < 2) {
     const result = tryResolveOneAbility(
@@ -253,6 +257,7 @@ export function runAbilities<T extends AbilityTiming>(
       if (result.context !== undefined) {
         workingContext = result.context
       }
+      accumulatedLog.push(...result.log)
       consecutiveSkips = 0
     } else {
       consecutiveSkips += 1
@@ -264,6 +269,7 @@ export function runAbilities<T extends AbilityTiming>(
   return {
     state: currentState,
     context: workingContext as TimingContextMap[T],
+    log: accumulatedLog,
   }
 }
 
@@ -342,6 +348,12 @@ function tryResolveOneAbility<T extends AbilityTiming>(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let resultContext: any
 
+      // Extra data appended to the auto log entry via ctx.log() calls
+      const logData: unknown[] = []
+      const logCallback = (...data: unknown[]) => {
+        logData.push(...data)
+      }
+
       // Wrap call in Immer produce
       let resultState: CombatStateData
       if (diceTiming && internalContext) {
@@ -351,7 +363,12 @@ function tryResolveOneAbility<T extends AbilityTiming>(
           opponent: buildDiceApi(rawDice.opponent),
         }
         resultState = produce(state, draft => {
-          const callCtx = buildCallContext(side, draft, ability.key)
+          const callCtx = buildCallContext(
+            side,
+            draft,
+            ability.key,
+            logCallback,
+          )
           inv.call(callCtx, params, diceCallCtx)
         })
         resultContext = {
@@ -360,11 +377,26 @@ function tryResolveOneAbility<T extends AbilityTiming>(
         }
       } else {
         resultState = produce(state, draft => {
-          const callCtx = buildCallContext(side, draft, ability.key)
+          const callCtx = buildCallContext(
+            side,
+            draft,
+            ability.key,
+            logCallback,
+          )
           const result = inv.call(callCtx, params, internalContext)
           if (result !== undefined) resultContext = result
         })
       }
+
+      // Single log entry per ability: auto fields + any ctx.log() data
+      const log: LogEntry[] = [
+        [
+          state.currentPhase.meta,
+          `${invoke.timing}:${ability.key}`,
+          side,
+          ...logData,
+        ],
+      ]
 
       // Mark as invoked
       if (source.type === 'config') {
@@ -394,6 +426,7 @@ function tryResolveOneAbility<T extends AbilityTiming>(
             defender: destroyedDefender,
           })
           resultState = afterDestroy.state
+          log.push(...afterDestroy.log)
         }
       }
 
@@ -412,6 +445,7 @@ function tryResolveOneAbility<T extends AbilityTiming>(
       return {
         state: resultState,
         context: resultContext,
+        log,
       }
     }
   }

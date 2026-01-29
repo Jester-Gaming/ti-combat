@@ -120,6 +120,7 @@ export const sustainDamage: Ability<Params> = {
 
         if (!target) return
 
+        ctx.log(target.type)
         ctx.api.own.modifyUnit(target.type, target.index, {
           isDamaged: true,
           usedSustainThisRound: true,

@@ -403,6 +403,7 @@ export function buildCallContext(
   side: CombatSide,
   draft: CombatStateData,
   abilityKey: string,
+  log?: (...data: unknown[]) => void,
 ) {
   return {
     state: draft,
@@ -410,5 +411,6 @@ export function buildCallContext(
       own: buildApi(side, draft, abilityKey),
       opponent: buildApi(getOpponentSide(side), draft, abilityKey),
     },
+    log: log ?? (() => {}),
   }
 }

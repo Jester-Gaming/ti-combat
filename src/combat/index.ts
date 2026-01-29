@@ -2,6 +2,7 @@
 export type {
   CombatOutcome,
   CombatSide,
+  LogEntry,
   ProbabilityNode,
   SurvivorSide,
 } from './types'

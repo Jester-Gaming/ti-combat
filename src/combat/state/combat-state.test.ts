@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { FactionKey } from '@/types'
 
 import { settings } from '../abilities/list/general/settings'
+import type { LogEntry } from '../types'
 import { CombatState } from './combat-state'
 import {
   addHits,
@@ -11,7 +12,15 @@ import {
   destroyUnit,
   getUnit,
 } from './side-state-ops'
-import type { CombatStateData, SideState, Unit } from './types'
+import type { CombatSide, CombatStateData, SideState, Unit } from './types'
+
+/** Extract hit count for a given side from log entries */
+function getHitsFromLog(log: LogEntry[] | undefined, side: CombatSide): number {
+  if (!log) return 0
+  return log
+    .filter(entry => entry[1] === 'DICE_ROLL' && entry[2] === side)
+    .reduce((sum, entry) => sum + (entry[3] as number), 0)
+}
 
 // Test faction constant
 const TEST_FACTION: FactionKey = 'ARBOREC'
@@ -584,8 +593,8 @@ describe('Bombardment', () => {
 
     // All outcomes should have hits assigned to defender
     for (const result of results) {
-      // meta.defender contains hits from attacker's bombardment
-      const bombardmentHits = result.meta?.defender ?? 0
+      // log contains DICE_ROLL entries — attacker's hits go to defender
+      const bombardmentHits = getHitsFromLog(result.log, 'attacker')
       // Should have hit pools on defender (if hits occurred)
       if (bombardmentHits > 0) {
         expect(result.state.defender.hitPools.length).toBeGreaterThan(0)
@@ -616,7 +625,9 @@ describe('Bombardment', () => {
     expect(results.length).toBeGreaterThan(1)
 
     // Find max hits in any outcome
-    const maxHits = Math.max(...results.map(r => r.meta?.defender ?? 0))
+    const maxHits = Math.max(
+      ...results.map(r => getHitsFromLog(r.log, 'attacker')),
+    )
     // With 5 dice, max hits should be at least 2 (very likely some hit)
     // But can go up to 5
     expect(maxHits).toBeLessThanOrEqual(5)
@@ -673,10 +684,10 @@ describe('Bombardment', () => {
     const results = state.advance(1)
 
     // All outcomes should have:
-    // - meta.defender = attacker's bombardment hits (goes to defender)
-    // - meta.attacker = 0 (defender doesn't fire back)
+    // - attacker rolled dice (DICE_ROLL, 'attacker')
+    // - defender did NOT roll (no DICE_ROLL for 'defender')
     for (const result of results) {
-      expect(result.meta?.attacker).toBe(0) // No hits from defender
+      expect(getHitsFromLog(result.log, 'defender')).toBe(0) // Defender didn't roll
       // Attacker should have no hit pools (defender didn't fire)
       expect(result.state.attacker.hitPools).toHaveLength(0)
     }
@@ -697,7 +708,7 @@ describe('Bombardment', () => {
     // Should have single outcome (no dice = deterministic 0 hits)
     expect(results).toHaveLength(1)
     expect(results[0].probability).toBe(1)
-    expect(results[0].meta?.defender).toBe(0) // No bombardment hits
+    expect(getHitsFromLog(results[0].log, 'attacker')).toBe(0) // No bombardment hits
     expect(results[0].state.defender.hitPools).toHaveLength(0)
   })
 
