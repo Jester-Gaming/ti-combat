@@ -25,11 +25,34 @@ export interface OwnOpponentContext<T> {
   opponent: T
 }
 
-// Internal DiceData uses own/opponent (ability perspective)
-export type DiceData = OwnOpponentContext<DieValue[]>
-
 // Sided version for external API
 export type SidedDiceData = SidedContext<DieValue[]>
+
+// ============================================================================
+// DICE API — read-only (for isCallable) and read-write (for call)
+// ============================================================================
+
+/** Read-only API for querying dice */
+export interface DiceReadApi {
+  getAll(): readonly DieValue[]
+  get(source: UnitType): DieValue | undefined
+  count(): number
+  isEmpty(): boolean
+}
+
+/** Full read-write API for mutating dice */
+export interface DiceApi extends DiceReadApi {
+  modifyHitValue(amount: number): void
+  modifyHitValue(amount: number, source: UnitType): void
+  modifyHitValue(amount: number, filter: (source: UnitType) => boolean): void
+
+  addDice(count: number): void
+  addDice(count: number, strategy: 'BEST' | 'WORST'): void
+  addDice(count: number, source: UnitType): void
+}
+
+export type DiceReadContext = OwnOpponentContext<DiceReadApi>
+export type DiceContext = OwnOpponentContext<DiceApi>
 
 // Single source of truth - map timing to context type (external API uses sided format)
 // void = no context, other type = required context
@@ -158,21 +181,37 @@ type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
   context?: MetaPhase | MetaPhase[]
 } & (InternalTimingContextMap[T] extends void
   ? {
+      // Void timings (PREPARE, START_OF_COMBAT, etc.)
       isCallable?: (params: TParams, ctx: AbilityReadContext) => boolean
       call: (ctx: AbilityCallContext, params: TParams) => void
     }
-  : {
-      isCallable?: (
-        params: TParams,
-        ctx: AbilityReadContext,
-        context: InternalTimingContextMap[T],
-      ) => boolean
-      call: (
-        ctx: AbilityCallContext,
-        params: TParams,
-        context: InternalTimingContextMap[T],
-      ) => InternalTimingContextMap[T] | void
-    })
+  : InternalTimingContextMap[T] extends OwnOpponentContext<DieValue[]>
+    ? {
+        // Dice timings (BEFORE_DICE_ROLL, BEFORE_UNIT_ABILITY_ROLL)
+        isCallable?: (
+          params: TParams,
+          ctx: AbilityReadContext,
+          dice: DiceReadContext,
+        ) => boolean
+        call: (
+          ctx: AbilityCallContext,
+          params: TParams,
+          dice: DiceContext,
+        ) => void
+      }
+    : {
+        // Other context timings (AFTER_DESTROY)
+        isCallable?: (
+          params: TParams,
+          ctx: AbilityReadContext,
+          context: InternalTimingContextMap[T],
+        ) => boolean
+        call: (
+          ctx: AbilityCallContext,
+          params: TParams,
+          context: InternalTimingContextMap[T],
+        ) => InternalTimingContextMap[T] | void
+      })
 
 // Union of all timing invoke types (auto-generated)
 export type AbilityInvoke<TParams = Record<string, unknown>> = {

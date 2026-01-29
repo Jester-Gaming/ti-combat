@@ -1,17 +1,7 @@
-import type { DieValue } from '@/types'
-
-import type { Ability, DiceData } from '../../types'
+import type { Ability, DiceContext } from '../../types'
 
 type Params = {
   isEnabled: boolean
-}
-
-function applyDiceBonus(dice: DieValue[]): DieValue[] {
-  return dice.map(([hitValue, count, source]) => [
-    Math.max(1, hitValue - 1),
-    count,
-    source,
-  ])
 }
 
 export const nebula: Ability<Params> = {
@@ -29,11 +19,8 @@ export const nebula: Ability<Params> = {
       isCallable: (params: Params) => {
         return params.isEnabled
       },
-      call: (_ctx, _params: Params, diceData: DiceData) => {
-        return {
-          own: applyDiceBonus(diceData.own),
-          opponent: diceData.opponent,
-        }
+      call: (_ctx, _params: Params, dice: DiceContext) => {
+        dice.own.modifyHitValue(-1)
       },
     },
   ],

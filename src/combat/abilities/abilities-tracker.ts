@@ -1,6 +1,6 @@
 import { produce } from 'immer'
 
-import type { UnitType } from '@/types'
+import type { DieValue, UnitType } from '@/types'
 
 import { getDestroyedUnits, getOpponentSide } from '../state/side-state-ops'
 import type {
@@ -9,10 +9,13 @@ import type {
   SideAbilitiesConfig,
 } from '../state/types'
 import { buildCallContext, buildReadContext } from './ability-api'
+import { buildDiceApi, buildDiceReadApi } from './dice-api'
 import type {
   Ability,
   AbilityInvoke,
   AbilityTiming,
+  DiceContext,
+  DiceReadContext,
   InternalTimingContextMap,
   OwnOpponentContext,
   SidedContext,
@@ -264,6 +267,13 @@ export function runAbilities<T extends AbilityTiming>(
   }
 }
 
+function isDiceTiming(timing: AbilityTiming | AbilityTiming[]): boolean {
+  const timings = Array.isArray(timing) ? timing : [timing]
+  return timings.some(
+    t => t === 'BEFORE_DICE_ROLL' || t === 'BEFORE_UNIT_ABILITY_ROLL',
+  )
+}
+
 function tryResolveOneAbility<T extends AbilityTiming>(
   timing: T | T[],
   side: CombatSide,
@@ -310,20 +320,51 @@ function tryResolveOneAbility<T extends AbilityTiming>(
     // Use type assertion since we know the invoke matches the timing
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const inv = invoke as any
-    const canCall = inv.isCallable
-      ? inv.isCallable(params, readCtx, internalContext)
-      : true
+    const diceTiming = isDiceTiming(timing)
+
+    let canCall: boolean
+    if (diceTiming && internalContext) {
+      const rawDice = internalContext as OwnOpponentContext<DieValue[]>
+      const diceReadCtx: DiceReadContext = {
+        own: buildDiceReadApi(rawDice.own),
+        opponent: buildDiceReadApi(rawDice.opponent),
+      }
+      canCall = inv.isCallable
+        ? inv.isCallable(params, readCtx, diceReadCtx)
+        : true
+    } else {
+      canCall = inv.isCallable
+        ? inv.isCallable(params, readCtx, internalContext)
+        : true
+    }
 
     if (canCall) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let resultContext: any
 
       // Wrap call in Immer produce
-      let resultState = produce(state, draft => {
-        const callCtx = buildCallContext(side, draft, ability.key)
-        const result = inv.call(callCtx, params, internalContext)
-        if (result !== undefined) resultContext = result
-      })
+      let resultState: CombatStateData
+      if (diceTiming && internalContext) {
+        const rawDice = internalContext as OwnOpponentContext<DieValue[]>
+        const diceCallCtx: DiceContext = {
+          own: buildDiceApi(rawDice.own),
+          opponent: buildDiceApi(rawDice.opponent),
+        }
+        resultState = produce(state, draft => {
+          const callCtx = buildCallContext(side, draft, ability.key)
+          inv.call(callCtx, params, diceCallCtx)
+        })
+        resultContext = {
+          own: diceCallCtx.own.getAll(),
+          opponent: diceCallCtx.opponent.getAll(),
+        }
+      } else {
+        resultState = produce(state, draft => {
+          const callCtx = buildCallContext(side, draft, ability.key)
+          const result = inv.call(callCtx, params, internalContext)
+          if (result !== undefined) resultContext = result
+        })
+      }
 
       // Mark as invoked
       if (source.type === 'config') {

@@ -1,6 +1,4 @@
-import type { DieValue } from '@/types'
-
-import type { Ability, DiceData } from '../../types'
+import type { Ability, DiceContext } from '../../types'
 
 type Params = {
   isEnabled: boolean
@@ -20,18 +18,8 @@ export const prophecyOfIxth: Ability<Params> = {
       isCallable: (params: Params) => {
         return params.isEnabled
       },
-      call: (_ctx, _params: Params, diceData: DiceData) => {
-        const modifiedDice = diceData.own.map(([hitValue, count, source]) => {
-          if (source === 'FIGHTER') {
-            return [Math.max(1, hitValue - 1), count, source] as DieValue
-          }
-          return [hitValue, count, source] as DieValue
-        })
-
-        return {
-          own: modifiedDice,
-          opponent: diceData.opponent,
-        }
+      call: (_ctx, _params: Params, dice: DiceContext) => {
+        dice.own.modifyHitValue(-1, 'FIGHTER')
       },
     },
   ],

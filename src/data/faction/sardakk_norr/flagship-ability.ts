@@ -1,16 +1,4 @@
-import type { DieValue } from '@/types'
-
-import type { Ability, DiceData } from '../../../combat/abilities/types'
-
-function applyFlagshipBonus(dice: DieValue[]): DieValue[] {
-  return dice.map(([hitValue, count, source]) => {
-    // Apply +1 to other ships (not the flagship itself)
-    if (source !== 'FLAGSHIP') {
-      return [Math.max(1, hitValue - 1), count, source]
-    }
-    return [hitValue, count, source]
-  })
-}
+import type { Ability, DiceContext } from '../../../combat/abilities/types'
 
 export const sardakkFlagshipAbility: Ability = {
   key: 'SARDAKK_FLAGSHIP',
@@ -19,11 +7,8 @@ export const sardakkFlagshipAbility: Ability = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      call: (_ctx, _params: Record<string, never>, diceData: DiceData) => {
-        return {
-          own: applyFlagshipBonus(diceData.own),
-          opponent: diceData.opponent,
-        }
+      call: (_ctx, _params: Record<string, never>, dice: DiceContext) => {
+        dice.own.modifyHitValue(-1, source => source !== 'FLAGSHIP')
       },
     },
   ],

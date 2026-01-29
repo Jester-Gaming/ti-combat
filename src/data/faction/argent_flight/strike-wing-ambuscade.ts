@@ -1,11 +1,11 @@
 import type {
   Ability,
   AbilityReadContext,
-  DiceData,
+  DiceContext,
+  DiceReadContext,
 } from '@/combat/abilities/types'
 import type { MetaPhase } from '@/combat/state/types'
 import { UNIT_ABILITY_PHASES } from '@/combat/state/types'
-import type { DieValue } from '@/types'
 
 type Params = {
   isEnabled: boolean
@@ -38,7 +38,10 @@ export const strikeWingAmbuscade: Ability<Params> = {
         { label: 'Anti-Fighter Barrage', value: 'AFB' },
         { label: 'Space Cannon Offense', value: 'SPACE_CANNON_OFFENSE' },
         { label: 'Bombardment', value: 'BOMBARDMENT' },
-        { label: 'Space Cannon Defense', value: 'SPACE_CANNON_DEFENSE' },
+        {
+          label: 'Space Cannon Defense',
+          value: 'SPACE_CANNON_DEFENSE',
+        },
       ],
     },
   ],
@@ -49,39 +52,16 @@ export const strikeWingAmbuscade: Ability<Params> = {
       isCallable: (
         params: Params,
         ctx: AbilityReadContext,
-        diceData: DiceData,
+        dice: DiceReadContext,
       ) => {
-        if (!params.isEnabled || params.uses <= 0 || diceData.own.length === 0)
+        if (!params.isEnabled || params.uses <= 0 || dice.own.isEmpty())
           return false
         const currentPhase = ctx.state.currentPhase.meta
         return params.phases.includes(currentPhase)
       },
-      call: (ctx, params: Params, diceData: DiceData) => {
-        // Find the die with the lowest hit value (best chance to hit)
-        let targetIndex = 0
-        let targetHitValue = diceData.own[0][0]
-        for (let i = 1; i < diceData.own.length; i++) {
-          if (diceData.own[i][0] < targetHitValue) {
-            targetHitValue = diceData.own[i][0]
-            targetIndex = i
-          }
-        }
-
-        // Add 1 additional die to the target entry
-        const modifiedDice = diceData.own.map((die, i) => {
-          if (i === targetIndex) {
-            return [die[0], die[1] + 1, die[2]] as DieValue
-          }
-          return die
-        })
-
-        // Decrement uses
+      call: (ctx, params: Params, dice: DiceContext) => {
+        dice.own.addDice(1)
         ctx.api.own.updateAbilityConfig({ uses: params.uses - 1 })
-
-        return {
-          own: modifiedDice,
-          opponent: diceData.opponent,
-        }
       },
     },
   ],
