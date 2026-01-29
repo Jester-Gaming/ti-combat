@@ -60,5 +60,44 @@
 }
 
 .combatResult {
-  /* Container for combat result */
+  @apply mt-8;
+}
+
+.combatModeDivider {
+  @apply mb-4 flex items-center gap-3;
+}
+
+.combatModeLine {
+  @apply h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent;
+}
+
+.combatModeToggle {
+  @apply inline-flex overflow-hidden rounded-md;
+  border: 1px solid hsl(var(--muted-foreground) / 15%);
+  background: hsl(var(--background) / 40%);
+}
+
+.combatModeOption {
+  @apply cursor-pointer px-4 py-1.5 text-[11px] font-semibold tracking-widest uppercase;
+  @apply transition-all duration-200;
+  font-family: var(--font-heading);
+  color: hsl(var(--muted-foreground) / 45%);
+  position: relative;
+}
+
+.combatModeOption + .combatModeOption {
+  border-left: 1px solid hsl(var(--muted-foreground) / 15%);
+}
+
+.combatModeOption:hover:not(.combatModeOptionActive) {
+  color: hsl(var(--muted-foreground) / 75%);
+  background: hsl(var(--muted-foreground) / 5%);
+}
+
+.combatModeOptionActive {
+  color: hsl(var(--foreground));
+  background: hsl(var(--muted-foreground) / 12%);
+  box-shadow:
+    inset 0 1px 0 hsl(var(--foreground) / 6%),
+    0 0 16px hsl(var(--foreground) / 4%);
 }

@@ -17,12 +17,6 @@ export function CombatResultBar({ result }: CombatResultBarProps) {
 
   return (
     <div className={styles.wrapper}>
-      <div className={styles.divider}>
-        <div className={styles.dividerLine} />
-        <span className={styles.dividerLabel}>Outcome</span>
-        <div className={styles.dividerLine} />
-      </div>
-
       {segments ? (
         <div className={styles.resultBar}>
           {segments.map(({ key, percent, label, segmentClass }) => (

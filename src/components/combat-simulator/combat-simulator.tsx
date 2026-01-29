@@ -16,7 +16,6 @@ import { AbilitiesPanel } from '@/components/abilities-panel'
 import { BattleCard } from '@/components/battle-card'
 import { GlassCard } from '@/components/ui/glass-card'
 import { GlowText } from '@/components/ui/glow-text'
-import { ToggleGroup } from '@/components/ui/toggle-group'
 import factions from '@/data/faction'
 import {
   type BattleState,
@@ -60,11 +59,6 @@ function createInitialBattleState(): BattleState {
 interface CombatSimulatorProps {
   className?: string
 }
-
-const combatModeOptions = [
-  { value: 'SPACE' as const, label: 'Space Combat' },
-  { value: 'GROUND' as const, label: 'Ground Combat' },
-]
 
 export function CombatSimulator({ className }: CombatSimulatorProps) {
   const [combatMode, setCombatMode] = useState<CombatMode>('SPACE')
@@ -267,23 +261,15 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
         />
       </GlassCard>
 
-      {/* Center column: Combat mode toggle and battle card */}
+      {/* Center column: Battle card */}
       <div className={styles.centerColumn}>
-        {/* Combat Mode Toggle */}
-        <div className={styles.combatModeSection}>
-          <ToggleGroup
-            options={combatModeOptions}
-            value={combatMode}
-            onChange={setCombatMode}
-          />
-        </div>
-
-        {/* Main battle card */}
         <BattleCard
           battle={battle}
           attackerConfig={attackerConfig}
           defenderConfig={defenderConfig}
           combatResult={combatResult}
+          combatMode={combatMode}
+          onCombatModeChange={setCombatMode}
           onFactionChange={handleFactionChange}
           onUnitCountChange={handleUnitCountChange}
           onUpgradeToggle={handleUpgradeToggle}

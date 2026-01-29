@@ -1,21 +1,7 @@
 @reference "tailwindcss";
 
 .wrapper {
-  @apply mt-8;
-}
-
-.divider {
-  @apply mb-4 flex items-center gap-4;
-}
-
-.dividerLine {
-  @apply h-px flex-1 bg-gradient-to-r from-transparent via-white/10 to-transparent;
-}
-
-.dividerLabel {
-  @apply text-xs tracking-widest uppercase;
-  font-family: var(--font-heading);
-  color: hsl(var(--muted-foreground));
+  /* Container for combat result */
 }
 
 .emptyState {

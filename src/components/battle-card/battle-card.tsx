@@ -2,6 +2,7 @@ import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { Fragment } from 'react'
 
+import type { CombatMode } from '@/combat/state/types'
 import { GlassCard } from '@/components/ui/glass-card'
 import { GlowText } from '@/components/ui/glow-text'
 import {
@@ -26,6 +27,8 @@ interface BattleCardProps {
   attackerConfig: Record<UnitType, UnitConfig>
   defenderConfig: Record<UnitType, UnitConfig>
   combatResult: CombatResult | null
+  combatMode: CombatMode
+  onCombatModeChange: (mode: CombatMode) => void
   onFactionChange: (side: Side, faction: FactionKey) => void
   onUnitCountChange: (side: Side, unit: UnitType, count: number) => void
   onUpgradeToggle: (side: Side, unit: UnitType) => void
@@ -37,6 +40,8 @@ export function BattleCard({
   attackerConfig,
   defenderConfig,
   combatResult,
+  combatMode,
+  onCombatModeChange,
   onFactionChange,
   onUnitCountChange,
   onUpgradeToggle,
@@ -131,6 +136,32 @@ export function BattleCard({
       </div>
 
       <div className={styles.combatResult}>
+        <div className={styles.combatModeDivider}>
+          <div className={styles.combatModeLine} />
+          <div className={styles.combatModeToggle}>
+            <button
+              type="button"
+              className={clsx(
+                styles.combatModeOption,
+                combatMode === 'SPACE' && styles.combatModeOptionActive,
+              )}
+              onClick={() => onCombatModeChange('SPACE')}
+            >
+              Space Combat
+            </button>
+            <button
+              type="button"
+              className={clsx(
+                styles.combatModeOption,
+                combatMode === 'GROUND' && styles.combatModeOptionActive,
+              )}
+              onClick={() => onCombatModeChange('GROUND')}
+            >
+              Ground Combat
+            </button>
+          </div>
+          <div className={styles.combatModeLine} />
+        </div>
         <CombatResultBar result={combatResult} />
       </div>
     </GlassCard>
