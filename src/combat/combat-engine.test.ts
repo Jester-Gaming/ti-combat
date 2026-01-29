@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import baseUnits from '@/data/base_units.json'
+import baseUnits from '@/data/base-units'
 import type {
   FactionKey,
   UnitDataStats,

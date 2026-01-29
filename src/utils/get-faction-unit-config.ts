@@ -1,4 +1,4 @@
-import baseUnits from '@/data/base_units.json'
+import baseUnits from '@/data/base-units'
 import factions from '@/data/faction'
 import {
   type FactionKey,

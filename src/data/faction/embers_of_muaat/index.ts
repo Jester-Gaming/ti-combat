@@ -1,3 +1,4 @@
+import { disablePlanetaryShield } from '@/combat/abilities/list/general/disable-planetary-shield'
 import type { Faction } from '@/types'
 
 export const embers_of_muaat: Faction = {
@@ -42,6 +43,7 @@ export const embers_of_muaat: Faction = {
           BOMBARDMENT: [3, 3],
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [disablePlanetaryShield],
       },
       UPGRADED: {
         NAME: 'Prototype War Sun II',
