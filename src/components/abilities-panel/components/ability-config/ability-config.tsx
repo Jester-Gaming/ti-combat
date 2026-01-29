@@ -43,6 +43,10 @@ export function AbilityConfig({
     onParamsChange({ ...params, [key]: items })
   }
 
+  function handleNumberChange(key: string, value: number): void {
+    onParamsChange({ ...params, [key]: value })
+  }
+
   function toggleCollapsed(): void {
     setIsCollapsed(prev => !prev)
   }
@@ -124,6 +128,25 @@ export function AbilityConfig({
                     onChange={checked => handleCheckboxChange(key, checked)}
                   />
                   <span className={styles.configItemText}>{config.label}</span>
+                </label>
+              )
+            }
+
+            if (config.type === 'number') {
+              const value = (params[key] ?? defaultValue ?? 0) as number
+              return (
+                <label key={key} className={styles.configItemLabel}>
+                  <span className={styles.configItemText}>{config.label}</span>
+                  <input
+                    type="number"
+                    className={styles.numberInput}
+                    value={value}
+                    min={config.min}
+                    max={config.max}
+                    onChange={e =>
+                      handleNumberChange(key, Number(e.target.value))
+                    }
+                  />
                 </label>
               )
             }
