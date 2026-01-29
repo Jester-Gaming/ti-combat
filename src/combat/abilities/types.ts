@@ -1,6 +1,11 @@
 import type { DieValue } from '@/types'
 
-import type { CombatSide, CombatStateData, SideState } from '../state/types'
+import type {
+  CombatSide,
+  CombatStateData,
+  MetaPhase,
+  SideState,
+} from '../state/types'
 
 // Sided context (external API - attacker/defender perspective)
 export interface SidedContext<T> {
@@ -70,6 +75,8 @@ type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
   timing: T
   /** If true, this invoke can be called multiple times per timing phase. Default: false */
   multi?: boolean
+  /** Restrict this invoke to specific meta-phase(s). When set, the invoke only fires if the current meta-phase matches. */
+  context?: MetaPhase | MetaPhase[]
 } & (InternalTimingContextMap[T] extends void
   ? {
       isCallable?: (ctx: AbilityReadContext, params: TParams) => boolean

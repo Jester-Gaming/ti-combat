@@ -201,7 +201,7 @@
 
 - [ ] **Antimass Deflectors** — When other players' units use Space Cannon against your units, apply -1 to the result of each die roll.
 - [ ] **X-89 Bacterial Weapon** — Double the hits produced by your units' Bombardment and ground combat rolls. Exhaust each planet you use Bombardment against.
-- [ ] **Plasma Scoring** — When 1 or more of your units use Bombardment or Space Cannon, 1 of those units may roll 1 additional die.
+- [x] **Plasma Scoring** — When 1 or more of your units use Bombardment or Space Cannon, 1 of those units may roll 1 additional die.
 - [ ] **Magen Defense Grid** — When any player activates a system that contains 1 or more of your structures, place 1 infantry from your reinforcements with each of those structures. At the start of ground combat on a planet that contains 1 or more of your structures, produce 1 hit and assign it to 1 of your opponent's ground forces.
 - [ ] **Duranium Armor** — During each combat round, after you assign hits to your units, repair 1 of your damaged units that did not use Sustain Damage during this combat round.
 - [x] **Assault Cannon** — At the start of a space combat in a system that contains 3 or more of your non-fighter ships, your opponent must destroy 1 of his non-fighter ships.

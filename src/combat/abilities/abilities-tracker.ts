@@ -125,6 +125,8 @@ function getInvokesForTiming<T extends AbilityTiming>(
   const timings = Array.isArray(timing) ? timing : [timing]
   const results: TimingInvokeEntry[] = []
 
+  const { meta } = state.currentPhase
+
   // 1. Collect regular abilities from config
   const sideConfig = state.abilities[side]
   for (const ability of sideConfig.abilities as Ability[]) {
@@ -132,6 +134,12 @@ function getInvokesForTiming<T extends AbilityTiming>(
 
     for (const invoke of ability.invoke) {
       if (timings.includes(invoke.timing as T)) {
+        if (invoke.context) {
+          const allowed = Array.isArray(invoke.context)
+            ? invoke.context
+            : [invoke.context]
+          if (!allowed.includes(meta)) continue
+        }
         results.push({
           ability,
           invoke,
@@ -147,6 +155,12 @@ function getInvokesForTiming<T extends AbilityTiming>(
   for (const { ability, unitType, unitIndex } of unitAbilities) {
     for (const invoke of ability.invoke) {
       if (timings.includes(invoke.timing as T)) {
+        if (invoke.context) {
+          const allowed = Array.isArray(invoke.context)
+            ? invoke.context
+            : [invoke.context]
+          if (!allowed.includes(meta)) continue
+        }
         results.push({
           ability,
           invoke,

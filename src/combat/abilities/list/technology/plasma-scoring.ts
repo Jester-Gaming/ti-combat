@@ -9,6 +9,7 @@ import type {
 
 type Params = {
   isEnabled: boolean
+  strategy: 'BEST' | 'WORST'
 }
 
 export const plasmaScoring: Ability<Params> = {
@@ -17,8 +18,21 @@ export const plasmaScoring: Ability<Params> = {
   category: 'TECHNOLOGY',
   defaultParams: {
     isEnabled: false,
+    strategy: 'BEST',
   },
   enableUI: true,
+  // Do we event need it?
+  // uiConfig: [
+  //   {
+  //     type: 'select',
+  //     key: 'strategy',
+  //     label: 'Strategy',
+  //     items: [
+  //       { label: 'Best', value: 'BEST' },
+  //       { label: 'Worst', value: 'WORST' },
+  //     ],
+  //   },
+  // ],
   invoke: [
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
@@ -32,22 +46,26 @@ export const plasmaScoring: Ability<Params> = {
       },
       call: (
         ctx: AbilityReadContext,
-        _params: Params,
+        params: Params,
         diceData: DiceData,
       ): StateChange<DiceData> => {
-        // Find the best (lowest) hit value among own dice
-        let bestIndex = 0
-        let bestHitValue = diceData.own[0][0]
+        // Find the target die based on strategy
+        let targetIndex = 0
+        let targetHitValue = diceData.own[0][0]
         for (let i = 1; i < diceData.own.length; i++) {
-          if (diceData.own[i][0] < bestHitValue) {
-            bestHitValue = diceData.own[i][0]
-            bestIndex = i
+          const isBetter =
+            params.strategy === 'BEST'
+              ? diceData.own[i][0] < targetHitValue
+              : diceData.own[i][0] > targetHitValue
+          if (isBetter) {
+            targetHitValue = diceData.own[i][0]
+            targetIndex = i
           }
         }
 
-        // Add 1 additional die to the best value entry
+        // Add 1 additional die to the target entry
         const modifiedDice = diceData.own.map((die, i) => {
-          if (i === bestIndex) {
+          if (i === targetIndex) {
             return [die[0], die[1] + 1, die[2]] as DieValue
           }
           return die
