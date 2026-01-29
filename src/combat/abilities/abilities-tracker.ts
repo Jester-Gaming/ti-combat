@@ -200,11 +200,14 @@ export interface RunAbilitiesResult<T extends AbilityTiming> {
   context: TimingContextMap[T]
 }
 
-/** Invocation tracker for both config and unit abilities */
-interface InvocationTracker {
+/** Invocation tracker for a single side's abilities */
+interface SideInvocationTracker {
   configAbilities: Set<AbilityInvoke>
   unitAbilities: Map<string, Set<number>> // "abilityKey:unitType" -> Set<unitIndex>
 }
+
+/** Invocation tracker per side */
+type InvocationTracker = Record<CombatSide, SideInvocationTracker>
 
 /**
  * Run alternating resolution for abilities at given timing(s).
@@ -218,8 +221,8 @@ export function runAbilities<T extends AbilityTiming>(
   context?: TimingContextMap[T],
 ): RunAbilitiesResult<T> {
   const tracker: InvocationTracker = {
-    configAbilities: new Set(),
-    unitAbilities: new Map(),
+    attacker: { configAbilities: new Set(), unitAbilities: new Map() },
+    defender: { configAbilities: new Set(), unitAbilities: new Map() },
   }
   let consecutiveSkips = 0
   let currentSide: CombatSide = 'attacker'
@@ -264,11 +267,12 @@ function tryResolveOneAbility<T extends AbilityTiming>(
 ): StateChange | null {
   const invokes = getInvokesForTiming(timing, side, state)
   const readCtx = buildReadContext(side, state)
+  const sideTracker = tracker[side]
 
   for (const { invoke, params, source } of invokes) {
     // Check if already invoked
     if (source.type === 'config') {
-      if (!invoke.multi && tracker.configAbilities.has(invoke)) {
+      if (!invoke.multi && sideTracker.configAbilities.has(invoke)) {
         continue
       }
     } else {
@@ -280,7 +284,7 @@ function tryResolveOneAbility<T extends AbilityTiming>(
 
       // Check if this unit instance already invoked
       const key = `${invoke.timing}:${source.unitType}`
-      const invokedIndices = tracker.unitAbilities.get(key)
+      const invokedIndices = sideTracker.unitAbilities.get(key)
       if (invokedIndices?.has(source.unitIndex)) {
         continue
       }
@@ -309,12 +313,12 @@ function tryResolveOneAbility<T extends AbilityTiming>(
 
       // Mark as invoked
       if (source.type === 'config') {
-        tracker.configAbilities.add(invoke)
+        sideTracker.configAbilities.add(invoke)
       } else {
         const key = `${invoke.timing}:${source.unitType}`
-        const invokedIndices = tracker.unitAbilities.get(key) ?? new Set()
+        const invokedIndices = sideTracker.unitAbilities.get(key) ?? new Set()
         invokedIndices.add(source.unitIndex)
-        tracker.unitAbilities.set(key, invokedIndices)
+        sideTracker.unitAbilities.set(key, invokedIndices)
       }
 
       // Transform own/opponent context back to sided
