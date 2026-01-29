@@ -125,15 +125,15 @@
 }
 
 .root {
-  @apply relative min-h-screen overflow-hidden;
+  @apply relative min-h-screen overflow-x-clip;
 }
 
 .mainContent {
-  @apply relative z-10 flex min-h-screen flex-col px-4 py-6;
+  @apply relative z-10 flex min-h-screen flex-col gap-6 px-4 py-6;
 }
 
 .header {
-  @apply mb-8 flex items-center justify-center;
+  @apply flex shrink-0 items-center justify-center;
 }
 
 .title {

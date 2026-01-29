@@ -12,24 +12,35 @@
 }
 
 .header {
-  @apply flex items-center gap-2;
+  @apply flex items-center gap-1.5;
 }
 
-.headerButton {
-  @apply flex flex-1 cursor-pointer items-center gap-1 rounded p-0 text-left transition-colors;
+.collapseButton {
+  @apply flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded p-0 transition-colors;
+  background: transparent;
+  border: none;
+  color: hsl(var(--muted-foreground) / 60%);
+}
+
+.collapseButton:hover {
+  color: hsl(var(--side-color));
+}
+
+.collapseIndent {
+  @apply w-4 shrink-0;
+}
+
+.headerLabel {
+  @apply flex flex-1 cursor-pointer items-center rounded p-0 text-left transition-colors;
   background: transparent;
   border: none;
 }
 
-.headerButton:disabled {
+.headerLabel:disabled {
   cursor: default;
 }
 
-.headerButton:not(:disabled):hover .title {
-  color: hsl(var(--side-color));
-}
-
-.headerButton:not(:disabled):hover .collapseIcon {
+.headerLabel:not(:disabled):hover .title {
   color: hsl(var(--side-color));
 }
 
@@ -38,11 +49,6 @@
   font-family: var(--font-heading);
   color: hsl(var(--muted-foreground));
   transition: color 0.15s;
-}
-
-.collapseIcon {
-  @apply flex h-4 w-4 shrink-0 items-center justify-center transition-colors;
-  color: hsl(var(--muted-foreground) / 60%);
 }
 
 .configItems {

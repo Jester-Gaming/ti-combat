@@ -49,21 +49,34 @@ export function AbilityConfig({
     setIsCollapsed(prev => !prev)
   }
 
+  const handleHeaderClick = ability.enableUI
+    ? () => handleCheckboxChange('isEnabled', !params.isEnabled)
+    : isCollapsible
+      ? toggleCollapsed
+      : undefined
+
   const header = (
     <div className={styles.header}>
+      {isCollapsible ? (
+        <button
+          type="button"
+          className={styles.collapseButton}
+          onClick={toggleCollapsed}
+          aria-expanded={!isCollapsed}
+          aria-label={isCollapsed ? 'Expand' : 'Collapse'}
+        >
+          {isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
+        </button>
+      ) : (
+        <span className={styles.collapseIndent} />
+      )}
       <button
         type="button"
-        className={styles.headerButton}
-        onClick={isCollapsible ? toggleCollapsed : undefined}
-        aria-expanded={isCollapsible ? !isCollapsed : undefined}
-        disabled={!isCollapsible}
+        className={styles.headerLabel}
+        onClick={handleHeaderClick}
+        disabled={!handleHeaderClick}
       >
         <span className={styles.title}>{ability.name}</span>
-        {isCollapsible && (
-          <span className={styles.collapseIcon}>
-            {isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
-          </span>
-        )}
       </button>
       {ability.enableUI && (
         <Checkbox

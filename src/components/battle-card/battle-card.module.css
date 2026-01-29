@@ -1,7 +1,7 @@
 @reference "tailwindcss";
 
 .battleCard {
-  @apply min-w-0 flex-1 rounded-lg p-6;
+  @apply min-w-0 rounded-lg p-6;
 }
 
 .factionSelectors {
@@ -78,7 +78,7 @@
 }
 
 .combatModeOption {
-  @apply cursor-pointer px-4 py-1.5 text-[11px] font-semibold tracking-widest uppercase;
+  @apply cursor-pointer px-4 py-1.5 text-[12px] font-semibold tracking-widest uppercase;
   @apply transition-all duration-200;
   font-family: var(--font-heading);
   color: hsl(var(--muted-foreground) / 45%);

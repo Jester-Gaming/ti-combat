@@ -1,11 +1,17 @@
 @reference "tailwindcss";
 
 .layout {
-  @apply mx-auto flex w-full max-w-5xl flex-1 items-start gap-6;
+  @apply mx-auto flex w-full flex-1 justify-center gap-3;
 }
 
 .sidePanel {
-  @apply w-52 shrink-0 rounded-lg p-4;
+  @apply top-6 rounded-lg py-4;
+  flex: 0 1 240px;
+  max-width: 240px;
+  max-height: calc(100vh - 104px);
+  position: sticky;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidePanelAttacker {
@@ -19,7 +25,7 @@
 }
 
 .sidePanelHeader {
-  @apply mb-4 border-b pb-3;
+  @apply mb-4 shrink-0 border-b px-4 pb-4;
   border-color: hsl(var(--side-color) / 30%);
 }
 
@@ -28,6 +34,36 @@
   font-family: var(--font-heading);
 }
 
+.sidePanelScroll {
+  @apply px-4;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground) / 15%) transparent;
+}
+
+.sidePanelScroll::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidePanelScroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidePanelScroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 15%);
+  border-radius: 2px;
+}
+
+.sidePanelScroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 30%);
+}
+
 .centerColumn {
   @apply flex flex-1 flex-col;
+  min-width: 500px;
+  max-width: 500px;
 }

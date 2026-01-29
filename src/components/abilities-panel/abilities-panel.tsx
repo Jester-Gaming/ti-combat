@@ -17,14 +17,23 @@ function hasUI(ability: Ability): boolean {
   return ability.enableUI === true || (ability.uiConfig?.length ?? 0) > 0
 }
 
-const CATEGORY_ORDER: Record<string, number> = {
-  GENERAL: 0,
-  FACTION: 1,
-}
+const CATEGORY_ORDER = [
+  'GENERAL',
+  'TECHNOLOGY',
+  'FACTION',
+  'AGENT',
+  'COMMANDER',
+  'AGENDA',
+  'ENVIRONMENT',
+]
 
 function compareCategories(a: string, b: string): number {
-  const orderA = CATEGORY_ORDER[a] ?? Infinity
-  const orderB = CATEGORY_ORDER[b] ?? Infinity
+  const orderA = CATEGORY_ORDER.includes(a)
+    ? CATEGORY_ORDER.indexOf(a)
+    : Infinity
+  const orderB = CATEGORY_ORDER.includes(b)
+    ? CATEGORY_ORDER.indexOf(b)
+    : Infinity
   if (orderA !== orderB) return orderA - orderB
   return a.localeCompare(b)
 }

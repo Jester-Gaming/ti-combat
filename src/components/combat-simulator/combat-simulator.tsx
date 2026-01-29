@@ -251,14 +251,16 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
             Attacker Abilities
           </GlowText>
         </div>
-        <AbilitiesPanel
-          abilities={attackerAbilities}
-          sideState={attackerSideState}
-          params={abilityParams.attacker}
-          onParamsChange={(abilityName, params) =>
-            handleAbilityParamsChange('attacker', abilityName, params)
-          }
-        />
+        <div className={styles.sidePanelScroll}>
+          <AbilitiesPanel
+            abilities={attackerAbilities}
+            sideState={attackerSideState}
+            params={abilityParams.attacker}
+            onParamsChange={(abilityName, params) =>
+              handleAbilityParamsChange('attacker', abilityName, params)
+            }
+          />
+        </div>
       </GlassCard>
 
       {/* Center column: Battle card */}
@@ -290,14 +292,16 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
             Defender Abilities
           </GlowText>
         </div>
-        <AbilitiesPanel
-          abilities={defenderAbilities}
-          sideState={defenderSideState}
-          params={abilityParams.defender}
-          onParamsChange={(abilityName, params) =>
-            handleAbilityParamsChange('defender', abilityName, params)
-          }
-        />
+        <div className={styles.sidePanelScroll}>
+          <AbilitiesPanel
+            abilities={defenderAbilities}
+            sideState={defenderSideState}
+            params={abilityParams.defender}
+            onParamsChange={(abilityName, params) =>
+              handleAbilityParamsChange('defender', abilityName, params)
+            }
+          />
+        </div>
       </GlassCard>
     </div>
   )
