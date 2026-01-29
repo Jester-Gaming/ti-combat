@@ -29,7 +29,18 @@ export type {
   StateChange,
 } from './types'
 
-const allAbilities = [...general, ...environment, ...agenda, ...technology]
+// Collect all agent abilities from every faction (available to all)
+const allAgentAbilities = Object.values(factions).flatMap(
+  faction => faction?.abilities?.agent ?? [],
+) as Ability[]
+
+const allAbilities = [
+  ...general,
+  ...environment,
+  ...agenda,
+  ...technology,
+  ...allAgentAbilities,
+]
 
 export function getAvailableAbilities(
   side: CombatSide,

@@ -138,7 +138,7 @@
 ### Titans of Ul
 
 - [ ] **Hel-Titan I** (Special Unit) — Combat: 7. Planetary Shield. Sustain Damage. Space Cannon 6. This unit is treated as both a structure and a ground force.
-- [ ] **Tellurian** (Agent) — When a hit is produced against a unit: You may exhaust this card to cancel that hit.
+- [x] **Tellurian** (Agent) — When a hit is produced against a unit: You may exhaust this card to cancel that hit.
 - [ ] **Geoform** (Hero) — Ready Elysium and attach this card to it. Its resource and influence values are each increased by 3, and it gains the Space Cannon 5 (x3) ability as if it were a unit.
 
 ### Universities of Jol-Nar

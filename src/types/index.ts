@@ -61,6 +61,8 @@ export type FactionUnits = Partial<Record<UnitType, UnitDefinition>>
 export interface FactionAbilities {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   faction: readonly any[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  agent?: readonly any[]
 }
 
 // Faction data structure

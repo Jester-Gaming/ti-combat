@@ -145,6 +145,7 @@ export interface AbilityCondition {
 type AbilityCategory =
   | 'GENERAL'
   | 'FACTION'
+  | 'AGENT'
   | 'AGENDA'
   | 'ENVIRONMENT'
   | 'TECHNOLOGY'

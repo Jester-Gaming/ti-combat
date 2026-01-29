@@ -1,7 +1,13 @@
 import type { Faction } from '@/types'
 
+import { tellurian } from './tellurian'
+
 export const titans_of_ul: Faction = {
   name: 'Titans of Ul',
+  abilities: {
+    faction: [],
+    agent: [tellurian],
+  },
   units: {
     FLAGSHIP: {
       BASE: {
