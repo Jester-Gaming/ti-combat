@@ -46,7 +46,7 @@ export const assaultCannon: Ability<Params> = {
   enableUI: true,
   invoke: [
     {
-      timing: 'SETUP',
+      timing: 'START_OF_COMBAT',
       isCallable: (ctx: AbilityReadContext, params: Params) => {
         if (!params.isEnabled) return false
 

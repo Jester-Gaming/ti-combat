@@ -45,7 +45,7 @@ export const publicizeWeaponSchematics: Ability<Params> = {
   enableUI: true,
   invoke: [
     {
-      timing: 'SETUP',
+      timing: 'PREPARE',
       isCallable: (_ctx: AbilityReadContext, params: Params) =>
         params.isEnabled,
       call: (ctx: AbilityReadContext): StateChange<void> => {

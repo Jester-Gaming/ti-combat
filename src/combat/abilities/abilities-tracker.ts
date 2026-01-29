@@ -116,12 +116,13 @@ function getAbilityMergedParams(
   return { ...ability.defaultParams, ...sideConfig.config?.[ability.key] }
 }
 
-/** Get invokes for a timing from ability definitions and unit abilities */
+/** Get invokes for a timing (or multiple timings) from ability definitions and unit abilities */
 function getInvokesForTiming<T extends AbilityTiming>(
-  timing: T,
+  timing: T | T[],
   side: CombatSide,
   state: CombatStateData,
 ): TimingInvokeEntry[] {
+  const timings = Array.isArray(timing) ? timing : [timing]
   const results: TimingInvokeEntry[] = []
 
   // 1. Collect regular abilities from config
@@ -130,7 +131,7 @@ function getInvokesForTiming<T extends AbilityTiming>(
     const params = getAbilityMergedParams(ability, sideConfig)
 
     for (const invoke of ability.invoke) {
-      if (invoke.timing === timing) {
+      if (timings.includes(invoke.timing as T)) {
         results.push({
           ability,
           invoke,
@@ -145,7 +146,7 @@ function getInvokesForTiming<T extends AbilityTiming>(
   const unitAbilities = collectUnitAbilities(state, side)
   for (const { ability, unitType, unitIndex } of unitAbilities) {
     for (const invoke of ability.invoke) {
-      if (invoke.timing === timing) {
+      if (timings.includes(invoke.timing as T)) {
         results.push({
           ability,
           invoke,
@@ -206,11 +207,13 @@ interface InvocationTracker {
 }
 
 /**
- * Run alternating resolution for abilities at given timing.
+ * Run alternating resolution for abilities at given timing(s).
+ * When multiple timings are provided, they share a single timing window
+ * and abilities from all timings are resolved together.
  * Returns new state and modified context.
  */
 export function runAbilities<T extends AbilityTiming>(
-  timing: T,
+  timing: T | T[],
   state: CombatStateData,
   context?: TimingContextMap[T],
 ): RunAbilitiesResult<T> {
@@ -253,7 +256,7 @@ export function runAbilities<T extends AbilityTiming>(
 }
 
 function tryResolveOneAbility<T extends AbilityTiming>(
-  timing: T,
+  timing: T | T[],
   side: CombatSide,
   state: CombatStateData,
   context: TimingContextMap[T] | undefined,

@@ -169,7 +169,7 @@ export class CombatState implements CombatStateData {
       currentPhase: currentPhase ?? getInitialPhaseIdentifier(combatMode),
     }
 
-    const { state: newData } = this.runAbilities('SETUP')
+    const { state: newData } = this.runAbilities('PREPARE')
 
     this.data = newData
   }
@@ -225,7 +225,7 @@ export class CombatState implements CombatStateData {
    * @param stateData - State to run abilities on (defaults to this.data)
    */
   private runAbilities<T extends AbilityTiming>(
-    timing: T,
+    timing: T | T[],
     context?: TimingContextMap[T],
     stateData: CombatStateData = this.data,
   ): RunAbilitiesResult<T> {
@@ -289,10 +289,18 @@ export class CombatState implements CombatStateData {
   }
 
   isFinished(): boolean {
-    const { meta } = this.currentPhase
+    const { meta, micro } = this.currentPhase
 
     if (meta === 'COMPLETE') {
       return true
+    }
+
+    // END micro-phase must always process so END_OF_COMBAT_ROUND/END_OF_COMBAT abilities fire
+    if (
+      micro === 'END' &&
+      (meta === 'SPACE_COMBAT' || meta === 'GROUND_COMBAT')
+    ) {
+      return false
     }
 
     // Count total units (all types) and participating units
@@ -522,11 +530,16 @@ export class CombatState implements CombatStateData {
   // ===========================================================================
 
   /**
-   * Process START_OF_ROUND for two-tier system.
+   * Process start of combat round.
+   * In round 1, START_OF_COMBAT and START_OF_COMBAT_ROUND share a timing window.
    * In round 1 of SPACE_COMBAT, transitions to AFB meta-phase instead of DICE_ROLL.
    */
   private processStartOfRound(round: number): StateWithProbability[] {
-    const { state: newData } = this.runAbilities('START_OF_ROUND')
+    const timings =
+      round === 1
+        ? (['START_OF_COMBAT_ROUND', 'START_OF_COMBAT'] as const)
+        : (['START_OF_COMBAT_ROUND'] as const)
+    const { state: newData } = this.runAbilities([...timings])
 
     // In round 1 of SPACE_COMBAT, transition to AFB meta-phase
     if (round === 1 && this.currentPhase.meta === 'SPACE_COMBAT') {
@@ -568,9 +581,24 @@ export class CombatState implements CombatStateData {
   }
 
   private processEndOfRound(): StateWithProbability[] {
-    const { state: newData } = this.runAbilities('END_OF_ROUND')
+    const timings = this.isLastRound()
+      ? (['END_OF_COMBAT_ROUND', 'END_OF_COMBAT'] as const)
+      : (['END_OF_COMBAT_ROUND'] as const)
+    const { state: newData } = this.runAbilities([...timings])
 
     return this.transitionPhaseWithData(newData)
+  }
+
+  /** Check if this is the last round (one side has 0 participating units) */
+  private isLastRound(): boolean {
+    const attackerParticipating = this.getParticipatingUnits('attacker')
+    const defenderParticipating = this.getParticipatingUnits('defender')
+    const attackerHasParticipating =
+      countUnits(this.attacker, attackerParticipating) > 0
+    const defenderHasParticipating =
+      countUnits(this.defender, defenderParticipating) > 0
+
+    return !attackerHasParticipating || !defenderHasParticipating
   }
 }
 

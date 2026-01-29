@@ -23,12 +23,14 @@ export type SidedDiceData = SidedContext<DieValue[]>
 // Single source of truth - map timing to context type (external API uses sided format)
 // void = no context, other type = required context
 export interface TimingContextMap {
-  SETUP: void
-  START_OF_ROUND: void
+  PREPARE: void
+  START_OF_COMBAT: void
+  START_OF_COMBAT_ROUND: void
   BEFORE_UNIT_ABILITY_ROLL: SidedDiceData
   BEFORE_DICE_ROLL: SidedDiceData
   BEFORE_ASSIGN_HITS: void
-  END_OF_ROUND: void
+  END_OF_COMBAT_ROUND: void
+  END_OF_COMBAT: void
   AFTER_ROUND: void
 }
 

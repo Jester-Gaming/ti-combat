@@ -276,6 +276,36 @@ describe('CombatState', () => {
         // During SPACE_COMBAT, defender has 0 participating units (PDS is not a ship)
         expect(state.isFinished()).toBe(true)
       })
+
+      it('returns false at END micro-phase even when one side is eliminated', () => {
+        // One side has no units, but we're at END micro-phase
+        // END_OF_COMBAT_ROUND/END_OF_COMBAT abilities must fire
+        const state = new CombatState(
+          createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
+          createSideState({}),
+          EMPTY_ABILITIES,
+          'SPACE',
+          { meta: 'SPACE_COMBAT', micro: 'END' },
+        )
+
+        expect(state.isFinished()).toBe(false)
+      })
+
+      it('returns false at END micro-phase during GROUND_COMBAT when eliminated', () => {
+        const infantryStats: Partial<Unit> = {
+          COMBAT: [8, 1],
+          UNIT_ABILITIES: {},
+        }
+        const state = new CombatState(
+          createSideState({ INFANTRY: createUnits(infantryStats, 1) }),
+          createSideState({}),
+          EMPTY_ABILITIES,
+          'GROUND',
+          { meta: 'GROUND_COMBAT', micro: 'END' },
+        )
+
+        expect(state.isFinished()).toBe(false)
+      })
     })
   })
 

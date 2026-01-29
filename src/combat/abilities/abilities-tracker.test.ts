@@ -131,7 +131,7 @@ describe('unit ability invocation', () => {
       category: 'FACTION',
       invoke: [
         {
-          timing: 'START_OF_ROUND',
+          timing: 'START_OF_COMBAT_ROUND',
           call: ctx => {
             invokeCalls.push('called')
             return { state: ctx.state as CombatStateData & object }
@@ -164,7 +164,7 @@ describe('unit ability invocation', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    runAbilities('START_OF_ROUND', state)
+    runAbilities('START_OF_COMBAT_ROUND', state)
 
     expect(invokeCalls).toHaveLength(2)
   })
@@ -177,7 +177,7 @@ describe('unit ability invocation', () => {
       category: 'FACTION',
       invoke: [
         {
-          timing: 'START_OF_ROUND',
+          timing: 'START_OF_COMBAT_ROUND',
           call: ctx => {
             invokeCalls.push(1)
             // Destroy all units
@@ -218,9 +218,114 @@ describe('unit ability invocation', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    runAbilities('START_OF_ROUND', state)
+    runAbilities('START_OF_COMBAT_ROUND', state)
 
     // Only first unit should invoke (second destroyed by first)
     expect(invokeCalls).toHaveLength(1)
+  })
+})
+
+describe('multi-timing runAbilities', () => {
+  it('should resolve abilities from multiple timings in a shared window', () => {
+    const calls: string[] = []
+
+    const startOfCombatAbility: Ability = {
+      key: 'START_COMBAT_ABILITY',
+      name: 'Start Combat',
+      category: 'GENERAL',
+      invoke: [
+        {
+          timing: 'START_OF_COMBAT',
+          call: ctx => {
+            calls.push('START_OF_COMBAT')
+            return { state: ctx.state as CombatStateData & object }
+          },
+        },
+      ],
+    }
+
+    const startOfRoundAbility: Ability = {
+      key: 'START_ROUND_ABILITY',
+      name: 'Start Round',
+      category: 'GENERAL',
+      invoke: [
+        {
+          timing: 'START_OF_COMBAT_ROUND',
+          call: ctx => {
+            calls.push('START_OF_COMBAT_ROUND')
+            return { state: ctx.state as CombatStateData & object }
+          },
+        },
+      ],
+    }
+
+    const state: CombatStateData = {
+      attacker: {
+        faction: 'SARDAKK_NORR',
+        units: {},
+        hitPools: [],
+      },
+      defender: {
+        faction: 'FEDERATION_OF_SOL',
+        units: {},
+        hitPools: [],
+      },
+      abilities: {
+        attacker: {
+          abilities: [startOfCombatAbility, startOfRoundAbility],
+        },
+        defender: { abilities: [] },
+      },
+      combatMode: 'SPACE',
+      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
+    }
+
+    runAbilities(['START_OF_COMBAT_ROUND', 'START_OF_COMBAT'], state)
+
+    expect(calls).toContain('START_OF_COMBAT')
+    expect(calls).toContain('START_OF_COMBAT_ROUND')
+    expect(calls).toHaveLength(2)
+  })
+
+  it('should work with a single timing (non-array)', () => {
+    const calls: string[] = []
+
+    const ability: Ability = {
+      key: 'SINGLE_TIMING',
+      name: 'Single',
+      category: 'GENERAL',
+      invoke: [
+        {
+          timing: 'START_OF_COMBAT_ROUND',
+          call: ctx => {
+            calls.push('called')
+            return { state: ctx.state as CombatStateData & object }
+          },
+        },
+      ],
+    }
+
+    const state: CombatStateData = {
+      attacker: {
+        faction: 'SARDAKK_NORR',
+        units: {},
+        hitPools: [],
+      },
+      defender: {
+        faction: 'FEDERATION_OF_SOL',
+        units: {},
+        hitPools: [],
+      },
+      abilities: {
+        attacker: { abilities: [ability] },
+        defender: { abilities: [] },
+      },
+      combatMode: 'SPACE',
+      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
+    }
+
+    runAbilities('START_OF_COMBAT_ROUND', state)
+
+    expect(calls).toHaveLength(1)
   })
 })
