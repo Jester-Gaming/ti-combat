@@ -58,7 +58,7 @@
 ### Obsidian
 
 - [ ] **Vos Hollow** (Agent) — When a player's ship is destroyed during any combat: You may exhaust this card; if you do, that player's opponent must destroy 1 of their ships of the same type in the active system.
-- [ ] **Aroz Hollow** (Commander) — Apply +1 to the result of each of your units' combat rolls in The Fracture.
+- [x] **Aroz Hollow** (Commander) — Apply +1 to the result of each of your units' combat rolls in The Fracture.
 - [ ] **Obsidian Alliance** — Apply +1 to the result of each of your units' combat rolls in The Fracture.
 - [ ] **Assail** (Plot) — Apply +1 to the results of each of your combat and unit ability rolls against the puppeted player.
 
@@ -153,7 +153,7 @@
 ### Winnu
 
 - [ ] **Salai Sai Corian** (Flagship) — When this unit makes a combat roll, it rolls a number of dice equal to the number of your opponent's non-fighter ships in this system.
-- [ ] **Rickar Rickani** (Commander) — During combat: Apply +2 to the result of each of your unit's combat rolls in the Mecatol Rex system, your home system, and each system that contains a legendary planet.
+- [x] **Rickar Rickani** (Commander) — During combat: Apply +2 to the result of each of your unit's combat rolls in the Mecatol Rex system, your home system, and each system that contains a legendary planet.
 - [ ] **Imperator** (Breakthrough) — Apply +1 to the results of each of your unit's combat rolls for each "Support for the Throne" in your opponent's play area.
 
 ### Xxcha Kingdom

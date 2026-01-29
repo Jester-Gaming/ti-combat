@@ -1,7 +1,13 @@
 import type { Faction } from '@/types'
 
+import { rickarRickani } from './rickar-rickani'
+
 export const winnu: Faction = {
   name: 'Winnu',
+  abilities: {
+    faction: [],
+    commander: [rickarRickani],
+  },
   units: {
     FLAGSHIP: {
       BASE: {

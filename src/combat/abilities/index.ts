@@ -34,12 +34,18 @@ const allAgentAbilities = Object.values(factions).flatMap(
   faction => faction?.abilities?.agent ?? [],
 ) as Ability[]
 
+// Collect all commander abilities from every faction (available to all)
+const allCommanderAbilities = Object.values(factions).flatMap(
+  faction => faction?.abilities?.commander ?? [],
+) as Ability[]
+
 const allAbilities = [
   ...general,
   ...environment,
   ...agenda,
   ...technology,
   ...allAgentAbilities,
+  ...allCommanderAbilities,
 ]
 
 export function getAvailableAbilities(

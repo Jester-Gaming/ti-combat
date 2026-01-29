@@ -63,6 +63,8 @@ export interface FactionAbilities {
   faction: readonly any[]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   agent?: readonly any[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  commander?: readonly any[]
 }
 
 // Faction data structure

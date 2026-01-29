@@ -146,6 +146,7 @@ type AbilityCategory =
   | 'GENERAL'
   | 'FACTION'
   | 'AGENT'
+  | 'COMMANDER'
   | 'AGENDA'
   | 'ENVIRONMENT'
   | 'TECHNOLOGY'
