@@ -36,7 +36,7 @@ export interface UnitAbilities {
 }
 
 // Base unit stats (full definition for BASE variant)
-export interface UnitStats {
+export interface UnitDataStats {
   NAME?: string
   DESCRIPTION?: string
   COST?: number | null
@@ -48,13 +48,10 @@ export interface UnitStats {
   ABILITIES?: readonly any[] // Use any to avoid circular dependency
 }
 
-// Upgraded unit stats (partial, inherits from BASE)
-export type UnitUpgrade = Partial<UnitStats>
-
 // Unit definition with BASE and UPGRADED variants
 export interface UnitDefinition {
-  BASE: UnitStats | null
-  UPGRADED?: UnitUpgrade
+  BASE: UnitDataStats | null
+  UPGRADED?: Partial<UnitDataStats>
 }
 
 // Faction unit definitions
@@ -73,14 +70,11 @@ export interface Faction {
   abilities?: FactionAbilities
 }
 
-// Base units data structure
-export type BaseUnits = Record<string, UnitDefinition>
-
 // All faction keys
 export type FactionKey = keyof typeof factions
 
 // Unit state in the battle calculator
-export interface UnitState {
+export interface UnitSelection {
   count: number
   upgraded: boolean
 }
@@ -91,7 +85,7 @@ export type Side = 'attacker' | 'defender'
 // Side state (attacker or defender)
 export interface SideState {
   faction: FactionKey
-  units: Record<UnitType, UnitState>
+  units: Record<UnitType, UnitSelection>
 }
 
 // Combined battle state

@@ -1,89 +1,67 @@
 import type {
   CombatMode,
-  CombatPhase,
+  MetaPhase,
   MicroPhase,
   PhaseIdentifier,
 } from './types'
-import { getPhaseKey, GROUND_COMBAT_FLOW, SPACE_COMBAT_FLOW } from './types'
-
-// ============================================================================
-// LEGACY PHASE SYSTEM (kept for backward compatibility)
-// ============================================================================
-
-const PHASE_ORDER: CombatPhase[] = [
-  'START_OF_ROUND',
-  'AFB_ROLL',
-  'AFB_ASSIGN_HITS',
-  'DICE_ROLL',
-  'ASSIGN_HITS',
-  'END_OF_ROUND',
-  'AFTER_ROUND',
-]
-
-export interface PhaseTransition {
-  phase: CombatPhase
-  incrementRound: boolean
-}
 
 /**
- * Get the next phase in the combat sequence.
- * AFB phases are skipped on rounds > 1.
+ * The ordered sequence of meta-phases for space combat.
+ * Combat proceeds through these phases in order.
  */
-export function getNextPhase(
-  currentPhase: CombatPhase,
-  round: number,
-): PhaseTransition {
-  const currentIndex = PHASE_ORDER.indexOf(currentPhase)
+export const SPACE_FLOW: readonly MetaPhase[] = [
+  'SPACE_CANNON_OFFENSE',
+  'SPACE_COMBAT',
+  'COMPLETE',
+] as const
 
-  // After AFTER_ROUND, wrap to START_OF_ROUND and increment round
-  if (currentPhase === 'AFTER_ROUND') {
-    return { phase: 'START_OF_ROUND', incrementRound: true }
-  }
+/**
+ * The ordered sequence of meta-phases for ground combat.
+ * Combat proceeds through these phases in order.
+ */
+export const GROUND_FLOW: readonly MetaPhase[] = [
+  'BOMBARDMENT',
+  'SPACE_CANNON_DEFENSE',
+  'GROUND_COMBAT',
+  'COMPLETE',
+] as const
 
-  const nextIndex = currentIndex + 1
-  let nextPhase = PHASE_ORDER[nextIndex]
+/**
+ * Micro-phase order for each meta-phase.
+ * Each meta-phase has its own flow through micro-phases.
+ */
 
-  // Skip AFB phases on rounds > 1
-  if (
-    round > 1 &&
-    (nextPhase === 'AFB_ROLL' || nextPhase === 'AFB_ASSIGN_HITS')
-  ) {
-    // Skip to DICE_ROLL
-    nextPhase = 'DICE_ROLL'
-  }
+const UNIT_ABILITY = ['DICE_ROLL', 'ASSIGN_HITS'] as const
+const COMBAT_PHASES = ['START', 'DICE_ROLL', 'ASSIGN_HITS', 'END'] as const
 
-  return { phase: nextPhase, incrementRound: false }
+const MICRO_PHASE_ORDERS: Record<MetaPhase, readonly MicroPhase[]> = {
+  SPACE_CANNON_OFFENSE: UNIT_ABILITY,
+  AFB: UNIT_ABILITY,
+  BOMBARDMENT: UNIT_ABILITY,
+  SPACE_CANNON_DEFENSE: UNIT_ABILITY,
+
+  SPACE_COMBAT: COMBAT_PHASES,
+  GROUND_COMBAT: COMBAT_PHASES,
+
+  // Terminal phase
+  COMPLETE: ['END'],
 }
 
-/** Get the initial phase for combat */
-export function getInitialPhase(): CombatPhase {
-  return 'START_OF_ROUND'
+/** Get the first micro-phase for a meta-phase */
+export function getFirstMicroPhase(meta: MetaPhase): MicroPhase {
+  return MICRO_PHASE_ORDERS[meta][0]
 }
 
-// ============================================================================
-// TWO-TIER PHASE SYSTEM
-// ============================================================================
-//
-// The new two-tier phase system separates combat into:
-// - MetaPhase: Major combat stages (Space Cannon, Space Combat, Bombardment, etc.)
-// - MicroPhase: Steps within each meta-phase (START, AFB, DICE_ROLL, ASSIGN_HITS, END)
-//
-// This enables complex combat flows like:
-// - SPACE mode: Space Cannon Offense -> Space Combat (AFB fires in round 1)
-// - GROUND mode: Bombardment -> Space Cannon Defense -> Ground Combat
-//
-// Note: AFB is a micro-phase within SPACE_COMBAT, not a separate meta-phase.
-// It only fires in round 1 of space combat.
-//
-// ============================================================================
+/** Get the last micro-phase for a meta-phase */
+export function getLastMicroPhase(meta: MetaPhase): MicroPhase {
+  const order = MICRO_PHASE_ORDERS[meta]
+  return order[order.length - 1]
+}
 
-const MICRO_PHASE_ORDER: MicroPhase[] = [
-  'START',
-  'AFB',
-  'DICE_ROLL',
-  'ASSIGN_HITS',
-  'END',
-]
+/** Check if a micro-phase is the last one for its meta-phase */
+export function isLastMicroPhase(phase: PhaseIdentifier): boolean {
+  return phase.micro === getLastMicroPhase(phase.meta)
+}
 
 export interface MicroPhaseTransition {
   phase: PhaseIdentifier
@@ -92,23 +70,14 @@ export interface MicroPhaseTransition {
 
 /**
  * Get the next micro-phase within the current meta-phase.
- * Returns END when the micro-phase sequence is complete.
- *
- * AFB skip logic:
- * - AFB fires only in round 1 of SPACE_COMBAT
- * - In rounds 2+, SPACE_COMBAT skips directly from START to DICE_ROLL
- * - Non-SPACE_COMBAT meta-phases always skip AFB
+ * Returns current phase if already at the last micro-phase.
  *
  * @param current Current phase identifier
- * @param round Current combat round (defaults to 1 for backward compatibility)
  */
 export function getNextMicroPhase(
   current: PhaseIdentifier,
-  round: number = 1,
 ): MicroPhaseTransition {
-  const currentIndex = MICRO_PHASE_ORDER.indexOf(current.micro)
-
-  if (current.micro === 'END') {
+  if (isLastMicroPhase(current)) {
     // Caller should use getNextMetaPhase instead
     return {
       phase: current,
@@ -116,18 +85,9 @@ export function getNextMicroPhase(
     }
   }
 
-  let nextMicro = MICRO_PHASE_ORDER[currentIndex + 1]
-
-  // AFB skip logic:
-  // - AFB is a round-1 only step within SPACE_COMBAT
-  // - All other meta-phases (SPACE_CANNON_OFFENSE, BOMBARDMENT, etc.) skip AFB
-  // - This ensures Space Cannon Offense flows: START -> DICE_ROLL -> ASSIGN_HITS -> END
-  if (nextMicro === 'AFB') {
-    const shouldSkipAFB = current.meta !== 'SPACE_COMBAT' || round > 1
-    if (shouldSkipAFB) {
-      nextMicro = 'DICE_ROLL'
-    }
-  }
+  const order = MICRO_PHASE_ORDERS[current.meta]
+  const currentIndex = order.indexOf(current.micro)
+  const nextMicro = order[currentIndex + 1]
 
   return {
     phase: { meta: current.meta, micro: nextMicro },
@@ -137,7 +97,7 @@ export function getNextMicroPhase(
 
 /**
  * Get the next meta-phase in the combat flow.
- * Should only be called when current micro-phase is END.
+ * Should only be called when current micro-phase is the last one.
  *
  * @param current Current phase identifier
  * @param mode Combat mode (SPACE or GROUND)
@@ -146,58 +106,52 @@ export function getNextMetaPhase(
   current: PhaseIdentifier,
   mode: CombatMode,
 ): MicroPhaseTransition {
-  const flow = mode === 'SPACE' ? SPACE_COMBAT_FLOW : GROUND_COMBAT_FLOW
+  const flow = mode === 'SPACE' ? SPACE_FLOW : GROUND_FLOW
   const currentMetaIndex = flow.indexOf(current.meta)
+
+  // Special case: AFB ends by returning to SPACE_COMBAT:DICE_ROLL (skipping START)
+  if (current.meta === 'AFB') {
+    return {
+      phase: { meta: 'SPACE_COMBAT', micro: 'DICE_ROLL' },
+      incrementRound: false,
+    }
+  }
 
   if (currentMetaIndex === -1 || current.meta === 'COMPLETE') {
     // Already complete or invalid state
-    return { phase: { meta: 'COMPLETE', micro: 'END' }, incrementRound: false }
+    return {
+      phase: { meta: 'COMPLETE', micro: getLastMicroPhase('COMPLETE') },
+      incrementRound: false,
+    }
   }
 
   // Handle round-based transitions for combat phases
-  // SPACE_COMBAT and GROUND_COMBAT loop back to START with round increment
+  // SPACE_COMBAT and GROUND_COMBAT loop back to first micro-phase with round increment
   if (current.meta === 'SPACE_COMBAT' || current.meta === 'GROUND_COMBAT') {
-    // Combat continues - loop back to START of same meta-phase
+    // Combat continues - loop back to first micro-phase of same meta-phase
     return {
-      phase: { meta: current.meta, micro: 'START' },
+      phase: { meta: current.meta, micro: getFirstMicroPhase(current.meta) },
       incrementRound: true,
     }
   }
 
-  // Pre-combat phases (Space Cannon, AFB, Bombardment) move to next meta-phase
+  // Pre-combat phases (Space Cannon, Bombardment) move to next meta-phase
   const nextMeta = flow[currentMetaIndex + 1]
   return {
-    phase: { meta: nextMeta, micro: 'START' },
+    phase: { meta: nextMeta, micro: getFirstMicroPhase(nextMeta) },
     incrementRound: false,
   }
-}
-
-/**
- * Get the next phase in the two-tier system.
- * Handles both micro-phase and meta-phase transitions.
- *
- * @param current Current phase identifier
- * @param mode Combat mode (SPACE or GROUND)
- * @param round Current combat round (for AFB skip logic)
- */
-export function getNextPhaseIdentifier(
-  current: PhaseIdentifier,
-  mode: CombatMode,
-  round: number = 1,
-): MicroPhaseTransition {
-  if (current.micro === 'END') {
-    return getNextMetaPhase(current, mode)
-  }
-  return getNextMicroPhase(current, round)
 }
 
 /**
  * Get the initial phase identifier for a combat mode.
  */
 export function getInitialPhaseIdentifier(mode: CombatMode): PhaseIdentifier {
-  const flow = mode === 'SPACE' ? SPACE_COMBAT_FLOW : GROUND_COMBAT_FLOW
-  return { meta: flow[0], micro: 'START' }
+  const flow = mode === 'SPACE' ? SPACE_FLOW : GROUND_FLOW
+  const firstMeta = flow[0]
+  return { meta: firstMeta, micro: getFirstMicroPhase(firstMeta) }
 }
 
-// Re-export getPhaseKey from types for convenience
-export { getPhaseKey }
+export function getPhaseKey(phase: PhaseIdentifier): string {
+  return `${phase.meta}:${phase.micro}`
+}

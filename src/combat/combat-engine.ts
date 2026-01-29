@@ -1,6 +1,5 @@
 import { CombatState } from './state/combat-state'
 import type { ProbabilityNode } from './types'
-import { generateNodeId } from './utils/generate-node-id'
 
 interface EngineOptions {
   maxRounds?: number
@@ -19,6 +18,10 @@ const DEFAULT_MAX_ROUNDS = 100
  * - Node collapsing: single deterministic outcomes update nodes in-place instead
  *   of creating child nodes, reducing tree depth
  */
+function getNextRound(currentRound: number, state: CombatState): number {
+  return state.currentPhase.micro === 'START' ? currentRound + 1 : currentRound
+}
+
 export class CombatEngine {
   private maxRounds: number
   private subtreeCache: Map<string, ProbabilityNode[]>
@@ -38,24 +41,22 @@ export class CombatEngine {
     this.outcomes = 0
     this.subtreeCache.clear()
 
-    // Run SETUP event for abilities (each ability called once)
-    const stateAfterSetup = initialState.runSetup()
-
     const root: ProbabilityNode = {
-      id: generateNodeId(),
-      state: stateAfterSetup,
+      id: crypto.randomUUID(),
+      state: initialState,
       probability: 1,
-      round: 1,
+      round: 0,
       children: [],
     }
 
     // Check for immediate end
-    if (stateAfterSetup.isFinished()) {
+    if (initialState.isFinished()) {
       return root
     }
 
     this.expandNode(root)
     console.info('Total', this.outcomes)
+    console.info('Cache length', this.subtreeCache.size)
 
     return root
   }
@@ -69,13 +70,11 @@ export class CombatEngine {
       }
 
       // Cache key includes round for proper AFB handling and flatten-tree compatibility
-      const roundKey =
+      const { meta, micro } = node.state.currentPhase
+      const isEarlyPhase =
         node.round === 1 &&
-        ['START_OF_ROUND', 'AFB_ROLL', 'AFB_ASSIGN_HITS'].includes(
-          node.state.phase,
-        )
-          ? 'EARLY'
-          : 'NORMAL'
+        (micro === 'START' || micro === 'ASSIGN_HITS' || meta === 'AFB')
+      const roundKey = isEarlyPhase ? 'EARLY' : 'NORMAL'
       const stateKey = `${roundKey}|${node.state.getHash()}`
       const cached = this.subtreeCache.get(stateKey)
 
@@ -92,41 +91,25 @@ export class CombatEngine {
       if (outcomes.length === 1 && outcomes[0].probability === 1) {
         const outcome = outcomes[0]
 
-        // Determine round for next iteration
-        const nextRound =
-          outcome.state.phase === 'START_OF_ROUND' &&
-          node.state.phase === 'AFTER_ROUND'
-            ? node.round + 1
-            : node.round
-
-        // Update node in place and continue loop
         node.state = outcome.state
-        node.round = nextRound
-        // Accumulate meta if present
+        node.round = getNextRound(node.round, outcome.state)
+
         if (outcome.meta) {
           node.meta = { ...node.meta, ...outcome.meta }
         }
-        // Continue loop to process next phase
+
         continue
       }
 
       // Multiple outcomes or probabilistic: create child nodes
-      node.children = outcomes.map(outcome => {
-        const childRound =
-          outcome.state.phase === 'START_OF_ROUND' &&
-          node.state.phase === 'AFTER_ROUND'
-            ? node.round + 1
-            : node.round
-
-        return {
-          id: generateNodeId(),
-          state: outcome.state,
-          probability: outcome.probability,
-          round: childRound,
-          children: [],
-          meta: outcome.meta,
-        }
-      })
+      node.children = outcomes.map(outcome => ({
+        id: crypto.randomUUID(),
+        state: outcome.state,
+        probability: outcome.probability,
+        round: getNextRound(node.round, outcome.state),
+        children: [],
+        meta: outcome.meta,
+      }))
 
       // Cache the subtree before expansion
       this.subtreeCache.set(stateKey, node.children)

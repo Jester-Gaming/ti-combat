@@ -20,13 +20,7 @@ export function getCombinedDiceDistribution(
   const distributions = diceGroups.map(getDiceDistribution)
 
   // Combine via convolution
-  let combined: DiceRollOutcome[] = distributions[0]
-
-  for (let i = 1; i < distributions.length; i++) {
-    combined = convolve(combined, distributions[i])
-  }
-
-  return combined
+  return distributions.reduce(convolve)
 }
 
 /**

@@ -25,34 +25,19 @@ export type SidedDiceData = SidedContext<DieValue[]>
 export interface TimingContextMap {
   SETUP: void
   START_OF_ROUND: void
-  BEFORE_AFB_ROLL: SidedDiceData
-  WHEN_AFB_ROLL: SidedDiceData
-  BEFORE_SPACE_CANNON: SidedDiceData
-  WHEN_SPACE_CANNON: SidedDiceData
-  BEFORE_BOMBARDMENT: SidedDiceData
-  WHEN_BOMBARDMENT: SidedDiceData
+  BEFORE_UNIT_ABILITY_ROLL: SidedDiceData
   BEFORE_DICE_ROLL: SidedDiceData
-  WHEN_DICE_ROLL: SidedDiceData
   BEFORE_ASSIGN_HITS: void
   END_OF_ROUND: void
   AFTER_ROUND: void
 }
 
 // Internal map for ability calls (uses own/opponent)
-export interface InternalTimingContextMap {
-  SETUP: void
-  START_OF_ROUND: void
-  BEFORE_AFB_ROLL: DiceData
-  WHEN_AFB_ROLL: DiceData
-  BEFORE_SPACE_CANNON: DiceData
-  WHEN_SPACE_CANNON: DiceData
-  BEFORE_BOMBARDMENT: DiceData
-  WHEN_BOMBARDMENT: DiceData
-  BEFORE_DICE_ROLL: DiceData
-  WHEN_DICE_ROLL: DiceData
-  BEFORE_ASSIGN_HITS: void
-  END_OF_ROUND: void
-  AFTER_ROUND: void
+// Derived from TimingContextMap: SidedContext<T> -> OwnOpponentContext<T>
+type ToInternal<T> = T extends SidedContext<infer U> ? OwnOpponentContext<U> : T
+
+export type InternalTimingContextMap = {
+  [K in keyof TimingContextMap]: ToInternal<TimingContextMap[K]>
 }
 
 export type AbilityTiming = keyof TimingContextMap
@@ -75,18 +60,6 @@ export interface StateChange<TContext = unknown> {
 export interface SideAbilities {
   get(key: string): AbilityInstance | undefined
   has(key: string): boolean
-}
-
-/** Legacy mutable context - still used during transition */
-export interface AbilityContext {
-  own: SideState
-  opponent: SideState
-  state: CombatStateData
-  side: CombatSide
-  abilities: {
-    own: SideAbilities
-    opponent: SideAbilities
-  }
 }
 
 // Auto-generate invoke type for each timing

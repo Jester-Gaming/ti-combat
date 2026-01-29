@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { DieValue, FactionKey } from '@/types'
+import type { FactionKey } from '@/types'
 
-import { participatingUnits } from '../abilities/list/general/patricipating-units'
+import { settings } from '../abilities/list/general/settings'
 import { CombatState } from './combat-state'
 import {
   addHits,
@@ -15,6 +15,17 @@ import type { CombatStateData, SideState, Unit } from './types'
 
 // Test faction constant
 const TEST_FACTION: FactionKey = 'ARBOREC'
+
+// Default abilities config for tests
+const DEFAULT_ABILITIES = {
+  attacker: { abilities: [settings] },
+  defender: { abilities: [settings] },
+}
+
+const EMPTY_ABILITIES = {
+  attacker: { abilities: [] },
+  defender: { abilities: [] },
+}
 
 // Helper to create units with stats
 function createUnits(stats: Partial<Unit>, count: number): Unit[] {
@@ -43,6 +54,8 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
+        DEFAULT_ABILITIES,
+        'SPACE',
       )
 
       expect(state.attacker.units.FIGHTER).toHaveLength(2)
@@ -53,6 +66,8 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
+        DEFAULT_ABILITIES,
+        'SPACE',
       )
 
       expect(state.attacker.hitPools).toHaveLength(0)
@@ -65,6 +80,8 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 3) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
+        DEFAULT_ABILITIES,
+        'SPACE',
       )
 
       const attackerDice = state.collectDice('attacker', 'COMBAT')
@@ -78,6 +95,8 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ DESTROYER: createUnits(destroyerStats, 2) }),
         createSideState({}),
+        DEFAULT_ABILITIES,
+        'SPACE',
       )
 
       const dice = state.collectDice('attacker', 'AFB')
@@ -88,6 +107,8 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
         createSideState({}),
+        DEFAULT_ABILITIES,
+        'SPACE',
       )
 
       const dice = state.collectDice('attacker', 'AFB')
@@ -95,138 +116,74 @@ describe('CombatState', () => {
     })
   })
 
-  describe('produceHits', () => {
-    it('creates multiple outcome states', () => {
-      const state = new CombatState(
-        createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
-        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
-      )
-
-      // 1 die at 9+ (20% hit chance)
-      const attackerDice: DieValue[] = [[9, 1, 'FIGHTER']]
-      const defenderDice: DieValue[] = [[9, 1, 'CRUISER']]
-
-      const results = state.produceHits(attackerDice, defenderDice, 'COMBAT')
-
-      // 4 outcomes: both miss, attacker hits, defender hits, both hit
-      expect(results).toHaveLength(4)
-    })
-
-    it('assigns attacker hits to defender hit pool', () => {
-      const state = new CombatState(
-        createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
-        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
-      )
-
-      // 1 die at 1+ (100% hit chance)
-      const attackerDice: DieValue[] = [[1, 1, 'FIGHTER']]
-      const defenderDice: DieValue[] = []
-
-      const results = state.produceHits(attackerDice, defenderDice, 'COMBAT')
-
-      expect(results).toHaveLength(1)
-      expect(results[0].state.defender.hitPools[0]?.hits).toBe(1)
-      expect(results[0].state.attacker.hitPools).toHaveLength(0)
-    })
-
-    it('assigns defender hits to attacker hit pool', () => {
-      const state = new CombatState(
-        createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
-        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
-      )
-
-      const attackerDice: DieValue[] = []
-      const defenderDice: DieValue[] = [[1, 1, 'CRUISER']]
-
-      const results = state.produceHits(attackerDice, defenderDice, 'COMBAT')
-
-      expect(results).toHaveLength(1)
-      expect(results[0].state.attacker.hitPools[0]?.hits).toBe(1)
-      expect(results[0].state.defender.hitPools).toHaveLength(0)
-    })
-
-    it('probabilities sum to 1', () => {
-      const state = new CombatState(
-        createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
-        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
-      )
-
-      const attackerDice: DieValue[] = [[9, 2, 'FIGHTER']]
-      const defenderDice: DieValue[] = [[7, 1, 'CRUISER']]
-
-      const results = state.produceHits(attackerDice, defenderDice, 'COMBAT')
-      const totalProb = results.reduce(
-        (sum: number, r) => sum + r.probability,
-        0,
-      )
-
-      expect(totalProb).toBeCloseTo(1.0)
-    })
-
-    it('handles empty dice lists', () => {
-      const state = new CombatState(
-        createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
-        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
-      )
-
-      const results = state.produceHits([], [], 'COMBAT')
-
-      expect(results).toHaveLength(1)
-      expect(results[0].probability).toBe(1)
-      expect(results[0].state.attacker.hitPools).toHaveLength(0)
-      expect(results[0].state.defender.hitPools).toHaveLength(0)
-    })
-
-    it('includes hit counts in meta', () => {
-      const state = new CombatState(
-        createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
-        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
-      )
-
-      const attackerDice: DieValue[] = [[1, 1, 'FIGHTER']]
-      const defenderDice: DieValue[] = [[1, 1, 'CRUISER']]
-
-      const results = state.produceHits(attackerDice, defenderDice, 'COMBAT')
-
-      expect(results[0].meta).toEqual({ attacker: 1, defender: 1 })
-    })
-  })
-
   describe('assignHits', () => {
     it('destroys units based on pending hits for both sides', () => {
-      let state: CombatState = new CombatState(
-        createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
-        createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
+      const attackerSide = createSideState({
+        FIGHTER: createUnits(fighterStats, 2),
+      })
+      const defenderSide = createSideState({
+        CRUISER: createUnits(cruiserStats, 2),
+      })
+
+      // Add hits using side-state-ops
+      let stateData: CombatStateData = {
+        attacker: attackerSide,
+        defender: defenderSide,
+        abilities: DEFAULT_ABILITIES,
+        combatMode: 'SPACE',
+        currentPhase: { meta: 'SPACE_COMBAT', micro: 'ASSIGN_HITS' },
+      }
+      stateData = addHits(stateData, 'attacker', 1, [])
+      stateData = addHits(stateData, 'defender', 1, [])
+
+      const state = new CombatState(
+        stateData.attacker,
+        stateData.defender,
+        stateData.abilities,
+        stateData.combatMode,
+        stateData.currentPhase,
       )
+      const result = state.assignHits()
 
-      state = state.addHitsToSide('attacker', 1, [])
-      state = state.addHitsToSide('defender', 1, [])
-      state = state.assignHits()
-
-      expect(state.attacker.units.FIGHTER).toHaveLength(1)
-      expect(state.defender.units.CRUISER).toHaveLength(1)
+      expect(result.attacker.units.FIGHTER).toHaveLength(1)
+      expect(result.defender.units.CRUISER).toHaveLength(1)
     })
 
     it('respects AFB pool filter (only targets fighters)', () => {
-      let state: CombatState = new CombatState(
-        createSideState({
-          FIGHTER: createUnits(fighterStats, 1),
-          CRUISER: createUnits(cruiserStats, 1),
-        }),
-        createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
-      )
+      const attackerSide = createSideState({
+        FIGHTER: createUnits(fighterStats, 1),
+        CRUISER: createUnits(cruiserStats, 1),
+      })
+      const defenderSide = createSideState({
+        FIGHTER: createUnits(fighterStats, 2),
+      })
 
-      state = state.addHitsToSide('attacker', 2, ['FIGHTER'])
-      state = state.addHitsToSide('defender', 1, ['FIGHTER'])
-      state = state.assignHits()
+      let stateData: CombatStateData = {
+        attacker: attackerSide,
+        defender: defenderSide,
+        abilities: DEFAULT_ABILITIES,
+        combatMode: 'SPACE',
+        currentPhase: { meta: 'SPACE_COMBAT', micro: 'ASSIGN_HITS' },
+      }
+      stateData = addHits(stateData, 'attacker', 2, ['FIGHTER'])
+      stateData = addHits(stateData, 'defender', 1, ['FIGHTER'])
+
+      const state = new CombatState(
+        stateData.attacker,
+        stateData.defender,
+        stateData.abilities,
+        stateData.combatMode,
+        stateData.currentPhase,
+      )
+      const result = state.assignHits()
 
       // AFB only targets fighters, so cruiser survives
-      expect(state.attacker.units.FIGHTER).toBeUndefined()
-      expect(state.attacker.units.CRUISER).toHaveLength(1)
+      expect(result.attacker.units.FIGHTER).toBeUndefined()
+      expect(result.attacker.units.CRUISER).toHaveLength(1)
       // Hit pools are cleared after assignHits (remaining hits are lost)
-      expect(state.attacker.hitPools).toHaveLength(0)
+      expect(result.attacker.hitPools).toHaveLength(0)
       // Defender had 2 fighters, 1 hit applied
-      expect(state.defender.units.FIGHTER).toHaveLength(1)
+      expect(result.defender.units.FIGHTER).toHaveLength(1)
     })
   })
 
@@ -235,6 +192,8 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({}),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
+        DEFAULT_ABILITIES,
+        'SPACE',
       )
 
       expect(state.isFinished()).toBe(true)
@@ -244,6 +203,8 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
         createSideState({}),
+        DEFAULT_ABILITIES,
+        'SPACE',
       )
 
       expect(state.isFinished()).toBe(true)
@@ -253,6 +214,8 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
+        DEFAULT_ABILITIES,
+        'SPACE',
       )
 
       expect(state.isFinished()).toBe(false)
@@ -267,11 +230,7 @@ describe('CombatState', () => {
         const state = new CombatState(
           createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
           createSideState({ PDS: createUnits(pdsStats, 2) }),
-          {
-            attacker: { abilities: [participatingUnits] },
-            defender: { abilities: [participatingUnits] },
-          },
-          'START_OF_ROUND',
+          DEFAULT_ABILITIES,
           'SPACE',
           { meta: 'SPACE_CANNON_OFFENSE', micro: 'START' },
         )
@@ -285,11 +244,7 @@ describe('CombatState', () => {
         const state = new CombatState(
           createSideState({ PDS: createUnits(pdsStats, 2) }),
           createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
-          {
-            attacker: { abilities: [participatingUnits] },
-            defender: { abilities: [participatingUnits] },
-          },
-          'START_OF_ROUND',
+          DEFAULT_ABILITIES,
           'SPACE',
           { meta: 'SPACE_CANNON_OFFENSE', micro: 'DICE_ROLL' },
         )
@@ -301,11 +256,7 @@ describe('CombatState', () => {
         const state = new CombatState(
           createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
           createSideState({ PDS: createUnits(pdsStats, 2) }),
-          {
-            attacker: { abilities: [participatingUnits] },
-            defender: { abilities: [participatingUnits] },
-          },
-          'START_OF_ROUND',
+          DEFAULT_ABILITIES,
           'SPACE',
           { meta: 'COMPLETE', micro: 'END' },
         )
@@ -317,11 +268,7 @@ describe('CombatState', () => {
         const state = new CombatState(
           createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
           createSideState({ PDS: createUnits(pdsStats, 2) }),
-          {
-            attacker: { abilities: [participatingUnits] },
-            defender: { abilities: [participatingUnits] },
-          },
-          'START_OF_ROUND',
+          DEFAULT_ABILITIES,
           'SPACE',
           { meta: 'SPACE_COMBAT', micro: 'START' },
         )
@@ -337,10 +284,14 @@ describe('CombatState', () => {
       const state1 = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
+        DEFAULT_ABILITIES,
+        'SPACE',
       )
       const state2 = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
+        DEFAULT_ABILITIES,
+        'SPACE',
       )
 
       expect(state1.getHash()).toBe(state2.getHash())
@@ -350,26 +301,17 @@ describe('CombatState', () => {
       const state1 = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
+        DEFAULT_ABILITIES,
+        'SPACE',
       )
       const state2 = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
+        DEFAULT_ABILITIES,
+        'SPACE',
       )
 
       expect(state1.getHash()).not.toBe(state2.getHash())
-    })
-  })
-
-  describe('immutability', () => {
-    it('addHitsToSide creates new state', () => {
-      const state = new CombatState(
-        createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
-        createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
-      )
-
-      const modified = state.addHitsToSide('attacker', 1, [])
-      expect(state.attacker.hitPools).toHaveLength(0)
-      expect(modified.attacker.hitPools).toHaveLength(1)
     })
   })
 
@@ -387,11 +329,10 @@ describe('CombatState', () => {
         }),
         createSideState({}),
         {
-          attacker: { abilities: [participatingUnits] },
+          attacker: { abilities: [settings] },
           defender: { abilities: [] },
         },
-        'START_OF_ROUND',
-        'SPACE', // combatMode
+        'SPACE',
       )
 
       const participating = state.getParticipatingUnits('attacker')
@@ -417,11 +358,10 @@ describe('CombatState', () => {
         }),
         createSideState({}),
         {
-          attacker: { abilities: [participatingUnits] },
+          attacker: { abilities: [settings] },
           defender: { abilities: [] },
         },
-        'START_OF_ROUND',
-        'GROUND', // combatMode
+        'GROUND',
       )
 
       const participating = state.getParticipatingUnits('attacker')
@@ -437,7 +377,7 @@ describe('CombatState', () => {
       expect(participating.has('DREADNOUGHT')).toBe(false)
     })
 
-    it('defaults to space units when combatMode is undefined (backward compatibility)', () => {
+    it('defaults to space units when combatMode is SPACE', () => {
       const state = new CombatState(
         createSideState({
           CRUISER: createUnits(cruiserStats, 2),
@@ -445,11 +385,10 @@ describe('CombatState', () => {
         }),
         createSideState({}),
         {
-          attacker: { abilities: [participatingUnits] },
+          attacker: { abilities: [settings] },
           defender: { abilities: [] },
         },
-        'START_OF_ROUND',
-        // combatMode is undefined
+        'SPACE',
       )
 
       const participating = state.getParticipatingUnits('attacker')
@@ -471,11 +410,10 @@ describe('CombatState', () => {
         }),
         createSideState({}),
         {
-          attacker: { abilities: [participatingUnits] },
+          attacker: { abilities: [settings] },
           defender: { abilities: [] },
         },
-        'START_OF_ROUND',
-        'GROUND', // Ground combat mode
+        'GROUND',
       )
 
       const dice = state.collectDice('attacker', 'COMBAT')
@@ -496,11 +434,10 @@ describe('CombatState', () => {
         }),
         createSideState({}),
         {
-          attacker: { abilities: [participatingUnits] },
+          attacker: { abilities: [settings] },
           defender: { abilities: [] },
         },
-        'START_OF_ROUND',
-        'SPACE', // Space combat mode
+        'SPACE',
       )
 
       const dice = state.collectDice('attacker', 'COMBAT')
@@ -524,16 +461,12 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
         createSideState({ PDS: createUnits(pdsStats, 2) }),
-        {
-          attacker: { abilities: [participatingUnits] },
-          defender: { abilities: [participatingUnits] },
-        },
-        'START_OF_ROUND',
+        DEFAULT_ABILITIES,
         'SPACE',
-        { meta: 'SPACE_CANNON_OFFENSE', micro: 'END' },
+        { meta: 'SPACE_CANNON_OFFENSE', micro: 'ASSIGN_HITS' }, // Last micro-phase for unit abilities
       )
 
-      // Advancing from END should transition to next meta-phase
+      // Advancing from ASSIGN_HITS should transition to next meta-phase
       const outcomes = state.advance(1)
 
       expect(outcomes).toHaveLength(1)
@@ -547,13 +480,9 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ PDS: createUnits(pdsStats, 2) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
-        {
-          attacker: { abilities: [participatingUnits] },
-          defender: { abilities: [participatingUnits] },
-        },
-        'START_OF_ROUND',
+        DEFAULT_ABILITIES,
         'SPACE',
-        { meta: 'SPACE_CANNON_OFFENSE', micro: 'END' },
+        { meta: 'SPACE_CANNON_OFFENSE', micro: 'ASSIGN_HITS' }, // Last micro-phase for unit abilities
       )
 
       const outcomes = state.advance(1)
@@ -566,13 +495,9 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
         createSideState({ DESTROYER: createUnits(destroyerStats, 2) }),
-        {
-          attacker: { abilities: [participatingUnits] },
-          defender: { abilities: [participatingUnits] },
-        },
-        'START_OF_ROUND',
+        DEFAULT_ABILITIES,
         'SPACE',
-        { meta: 'SPACE_CANNON_OFFENSE', micro: 'END' },
+        { meta: 'SPACE_CANNON_OFFENSE', micro: 'ASSIGN_HITS' }, // Last micro-phase for unit abilities
       )
 
       const outcomes = state.advance(1)
@@ -585,11 +510,7 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
         createSideState({ PDS: createUnits(pdsStats, 3) }),
-        {
-          attacker: { abilities: [participatingUnits] },
-          defender: { abilities: [participatingUnits] },
-        },
-        'START_OF_ROUND',
+        DEFAULT_ABILITIES,
         'SPACE',
         { meta: 'SPACE_CANNON_OFFENSE', micro: 'START' },
       )
@@ -619,11 +540,7 @@ describe('Bombardment', () => {
     const state = new CombatState(
       createSideState({ DREADNOUGHT: createUnits(dreadnoughtStats, 2) }),
       createSideState({ INFANTRY: createUnits(infantryStats, 3) }),
-      {
-        attacker: { abilities: [participatingUnits] },
-        defender: { abilities: [participatingUnits] },
-      },
-      'START_OF_ROUND',
+      DEFAULT_ABILITIES,
       'GROUND',
       { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' },
     )
@@ -658,11 +575,7 @@ describe('Bombardment', () => {
         WAR_SUN: createUnits(warSunStats, 1),
       }),
       createSideState({ INFANTRY: createUnits(infantryStats, 5) }),
-      {
-        attacker: { abilities: [participatingUnits] },
-        defender: { abilities: [participatingUnits] },
-      },
-      'START_OF_ROUND',
+      DEFAULT_ABILITIES,
       'GROUND',
       { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' },
     )
@@ -693,11 +606,7 @@ describe('Bombardment', () => {
         MECH: createUnits(mechStats, 1),
         CRUISER: createUnits(cruiserStats, 1),
       }),
-      {
-        attacker: { abilities: [participatingUnits] },
-        defender: { abilities: [participatingUnits] },
-      },
-      'START_OF_ROUND',
+      DEFAULT_ABILITIES,
       'GROUND',
       { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' },
     )
@@ -726,11 +635,7 @@ describe('Bombardment', () => {
         INFANTRY: createUnits(infantryStats, 2),
         DREADNOUGHT: createUnits(dreadnoughtStats, 2), // Defender has Dreadnoughts too
       }),
-      {
-        attacker: { abilities: [participatingUnits] },
-        defender: { abilities: [participatingUnits] },
-      },
-      'START_OF_ROUND',
+      DEFAULT_ABILITIES,
       'GROUND',
       { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' },
     )
@@ -752,11 +657,7 @@ describe('Bombardment', () => {
     const state = new CombatState(
       createSideState({ CRUISER: createUnits(cruiserStats, 3) }),
       createSideState({ INFANTRY: createUnits(infantryStats, 3) }),
-      {
-        attacker: { abilities: [participatingUnits] },
-        defender: { abilities: [participatingUnits] },
-      },
-      'START_OF_ROUND',
+      DEFAULT_ABILITIES,
       'GROUND',
       { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' },
     )
@@ -771,43 +672,28 @@ describe('Bombardment', () => {
   })
 
   it('transitions correctly through micro-phases', () => {
+    // Unit ability phases only have DICE_ROLL -> ASSIGN_HITS (no START/END)
     const state = new CombatState(
       createSideState({ DREADNOUGHT: createUnits(dreadnoughtStats, 1) }),
       createSideState({ INFANTRY: createUnits(infantryStats, 2) }),
-      {
-        attacker: { abilities: [participatingUnits] },
-        defender: { abilities: [participatingUnits] },
-      },
-      'START_OF_ROUND',
+      DEFAULT_ABILITIES,
       'GROUND',
-      { meta: 'BOMBARDMENT', micro: 'START' },
+      { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' }, // First micro-phase for unit abilities
     )
 
-    // START -> DICE_ROLL (skips AFB)
-    const afterStart = state.advance(1)
-    expect(afterStart).toHaveLength(1)
-    expect(afterStart[0].state.currentPhase?.meta).toBe('BOMBARDMENT')
-    expect(afterStart[0].state.currentPhase?.micro).toBe('DICE_ROLL')
-
     // DICE_ROLL -> ASSIGN_HITS (with probability branching)
-    const afterDice = afterStart[0].state.advance(1)
+    const afterDice = state.advance(1)
     expect(afterDice.length).toBeGreaterThan(0)
     for (const outcome of afterDice) {
       expect(outcome.state.currentPhase?.meta).toBe('BOMBARDMENT')
       expect(outcome.state.currentPhase?.micro).toBe('ASSIGN_HITS')
     }
 
-    // ASSIGN_HITS -> END
+    // ASSIGN_HITS -> SPACE_CANNON_DEFENSE:DICE_ROLL (next meta-phase)
     const afterAssign = afterDice[0].state.advance(1)
     expect(afterAssign).toHaveLength(1)
-    expect(afterAssign[0].state.currentPhase?.meta).toBe('BOMBARDMENT')
-    expect(afterAssign[0].state.currentPhase?.micro).toBe('END')
-
-    // END -> SPACE_CANNON_DEFENSE (next meta-phase)
-    const afterEnd = afterAssign[0].state.advance(1)
-    expect(afterEnd).toHaveLength(1)
-    expect(afterEnd[0].state.currentPhase?.meta).toBe('SPACE_CANNON_DEFENSE')
-    expect(afterEnd[0].state.currentPhase?.micro).toBe('START')
+    expect(afterAssign[0].state.currentPhase?.meta).toBe('SPACE_CANNON_DEFENSE')
+    expect(afterAssign[0].state.currentPhase?.micro).toBe('DICE_ROLL') // First micro-phase for unit abilities
   })
 })
 
@@ -828,8 +714,9 @@ describe('SideState operations', () => {
     return {
       attacker: side,
       defender: createSideState({}),
-      abilities: { attacker: { abilities: [] }, defender: { abilities: [] } },
-      phase: 'START_OF_ROUND',
+      abilities: EMPTY_ABILITIES,
+      combatMode: 'SPACE',
+      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
   }
 

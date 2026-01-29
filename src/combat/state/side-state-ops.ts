@@ -4,6 +4,7 @@ import type {
   CombatSide,
   CombatStateData,
   HitPool,
+  HitSource,
   SideState,
   Unit,
   UnitState,
@@ -93,12 +94,11 @@ export function getUnit(
   const units = sideState.units[unitType]
   if (!units) return undefined
 
-  const index = units.findIndex(unit => {
-    for (const [key, value] of Object.entries(predicate)) {
-      if (unit[key as keyof UnitState] !== value) return false
-    }
-    return true
-  })
+  const index = units.findIndex(unit =>
+    Object.entries(predicate).every(
+      ([key, value]) => unit[key as keyof UnitState] === value,
+    ),
+  )
 
   return index >= 0 ? { unit: units[index], index } : undefined
 }
@@ -138,7 +138,7 @@ export function destroyUnit(
 /** Collect dice for a specific combat phase */
 export function collectDice(
   sideState: SideState,
-  source: 'COMBAT' | 'AFB' | 'BOMBARDMENT' | 'SPACE_CANNON',
+  source: HitSource,
   participatingUnits: ReadonlySet<UnitType>,
 ): DieValue[] {
   const result: DieValue[] = []
@@ -216,23 +216,14 @@ export function assignHits(
       pool.hits,
       pool.validTargets,
       sacrificeOrder,
-      participatingUnits,
     )
-  }
-
-  // Clean up empty unit arrays
-  const cleanedUnits: Partial<Record<UnitType, Unit[]>> = {}
-  for (const [type, unitList] of Object.entries(currentUnits)) {
-    if (unitList && unitList.length > 0) {
-      cleanedUnits[type as UnitType] = unitList
-    }
   }
 
   return {
     ...state,
     [side]: {
       ...sideState,
-      units: cleanedUnits,
+      units: currentUnits,
       hitPools: [],
     },
   }
@@ -243,32 +234,21 @@ function destroyUnitsFromPool(
   hits: number,
   validTargets: UnitType[],
   sacrificeOrder: UnitType[],
-  participatingUnits: ReadonlySet<UnitType>,
 ): Partial<Record<UnitType, Unit[]>> {
   if (hits <= 0) return units
 
   const targetSet = validTargets.length > 0 ? new Set(validTargets) : null
-
-  // Build list of destroyable units in sacrifice order
-  const destroyable: Array<{ type: UnitType }> = []
+  const destroyCount = new Map<UnitType, number>()
+  let remaining = hits
 
   for (const type of sacrificeOrder) {
+    if (remaining <= 0) break
     if (targetSet && !targetSet.has(type)) continue
-    if (!participatingUnits.has(type)) continue
     const typeUnits = units[type]
     if (!typeUnits) continue
-
-    for (let i = 0; i < typeUnits.length; i++) {
-      destroyable.push({ type })
-    }
-  }
-
-  // Count units to destroy per type
-  const toDestroy = destroyable.slice(0, hits)
-  const destroyCount = new Map<UnitType, number>()
-
-  for (const { type } of toDestroy) {
-    destroyCount.set(type, (destroyCount.get(type) ?? 0) + 1)
+    const toDestroy = Math.min(typeUnits.length, remaining)
+    destroyCount.set(type, toDestroy)
+    remaining -= toDestroy
   }
 
   // Build new units object, removing destroyed units
@@ -277,10 +257,10 @@ function destroyUnitsFromPool(
   for (const [type, typeUnits] of Object.entries(units)) {
     const unitType = type as UnitType
     const removeCount = destroyCount.get(unitType) ?? 0
-    const remaining = typeUnits!.slice(removeCount)
+    const kept = typeUnits!.slice(removeCount)
 
-    if (remaining.length > 0) {
-      newUnits[unitType] = remaining
+    if (kept.length > 0) {
+      newUnits[unitType] = kept
     }
   }
 

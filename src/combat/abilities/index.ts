@@ -14,11 +14,9 @@ export {
   runAbilities,
   type RunAbilitiesResult,
 } from './abilities-tracker'
-export { nonEuclideanShielding } from './non-euclidean-shielding'
 export type {
   Ability,
   AbilityCondition,
-  AbilityContext,
   AbilityInstance,
   AbilityInvoke,
   AbilityReadContext,
@@ -31,12 +29,7 @@ export type {
   StateChange,
 } from './types'
 
-export const allAbilities = [
-  ...general,
-  ...environment,
-  ...agenda,
-  ...technology,
-]
+const allAbilities = [...general, ...environment, ...agenda, ...technology]
 
 export function getAvailableAbilities(
   side: CombatSide,

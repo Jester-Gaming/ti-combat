@@ -2,7 +2,6 @@ import baseUnits from '@/data/base_units.json'
 import factions from '@/data/faction'
 import {
   type FactionKey,
-  type FactionUnits,
   UNIT_TYPES,
   type UnitDefinition,
   type UnitType,
@@ -17,7 +16,7 @@ export function getFactionUnitConfig(
   factionKey: FactionKey,
 ): Record<UnitType, UnitDefinition> {
   const faction = factions[factionKey]
-  const factionUnits = faction.units as FactionUnits
+  const factionUnits = faction.units
   const result = {} as Record<UnitType, UnitDefinition>
 
   for (const unitType of UNIT_TYPES) {

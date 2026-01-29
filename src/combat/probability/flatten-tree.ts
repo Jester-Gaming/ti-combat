@@ -1,5 +1,6 @@
 import type { UnitType } from '@/types'
 
+import { countUnits } from '../state/side-state-ops'
 import type {
   CombatOutcome,
   CombatSide,
@@ -147,6 +148,12 @@ export function flattenTree(root: ProbabilityNode): CombatOutcome[] {
 
 /**
  * Extract outcome from a leaf node.
+ *
+ * Winner determination considers both participating units and total units:
+ * - If defender has 0 participating units and attacker has any units, attacker wins
+ *   (this covers bombardment scenarios where ships eliminate all ground forces)
+ * - If attacker has 0 participating units and defender has any units, defender wins
+ * - If both have 0 participating units, check total units for the winner
  */
 function extractLeafOutcome(
   node: ProbabilityNode,
@@ -163,23 +170,22 @@ function extractLeafOutcome(
     defenderParticipating,
   )
 
-  const attackerCount = countSurvivors(attackerSurvivors)
-  const defenderCount = countSurvivors(defenderSurvivors)
+  const attackerParticipatingCount = countSurvivors(attackerSurvivors)
+  const defenderParticipatingCount = countSurvivors(defenderSurvivors)
 
-  let winner: CombatSide | 'draw'
-  if (attackerCount > 0 && defenderCount === 0) {
-    winner = 'attacker'
-  } else if (defenderCount > 0 && attackerCount === 0) {
-    winner = 'defender'
-  } else {
-    // Both have units or neither has units = draw
-    winner = 'draw'
-  }
+  // Also count total units (for bombardment/space cannon scenarios)
+  const attackerTotalCount = countUnits(node.state.attacker)
+  const defenderTotalCount = countUnits(node.state.defender)
 
   return {
     attacker: attackerSurvivors,
     defender: defenderSurvivors,
-    winner,
+    winner: determineWinner(
+      attackerParticipatingCount,
+      defenderParticipatingCount,
+      attackerTotalCount,
+      defenderTotalCount,
+    ),
   }
 }
 
@@ -218,12 +224,31 @@ function extractSurvivors(
 }
 
 /**
+ * Determine the winner based on surviving unit counts.
+ * Checks participating units first, falls back to total units for
+ * bombardment scenarios where ships eliminate all ground forces.
+ */
+function determineWinner(
+  participatingA: number,
+  participatingD: number,
+  totalA: number,
+  totalD: number,
+): CombatSide | 'draw' {
+  if (participatingA > 0 && participatingD === 0) return 'attacker'
+  if (participatingD > 0 && participatingA === 0) return 'defender'
+
+  // Neither side has participating units - fall back to total counts
+  if (participatingA === 0 && participatingD === 0) {
+    if (totalA > 0 && totalD === 0) return 'attacker'
+    if (totalD > 0 && totalA === 0) return 'defender'
+  }
+
+  return 'draw'
+}
+
+/**
  * Count total survivors across all unit types.
  */
 function countSurvivors(survivors: SurvivorSide): number {
-  let total = 0
-  for (const count of Object.values(survivors)) {
-    total += count
-  }
-  return total
+  return Object.values(survivors).reduce((sum, count) => sum + count, 0)
 }

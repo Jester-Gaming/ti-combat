@@ -4,20 +4,22 @@ import {
   getInitialPhaseIdentifier,
   getNextMetaPhase,
   getNextMicroPhase,
-  getNextPhaseIdentifier,
 } from './phase-utils'
 import type { PhaseIdentifier } from './types'
 
 describe('Two-tier phase system', () => {
   describe('getInitialPhaseIdentifier', () => {
-    it('returns SPACE_CANNON_OFFENSE:START for SPACE mode', () => {
+    it('returns SPACE_CANNON_OFFENSE:DICE_ROLL for SPACE mode', () => {
       const phase = getInitialPhaseIdentifier('SPACE')
-      expect(phase).toEqual({ meta: 'SPACE_CANNON_OFFENSE', micro: 'START' })
+      expect(phase).toEqual({
+        meta: 'SPACE_CANNON_OFFENSE',
+        micro: 'DICE_ROLL',
+      })
     })
 
-    it('returns BOMBARDMENT:START for GROUND mode', () => {
+    it('returns BOMBARDMENT:DICE_ROLL for GROUND mode', () => {
       const phase = getInitialPhaseIdentifier('GROUND')
-      expect(phase).toEqual({ meta: 'BOMBARDMENT', micro: 'START' })
+      expect(phase).toEqual({ meta: 'BOMBARDMENT', micro: 'DICE_ROLL' })
     })
   })
 
@@ -46,58 +48,33 @@ describe('Two-tier phase system', () => {
       expect(result.phase.micro).toBe('END')
     })
 
-    it('transitions AFB -> DICE_ROLL', () => {
-      const current: PhaseIdentifier = { meta: 'SPACE_COMBAT', micro: 'AFB' }
+    it('transitions START -> DICE_ROLL in SPACE_COMBAT', () => {
+      const current: PhaseIdentifier = { meta: 'SPACE_COMBAT', micro: 'START' }
       const result = getNextMicroPhase(current)
       expect(result.phase.micro).toBe('DICE_ROLL')
     })
   })
 
-  describe('AFB micro-phase (round-dependent)', () => {
-    it('transitions START -> AFB in SPACE_COMBAT round 1', () => {
-      const current: PhaseIdentifier = { meta: 'SPACE_COMBAT', micro: 'START' }
-      const result = getNextMicroPhase(current, 1)
-      expect(result.phase.micro).toBe('AFB')
-      expect(result.incrementRound).toBe(false)
-    })
-
-    it('skips AFB in SPACE_COMBAT round 2', () => {
-      const current: PhaseIdentifier = { meta: 'SPACE_COMBAT', micro: 'START' }
-      const result = getNextMicroPhase(current, 2)
-      expect(result.phase.micro).toBe('DICE_ROLL')
-    })
-
-    it('skips AFB in SPACE_COMBAT round 3+', () => {
-      const current: PhaseIdentifier = { meta: 'SPACE_COMBAT', micro: 'START' }
-      const result = getNextMicroPhase(current, 5)
-      expect(result.phase.micro).toBe('DICE_ROLL')
-    })
-
-    it('skips AFB in non-SPACE_COMBAT meta-phases (BOMBARDMENT)', () => {
-      const current: PhaseIdentifier = { meta: 'BOMBARDMENT', micro: 'START' }
-      const result = getNextMicroPhase(current, 1)
-      expect(result.phase.micro).toBe('DICE_ROLL')
-    })
-
-    it('skips AFB in non-SPACE_COMBAT meta-phases (GROUND_COMBAT)', () => {
-      const current: PhaseIdentifier = { meta: 'GROUND_COMBAT', micro: 'START' }
-      const result = getNextMicroPhase(current, 1)
-      expect(result.phase.micro).toBe('DICE_ROLL')
-    })
-
-    it('skips AFB in SPACE_CANNON_OFFENSE', () => {
-      const current: PhaseIdentifier = {
-        meta: 'SPACE_CANNON_OFFENSE',
-        micro: 'START',
-      }
-      const result = getNextMicroPhase(current, 1)
-      expect(result.phase.micro).toBe('DICE_ROLL')
-    })
-
-    it('defaults to round 1 when round not specified (backward compat)', () => {
-      const current: PhaseIdentifier = { meta: 'SPACE_COMBAT', micro: 'START' }
+  describe('AFB meta-phase (unit ability flow)', () => {
+    it('AFB starts at DICE_ROLL (first micro-phase)', () => {
+      const current: PhaseIdentifier = { meta: 'AFB', micro: 'DICE_ROLL' }
       const result = getNextMicroPhase(current)
-      expect(result.phase.micro).toBe('AFB')
+      expect(result.phase.micro).toBe('ASSIGN_HITS')
+    })
+
+    it('AFB stays at ASSIGN_HITS (last micro-phase)', () => {
+      const current: PhaseIdentifier = { meta: 'AFB', micro: 'ASSIGN_HITS' }
+      const result = getNextMicroPhase(current)
+      // At last micro-phase, getNextMicroPhase returns same phase
+      expect(result.phase.micro).toBe('ASSIGN_HITS')
+    })
+
+    it('AFB:ASSIGN_HITS transitions to SPACE_COMBAT:DICE_ROLL via getNextMetaPhase', () => {
+      const current: PhaseIdentifier = { meta: 'AFB', micro: 'ASSIGN_HITS' }
+      const result = getNextMetaPhase(current, 'SPACE')
+      expect(result.phase.meta).toBe('SPACE_COMBAT')
+      expect(result.phase.micro).toBe('DICE_ROLL')
+      expect(result.incrementRound).toBe(false)
     })
   })
 
@@ -106,7 +83,7 @@ describe('Two-tier phase system', () => {
       it('transitions SPACE_CANNON_OFFENSE -> SPACE_COMBAT', () => {
         const current: PhaseIdentifier = {
           meta: 'SPACE_CANNON_OFFENSE',
-          micro: 'END',
+          micro: 'ASSIGN_HITS', // Last micro-phase for unit abilities
         }
         const result = getNextMetaPhase(current, 'SPACE')
         expect(result.phase.meta).toBe('SPACE_COMBAT')
@@ -124,16 +101,19 @@ describe('Two-tier phase system', () => {
 
     describe('GROUND mode flow', () => {
       it('transitions BOMBARDMENT -> SPACE_CANNON_DEFENSE', () => {
-        const current: PhaseIdentifier = { meta: 'BOMBARDMENT', micro: 'END' }
+        const current: PhaseIdentifier = {
+          meta: 'BOMBARDMENT',
+          micro: 'ASSIGN_HITS', // Last micro-phase for unit abilities
+        }
         const result = getNextMetaPhase(current, 'GROUND')
         expect(result.phase.meta).toBe('SPACE_CANNON_DEFENSE')
-        expect(result.phase.micro).toBe('START')
+        expect(result.phase.micro).toBe('DICE_ROLL') // First micro-phase for unit abilities
       })
 
       it('transitions SPACE_CANNON_DEFENSE -> GROUND_COMBAT', () => {
         const current: PhaseIdentifier = {
           meta: 'SPACE_CANNON_DEFENSE',
-          micro: 'END',
+          micro: 'ASSIGN_HITS', // Last micro-phase for unit abilities
         }
         const result = getNextMetaPhase(current, 'GROUND')
         expect(result.phase.meta).toBe('GROUND_COMBAT')
@@ -157,30 +137,6 @@ describe('Two-tier phase system', () => {
         expect(result.phase.micro).toBe('END')
         expect(result.incrementRound).toBe(false)
       })
-    })
-  })
-
-  describe('getNextPhaseIdentifier', () => {
-    it('delegates to getNextMicroPhase when not at END (round 1 with AFB)', () => {
-      const current: PhaseIdentifier = { meta: 'SPACE_COMBAT', micro: 'START' }
-      const result = getNextPhaseIdentifier(current, 'SPACE', 1)
-      expect(result.phase.micro).toBe('AFB')
-    })
-
-    it('delegates to getNextMicroPhase when not at END (round 2 skips AFB)', () => {
-      const current: PhaseIdentifier = { meta: 'SPACE_COMBAT', micro: 'START' }
-      const result = getNextPhaseIdentifier(current, 'SPACE', 2)
-      expect(result.phase.micro).toBe('DICE_ROLL')
-    })
-
-    it('delegates to getNextMetaPhase when at END', () => {
-      const current: PhaseIdentifier = {
-        meta: 'SPACE_CANNON_OFFENSE',
-        micro: 'END',
-      }
-      const result = getNextPhaseIdentifier(current, 'SPACE')
-      expect(result.phase.meta).toBe('SPACE_COMBAT')
-      expect(result.phase.micro).toBe('START')
     })
   })
 })

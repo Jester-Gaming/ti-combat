@@ -23,7 +23,7 @@ export function AbilityConfig({
   onParamsChange,
 }: AbilityConfigProps): React.ReactElement {
   const uiConfigItems = useMemo(() => {
-    if (!ability.uiConfig || typeof ability.uiConfig !== 'function') {
+    if (typeof ability.uiConfig !== 'function') {
       return ability.uiConfig
     }
     const effectiveParams = { ...ability.defaultParams, ...params }
@@ -41,7 +41,7 @@ export function AbilityConfig({
     onParamsChange({ ...params, [key]: checked })
   }
 
-  function handleOrderChange(key: string, items: string[]): void {
+  function handleListChange(key: string, items: string[]): void {
     onParamsChange({ ...params, [key]: items })
   }
 
@@ -98,8 +98,13 @@ export function AbilityConfig({
               )
             }
 
-            if (config.type === 'order-list') {
+            if (
+              config.type === 'order-list' ||
+              config.type === 'checkbox-list'
+            ) {
               const value = (params[key] ?? defaultValue ?? []) as string[]
+              const ListComponent =
+                config.type === 'order-list' ? OrderList : CheckboxList
 
               return (
                 <div key={key} className={styles.configItemGroup}>
@@ -108,29 +113,10 @@ export function AbilityConfig({
                       {config.label}
                     </span>
                   )}
-                  <OrderList
+                  <ListComponent
                     items={config.items}
                     value={value}
-                    onChange={items => handleOrderChange(key, items)}
-                  />
-                </div>
-              )
-            }
-
-            if (config.type === 'checkbox-list') {
-              const value = (params[key] ?? defaultValue ?? []) as string[]
-
-              return (
-                <div key={key} className={styles.configItemGroup}>
-                  {showLabels && (
-                    <span className={styles.configItemText}>
-                      {config.label}
-                    </span>
-                  )}
-                  <CheckboxList
-                    items={config.items}
-                    value={value}
-                    onChange={items => handleOrderChange(key, items)}
+                    onChange={items => handleListChange(key, items)}
                   />
                 </div>
               )

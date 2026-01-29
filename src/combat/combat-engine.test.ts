@@ -1,25 +1,35 @@
 import { describe, expect, it } from 'vitest'
 
 import baseUnits from '@/data/base_units.json'
-import type { FactionKey, UnitDefinition, UnitStats, UnitType } from '@/types'
+import type {
+  FactionKey,
+  UnitDataStats,
+  UnitDefinition,
+  UnitType,
+} from '@/types'
 
+import { settings } from './abilities/list/general/settings'
 import { CombatEngine } from './combat-engine'
 import { flattenTree } from './probability/flatten-tree'
 import { CombatState } from './state/combat-state'
-import { getInitialPhaseIdentifier } from './state/phase-utils'
 import type { CombatMode, SideState, Unit } from './state/types'
 import type { CombatOutcome } from './types'
 
 const TEST_FACTION: FactionKey = 'ARBOREC'
 
+const DEFAULT_ABILITIES = {
+  attacker: { abilities: [settings] },
+  defender: { abilities: [settings] },
+}
+
 /**
  * Get stats for all units from base_units.json.
  * @param upgrades - Record of which units are upgraded
  */
-function getUnitStats(
+function getUnitDataStats(
   upgrades: Partial<Record<UnitType, boolean>> = {},
-): Record<UnitType, UnitStats> {
-  const result = {} as Record<UnitType, UnitStats>
+): Record<UnitType, UnitDataStats> {
+  const result = {} as Record<UnitType, UnitDataStats>
 
   for (const [unitType, unitDef] of Object.entries(baseUnits)) {
     const def = unitDef as UnitDefinition
@@ -30,14 +40,14 @@ function getUnitStats(
         ...def.BASE,
         ...def.UPGRADED,
         UNIT_ABILITIES: {
-          ...(def.BASE as UnitStats | null)?.UNIT_ABILITIES,
+          ...(def.BASE as UnitDataStats | null)?.UNIT_ABILITIES,
           ...def.UPGRADED.UNIT_ABILITIES,
         },
-      } as UnitStats
+      } as UnitDataStats
     } else if (def.BASE) {
-      result[unitType as UnitType] = { ...def.BASE } as UnitStats
+      result[unitType as UnitType] = { ...def.BASE } as UnitDataStats
     } else if (def.UPGRADED) {
-      result[unitType as UnitType] = { ...def.UPGRADED } as UnitStats
+      result[unitType as UnitType] = { ...def.UPGRADED } as UnitDataStats
     }
   }
 
@@ -48,7 +58,7 @@ function getUnitStats(
  * Create unit arrays from stats and counts.
  */
 function createUnits(
-  stats: Record<UnitType, UnitStats>,
+  stats: Record<UnitType, UnitDataStats>,
   counts: Partial<Record<UnitType, number>>,
 ): Partial<Record<UnitType, Unit[]>> {
   const units: Partial<Record<UnitType, Unit[]>> = {}
@@ -103,7 +113,7 @@ function summarizeOutcomes(outcomes: CombatOutcome[]): {
 }
 
 describe('CombatEngine', () => {
-  const units = getUnitStats()
+  const units = getUnitDataStats()
 
   describe('simulate', () => {
     it('2 cruisers vs 3 cruisers', () => {
@@ -112,6 +122,8 @@ describe('CombatEngine', () => {
       const state = new CombatState(
         createSideState(createUnits(units, { CRUISER: 2 })),
         createSideState(createUnits(units, { CRUISER: 3 })),
+        DEFAULT_ABILITIES,
+        'SPACE',
       )
 
       const result = engine.simulate(state)
@@ -135,6 +147,8 @@ describe('CombatEngine', () => {
       const state = new CombatState(
         createSideState(createUnits(units, { CRUISER: 2 })),
         createSideState(createUnits(units, { DREADNOUGHT: 1, CRUISER: 1 })),
+        DEFAULT_ABILITIES,
+        'SPACE',
       )
 
       const result = engine.simulate(state)
@@ -154,11 +168,13 @@ describe('CombatEngine', () => {
 
     it('2 fighters vs upgraded destroyer (with AFB)', () => {
       const engine = new CombatEngine()
-      const defenderStats = getUnitStats({ DESTROYER: true })
+      const defenderStats = getUnitDataStats({ DESTROYER: true })
 
       const state = new CombatState(
         createSideState(createUnits(units, { FIGHTER: 2 })),
         createSideState(createUnits(defenderStats, { DESTROYER: 1 })),
+        DEFAULT_ABILITIES,
+        'SPACE',
       )
 
       const result = engine.simulate(state)
@@ -179,15 +195,12 @@ describe('CombatEngine', () => {
     it('1 infantry vs 1 infantry (ground combat)', () => {
       const engine = new CombatEngine()
       const combatMode: CombatMode = 'GROUND'
-      const initialPhase = getInitialPhaseIdentifier(combatMode)
 
       const state = new CombatState(
         createSideState(createUnits(units, { INFANTRY: 1 })),
         createSideState(createUnits(units, { INFANTRY: 1 })),
-        undefined, // abilities
-        undefined, // phase (legacy)
+        DEFAULT_ABILITIES,
         combatMode,
-        initialPhase,
       )
 
       const result = engine.simulate(state)
@@ -209,15 +222,12 @@ describe('CombatEngine', () => {
     it('2 infantry vs 1 infantry (ground combat)', () => {
       const engine = new CombatEngine()
       const combatMode: CombatMode = 'GROUND'
-      const initialPhase = getInitialPhaseIdentifier(combatMode)
 
       const state = new CombatState(
         createSideState(createUnits(units, { INFANTRY: 2 })),
         createSideState(createUnits(units, { INFANTRY: 1 })),
-        undefined, // abilities
-        undefined, // phase (legacy)
+        DEFAULT_ABILITIES,
         combatMode,
-        initialPhase,
       )
 
       const result = engine.simulate(state)
@@ -238,7 +248,6 @@ describe('CombatEngine', () => {
     it('ends combat immediately if Bombardment destroys all ground forces', () => {
       const engine = new CombatEngine()
       const combatMode: CombatMode = 'GROUND'
-      const initialPhase = getInitialPhaseIdentifier(combatMode)
 
       // Create custom units with guaranteed bombardment hits
       // Bombardment [1, 10] = 10 dice hitting on 1+ (100% hit rate per die)
@@ -256,10 +265,8 @@ describe('CombatEngine', () => {
       const state = new CombatState(
         createSideState(dreadnoughtWithGuaranteedBombardment),
         createSideState(createUnits(units, { INFANTRY: 1 })),
-        undefined, // abilities
-        undefined, // phase (legacy)
+        DEFAULT_ABILITIES,
         combatMode,
-        initialPhase,
       )
 
       const result = engine.simulate(state)
@@ -276,7 +283,6 @@ describe('CombatEngine', () => {
     it('continues to ground combat when Bombardment leaves survivors', () => {
       const engine = new CombatEngine()
       const combatMode: CombatMode = 'GROUND'
-      const initialPhase = getInitialPhaseIdentifier(combatMode)
 
       // Dreadnought with weak bombardment (1 die hitting on 5+ = 60%)
       const dreadnoughtWithWeakBombardment: Partial<Record<UnitType, Unit[]>> =
@@ -298,10 +304,8 @@ describe('CombatEngine', () => {
       const state = new CombatState(
         createSideState(dreadnoughtWithWeakBombardment),
         createSideState(createUnits(units, { INFANTRY: 5 })),
-        undefined, // abilities
-        undefined, // phase (legacy)
+        DEFAULT_ABILITIES,
         combatMode,
-        initialPhase,
       )
 
       const result = engine.simulate(state)
@@ -320,7 +324,6 @@ describe('CombatEngine', () => {
     it('War Sun bombardment kills lone Infantry with high probability', () => {
       const engine = new CombatEngine()
       const combatMode: CombatMode = 'GROUND'
-      const initialPhase = getInitialPhaseIdentifier(combatMode)
 
       // War Sun has BOMBARDMENT: [3, 3] = 3 dice hitting on 3+ (80% each)
       // Against 1 Infantry, probability of at least 1 hit: 1 - 0.2^3 = 99.2%
@@ -342,10 +345,8 @@ describe('CombatEngine', () => {
       const state = new CombatState(
         createSideState(warSunUnits),
         createSideState(createUnits(units, { INFANTRY: 1 })),
-        undefined, // abilities
-        undefined, // phase (legacy)
+        DEFAULT_ABILITIES,
         combatMode,
-        initialPhase,
       )
 
       const result = engine.simulate(state)
@@ -364,7 +365,6 @@ describe('CombatEngine', () => {
     it('ground combat flow: BOMBARDMENT -> SPACE_CANNON_DEFENSE -> GROUND_COMBAT', () => {
       const engine = new CombatEngine()
       const combatMode: CombatMode = 'GROUND'
-      const initialPhase = getInitialPhaseIdentifier(combatMode)
 
       // Simple ground combat with Dreadnought bombardment
       const attackerUnits: Partial<Record<UnitType, Unit[]>> = {
@@ -389,10 +389,8 @@ describe('CombatEngine', () => {
       const state = new CombatState(
         createSideState(attackerUnits),
         createSideState(createUnits(units, { INFANTRY: 2 })),
-        undefined,
-        undefined,
+        DEFAULT_ABILITIES,
         combatMode,
-        initialPhase,
       )
 
       // Verify initial phase is BOMBARDMENT

@@ -1,4 +1,4 @@
-import { filter, groupBy, keys, pipe } from 'remeda'
+import { filter, groupBy, pipe } from 'remeda'
 
 import type { Ability } from '@/combat/abilities'
 import type { SideState } from '@/combat/state'
@@ -41,9 +41,9 @@ export function AbilitiesPanel({
     groupBy(a => a.category),
   )
 
-  const categories = pipe(groupedAbilities, keys(), arr =>
-    arr.sort(compareCategories),
-  )
+  const categories = (
+    Object.keys(groupedAbilities) as Array<keyof typeof groupedAbilities>
+  ).sort(compareCategories)
 
   return (
     <div className={styles.container}>

@@ -100,6 +100,7 @@ import { cn } from '@/lib/utils'
 ## Code Conventions
 
 - **Utilities**: One utility function per file in `src/utils/` (e.g., `getFactionUnitConfig.ts`)
+- Console methods like info, time and timeEnd are find in production code, everything else — not
 
 ## Architecture Notes
 

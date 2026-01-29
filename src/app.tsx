@@ -8,12 +8,9 @@ import { IconButton } from '@/components/ui/icon-button'
 import styles from './app.module.css'
 
 function App() {
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches
-    }
-    return true
-  })
+  const [isDark, setIsDark] = useState(
+    () => window.matchMedia('(prefers-color-scheme: dark)').matches,
+  )
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark)

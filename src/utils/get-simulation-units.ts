@@ -2,7 +2,7 @@ import type { Unit } from '@/combat'
 import {
   type SideState,
   UNIT_TYPES,
-  type UnitStats,
+  type UnitDataStats,
   type UnitType,
 } from '@/types'
 
@@ -35,11 +35,10 @@ export function getSimulationUnits(
     )
     if (!effectiveStats) continue
 
-    // Create unit instances with stats
-    units[unitType] = Array.from(
-      { length: unitState.count },
-      () => effectiveStats,
-    )
+    // Create unit instances with stats (each needs its own object for mutable state like isDamaged)
+    units[unitType] = Array.from({ length: unitState.count }, () => ({
+      ...effectiveStats,
+    }))
   }
 
   return units
@@ -50,10 +49,10 @@ export function getSimulationUnits(
  * Returns null if no valid stats exist.
  */
 function getEffectiveStats(
-  baseStats: UnitStats | null | undefined,
-  upgradedStats: Partial<UnitStats> | undefined,
+  baseStats: UnitDataStats | null | undefined,
+  upgradedStats: Partial<UnitDataStats> | undefined,
   isUpgraded: boolean,
-): UnitStats | null {
+): UnitDataStats | null {
   if (isUpgraded && upgradedStats) {
     return {
       ...baseStats,
@@ -70,7 +69,7 @@ function getEffectiveStats(
   }
 
   if (upgradedStats) {
-    return { ...upgradedStats } as UnitStats
+    return { ...upgradedStats }
   }
 
   return null

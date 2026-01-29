@@ -24,27 +24,22 @@ export function CombatResultBar({ result }: CombatResultBarProps) {
       </div>
 
       {segments ? (
-        <div className={clsx(styles.resultBar)}>
-          {segments.map(
-            ({ key, percent: percent, label, segmentClass }) =>
-              percent > 0 && (
-                <div
-                  key={key}
-                  className={clsx(styles.segment, segmentClass)}
-                  style={{ width: `${percent}%` }}
-                  title={`${percent}%`}
-                >
-                  {percent > 5 && (
-                    <span className={styles.segmentContent}>
-                      <span className={clsx(styles.percentage)}>
-                        {percent}%
-                      </span>
-                      <span className={styles.label}>{label}</span>
-                    </span>
-                  )}
-                </div>
-              ),
-          )}
+        <div className={styles.resultBar}>
+          {segments.map(({ key, percent, label, segmentClass }) => (
+            <div
+              key={key}
+              className={clsx(styles.segment, segmentClass)}
+              style={{ width: `${percent}%` }}
+              title={`${percent}%`}
+            >
+              {percent > 5 && (
+                <span className={styles.segmentContent}>
+                  <span className={styles.percentage}>{percent}%</span>
+                  <span className={styles.label}>{label}</span>
+                </span>
+              )}
+            </div>
+          ))}
         </div>
       ) : (
         <div className={styles.emptyState}>

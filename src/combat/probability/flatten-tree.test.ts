@@ -2,13 +2,18 @@ import { describe, expect, it } from 'vitest'
 
 import type { FactionKey } from '@/types'
 
+import { settings } from '../abilities/list/general/settings'
 import { CombatState } from '../state/combat-state'
 import type { SideState, Unit } from '../state/types'
 import type { ProbabilityNode } from '../types'
-import { generateNodeId } from '../utils/generate-node-id'
 import { flattenTree } from './flatten-tree'
 
 const TEST_FACTION: FactionKey = 'ARBOREC'
+
+const DEFAULT_ABILITIES = {
+  attacker: { abilities: [settings] },
+  defender: { abilities: [settings] },
+}
 
 describe('flattenTree', () => {
   const fighterStats: Partial<Unit> = { COMBAT: [9, 1], UNIT_ABILITIES: {} }
@@ -29,12 +34,14 @@ describe('flattenTree', () => {
     return new CombatState(
       createSideState(attackerFighters),
       createSideState(defenderFighters),
+      DEFAULT_ABILITIES,
+      'SPACE',
     )
   }
 
   it('returns single outcome for leaf node', () => {
     const root: ProbabilityNode = {
-      id: generateNodeId(),
+      id: crypto.randomUUID(),
       state: makeState(1, 0),
       probability: 1,
       round: 1,
@@ -50,20 +57,20 @@ describe('flattenTree', () => {
 
   it('accumulates probability through tree', () => {
     const root: ProbabilityNode = {
-      id: generateNodeId(),
+      id: crypto.randomUUID(),
       state: makeState(1, 1),
       probability: 1,
       round: 1,
       children: [
         {
-          id: generateNodeId(),
+          id: crypto.randomUUID(),
           state: makeState(1, 0),
           probability: 0.6,
           round: 1,
           children: [],
         },
         {
-          id: generateNodeId(),
+          id: crypto.randomUUID(),
           state: makeState(0, 1),
           probability: 0.4,
           round: 1,
@@ -81,20 +88,20 @@ describe('flattenTree', () => {
 
   it('merges identical outcomes', () => {
     const root: ProbabilityNode = {
-      id: generateNodeId(),
+      id: crypto.randomUUID(),
       state: makeState(2, 1),
       probability: 1,
       round: 1,
       children: [
         {
-          id: generateNodeId(),
+          id: crypto.randomUUID(),
           state: makeState(1, 0),
           probability: 0.3,
           round: 1,
           children: [],
         },
         {
-          id: generateNodeId(),
+          id: crypto.randomUUID(),
           state: makeState(1, 0),
           probability: 0.2,
           round: 1,
@@ -117,7 +124,7 @@ describe('flattenTree', () => {
     const sameState = makeState(1, 1)
 
     const leafWin: ProbabilityNode = {
-      id: generateNodeId(),
+      id: crypto.randomUUID(),
       state: makeState(1, 0),
       probability: 0.7,
       round: 1,
@@ -127,7 +134,7 @@ describe('flattenTree', () => {
     // Cycle node: when 0-0 hits happen, combat continues with same state
     // Its children are the SAME as root's children (shared reference = cycle)
     const cycleNode: ProbabilityNode = {
-      id: generateNodeId(),
+      id: crypto.randomUUID(),
       state: sameState,
       probability: 0.3,
       round: 1,
@@ -135,7 +142,7 @@ describe('flattenTree', () => {
     }
 
     const root: ProbabilityNode = {
-      id: generateNodeId(),
+      id: crypto.randomUUID(),
       state: sameState,
       probability: 1,
       round: 1,
@@ -160,7 +167,7 @@ describe('flattenTree', () => {
     const sameState = makeState(1, 1)
 
     const outcomeA: ProbabilityNode = {
-      id: generateNodeId(),
+      id: crypto.randomUUID(),
       state: makeState(2, 0),
       probability: 0.2,
       round: 1,
@@ -168,7 +175,7 @@ describe('flattenTree', () => {
     }
 
     const outcomeB: ProbabilityNode = {
-      id: generateNodeId(),
+      id: crypto.randomUUID(),
       state: makeState(1, 0),
       probability: 0.6,
       round: 1,
@@ -176,7 +183,7 @@ describe('flattenTree', () => {
     }
 
     const cycleNode: ProbabilityNode = {
-      id: generateNodeId(),
+      id: crypto.randomUUID(),
       state: sameState,
       probability: 0.2,
       round: 1,
@@ -184,7 +191,7 @@ describe('flattenTree', () => {
     }
 
     const root: ProbabilityNode = {
-      id: generateNodeId(),
+      id: crypto.randomUUID(),
       state: sameState,
       probability: 1,
       round: 1,
@@ -221,7 +228,7 @@ describe('flattenTree', () => {
     // shared should get probability from BOTH paths: 0.4 + 0.6 = 1.0
 
     const shared: ProbabilityNode = {
-      id: generateNodeId(),
+      id: crypto.randomUUID(),
       state: makeState(1, 0),
       probability: 1, // 100% once we reach A or B
       round: 1,
@@ -229,7 +236,7 @@ describe('flattenTree', () => {
     }
 
     const nodeA: ProbabilityNode = {
-      id: generateNodeId(),
+      id: crypto.randomUUID(),
       state: makeState(1, 1),
       probability: 0.4,
       round: 1,
@@ -237,7 +244,7 @@ describe('flattenTree', () => {
     }
 
     const nodeB: ProbabilityNode = {
-      id: generateNodeId(),
+      id: crypto.randomUUID(),
       state: makeState(1, 1),
       probability: 0.6,
       round: 1,
@@ -245,7 +252,7 @@ describe('flattenTree', () => {
     }
 
     const root: ProbabilityNode = {
-      id: generateNodeId(),
+      id: crypto.randomUUID(),
       state: makeState(2, 1),
       probability: 1,
       round: 1,

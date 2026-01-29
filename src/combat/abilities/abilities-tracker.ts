@@ -63,20 +63,25 @@ function toSided<T>(
   }
 }
 
+interface UnitAbilityEntry {
+  ability: Ability
+  unitType: UnitType
+  unitIndex: number
+}
+
+interface TimingInvokeEntry {
+  ability: Ability
+  invoke: AbilityInvoke
+  params: Record<string, unknown>
+  source: AbilitySource
+}
+
 /** Collect unit abilities from units on the field */
 function collectUnitAbilities(
   state: CombatStateData,
   side: CombatSide,
-): Array<{
-  ability: Ability
-  unitType: UnitType
-  unitIndex: number
-}> {
-  const results: Array<{
-    ability: Ability
-    unitType: UnitType
-    unitIndex: number
-  }> = []
+): UnitAbilityEntry[] {
+  const results: UnitAbilityEntry[] = []
 
   const sideState = state[side]
   const unitEntries = Object.entries(sideState.units) as Array<
@@ -116,18 +121,8 @@ function getInvokesForTiming<T extends AbilityTiming>(
   timing: T,
   side: CombatSide,
   state: CombatStateData,
-): Array<{
-  ability: Ability
-  invoke: AbilityInvoke
-  params: Record<string, unknown>
-  source: AbilitySource
-}> {
-  const results: Array<{
-    ability: Ability
-    invoke: AbilityInvoke
-    params: Record<string, unknown>
-    source: AbilitySource
-  }> = []
+): TimingInvokeEntry[] {
+  const results: TimingInvokeEntry[] = []
 
   // 1. Collect regular abilities from config
   const sideConfig = state.abilities[side]

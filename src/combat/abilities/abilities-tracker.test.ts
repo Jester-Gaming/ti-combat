@@ -33,7 +33,8 @@ describe('collectUnitAbilities', () => {
         attacker: { abilities: [] },
         defender: { abilities: [] },
       },
-      phase: 'START_OF_ROUND',
+      combatMode: 'SPACE',
+      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
     const result = collectUnitAbilities(state, 'attacker')
@@ -69,7 +70,8 @@ describe('collectUnitAbilities', () => {
         attacker: { abilities: [] },
         defender: { abilities: [] },
       },
-      phase: 'START_OF_ROUND',
+      combatMode: 'SPACE',
+      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
     const result = collectUnitAbilities(state, 'attacker')
@@ -108,7 +110,8 @@ describe('collectUnitAbilities', () => {
         attacker: { abilities: [] },
         defender: { abilities: [] },
       },
-      phase: 'START_OF_ROUND',
+      combatMode: 'SPACE',
+      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
     const result = collectUnitAbilities(state, 'attacker')
@@ -157,7 +160,8 @@ describe('unit ability invocation', () => {
         attacker: { abilities: [] },
         defender: { abilities: [] },
       },
-      phase: 'START_OF_ROUND',
+      combatMode: 'SPACE',
+      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
     runAbilities('START_OF_ROUND', state)
@@ -210,7 +214,8 @@ describe('unit ability invocation', () => {
         attacker: { abilities: [] },
         defender: { abilities: [] },
       },
-      phase: 'START_OF_ROUND',
+      combatMode: 'SPACE',
+      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
     runAbilities('START_OF_ROUND', state)

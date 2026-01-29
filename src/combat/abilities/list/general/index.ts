@@ -1,5 +1,5 @@
-import { participatingUnits } from './patricipating-units'
+import { settings } from './settings'
 import { sustainDamage } from './sustain-damage'
 import { unitPriority } from './unit-priority'
 
-export default [participatingUnits, unitPriority, sustainDamage]
+export default [settings, unitPriority, sustainDamage]

@@ -1,3 +1,5 @@
+import type { Faction } from '@/types'
+
 import { arborec } from './arborec'
 import { argent_flight } from './argent_flight'
 import { barony_of_letnev } from './barony_of_letnev'
@@ -55,4 +57,4 @@ export default {
   XXCHA_KINGDOM: xxcha_kingdom,
   YIN_BROTHERHOOD: yin_brotherhood,
   YSSARIL_TRIBES: yssaril_tribes,
-}
+} satisfies Record<string, Faction>
