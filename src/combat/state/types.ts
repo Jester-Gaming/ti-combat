@@ -1,4 +1,10 @@
-import type { FactionKey, UnitAbilities, UnitDieValue, UnitType } from '@/types'
+import type {
+  FactionKey,
+  UnitAbilities,
+  UnitAbilityKey,
+  UnitDieValue,
+  UnitType,
+} from '@/types'
 
 import type { Ability } from '../abilities/types'
 
@@ -93,11 +99,24 @@ export interface HitPool {
   validTargets: UnitType[]
 }
 
+/** A single restriction entry explaining why an ability is restricted */
+export interface RestrictionEntry {
+  reason: string
+  unitType?: UnitType
+}
+
+/** Two-layer restriction system for unit abilities */
+export interface UnitAbilityRestrictions {
+  cannotBeUsed?: Partial<Record<UnitAbilityKey, RestrictionEntry[]>>
+  lost?: Partial<Record<UnitAbilityKey, RestrictionEntry[]>>
+}
+
 /** State for one side of combat */
 export interface SideState {
   faction: FactionKey
   units: Partial<Record<UnitType, Unit[]>>
   hitPools: HitPool[]
+  unitAbilityRestrictions?: UnitAbilityRestrictions
 }
 
 /** Ability configuration for one side */

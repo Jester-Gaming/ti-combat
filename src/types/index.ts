@@ -35,6 +35,8 @@ export interface UnitAbilities {
   PRODUCTION?: number
 }
 
+export type UnitAbilityKey = keyof UnitAbilities
+
 // Base unit stats (full definition for BASE variant)
 export interface UnitDataStats {
   NAME?: string

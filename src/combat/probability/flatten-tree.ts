@@ -1,6 +1,5 @@
 import type { UnitType } from '@/types'
 
-import { countUnits } from '../state/side-state-ops'
 import type {
   CombatOutcome,
   CombatSide,
@@ -173,18 +172,12 @@ function extractLeafOutcome(
   const attackerParticipatingCount = countSurvivors(attackerSurvivors)
   const defenderParticipatingCount = countSurvivors(defenderSurvivors)
 
-  // Also count total units (for bombardment/space cannon scenarios)
-  const attackerTotalCount = countUnits(node.state.attacker)
-  const defenderTotalCount = countUnits(node.state.defender)
-
   return {
     attacker: attackerSurvivors,
     defender: defenderSurvivors,
     winner: determineWinner(
       attackerParticipatingCount,
       defenderParticipatingCount,
-      attackerTotalCount,
-      defenderTotalCount,
     ),
   }
 }
@@ -231,17 +224,9 @@ function extractSurvivors(
 function determineWinner(
   participatingA: number,
   participatingD: number,
-  totalA: number,
-  totalD: number,
 ): CombatSide | 'draw' {
   if (participatingA > 0 && participatingD === 0) return 'attacker'
   if (participatingD > 0 && participatingA === 0) return 'defender'
-
-  // Neither side has participating units - fall back to total counts
-  if (participatingA === 0 && participatingD === 0) {
-    if (totalA > 0 && totalD === 0) return 'attacker'
-    if (totalD > 0 && totalA === 0) return 'defender'
-  }
 
   return 'draw'
 }

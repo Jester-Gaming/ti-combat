@@ -3,6 +3,8 @@ import { getUnitListItems } from '@/utils/get-unit-config'
 
 import {
   getPendingHits,
+  isUnitAbilityCannotBeUsed,
+  isUnitAbilityLost,
   reduceHits,
   updateUnit,
 } from '../../../state/side-state-ops'
@@ -37,6 +39,12 @@ function findUnitToSustain(
 ): { type: UnitType; unit: Unit; index: number } | null {
   for (const unitType of priority) {
     if (!allowedUnits.has(unitType)) continue
+    if (
+      isUnitAbilityLost(sideState, 'SUSTAIN_DAMAGE', unitType) ||
+      isUnitAbilityCannotBeUsed(sideState, 'SUSTAIN_DAMAGE', unitType)
+    ) {
+      continue
+    }
 
     const units = sideState.units[unitType]
     if (!units) continue

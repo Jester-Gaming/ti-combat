@@ -1,12 +1,14 @@
-import type { DieValue, UnitType } from '@/types'
+import type { DieValue, UnitAbilityKey, UnitType } from '@/types'
 
 import type {
   CombatSide,
   CombatStateData,
   HitPool,
   HitSource,
+  RestrictionEntry,
   SideState,
   Unit,
+  UnitAbilityRestrictions,
   UnitState,
 } from './types'
 
@@ -154,6 +156,18 @@ export function collectDice(
     if (!skipParticipatingFilter && !participatingUnits.has(type as UnitType))
       continue
 
+    const unitType = type as UnitType
+
+    // Check restrictions for unit ability sources
+    if (source !== 'COMBAT') {
+      if (
+        isRestricted(sideState, 'lost', source, unitType) ||
+        isRestricted(sideState, 'cannotBeUsed', source, unitType)
+      ) {
+        continue
+      }
+    }
+
     const firstUnit = units[0]
     if (!firstUnit) continue
 
@@ -167,7 +181,7 @@ export function collectDice(
     if (dicePerUnit <= 0) continue
 
     const totalDice = units.length * dicePerUnit
-    result.push([hitValue, totalDice, type as UnitType])
+    result.push([hitValue, totalDice, unitType])
   }
 
   return result
@@ -270,4 +284,203 @@ function destroyUnitsFromPool(
 /** Get the opposite side */
 export function getOpponentSide(side: CombatSide): CombatSide {
   return side === 'attacker' ? 'defender' : 'attacker'
+}
+
+// ============================================================================
+// UNIT ABILITY RESTRICTIONS
+// ============================================================================
+
+function addRestrictionEntry(
+  restrictions: UnitAbilityRestrictions | undefined,
+  layer: 'lost' | 'cannotBeUsed',
+  ability: UnitAbilityKey,
+  reason: string,
+  unitType?: UnitType,
+): UnitAbilityRestrictions {
+  const current = restrictions ?? {}
+  const layerData = current[layer] ?? {}
+  const entries = layerData[ability] ?? []
+  const entry: RestrictionEntry = unitType ? { reason, unitType } : { reason }
+
+  return {
+    ...current,
+    [layer]: {
+      ...layerData,
+      [ability]: [...entries, entry],
+    },
+  }
+}
+
+function removeRestrictionEntry(
+  restrictions: UnitAbilityRestrictions | undefined,
+  layer: 'lost' | 'cannotBeUsed',
+  ability: UnitAbilityKey,
+  reason: string,
+  unitType?: UnitType,
+): UnitAbilityRestrictions | undefined {
+  if (!restrictions) return undefined
+  const layerData = restrictions[layer]
+  if (!layerData) return restrictions
+  const entries = layerData[ability]
+  if (!entries) return restrictions
+
+  const filtered = entries.filter(
+    e => e.reason !== reason || e.unitType !== unitType,
+  )
+
+  const newLayerData = { ...layerData }
+  if (filtered.length > 0) {
+    newLayerData[ability] = filtered
+  } else {
+    delete newLayerData[ability]
+  }
+
+  const hasEntries = Object.keys(newLayerData).length > 0
+  const result = {
+    ...restrictions,
+    [layer]: hasEntries ? newLayerData : undefined,
+  }
+
+  if (!result.lost && !result.cannotBeUsed) return undefined
+  return result
+}
+
+function isRestricted(
+  sideState: SideState,
+  layer: 'lost' | 'cannotBeUsed',
+  ability: UnitAbilityKey,
+  unitType: UnitType,
+): boolean {
+  const entries = sideState.unitAbilityRestrictions?.[layer]?.[ability]
+  if (!entries) return false
+
+  return entries.some(e => !e.unitType || e.unitType === unitType)
+}
+
+function applyRestriction(
+  state: CombatStateData,
+  side: CombatSide,
+  layer: 'lost' | 'cannotBeUsed',
+  ability: UnitAbilityKey,
+  reason: string,
+  unitType?: UnitType,
+): CombatStateData {
+  const sideState = state[side]
+  return {
+    ...state,
+    [side]: {
+      ...sideState,
+      unitAbilityRestrictions: addRestrictionEntry(
+        sideState.unitAbilityRestrictions,
+        layer,
+        ability,
+        reason,
+        unitType,
+      ),
+    },
+  }
+}
+
+function removeRestriction(
+  state: CombatStateData,
+  side: CombatSide,
+  layer: 'lost' | 'cannotBeUsed',
+  ability: UnitAbilityKey,
+  reason: string,
+  unitType?: UnitType,
+): CombatStateData {
+  const sideState = state[side]
+  return {
+    ...state,
+    [side]: {
+      ...sideState,
+      unitAbilityRestrictions: removeRestrictionEntry(
+        sideState.unitAbilityRestrictions,
+        layer,
+        ability,
+        reason,
+        unitType,
+      ),
+    },
+  }
+}
+
+// --- "Lost" layer ---
+
+/** Mark an ability as lost for a side (optionally for a specific unit type) */
+export function setUnitAbilityLost(
+  state: CombatStateData,
+  side: CombatSide,
+  ability: UnitAbilityKey,
+  reason: string,
+  unitType?: UnitType,
+): CombatStateData {
+  return applyRestriction(state, side, 'lost', ability, reason, unitType)
+}
+
+/** Remove a lost restriction entry */
+export function removeUnitAbilityLost(
+  state: CombatStateData,
+  side: CombatSide,
+  ability: UnitAbilityKey,
+  reason: string,
+  unitType?: UnitType,
+): CombatStateData {
+  return removeRestriction(state, side, 'lost', ability, reason, unitType)
+}
+
+/** Check if an ability is lost for a specific unit type */
+export function isUnitAbilityLost(
+  sideState: SideState,
+  ability: UnitAbilityKey,
+  unitType: UnitType,
+): boolean {
+  return isRestricted(sideState, 'lost', ability, unitType)
+}
+
+// --- "Cannot be used" layer ---
+
+/** Mark an ability as cannot-be-used for a side (optionally for a specific unit type) */
+export function setUnitAbilityCannotBeUsed(
+  state: CombatStateData,
+  side: CombatSide,
+  ability: UnitAbilityKey,
+  reason: string,
+  unitType?: UnitType,
+): CombatStateData {
+  return applyRestriction(
+    state,
+    side,
+    'cannotBeUsed',
+    ability,
+    reason,
+    unitType,
+  )
+}
+
+/** Remove a cannot-be-used restriction entry */
+export function removeUnitAbilityCannotBeUsed(
+  state: CombatStateData,
+  side: CombatSide,
+  ability: UnitAbilityKey,
+  reason: string,
+  unitType?: UnitType,
+): CombatStateData {
+  return removeRestriction(
+    state,
+    side,
+    'cannotBeUsed',
+    ability,
+    reason,
+    unitType,
+  )
+}
+
+/** Check if an ability cannot be used for a specific unit type */
+export function isUnitAbilityCannotBeUsed(
+  sideState: SideState,
+  ability: UnitAbilityKey,
+  unitType: UnitType,
+): boolean {
+  return isRestricted(sideState, 'cannotBeUsed', ability, unitType)
 }

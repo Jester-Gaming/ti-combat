@@ -622,5 +622,24 @@ function getSideHash(side: SideState): string {
     parts.push(`pools:[${poolsHash}]`)
   }
 
+  // Include unit ability restrictions in hash
+  if (side.unitAbilityRestrictions) {
+    const r = side.unitAbilityRestrictions
+    for (const layer of ['lost', 'cannotBeUsed'] as const) {
+      const layerData = r[layer]
+      if (!layerData) continue
+      const keys = Object.keys(layerData).sort()
+      for (const key of keys) {
+        const entries = layerData[key as keyof typeof layerData]
+        if (!entries || entries.length === 0) continue
+        const entriesHash = entries
+          .map(e => `${e.reason}${e.unitType ? `:${e.unitType}` : ''}`)
+          .sort()
+          .join(';')
+        parts.push(`${layer}.${key}:[${entriesHash}]`)
+      }
+    }
+  }
+
   return parts.join(',')
 }
