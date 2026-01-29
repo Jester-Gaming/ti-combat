@@ -5,7 +5,7 @@
 }
 
 .item {
-  @apply flex cursor-grab items-center gap-2 rounded border px-2 py-1 text-[11px];
+  @apply flex cursor-grab items-center gap-2 rounded border px-2 py-1 text-[12px];
   border-color: hsl(var(--side-color) / 15%);
   background-color: hsl(var(--side-color) / 5%);
   color: hsl(var(--muted-foreground));

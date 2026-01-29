@@ -4,6 +4,13 @@ import { useMemo, useState } from 'react'
 import type { Ability } from '@/combat/abilities'
 import type { SideState } from '@/combat/state'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 import { CheckboxList } from '../checkbox-list'
 import { OrderList } from '../order-list'
@@ -44,6 +51,10 @@ export function AbilityConfig({
   }
 
   function handleNumberChange(key: string, value: number): void {
+    onParamsChange({ ...params, [key]: value })
+  }
+
+  function handleSelectChange(key: string, value: string): void {
     onParamsChange({ ...params, [key]: value })
   }
 
@@ -148,6 +159,34 @@ export function AbilityConfig({
                     }
                   />
                 </label>
+              )
+            }
+
+            if (config.type === 'select') {
+              const value = (params[key] ?? defaultValue ?? '') as string
+              return (
+                <div key={key} className={styles.configItemLabel}>
+                  <span className={styles.configItemText}>{config.label}</span>
+                  <Select
+                    value={value}
+                    onValueChange={v => handleSelectChange(key, v)}
+                  >
+                    <SelectTrigger className={styles.selectTrigger}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className={styles.selectContent}>
+                      {config.items.map(item => (
+                        <SelectItem
+                          key={item.value}
+                          value={item.value}
+                          className={styles.selectItem}
+                        >
+                          {item.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               )
             }
 

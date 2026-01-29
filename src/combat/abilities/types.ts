@@ -135,11 +135,22 @@ interface UIConfigNumber<
   max?: number
 }
 
+interface UIConfigSelect<
+  TParams = Record<string, unknown>,
+> extends UIConfigItemBase<TParams> {
+  type: 'select'
+  items: {
+    label: string
+    value: string
+  }[]
+}
+
 type UIConfigItem<TParams = Record<string, unknown>> =
   | UIConfigCheckbox<TParams>
   | UIConfigOrderList<TParams>
   | UIConfigCheckboxList<TParams>
   | UIConfigNumber<TParams>
+  | UIConfigSelect<TParams>
 
 type UIConfig<Params = Record<string, unknown>> =
   | UIConfigItem<Params>[]
