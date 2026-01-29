@@ -1,11 +1,17 @@
-import type { DieValue } from '@/types'
+import type { DieValue, UnitType } from '@/types'
 
 import type {
   CombatSide,
   CombatStateData,
   MetaPhase,
   SideState,
+  Unit,
 } from '../state/types'
+
+export interface DestroyedUnit {
+  type: UnitType
+  unit: Unit
+}
 
 // Sided context (external API - attacker/defender perspective)
 export interface SidedContext<T> {
@@ -34,6 +40,7 @@ export interface TimingContextMap {
   BEFORE_UNIT_ABILITY_ROLL: SidedDiceData
   BEFORE_DICE_ROLL: SidedDiceData
   BEFORE_ASSIGN_HITS: void
+  AFTER_DESTROY: SidedContext<DestroyedUnit[]>
   END_OF_COMBAT_ROUND: void
   END_OF_COMBAT: void
   AFTER_ROUND: void

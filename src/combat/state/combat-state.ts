@@ -22,6 +22,7 @@ import {
   assignHits as assignHitsSide,
   collectDice,
   countUnits,
+  getDestroyedUnits,
 } from './side-state-ops'
 import type {
   AbilitiesConfig,
@@ -287,7 +288,24 @@ export class CombatState implements CombatStateData {
       defenderPriority,
     )
 
-    return CombatState.fromData(resultData)
+    const destroyedContext = {
+      attacker: getDestroyedUnits(
+        afterAbilities.attacker.units,
+        resultData.attacker.units,
+      ),
+      defender: getDestroyedUnits(
+        afterAbilities.defender.units,
+        resultData.defender.units,
+      ),
+    }
+
+    const { state: afterDestroy } = this.runAbilities(
+      'AFTER_DESTROY',
+      destroyedContext,
+      resultData,
+    )
+
+    return CombatState.fromData(afterDestroy)
   }
 
   isFinished(): boolean {
