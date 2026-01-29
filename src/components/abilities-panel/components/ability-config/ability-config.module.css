@@ -74,6 +74,10 @@
   font-family: var(--font-heading);
   color: hsl(var(--muted-foreground));
   transition: color 0.15s;
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .configItems {

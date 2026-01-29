@@ -55,6 +55,14 @@ export type MetaPhase =
   | 'GROUND_COMBAT'
   | 'COMPLETE'
 
+/** Meta-phases that correspond to unit ability rolls (bombardment, space cannon, AFB). */
+export const UNIT_ABILITY_PHASES: MetaPhase[] = [
+  'SPACE_CANNON_OFFENSE',
+  'AFB',
+  'BOMBARDMENT',
+  'SPACE_CANNON_DEFENSE',
+]
+
 /**
  * MicroPhase represents the steps within a meta-phase.
  *

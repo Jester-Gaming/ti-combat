@@ -8,7 +8,7 @@ interface CheckboxProps {
   checked: boolean
   onChange: (checked: boolean) => void
   className?: string
-  onClick: MouseEventHandler<HTMLLabelElement>
+  onClick?: MouseEventHandler<HTMLLabelElement>
 }
 
 export function Checkbox({

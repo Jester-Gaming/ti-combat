@@ -1,7 +1,15 @@
 import type { Faction } from '@/types'
 
+import { strikeWingAmbuscade } from './strike-wing-ambuscade'
+import { trrakanAunZulok } from './trrakan-aun-zulok'
+
 export const argent_flight: Faction = {
   name: 'Argent Flight',
+  abilities: {
+    faction: [],
+    promissory: [strikeWingAmbuscade],
+    commander: [trrakanAunZulok],
+  },
   units: {
     FLAGSHIP: {
       BASE: {

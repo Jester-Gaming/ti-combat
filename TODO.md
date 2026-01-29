@@ -7,10 +7,10 @@
 ### Argent Flight
 
 - [ ] **Raid Formation** (Faction Ability) — When 1 or more of your units use Anti-Fighter Barrage, for each hit produced in excess of your opponent's fighters, choose 1 of your opponent's ships that has Sustain Damage to become damaged.
-- [ ] **Strike Wing Ambuscade** (Promissory Note) — When 1 or more of your units make a roll for a unit ability: Choose 1 of those units to roll 1 additional die. Then, return this card to the Argent player.
+- [x] **Strike Wing Ambuscade** (Promissory Note) — When 1 or more of your units make a roll for a unit ability: Choose 1 of those units to roll 1 additional die. Then, return this card to the Argent player.
 - [ ] **Strike Wing Alpha II** (Faction Technology) — When this unit uses Anti-Fighter Barrage, each result of 9 or 10 also destroys 1 of your opponent's infantry in the space area of the active system.
 - [ ] **Quetzecoatl** (Flagship) — Other players cannot use Space Cannon against your ships in this system.
-- [ ] **Trrakan Aun Zulok** (Commander) — When 1 or more of your units make a roll for a unit ability: You may choose 1 of those units to roll 1 additional die.
+- [x] **Trrakan Aun Zulok** (Commander) — When 1 or more of your units make a roll for a unit ability: You may choose 1 of those units to roll 1 additional die.
 
 ### Barony of Letnev
 

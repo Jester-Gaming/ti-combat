@@ -21,6 +21,7 @@ const CATEGORY_ORDER = [
   'GENERAL',
   'TECHNOLOGY',
   'FACTION',
+  'PROMISSORY',
   'AGENT',
   'COMMANDER',
   'AGENDA',

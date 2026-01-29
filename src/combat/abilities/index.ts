@@ -29,6 +29,11 @@ export type {
   StateChange,
 } from './types'
 
+// Collect all promissory abilities from every faction (available to all)
+const allPromissoryAbilities = Object.values(factions).flatMap(
+  faction => faction?.abilities?.promissory ?? [],
+) as Ability[]
+
 // Collect all agent abilities from every faction (available to all)
 const allAgentAbilities = Object.values(factions).flatMap(
   faction => faction?.abilities?.agent ?? [],
@@ -44,6 +49,7 @@ const allAbilities = [
   ...environment,
   ...agenda,
   ...technology,
+  ...allPromissoryAbilities,
   ...allAgentAbilities,
   ...allCommanderAbilities,
 ]
