@@ -12,7 +12,6 @@ export const unitPriority: Ability<Params> = {
   key: 'UNIT_PRIORITY',
   name: 'Assign Hits Order',
   category: 'GENERAL',
-  defaultCollapsed: true,
   defaultParams: {
     unitPriority: [
       'FIGHTER',

@@ -15,7 +15,6 @@ export const settings: Ability<Params> = {
   key: 'SETTINGS',
   name: 'Settings',
   category: 'GENERAL',
-  defaultCollapsed: true,
   defaultParams: {
     spaceCombatParticipating: [
       'FLAGSHIP',

@@ -32,10 +32,8 @@ export function AbilityConfig({
 
   const hasConfigItems = uiConfigItems && uiConfigItems.length > 0
   const showLabels = uiConfigItems && uiConfigItems.length > 1
-  const isCollapsible = hasConfigItems && ability.defaultCollapsed !== undefined
-  const [isCollapsed, setIsCollapsed] = useState(
-    ability.defaultCollapsed ?? false,
-  )
+  const isCollapsible = !!hasConfigItems
+  const [isCollapsed, setIsCollapsed] = useState(true)
 
   function handleCheckboxChange(key: string, checked: boolean): void {
     onParamsChange({ ...params, [key]: checked })
@@ -49,51 +47,70 @@ export function AbilityConfig({
     setIsCollapsed(prev => !prev)
   }
 
-  const handleHeaderClick = ability.enableUI
-    ? () => handleCheckboxChange('isEnabled', !params.isEnabled)
-    : isCollapsible
-      ? toggleCollapsed
-      : undefined
+  function handleContainerClick(e: React.MouseEvent): void {
+    if (ability.enableUI) {
+      e.stopPropagation()
+      handleCheckboxChange('isEnabled', !params.isEnabled)
+    }
+  }
+
+  function handleCollapseClick(e: React.MouseEvent): void {
+    e.stopPropagation()
+    toggleCollapsed()
+  }
 
   const header = (
     <div className={styles.header}>
-      {isCollapsible ? (
+      {ability.enableUI ? (
+        <>
+          {isCollapsible ? (
+            <button
+              type="button"
+              className={styles.collapseButton}
+              onClick={handleCollapseClick}
+              aria-expanded={!isCollapsed}
+              aria-label={isCollapsed ? 'Expand' : 'Collapse'}
+            >
+              {isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
+            </button>
+          ) : (
+            <span className={styles.collapseIndent} />
+          )}
+          <span className={styles.title}>{ability.name}</span>
+          <Checkbox
+            checked={!!params.isEnabled}
+            onChange={checked => handleCheckboxChange('isEnabled', checked)}
+            onClick={event => event.stopPropagation()}
+          />
+        </>
+      ) : (
         <button
           type="button"
-          className={styles.collapseButton}
-          onClick={toggleCollapsed}
-          aria-expanded={!isCollapsed}
-          aria-label={isCollapsed ? 'Expand' : 'Collapse'}
+          className={styles.headerLabel}
+          onClick={isCollapsible ? toggleCollapsed : undefined}
+          disabled={!isCollapsible}
         >
-          {isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
+          {isCollapsible ? (
+            <span className={styles.collapseIcon}>
+              {isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
+            </span>
+          ) : (
+            <span className={styles.collapseIndent} />
+          )}
+          <span className={styles.title}>{ability.name}</span>
         </button>
-      ) : (
-        <span className={styles.collapseIndent} />
-      )}
-      <button
-        type="button"
-        className={styles.headerLabel}
-        onClick={handleHeaderClick}
-        disabled={!handleHeaderClick}
-      >
-        <span className={styles.title}>{ability.name}</span>
-      </button>
-      {ability.enableUI && (
-        <Checkbox
-          checked={!!params.isEnabled}
-          onChange={checked => handleCheckboxChange('isEnabled', checked)}
-        />
       )}
     </div>
   )
 
-  const isAbilityEnabled = !ability.enableUI || !!params.isEnabled
-
   return (
-    <div className={styles.container}>
+    <div
+      className={`${styles.container} ${ability.enableUI ? styles.clickable : ''}`}
+      onClick={ability.enableUI ? handleContainerClick : undefined}
+    >
       {header}
-      {hasConfigItems && !isCollapsed && isAbilityEnabled && (
-        <div className={styles.configItems}>
+      {hasConfigItems && !isCollapsed && (
+        <div className={styles.configItems} onClick={e => e.stopPropagation()}>
           {uiConfigItems!.map(config => {
             const key = config.key as string
             const defaultValue = ability.defaultParams?.[key]

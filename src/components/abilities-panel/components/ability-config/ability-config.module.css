@@ -16,10 +16,16 @@
 }
 
 .collapseButton {
-  @apply flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded p-0 transition-colors;
+  @apply relative flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded p-0 transition-colors;
   background: transparent;
   border: none;
   color: hsl(var(--muted-foreground) / 60%);
+}
+
+.collapseButton::before {
+  @apply absolute;
+  content: '';
+  inset: -8px;
 }
 
 .collapseButton:hover {
@@ -30,8 +36,20 @@
   @apply w-4 shrink-0;
 }
 
+.container.clickable {
+  cursor: pointer;
+}
+
+.container.clickable:hover .title {
+  color: hsl(var(--side-color));
+}
+
+.container.clickable .title {
+  flex: 1;
+}
+
 .headerLabel {
-  @apply flex flex-1 cursor-pointer items-center rounded p-0 text-left transition-colors;
+  @apply flex flex-1 cursor-pointer items-center gap-1.5 rounded p-0 text-left transition-colors;
   background: transparent;
   border: none;
 }
@@ -40,8 +58,15 @@
   cursor: default;
 }
 
-.headerLabel:not(:disabled):hover .title {
+.headerLabel:not(:disabled):hover .title,
+.headerLabel:not(:disabled):hover .collapseIcon {
   color: hsl(var(--side-color));
+}
+
+.collapseIcon {
+  @apply flex h-4 w-4 shrink-0 items-center justify-center;
+  color: hsl(var(--muted-foreground) / 60%);
+  transition: color 0.15s;
 }
 
 .title {

@@ -157,7 +157,6 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   category: AbilityCategory
   defaultParams?: Params
   enableUI?: boolean // Show enable checkbox in header, controls ENABLED param
-  defaultCollapsed?: boolean // Start with config items collapsed
   uiConfig?: UIConfig<Params>
   /** Conditions restricting which side can use this ability */
   condition?: AbilityCondition
