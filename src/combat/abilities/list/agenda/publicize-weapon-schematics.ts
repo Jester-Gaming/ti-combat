@@ -1,5 +1,4 @@
-import { setUnitAbilityLost } from '../../../state/side-state-ops'
-import type { Ability, AbilityReadContext, StateChange } from '../../types'
+import type { Ability } from '../../types'
 
 type Params = {
   isEnabled: boolean
@@ -19,24 +18,18 @@ export const publicizeWeaponSchematics: Ability<Params> = {
   invoke: [
     {
       timing: 'PREPARE',
-      isCallable: (_ctx: AbilityReadContext, params: Params) =>
-        params.isEnabled,
-      call: (ctx: AbilityReadContext): StateChange<void> => {
-        let state = setUnitAbilityLost(
-          ctx.state,
-          'attacker',
+      isCallable: (params: Params) => params.isEnabled,
+      call: ctx => {
+        ctx.api.own.setUnitAbilityLost(
           'SUSTAIN_DAMAGE',
           'PUBLICIZE_WEAPON_SCHEMATICS',
           'WAR_SUN',
         )
-        state = setUnitAbilityLost(
-          state,
-          'defender',
+        ctx.api.opponent.setUnitAbilityLost(
           'SUSTAIN_DAMAGE',
           'PUBLICIZE_WEAPON_SCHEMATICS',
           'WAR_SUN',
         )
-        return { state }
       },
     },
   ],

@@ -16,6 +16,7 @@ export {
 } from './abilities-tracker'
 export type {
   Ability,
+  AbilityCallContext,
   AbilityCondition,
   AbilityInstance,
   AbilityInvoke,
@@ -24,9 +25,10 @@ export type {
   DiceData,
   OwnOpponentContext,
   SideAbilities,
+  SideApi,
   SidedContext,
   SidedDiceData,
-  StateChange,
+  SideReadApi,
 } from './types'
 
 // Collect all promissory abilities from every faction (available to all)

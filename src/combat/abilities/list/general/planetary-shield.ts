@@ -1,28 +1,22 @@
 import type { UnitType } from '@/types'
 
-import {
-  getOpponentSide,
-  isUnitAbilityCannotBeUsed,
-  isUnitAbilityLost,
-  setUnitAbilityCannotBeUsed,
-} from '../../../state/side-state-ops'
-import type { SideState } from '../../../state/types'
-import type { Ability, AbilityReadContext, StateChange } from '../../types'
+import type { Ability, AbilityReadContext, SideReadApi } from '../../types'
 
 /** Check if any unit on the side has an active Planetary Shield */
-function hasPlanetaryShield(sideState: SideState): boolean {
-  for (const [type, units] of Object.entries(sideState.units)) {
-    if (!units || units.length === 0) continue
+function hasPlanetaryShield(api: SideReadApi): boolean {
+  const units = api.getUnits()
+  for (const [type, typeUnits] of Object.entries(units)) {
+    if (!typeUnits || typeUnits.length === 0) continue
     const unitType = type as UnitType
 
     if (
-      isUnitAbilityLost(sideState, 'PLANETARY_SHIELD', unitType) ||
-      isUnitAbilityCannotBeUsed(sideState, 'PLANETARY_SHIELD', unitType)
+      api.isUnitAbilityLost('PLANETARY_SHIELD', unitType) ||
+      api.isUnitAbilityCannotBeUsed('PLANETARY_SHIELD', unitType)
     ) {
       continue
     }
 
-    if (units.some(u => u.UNIT_ABILITIES?.PLANETARY_SHIELD)) {
+    if (typeUnits.some(u => u.UNIT_ABILITIES?.PLANETARY_SHIELD)) {
       return true
     }
   }
@@ -37,16 +31,13 @@ export const planetaryShield: Ability = {
   invoke: [
     {
       timing: 'PREPARE',
-      isCallable: (ctx: AbilityReadContext) => hasPlanetaryShield(ctx.own),
-      call: (ctx: AbilityReadContext): StateChange<void> => {
-        const opponentSide = getOpponentSide(ctx.side)
-        const state = setUnitAbilityCannotBeUsed(
-          ctx.state,
-          opponentSide,
+      isCallable: (_params: Record<string, unknown>, ctx: AbilityReadContext) =>
+        hasPlanetaryShield(ctx.api.own),
+      call: ctx => {
+        ctx.api.opponent.setUnitAbilityCannotBeUsed(
           'BOMBARDMENT',
           'PLANETARY_SHIELD',
         )
-        return { state }
       },
     },
   ],

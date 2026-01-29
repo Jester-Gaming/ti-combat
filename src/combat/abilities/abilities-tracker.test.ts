@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { CombatStateData } from '../state/types'
 import { collectUnitAbilities, runAbilities } from './abilities-tracker'
-import type { Ability } from './types'
+import type { Ability, AbilityCallContext, OwnOpponentContext } from './types'
 
 describe('collectUnitAbilities', () => {
   it('should collect abilities from units on the field', () => {
@@ -132,9 +132,8 @@ describe('unit ability invocation', () => {
       invoke: [
         {
           timing: 'START_OF_COMBAT_ROUND',
-          call: ctx => {
+          call: () => {
             invokeCalls.push('called')
-            return { state: ctx.state as CombatStateData & object }
           },
         },
       ],
@@ -180,15 +179,8 @@ describe('unit ability invocation', () => {
           timing: 'START_OF_COMBAT_ROUND',
           call: ctx => {
             invokeCalls.push(1)
-            // Destroy all units
-            const newState = {
-              ...ctx.state,
-              attacker: {
-                ...ctx.state.attacker,
-                units: {},
-              },
-            }
-            return { state: newState }
+            // Destroy all units via Immer draft
+            ctx.state.attacker.units = {}
           },
         },
       ],
@@ -225,6 +217,207 @@ describe('unit ability invocation', () => {
   })
 })
 
+describe('AFTER_DESTROY triggered by destroyUnit', () => {
+  it('should trigger AFTER_DESTROY when an ability destroys units', () => {
+    const afterDestroyCalls: { attacker: unknown[]; defender: unknown[] }[] = []
+
+    const destroyAbility: Ability = {
+      key: 'DESTROY_ABILITY',
+      name: 'Destroy',
+      category: 'GENERAL',
+      invoke: [
+        {
+          timing: 'START_OF_COMBAT_ROUND',
+          call: (ctx: AbilityCallContext) => {
+            ctx.api.opponent.destroyUnit('FIGHTER')
+          },
+        },
+      ],
+    }
+
+    const afterDestroyAbility: Ability = {
+      key: 'AFTER_DESTROY_HANDLER',
+      name: 'After Destroy',
+      category: 'GENERAL',
+      invoke: [
+        {
+          timing: 'AFTER_DESTROY',
+          call: (
+            _ctx: AbilityCallContext,
+            _params: Record<string, never>,
+            context: OwnOpponentContext<unknown[]>,
+          ) => {
+            afterDestroyCalls.push({
+              attacker: context.own,
+              defender: context.opponent,
+            })
+          },
+        },
+      ],
+    }
+
+    const state: CombatStateData = {
+      attacker: {
+        faction: 'SARDAKK_NORR',
+        units: {},
+        hitPools: [],
+      },
+      defender: {
+        faction: 'FEDERATION_OF_SOL',
+        units: {
+          FIGHTER: [{ COMBAT: [9, 1] }],
+        },
+        hitPools: [],
+      },
+      abilities: {
+        attacker: {
+          abilities: [destroyAbility, afterDestroyAbility],
+        },
+        defender: { abilities: [] },
+      },
+      combatMode: 'SPACE',
+      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
+    }
+
+    const result = runAbilities('START_OF_COMBAT_ROUND', state)
+
+    // Fighter should be destroyed
+    expect(result.state.defender.units.FIGHTER).toBeUndefined()
+    // AFTER_DESTROY should have been called
+    expect(afterDestroyCalls).toHaveLength(1)
+    // Defender lost a fighter (from attacker's perspective: opponent lost it)
+    expect(afterDestroyCalls[0].defender).toHaveLength(1)
+    expect(afterDestroyCalls[0].defender[0]).toMatchObject({ type: 'FIGHTER' })
+  })
+
+  it('should NOT trigger AFTER_DESTROY when no units are destroyed', () => {
+    const afterDestroyCalls: unknown[] = []
+
+    const noopAbility: Ability = {
+      key: 'NOOP_ABILITY',
+      name: 'Noop',
+      category: 'GENERAL',
+      invoke: [
+        {
+          timing: 'START_OF_COMBAT_ROUND',
+          call: () => {
+            // Does nothing - no units destroyed
+          },
+        },
+      ],
+    }
+
+    const afterDestroyAbility: Ability = {
+      key: 'AFTER_DESTROY_HANDLER',
+      name: 'After Destroy',
+      category: 'GENERAL',
+      invoke: [
+        {
+          timing: 'AFTER_DESTROY',
+          call: () => {
+            afterDestroyCalls.push('called')
+          },
+        },
+      ],
+    }
+
+    const state: CombatStateData = {
+      attacker: {
+        faction: 'SARDAKK_NORR',
+        units: {
+          CRUISER: [{ COMBAT: [7, 1] }],
+        },
+        hitPools: [],
+      },
+      defender: {
+        faction: 'FEDERATION_OF_SOL',
+        units: {
+          FIGHTER: [{ COMBAT: [9, 1] }],
+        },
+        hitPools: [],
+      },
+      abilities: {
+        attacker: {
+          abilities: [noopAbility, afterDestroyAbility],
+        },
+        defender: { abilities: [] },
+      },
+      combatMode: 'SPACE',
+      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
+    }
+
+    runAbilities('START_OF_COMBAT_ROUND', state)
+
+    expect(afterDestroyCalls).toHaveLength(0)
+  })
+
+  it('should NOT recursively trigger AFTER_DESTROY from AFTER_DESTROY handlers', () => {
+    const afterDestroyCalls: unknown[] = []
+
+    const destroyAbility: Ability = {
+      key: 'DESTROY_ABILITY',
+      name: 'Destroy',
+      category: 'GENERAL',
+      invoke: [
+        {
+          timing: 'START_OF_COMBAT_ROUND',
+          call: (ctx: AbilityCallContext) => {
+            ctx.api.opponent.destroyUnit('FIGHTER')
+          },
+        },
+      ],
+    }
+
+    // This AFTER_DESTROY handler also destroys a unit — should NOT trigger another AFTER_DESTROY
+    const afterDestroyAbility: Ability = {
+      key: 'CHAIN_DESTROY',
+      name: 'Chain Destroy',
+      category: 'GENERAL',
+      invoke: [
+        {
+          timing: 'AFTER_DESTROY',
+          call: (ctx: AbilityCallContext) => {
+            afterDestroyCalls.push('called')
+            ctx.api.opponent.destroyUnit('CRUISER')
+          },
+        },
+      ],
+    }
+
+    const state: CombatStateData = {
+      attacker: {
+        faction: 'SARDAKK_NORR',
+        units: {},
+        hitPools: [],
+      },
+      defender: {
+        faction: 'FEDERATION_OF_SOL',
+        units: {
+          FIGHTER: [{ COMBAT: [9, 1] }],
+          CRUISER: [{ COMBAT: [7, 1] }],
+        },
+        hitPools: [],
+      },
+      abilities: {
+        attacker: {
+          abilities: [destroyAbility, afterDestroyAbility],
+        },
+        defender: { abilities: [] },
+      },
+      combatMode: 'SPACE',
+      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
+    }
+
+    const result = runAbilities('START_OF_COMBAT_ROUND', state)
+
+    // Both units should be destroyed
+    expect(result.state.defender.units.FIGHTER).toBeUndefined()
+    expect(result.state.defender.units.CRUISER).toBeUndefined()
+    // AFTER_DESTROY handler should only be called once (no recursion)
+    expect(afterDestroyCalls).toHaveLength(1)
+  })
+})
+
 describe('multi-timing runAbilities', () => {
   it('should resolve abilities from multiple timings in a shared window', () => {
     const calls: string[] = []
@@ -236,9 +429,8 @@ describe('multi-timing runAbilities', () => {
       invoke: [
         {
           timing: 'START_OF_COMBAT',
-          call: ctx => {
+          call: () => {
             calls.push('START_OF_COMBAT')
-            return { state: ctx.state as CombatStateData & object }
           },
         },
       ],
@@ -251,9 +443,8 @@ describe('multi-timing runAbilities', () => {
       invoke: [
         {
           timing: 'START_OF_COMBAT_ROUND',
-          call: ctx => {
+          call: () => {
             calls.push('START_OF_COMBAT_ROUND')
-            return { state: ctx.state as CombatStateData & object }
           },
         },
       ],
@@ -297,9 +488,8 @@ describe('multi-timing runAbilities', () => {
       invoke: [
         {
           timing: 'START_OF_COMBAT_ROUND',
-          call: ctx => {
+          call: () => {
             calls.push('called')
-            return { state: ctx.state as CombatStateData & object }
           },
         },
       ],

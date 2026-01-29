@@ -1,11 +1,6 @@
 import type { DieValue } from '@/types'
 
-import type {
-  Ability,
-  AbilityReadContext,
-  DiceData,
-  StateChange,
-} from '../../../combat/abilities/types'
+import type { Ability, DiceData } from '../../../combat/abilities/types'
 
 type Params = {
   isEnabled: boolean
@@ -30,20 +25,13 @@ export const arozHollow: Ability<Params> = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (_: AbilityReadContext, params: Params) => {
+      isCallable: (params: Params) => {
         return params.isEnabled
       },
-      call: (
-        ctx: AbilityReadContext,
-        _params: Params,
-        diceData: DiceData,
-      ): StateChange<DiceData> => {
+      call: (_ctx, _params: Params, diceData: DiceData) => {
         return {
-          state: ctx.state,
-          context: {
-            own: applyDiceBonus(diceData.own),
-            opponent: diceData.opponent,
-          },
+          own: applyDiceBonus(diceData.own),
+          opponent: diceData.opponent,
         }
       },
     },

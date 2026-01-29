@@ -1,21 +1,21 @@
+import { produce } from 'immer'
+
 import type { UnitType } from '@/types'
 
-import { getOpponentSide } from '../state/side-state-ops'
+import { getDestroyedUnits, getOpponentSide } from '../state/side-state-ops'
 import type {
-  AbilitiesConfig,
   CombatSide,
   CombatStateData,
   SideAbilitiesConfig,
 } from '../state/types'
+import { buildCallContext, buildReadContext } from './ability-api'
 import type {
   Ability,
   AbilityInvoke,
-  AbilityReadContext,
   AbilityTiming,
   InternalTimingContextMap,
   OwnOpponentContext,
   SidedContext,
-  StateChange,
   TimingContextMap,
 } from './types'
 
@@ -174,23 +174,9 @@ function getInvokesForTiming<T extends AbilityTiming>(
   return results
 }
 
-/** Build read context for ability execution */
-function buildReadContext(
-  side: CombatSide,
-  state: CombatStateData,
-): AbilityReadContext {
-  const opponentSide = getOpponentSide(side)
-  return {
-    own: state[side],
-    opponent: state[opponentSide],
-    state,
-    side,
-  }
-}
-
 /** Get ability params for a side */
 export function getAbilityParams(
-  abilities: AbilitiesConfig,
+  abilities: CombatStateData['abilities'],
   side: CombatSide,
   key: string,
 ): Record<string, unknown> | undefined {
@@ -202,7 +188,7 @@ export function getAbilityParams(
 
 /** Check if ability exists on a side */
 export function hasAbility(
-  abilities: AbilitiesConfig,
+  abilities: CombatStateData['abilities'],
   side: CombatSide,
   key: string,
 ): boolean {
@@ -222,6 +208,12 @@ interface SideInvocationTracker {
 
 /** Invocation tracker per side */
 type InvocationTracker = Record<CombatSide, SideInvocationTracker>
+
+interface AbilityResult {
+  state: CombatStateData
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  context?: any
+}
 
 /**
  * Run alternating resolution for abilities at given timing(s).
@@ -278,12 +270,12 @@ function tryResolveOneAbility<T extends AbilityTiming>(
   state: CombatStateData,
   context: TimingContextMap[T] | undefined,
   tracker: InvocationTracker,
-): StateChange | null {
+): AbilityResult | null {
   const invokes = getInvokesForTiming(timing, side, state)
   const readCtx = buildReadContext(side, state)
   const sideTracker = tracker[side]
 
-  for (const { invoke, params, source } of invokes) {
+  for (const { ability, invoke, params, source } of invokes) {
     // Check if already invoked
     if (source.type === 'config') {
       if (!invoke.multi && sideTracker.configAbilities.has(invoke)) {
@@ -319,11 +311,19 @@ function tryResolveOneAbility<T extends AbilityTiming>(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const inv = invoke as any
     const canCall = inv.isCallable
-      ? inv.isCallable(readCtx, params, internalContext)
+      ? inv.isCallable(params, readCtx, internalContext)
       : true
 
     if (canCall) {
-      const result: StateChange = inv.call(readCtx, params, internalContext)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let resultContext: any
+
+      // Wrap call in Immer produce
+      let resultState = produce(state, draft => {
+        const callCtx = buildCallContext(side, draft, ability.key)
+        const result = inv.call(callCtx, params, internalContext)
+        if (result !== undefined) resultContext = result
+      })
 
       // Mark as invoked
       if (source.type === 'config') {
@@ -335,21 +335,41 @@ function tryResolveOneAbility<T extends AbilityTiming>(
         sideTracker.unitAbilities.set(key, invokedIndices)
       }
 
+      // Trigger AFTER_DESTROY if units were destroyed by the ability
+      // Skip if already resolving AFTER_DESTROY to prevent recursion
+      const timingArray = Array.isArray(timing) ? timing : [timing]
+      if (!timingArray.some(t => t === 'AFTER_DESTROY')) {
+        const destroyedAttacker = getDestroyedUnits(
+          state.attacker.units,
+          resultState.attacker.units,
+        )
+        const destroyedDefender = getDestroyedUnits(
+          state.defender.units,
+          resultState.defender.units,
+        )
+        if (destroyedAttacker.length > 0 || destroyedDefender.length > 0) {
+          const afterDestroy = runAbilities('AFTER_DESTROY', resultState, {
+            attacker: destroyedAttacker,
+            defender: destroyedDefender,
+          })
+          resultState = afterDestroy.state
+        }
+      }
+
       // Transform own/opponent context back to sided
-      let resultContext = result.context
       if (
         context !== undefined &&
-        result.context !== undefined &&
+        resultContext !== undefined &&
         isSidedContext(context)
       ) {
         resultContext = toSided(
-          result.context as OwnOpponentContext<unknown>,
+          resultContext as OwnOpponentContext<unknown>,
           side,
         )
       }
 
       return {
-        state: result.state,
+        state: resultState,
         context: resultContext,
       }
     }

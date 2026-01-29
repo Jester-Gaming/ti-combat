@@ -2,7 +2,6 @@ import type {
   Ability,
   AbilityReadContext,
   DiceData,
-  StateChange,
 } from '@/combat/abilities/types'
 import type { MetaPhase } from '@/combat/state/types'
 import { UNIT_ABILITY_PHASES } from '@/combat/state/types'
@@ -40,19 +39,15 @@ export const trrakanAunZulok: Ability<Params> = {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: UNIT_ABILITY_PHASES,
       isCallable: (
-        ctx: AbilityReadContext,
         params: Params,
+        ctx: AbilityReadContext,
         diceData: DiceData,
       ) => {
         if (!params.isEnabled || diceData.own.length === 0) return false
         const currentPhase = ctx.state.currentPhase.meta
         return params.phases.includes(currentPhase)
       },
-      call: (
-        ctx: AbilityReadContext,
-        _params: Params,
-        diceData: DiceData,
-      ): StateChange<DiceData> => {
+      call: (_ctx, _params: Params, diceData: DiceData) => {
         // Find the die with the lowest hit value (best chance to hit)
         let targetIndex = 0
         let targetHitValue = diceData.own[0][0]
@@ -72,11 +67,8 @@ export const trrakanAunZulok: Ability<Params> = {
         })
 
         return {
-          state: ctx.state,
-          context: {
-            own: modifiedDice,
-            opponent: diceData.opponent,
-          },
+          own: modifiedDice,
+          opponent: diceData.opponent,
         }
       },
     },

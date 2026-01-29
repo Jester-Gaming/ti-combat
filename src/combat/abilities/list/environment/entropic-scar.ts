@@ -1,7 +1,6 @@
 import type { UnitAbilityKey } from '@/types'
 
-import { setUnitAbilityCannotBeUsed } from '../../../state/side-state-ops'
-import type { Ability, AbilityReadContext, StateChange } from '../../types'
+import type { Ability } from '../../types'
 
 type Params = {
   isEnabled: boolean
@@ -27,24 +26,12 @@ export const entropicScar: Ability<Params> = {
   invoke: [
     {
       timing: 'PREPARE',
-      isCallable: (_: AbilityReadContext, params: Params) => params.isEnabled,
-      call: (ctx: AbilityReadContext): StateChange<void> => {
-        let state = ctx.state
+      isCallable: (params: Params) => params.isEnabled,
+      call: ctx => {
         for (const ability of UNIT_ABILITIES) {
-          state = setUnitAbilityCannotBeUsed(
-            state,
-            'attacker',
-            ability,
-            'ENTROPIC_SCAR',
-          )
-          state = setUnitAbilityCannotBeUsed(
-            state,
-            'defender',
-            ability,
-            'ENTROPIC_SCAR',
-          )
+          ctx.api.own.setUnitAbilityCannotBeUsed(ability, 'ENTROPIC_SCAR')
+          ctx.api.opponent.setUnitAbilityCannotBeUsed(ability, 'ENTROPIC_SCAR')
         }
-        return { state }
       },
     },
   ],

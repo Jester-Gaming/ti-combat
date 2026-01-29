@@ -1,8 +1,7 @@
 import { UNIT_TYPES, type UnitType } from '@/types'
 import { getUnitListItems } from '@/utils/get-unit-config'
 
-import { destroyUnit, getOpponentSide } from '../../../state/side-state-ops'
-import type { Ability, AbilityReadContext, StateChange } from '../../types'
+import type { Ability, AbilityReadContext, SideReadApi } from '../../types'
 
 type Params = {
   isEnabled: boolean
@@ -10,12 +9,13 @@ type Params = {
 }
 
 /** Count non-fighter ships on a side */
-function countNonFighterShips(ctx: AbilityReadContext): number {
+function countNonFighterShips(api: SideReadApi): number {
   let count = 0
-  for (const [unitType, units] of Object.entries(ctx.own.units)) {
+  const units = api.getUnits()
+  for (const [unitType, typeUnits] of Object.entries(units)) {
     if (unitType === 'FIGHTER') continue
-    if (units && units.length > 0) {
-      count += units.length
+    if (typeUnits && typeUnits.length > 0) {
+      count += typeUnits.length
     }
   }
   return count
@@ -23,12 +23,12 @@ function countNonFighterShips(ctx: AbilityReadContext): number {
 
 /** Find the first available target from priority list */
 function findTarget(
-  ctx: AbilityReadContext,
+  opponentApi: SideReadApi,
   priority: UnitType[],
 ): UnitType | null {
   for (const unitType of priority) {
-    const opponentUnits = ctx.opponent.units[unitType]
-    if (opponentUnits && opponentUnits.length > 0 && unitType !== 'FIGHTER') {
+    if (unitType === 'FIGHTER') continue
+    if (opponentApi.hasUnit(unitType)) {
       return unitType
     }
   }
@@ -47,29 +47,22 @@ export const assaultCannon: Ability<Params> = {
   invoke: [
     {
       timing: 'START_OF_COMBAT',
-      isCallable: (ctx: AbilityReadContext, params: Params) => {
+      isCallable: (params: Params, ctx: AbilityReadContext) => {
         if (!params.isEnabled) return false
 
         // Must have at least 3 non-fighter ships
-        const nonFighterCount = countNonFighterShips(ctx)
+        const nonFighterCount = countNonFighterShips(ctx.api.own)
         if (nonFighterCount < 3) return false
 
         // Must have a valid target in opponent's units
-        const target = findTarget(ctx, params.targetPriority)
+        const target = findTarget(ctx.api.opponent, params.targetPriority)
         return target !== null
       },
-      call: (ctx: AbilityReadContext, params: Params): StateChange<void> => {
-        const targetType = findTarget(ctx, params.targetPriority)
-        if (!targetType) {
-          return { state: ctx.state }
-        }
+      call: (ctx, params: Params) => {
+        const targetType = findTarget(ctx.api.opponent, params.targetPriority)
+        if (!targetType) return
 
-        const opponentSide = getOpponentSide(ctx.side)
-
-        // Destroy the first unit of the target type
-        const newState = destroyUnit(ctx.state, opponentSide, targetType, 0)
-
-        return { state: newState }
+        ctx.api.opponent.destroyUnit(targetType)
       },
     },
   ],

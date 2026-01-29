@@ -2,7 +2,6 @@ import type {
   Ability,
   AbilityReadContext,
   DiceData,
-  StateChange,
 } from '@/combat/abilities/types'
 import type { MetaPhase } from '@/combat/state/types'
 import { UNIT_ABILITY_PHASES } from '@/combat/state/types'
@@ -48,8 +47,8 @@ export const strikeWingAmbuscade: Ability<Params> = {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: UNIT_ABILITY_PHASES,
       isCallable: (
-        ctx: AbilityReadContext,
         params: Params,
+        ctx: AbilityReadContext,
         diceData: DiceData,
       ) => {
         if (!params.isEnabled || params.uses <= 0 || diceData.own.length === 0)
@@ -57,11 +56,7 @@ export const strikeWingAmbuscade: Ability<Params> = {
         const currentPhase = ctx.state.currentPhase.meta
         return params.phases.includes(currentPhase)
       },
-      call: (
-        ctx: AbilityReadContext,
-        params: Params,
-        diceData: DiceData,
-      ): StateChange<DiceData> => {
+      call: (ctx, params: Params, diceData: DiceData) => {
         // Find the die with the lowest hit value (best chance to hit)
         let targetIndex = 0
         let targetHitValue = diceData.own[0][0]
@@ -80,31 +75,12 @@ export const strikeWingAmbuscade: Ability<Params> = {
           return die
         })
 
-        // Decrement uses by updating config in state
-        const sideAbilities = ctx.state.abilities[ctx.side]
-        const newState = {
-          ...ctx.state,
-          abilities: {
-            ...ctx.state.abilities,
-            [ctx.side]: {
-              ...sideAbilities,
-              config: {
-                ...sideAbilities.config,
-                STRIKE_WING_AMBUSCADE: {
-                  ...sideAbilities.config?.STRIKE_WING_AMBUSCADE,
-                  uses: params.uses - 1,
-                },
-              },
-            },
-          },
-        }
+        // Decrement uses
+        ctx.api.own.updateAbilityConfig({ uses: params.uses - 1 })
 
         return {
-          state: newState,
-          context: {
-            own: modifiedDice,
-            opponent: diceData.opponent,
-          },
+          own: modifiedDice,
+          opponent: diceData.opponent,
         }
       },
     },

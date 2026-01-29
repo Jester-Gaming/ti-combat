@@ -1,11 +1,11 @@
-import type { DieValue, UnitType } from '@/types'
+import type { DieValue, UnitAbilityKey, UnitType } from '@/types'
 
 import type {
-  CombatSide,
   CombatStateData,
   MetaPhase,
   SideState,
   Unit,
+  UnitState,
 } from '../state/types'
 
 export interface DestroyedUnit {
@@ -56,18 +56,90 @@ export type InternalTimingContextMap = {
 
 export type AbilityTiming = keyof TimingContextMap
 
-/** Read-only context for ability execution */
-export interface AbilityReadContext {
-  readonly own: Readonly<SideState>
-  readonly opponent: Readonly<SideState>
-  readonly state: Readonly<CombatStateData>
-  readonly side: CombatSide
+// ============================================================================
+// SIDED API — read-only (for isCallable) and read-write (for call)
+// ============================================================================
+
+/** Read-only API for querying one side's state */
+export interface SideReadApi {
+  getUnits(): Partial<Record<UnitType, Unit[]>>
+  getUnits(unitType: UnitType): Unit[]
+  hasUnit(unitType: UnitType): boolean
+  countUnits(filter?: ReadonlySet<UnitType>): number
+  getPendingHits(): number
+  findUnit(
+    unitType: UnitType,
+    predicate: Partial<UnitState>,
+  ): { unit: Unit; index: number } | undefined
+  isUnitAbilityLost(ability: UnitAbilityKey, unitType: UnitType): boolean
+  isUnitAbilityCannotBeUsed(
+    ability: UnitAbilityKey,
+    unitType: UnitType,
+  ): boolean
 }
 
-/** Result of an ability call - new state and optional modified timing context */
-export interface StateChange<TContext = unknown> {
-  state: CombatStateData
-  context?: TContext
+/** Full read-write API for mutating one side's state (within Immer draft) */
+export interface SideApi extends SideReadApi {
+  // Unit operations
+  destroyUnit(unitType: UnitType): void
+  destroyUnit(unitType: UnitType, index: number): void
+  destroyUnit(unitTypes: UnitType[]): void
+  addUnit(units: Partial<Record<UnitType, number>>): void
+  modifyUnit(unitType: UnitType, index: number, updates: Partial<Unit>): void
+  modifyUnit(unitType: UnitType, updates: Partial<Unit>): void
+  modifyUnit(unit: Unit, updates: Partial<Unit>): void
+
+  // Hit operations
+  reduceHits(amount: number): void
+  addHits(hits: number, validTargets: UnitType[]): void
+
+  // Ability restrictions
+  setUnitAbilityLost(
+    ability: UnitAbilityKey,
+    reason: string,
+    unitType?: UnitType,
+  ): void
+  removeUnitAbilityLost(
+    ability: UnitAbilityKey,
+    reason: string,
+    unitType?: UnitType,
+  ): void
+  setUnitAbilityCannotBeUsed(
+    ability: UnitAbilityKey,
+    reason: string,
+    unitType?: UnitType,
+  ): void
+  removeUnitAbilityCannotBeUsed(
+    ability: UnitAbilityKey,
+    reason: string,
+    unitType?: UnitType,
+  ): void
+
+  // Ability config mutations
+  updateAbilityConfig(updates: Record<string, unknown>): void
+  updateAbilityConfig(key: string, updates: Record<string, unknown>): void
+}
+
+// ============================================================================
+// CONTEXT TYPES
+// ============================================================================
+
+/** Read-only context for isCallable (no Immer, no mutations) */
+export interface AbilityReadContext {
+  readonly state: Readonly<CombatStateData>
+  readonly api: {
+    readonly own: SideReadApi
+    readonly opponent: SideReadApi
+  }
+}
+
+/** Mutable context for call (Immer draft, full API) */
+export interface AbilityCallContext {
+  state: CombatStateData // Immer draft
+  api: {
+    own: SideApi
+    opponent: SideApi
+  }
 }
 
 /** Per-side abilities accessor for use within ability context */
@@ -86,23 +158,20 @@ type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
   context?: MetaPhase | MetaPhase[]
 } & (InternalTimingContextMap[T] extends void
   ? {
-      isCallable?: (ctx: AbilityReadContext, params: TParams) => boolean
-      call: (
-        ctx: AbilityReadContext,
-        params: TParams,
-      ) => StateChange<InternalTimingContextMap[T]>
+      isCallable?: (params: TParams, ctx: AbilityReadContext) => boolean
+      call: (ctx: AbilityCallContext, params: TParams) => void
     }
   : {
       isCallable?: (
-        ctx: AbilityReadContext,
         params: TParams,
+        ctx: AbilityReadContext,
         context: InternalTimingContextMap[T],
       ) => boolean
       call: (
-        ctx: AbilityReadContext,
+        ctx: AbilityCallContext,
         params: TParams,
         context: InternalTimingContextMap[T],
-      ) => StateChange<InternalTimingContextMap[T]>
+      ) => InternalTimingContextMap[T] | void
     })
 
 // Union of all timing invoke types (auto-generated)

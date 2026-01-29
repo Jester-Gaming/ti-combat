@@ -1,4 +1,4 @@
-import { disablePlanetaryShield } from '@/combat/abilities/list/general/disable-planetary-shield'
+import { disablePlanetaryShield } from '@/data/abilities/disable-planetary-shield'
 
 const baseUnits = {
   WAR_SUN: {

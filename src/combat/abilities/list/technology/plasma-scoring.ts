@@ -1,11 +1,6 @@
 import type { DieValue } from '@/types'
 
-import type {
-  Ability,
-  AbilityReadContext,
-  DiceData,
-  StateChange,
-} from '../../types'
+import type { Ability, AbilityReadContext, DiceData } from '../../types'
 
 type Params = {
   isEnabled: boolean
@@ -21,34 +16,18 @@ export const plasmaScoring: Ability<Params> = {
     strategy: 'BEST',
   },
   enableUI: true,
-  // Do we event need it?
-  // uiConfig: [
-  //   {
-  //     type: 'select',
-  //     key: 'strategy',
-  //     label: 'Strategy',
-  //     items: [
-  //       { label: 'Best', value: 'BEST' },
-  //       { label: 'Worst', value: 'WORST' },
-  //     ],
-  //   },
-  // ],
   invoke: [
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: ['BOMBARDMENT', 'SPACE_CANNON_OFFENSE', 'SPACE_CANNON_DEFENSE'],
       isCallable: (
-        _ctx: AbilityReadContext,
         params: Params,
+        _ctx: AbilityReadContext,
         diceData: DiceData,
       ) => {
         return params.isEnabled && diceData.own.length > 0
       },
-      call: (
-        ctx: AbilityReadContext,
-        params: Params,
-        diceData: DiceData,
-      ): StateChange<DiceData> => {
+      call: (_ctx, params: Params, diceData: DiceData) => {
         // Find the target die based on strategy
         let targetIndex = 0
         let targetHitValue = diceData.own[0][0]
@@ -72,11 +51,8 @@ export const plasmaScoring: Ability<Params> = {
         })
 
         return {
-          state: ctx.state,
-          context: {
-            own: modifiedDice,
-            opponent: diceData.opponent,
-          },
+          own: modifiedDice,
+          opponent: diceData.opponent,
         }
       },
     },

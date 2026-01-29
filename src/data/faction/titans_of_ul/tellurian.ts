@@ -1,9 +1,4 @@
-import type {
-  Ability,
-  AbilityReadContext,
-  StateChange,
-} from '@/combat/abilities/types'
-import { getPendingHits, reduceHits } from '@/combat/state/side-state-ops'
+import type { Ability, AbilityReadContext } from '@/combat/abilities/types'
 
 type Params = {
   isEnabled: boolean
@@ -30,34 +25,16 @@ export const tellurian: Ability<Params> = {
   invoke: [
     {
       timing: 'BEFORE_ASSIGN_HITS',
-      isCallable: (ctx: AbilityReadContext, params: Params) => {
+      isCallable: (params: Params, ctx: AbilityReadContext) => {
         if (!params.isEnabled || params.uses <= 0) return false
-        return getPendingHits(ctx.own) > 0
+        return ctx.api.own.getPendingHits() > 0
       },
-      call: (ctx: AbilityReadContext, params: Params): StateChange<void> => {
+      call: (ctx, params: Params) => {
         // Cancel 1 hit
-        let newState = reduceHits(ctx.state, ctx.side, 1)
+        ctx.api.own.reduceHits(1)
 
-        // Decrement uses by updating config in state
-        const sideAbilities = newState.abilities[ctx.side]
-        newState = {
-          ...newState,
-          abilities: {
-            ...newState.abilities,
-            [ctx.side]: {
-              ...sideAbilities,
-              config: {
-                ...sideAbilities.config,
-                TELLURIAN: {
-                  ...sideAbilities.config?.TELLURIAN,
-                  uses: params.uses - 1,
-                },
-              },
-            },
-          },
-        }
-
-        return { state: newState }
+        // Decrement uses
+        ctx.api.own.updateAbilityConfig({ uses: params.uses - 1 })
       },
     },
   ],

@@ -299,6 +299,13 @@ export class CombatState implements CombatStateData {
       ),
     }
 
+    if (
+      destroyedContext.attacker.length === 0 &&
+      destroyedContext.defender.length === 0
+    ) {
+      return CombatState.fromData(resultData)
+    }
+
     const { state: afterDestroy } = this.runAbilities(
       'AFTER_DESTROY',
       destroyedContext,
