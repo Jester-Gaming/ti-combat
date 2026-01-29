@@ -1,3 +1,4 @@
+import { entropicScar } from './entropic-scar'
 import { nebula } from './nebula'
 
-export default [nebula]
+export default [entropicScar, nebula]
