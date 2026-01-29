@@ -331,7 +331,7 @@ export class CombatState implements CombatStateData {
 
   getHash(): string {
     const phaseHash = getPhaseKey(this.currentPhase)
-    return `${phaseHash}|${getSideHash(this.attacker)}|${getSideHash(this.defender)}`
+    return `${phaseHash}|${getSideHash(this.attacker)}|${getSideHash(this.defender)}|${getAbilitiesHash(this.abilities)}`
   }
 
   /**
@@ -600,6 +600,18 @@ export class CombatState implements CombatStateData {
 
     return !attackerHasParticipating || !defenderHasParticipating
   }
+}
+
+function getAbilitiesHash(abilities: AbilitiesConfig): string {
+  const hashSide = (side: AbilitiesConfig[keyof AbilitiesConfig]) => {
+    if (!side.config) return ''
+    const keys = Object.keys(side.config).sort()
+    return keys.map(k => `${k}:${JSON.stringify(side.config![k])}`).join(',')
+  }
+  const a = hashSide(abilities.attacker)
+  const d = hashSide(abilities.defender)
+  if (!a && !d) return ''
+  return `a{${a}}d{${d}}`
 }
 
 function getSideHash(side: SideState): string {
