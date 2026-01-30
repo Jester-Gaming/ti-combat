@@ -97,6 +97,7 @@ export interface SideReadApi {
   hasUnit(unitType: UnitType): boolean
   countUnits(filter?: ReadonlySet<UnitType>): number
   getPendingHits(): number
+  getHitPoolValidTargets(): UnitType[]
   findUnit(
     unitType: UnitType,
     predicate: Partial<UnitState>,

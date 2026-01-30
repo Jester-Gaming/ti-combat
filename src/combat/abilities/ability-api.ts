@@ -1,6 +1,9 @@
 import type { UnitAbilityKey, UnitType } from '@/types'
 
-import { getOpponentSide } from '../state/side-state-ops'
+import {
+  getOpponentSide,
+  getSettingsValidTargets,
+} from '../state/side-state-ops'
 import type {
   CombatSide,
   CombatStateData,
@@ -116,6 +119,27 @@ function removeRestrictionEntry(
   return result
 }
 
+function resolveSettingsValidTargets(
+  state: Readonly<CombatStateData>,
+  side: CombatSide,
+): UnitType[] {
+  const sideConfig = state.abilities[side]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const settings = (sideConfig.abilities as any[]).find(
+    (a: { key: string }) => a.key === 'SETTINGS',
+  )
+  if (!settings) return []
+  const params = {
+    ...settings.defaultParams,
+    ...sideConfig.config?.['SETTINGS'],
+  }
+  return getSettingsValidTargets(
+    params,
+    state.currentPhase.meta,
+    state.combatMode,
+  )
+}
+
 // ============================================================================
 // READ API (for isCallable — operates on readonly state)
 // ============================================================================
@@ -149,6 +173,12 @@ export function buildReadApi(
 
     getPendingHits() {
       return getPendingHitsForSide(sideState)
+    },
+
+    getHitPoolValidTargets() {
+      const pool = sideState.hitPools[0]
+      if (pool && pool.validTargets.length > 0) return pool.validTargets
+      return resolveSettingsValidTargets(state, side)
     },
 
     findUnit(unitType: UnitType, predicate: Partial<UnitState>) {
@@ -199,6 +229,12 @@ export function buildApi(
 
     getPendingHits() {
       return getPendingHitsForSide(draft[side])
+    },
+
+    getHitPoolValidTargets() {
+      const pool = draft[side].hitPools[0]
+      if (pool && pool.validTargets.length > 0) return pool.validTargets
+      return resolveSettingsValidTargets(draft, side)
     },
 
     findUnit(unitType: UnitType, predicate: Partial<UnitState>) {

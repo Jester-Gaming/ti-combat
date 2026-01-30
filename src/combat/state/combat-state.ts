@@ -28,6 +28,7 @@ import {
   collectDice,
   countUnits,
   getDestroyedUnits,
+  getSettingsValidTargets,
 } from './side-state-ops'
 import type {
   AbilitiesConfig,
@@ -49,71 +50,6 @@ export interface StateWithProbability {
 interface UnitAbilityPhaseConfig {
   firing: CombatSide[]
   hitSource: HitSource
-}
-
-/** Filter side state to only include participating unit types */
-function filterSideUnits(
-  side: SideState,
-  participating: ReadonlySet<UnitType>,
-): SideState {
-  const filteredUnits: SideState['units'] = {}
-  for (const [type, units] of Object.entries(side.units)) {
-    if (participating.has(type as UnitType) && units) {
-      filteredUnits[type as UnitType] = units
-    }
-  }
-  return { ...side, units: filteredUnits }
-}
-
-/** Filter state to only include participating units for abilities */
-function filterToParticipating(
-  data: CombatStateData,
-  attackerParticipating: ReadonlySet<UnitType>,
-  defenderParticipating: ReadonlySet<UnitType>,
-): CombatStateData {
-  return {
-    ...data,
-    attacker: filterSideUnits(data.attacker, attackerParticipating),
-    defender: filterSideUnits(data.defender, defenderParticipating),
-  }
-}
-
-/** Merge side with non-participating units from original */
-function mergeSideUnits(
-  resultSide: SideState,
-  originalSide: SideState,
-  participating: ReadonlySet<UnitType>,
-): SideState {
-  const mergedUnits: SideState['units'] = { ...resultSide.units }
-  // Add back non-participating units from original
-  for (const [type, units] of Object.entries(originalSide.units)) {
-    if (!participating.has(type as UnitType) && units) {
-      mergedUnits[type as UnitType] = units
-    }
-  }
-  return { ...resultSide, units: mergedUnits }
-}
-
-/** Merge ability results back with non-participating units */
-function mergeWithNonParticipating(
-  resultData: CombatStateData,
-  originalData: CombatStateData,
-  attackerParticipating: ReadonlySet<UnitType>,
-  defenderParticipating: ReadonlySet<UnitType>,
-): CombatStateData {
-  return {
-    ...resultData,
-    attacker: mergeSideUnits(
-      resultData.attacker,
-      originalData.attacker,
-      attackerParticipating,
-    ),
-    defender: mergeSideUnits(
-      resultData.defender,
-      originalData.defender,
-      defenderParticipating,
-    ),
-  }
 }
 
 /** Get participating units from SETTINGS ability for a given state */
@@ -225,23 +161,18 @@ export class CombatState implements CombatStateData {
     return getParticipatingUnitsFromData(this.data, side)
   }
 
-  /** Get valid targets for the current phase from SETTINGS ability */
-  private getValidTargetsForPhase(): UnitType[] {
-    const params = getAbilityParams(this.abilities, 'attacker', 'SETTINGS')
+  /** Get valid targets for the current phase from SETTINGS ability for a specific side */
+  private getValidTargetsForPhase(
+    side: CombatSide,
+    abilities: AbilitiesConfig = this.abilities,
+  ): UnitType[] {
+    const params = getAbilityParams(abilities, side, 'SETTINGS')
     if (!params) return []
-
-    switch (this.currentPhase.meta) {
-      case 'SPACE_CANNON_OFFENSE':
-        return (params.validTargetsSpaceCannonOffense as UnitType[]) ?? []
-      case 'AFB':
-        return (params.validTargetsAntiFighterBarrage as UnitType[]) ?? []
-      case 'BOMBARDMENT':
-        return (params.validTargetsBombardment as UnitType[]) ?? []
-      case 'SPACE_CANNON_DEFENSE':
-        return (params.validTargetsSpaceCannonDefense as UnitType[]) ?? []
-      default:
-        return []
-    }
+    return getSettingsValidTargets(
+      params,
+      this.currentPhase.meta,
+      this.combatMode,
+    )
   }
 
   /** Get unit priority from UNIT_PRIORITY ability if present */
@@ -251,50 +182,12 @@ export class CombatState implements CombatStateData {
     return params.unitPriority as UnitType[] | undefined
   }
 
-  /**
-   * Run abilities with filtering to only participating units.
-   * Non-participating units are hidden from abilities, then merged back.
-   * @param timing - The ability timing to run
-   * @param context - Optional timing context (e.g., dice data)
-   * @param stateData - State to run abilities on (defaults to this.data)
-   */
   private runAbilities<T extends AbilityTiming>(
     timing: T | T[],
     context?: TimingContextMap[T],
     stateData: CombatStateData = this.data,
   ): RunAbilitiesResult<T> {
-    const attackerParticipating = getParticipatingUnitsFromData(
-      stateData,
-      'attacker',
-    )
-    const defenderParticipating = getParticipatingUnitsFromData(
-      stateData,
-      'defender',
-    )
-
-    // Filter state to only participating units
-    const filteredData = filterToParticipating(
-      stateData,
-      attackerParticipating,
-      defenderParticipating,
-    )
-
-    // Run abilities on filtered state
-    const result = runAbilities(timing, filteredData, context)
-
-    // Merge non-participating units back from the original filtered state
-    const mergedState = mergeWithNonParticipating(
-      result.state,
-      stateData,
-      attackerParticipating,
-      defenderParticipating,
-    )
-
-    return {
-      state: mergedState,
-      context: result.context,
-      log: result.log,
-    }
+    return runAbilities(timing, stateData, context)
   }
 
   assignHits(): CombatState {
@@ -463,7 +356,7 @@ export class CombatState implements CombatStateData {
   private rollDiceOutcomes(
     stateData: CombatStateData,
     modifiedDice: SidedDiceData,
-    validTargets: UnitType[],
+    validTargets: { attacker: UnitType[]; defender: UnitType[] },
     prependLog?: LogEntry[],
   ): StateWithProbability[] {
     const attackerDist = getCombinedDiceDistribution(
@@ -486,13 +379,13 @@ export class CombatState implements CombatStateData {
           stateData,
           'defender',
           attOutcome.hits,
-          validTargets,
+          validTargets.defender,
         )
         resultData = addHits(
           resultData,
           'attacker',
           defOutcome.hits,
-          validTargets,
+          validTargets.attacker,
         )
 
         const log: LogEntry[] = [...(prependLog ?? [])]
@@ -596,16 +489,15 @@ export class CombatState implements CombatStateData {
       state: afterWhen,
       context: modifiedDice,
       log: abilityLog,
-    } = this.runAbilities('BEFORE_UNIT_ABILITY_ROLL', sidedDiceData) as {
-      state: CombatStateData
-      context: SidedDiceData
-      log: LogEntry[]
-    }
+    } = this.runAbilities('BEFORE_UNIT_ABILITY_ROLL', sidedDiceData)
 
     return this.rollDiceOutcomes(
       afterWhen,
       modifiedDice,
-      this.getValidTargetsForPhase(),
+      {
+        attacker: this.getValidTargetsForPhase('attacker', afterWhen.abilities),
+        defender: this.getValidTargetsForPhase('defender', afterWhen.abilities),
+      },
       abilityLog.length > 0 ? abilityLog : undefined,
     )
   }
@@ -665,7 +557,10 @@ export class CombatState implements CombatStateData {
     return this.rollDiceOutcomes(
       afterWhen,
       modifiedDice,
-      this.getValidTargetsForPhase(),
+      {
+        attacker: this.getValidTargetsForPhase('attacker', afterWhen.abilities),
+        defender: this.getValidTargetsForPhase('defender', afterWhen.abilities),
+      },
       abilityLog.length > 0 ? abilityLog : undefined,
     )
   }

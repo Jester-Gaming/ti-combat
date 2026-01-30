@@ -30,8 +30,12 @@ function findUnitToSustain(
   allowedUnits: Set<UnitType>,
   priority: UnitType[],
 ): { type: UnitType; unit: Unit; index: number } | null {
+  const validTargets = api.getHitPoolValidTargets()
+  const validTargetSet = validTargets.length > 0 ? new Set(validTargets) : null
+
   for (const unitType of priority) {
     if (!allowedUnits.has(unitType)) continue
+    if (validTargetSet && !validTargetSet.has(unitType)) continue
     if (
       api.isUnitAbilityLost('SUSTAIN_DAMAGE', unitType) ||
       api.isUnitAbilityCannotBeUsed('SUSTAIN_DAMAGE', unitType)

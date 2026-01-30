@@ -3,16 +3,54 @@ import type { DiceData, UnitAbilityKey, UnitType } from '@/types'
 import type { DicePool } from '../abilities/types'
 import type { DestroyedUnit } from '../abilities/types'
 import type {
+  CombatMode,
   CombatSide,
   CombatStateData,
   HitPool,
   HitSource,
+  MetaPhase,
   RestrictionEntry,
   SideState,
   Unit,
   UnitAbilityRestrictions,
   UnitState,
 } from './types'
+
+/** Get valid targets from SETTINGS params for a given phase, falling back to participating units */
+export function getSettingsValidTargets(
+  params: Record<string, unknown>,
+  meta: MetaPhase,
+  combatMode: CombatMode,
+): UnitType[] {
+  let targets: UnitType[]
+  switch (meta) {
+    case 'SPACE_CANNON_OFFENSE':
+      targets = (params.validTargetsSpaceCannonOffense as UnitType[]) ?? []
+      break
+    case 'AFB':
+      targets = (params.validTargetsAntiFighterBarrage as UnitType[]) ?? []
+      break
+    case 'BOMBARDMENT':
+      targets = (params.validTargetsBombardment as UnitType[]) ?? []
+      break
+    case 'SPACE_CANNON_DEFENSE':
+      targets = (params.validTargetsSpaceCannonDefense as UnitType[]) ?? []
+      break
+    case 'SPACE_COMBAT':
+      return (params.spaceCombatParticipating as UnitType[]) ?? []
+    case 'GROUND_COMBAT':
+      return (params.groundCombatParticipating as UnitType[]) ?? []
+    default:
+      return []
+  }
+
+  if (targets.length > 0) return targets
+
+  // Fall back to participating units for the combat mode
+  return combatMode === 'GROUND'
+    ? ((params.groundCombatParticipating as UnitType[]) ?? [])
+    : ((params.spaceCombatParticipating as UnitType[]) ?? [])
+}
 
 const DEFAULT_UNIT_SACRIFICE_ORDER: UnitType[] = [
   'FIGHTER',

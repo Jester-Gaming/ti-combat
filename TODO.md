@@ -192,7 +192,7 @@
 - [x] **Solar Flare** — After you activate a system: During this movement, other players cannot use Space Cannon against your ships.
 - [ ] **Reveal Prototype** — At the start of a combat: Spend 4 resources to research a unit upgrade technology of the same type as 1 of your units that is participating in this combat.
 - [ ] **Rout** — At the start of the "Announce Retreats" step of space combat, if you are the defender: Your opponent must announce a retreat, if able.
-- [ ] **Waylay** — Before you roll dice for Anti-Fighter Barrage: Hits from this roll are produced against all ships (not just fighters).
+- [x] **Waylay** — Before you roll dice for Anti-Fighter Barrage: Hits from this roll are produced against all ships (not just fighters).
 
 ---
 
@@ -204,7 +204,7 @@
 - [ ] **Magen Defense Grid** — When any player activates a system that contains 1 or more of your structures, place 1 infantry from your reinforcements with each of those structures. At the start of ground combat on a planet that contains 1 or more of your structures, produce 1 hit and assign it to 1 of your opponent's ground forces.
 - [ ] **Duranium Armor** — During each combat round, after you assign hits to your units, repair 1 of your damaged units that did not use Sustain Damage during this combat round.
 - [x] **Assault Cannon** — At the start of a space combat in a system that contains 3 or more of your non-fighter ships, your opponent must destroy 1 of his non-fighter ships.
-- [ ] **Graviton Laser System** — You may exhaust this card before 1 or more of your units use Space Cannon; hits produced by those units must be assigned to non-fighter ships if able.
+- [x] **Graviton Laser System** — You may exhaust this card before 1 or more of your units use Space Cannon; hits produced by those units must be assigned to non-fighter ships if able.
 
 ---
 
