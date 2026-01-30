@@ -9,16 +9,16 @@
 - [ ] **Raid Formation** (Faction Ability) — When 1 or more of your units use Anti-Fighter Barrage, for each hit produced in excess of your opponent's fighters, choose 1 of your opponent's ships that has Sustain Damage to become damaged.
 - [x] **Strike Wing Ambuscade** (Promissory Note) — When 1 or more of your units make a roll for a unit ability: Choose 1 of those units to roll 1 additional die. Then, return this card to the Argent player.
 - [ ] **Strike Wing Alpha II** (Faction Technology) — When this unit uses Anti-Fighter Barrage, each result of 9 or 10 also destroys 1 of your opponent's infantry in the space area of the active system.
-- [ ] **Quetzecoatl** (Flagship) — Other players cannot use Space Cannon against your ships in this system.
+- [x] **Quetzecoatl** (Flagship) — Other players cannot use Space Cannon against your ships in this system.
 - [x] **Trrakan Aun Zulok** (Commander) — When 1 or more of your units make a roll for a unit ability: You may choose 1 of those units to roll 1 additional die.
 
 ### Barony of Letnev
 
 - [ ] **Munitions Reserves** (Faction Ability) — At the start of each round of space combat, you may spend 2 trade goods; you may reroll any number of your dice during that combat round.
 - [ ] **War Funding** (Promissory Note) — After you and your opponent roll dice during space combat: You may reroll all of your opponent's dice. You may reroll any number of your dice. Then, return this card to the Letnev player.
-- [ ] **L4 Disruptors** (Faction Technology) — During an invasion, units cannot use Space Cannon against your units.
+- [x] **L4 Disruptors** (Faction Technology) — During an invasion, units cannot use Space Cannon against your units.
 - [ ] **Non-Euclidean Shielding** (Faction Technology) — When 1 of your units uses Sustain Damage, cancel 2 hits instead of 1.
-- [ ] **Arc Secundus** (Flagship) — Other players' units in this system lose Planetary Shield. At the start of each space combat round, repair this ship.
+- [x] **Arc Secundus** (Flagship) — Other players' units in this system lose Planetary Shield. At the start of each space combat round, repair this ship.
 - [ ] **Viscount Unlenn** (Agent) — At the start of a space combat round: You may exhaust this card to choose 1 ship in the active system; that ship rolls 1 additional die during this combat round.
 - [ ] **Gravleash Maneuvers** (Breakthrough) — Before you roll dice during space combat, apply +X to the results of 1 of your ship's rolls, where X is the number of ship types you have in the combat.
 
@@ -81,7 +81,7 @@
 
 - [ ] **Harrow** (Faction Ability) — At the end of each round of ground combat, your ships in the active system may use their Bombardment abilities against your opponent's ground forces on the planet.
 - [ ] **[0.0.1]** (Flagship) — During a space combat, hits produced by this ship and by your dreadnoughts in this system must be assigned to non-fighter ships if able.
-- [ ] **2RAM** (Commander) — Units that have Planetary Shield do not prevent you from using Bombardment.
+- [x] **2RAM** (Commander) — Units that have Planetary Shield do not prevent you from using Bombardment.
 - [ ] **Annihilator** (Mech) — Bombardment 8. While not participating in ground combat, this unit can use its Bombardment ability on planets in its system as if it were a ship.
 
 ### Mahact Gene-Sorcerers
@@ -91,9 +91,9 @@
 ### Mentak Coalition
 
 - [ ] **Ambush** (Faction Ability) — At the start of a space combat, you may roll 1 die for each of up to 2 of your cruisers or destroyers in the system. For each result equal to or greater than that ship's combat value produce 1 hit; your opponent must assign it to 1 of their ships.
-- [ ] **Fourth Moon** (Flagship) — Other players' ships in this system cannot use Sustain Damage.
+- [x] **Fourth Moon** (Flagship) — Other players' ships in this system cannot use Sustain Damage.
 - [ ] **Sleeper Cell** (Hero) — At the start of a space combat that you are participating in: You may purge this card; if you do, for each other player's ship that is destroyed during this combat, place 1 ship of that type from your reinforcements in the active system.
-- [ ] **Moll Terminus** (Mech) — Other players' ground forces on this planet cannot use Sustain Damage.
+- [x] **Moll Terminus** (Mech) — Other players' ground forces on this planet cannot use Sustain Damage.
 - [ ] **Salvage Operations** (Faction Technology) — After you win or lose a space combat, gain 1 trade good; if you won the combat, you may also produce 1 ship in that system of any ship type that was destroyed during the combat.
 
 ### Naalu Collective
@@ -179,7 +179,7 @@
 - [ ] **Bunker** — At the start of an invasion: During this invasion, apply -4 to the result of each Bombardment roll against planets you control.
 - [ ] **Courageous to the End** — After 1 of your ships is destroyed during a space combat: Roll 2 dice. For each result equal to or greater than that ship's combat value, your opponent must choose and destroy 1 of their ships.
 - [ ] **Direct Hit** (x4) — After another player's ship uses Sustain Damage to cancel a hit produced by your units or abilities: Destroy that ship.
-- [ ] **Disable** — At the start of an invasion in a system that contains 1 or more of your opponents' PDS units: Your opponents' PDS units lose Planetary Shield and Space Cannon during this invasion.
+- [x] **Disable** — At the start of an invasion in a system that contains 1 or more of your opponents' PDS units: Your opponents' PDS units lose Planetary Shield and Space Cannon during this invasion.
 - [ ] **Emergency Repairs** — At the start or end of a combat round: Repair all of your units that have Sustain Damage in the active system.
 - [ ] **Experimental Battlestation** — After another player moves ships into a system during a tactical action: Choose 1 of your space docks that is either in or adjacent to that system. That space dock uses Space Cannon 5 (x3) against ships in the active system.
 - [ ] **Fighter Prototype** — At the start of the first round of a space combat: Apply +2 to the result of each of your fighters' combat rolls during this combat round.
@@ -190,7 +190,7 @@
 - [ ] **Blitz** — At the start of an invasion: Each of your non-fighter ships in the active system that do not have Bombardment gain Bombardment 6 until the end of the invasion.
 - [ ] **Reflective Shielding** — When one of your ships uses Sustain Damage during combat: Produce 2 hits against your opponent's ships in the active system.
 - [ ] **Scramble Frequency** — After another player makes a Bombardment, Space Cannon, or Anti-Fighter Barrage roll: That player rerolls all of their dice.
-- [ ] **Solar Flare** — After you activate a system: During this movement, other players cannot use Space Cannon against your ships.
+- [x] **Solar Flare** — After you activate a system: During this movement, other players cannot use Space Cannon against your ships.
 - [ ] **Reveal Prototype** — At the start of a combat: Spend 4 resources to research a unit upgrade technology of the same type as 1 of your units that is participating in this combat.
 - [ ] **Rout** — At the start of the "Announce Retreats" step of space combat, if you are the defender: Your opponent must announce a retreat, if able.
 - [ ] **Waylay** — Before you roll dice for Anti-Fighter Barrage: Hits from this roll are produced against all ships (not just fighters).
@@ -222,7 +222,7 @@
 ## Agenda
 
 - [ ] **Articles of War** - All mechs lose their printed abilities except for Sustain Damage.
-- [ ] **Conventions of War** - Players cannot use Bombardment against units that are on cultural planets.
+- [x] **Conventions of War** - Players cannot use Bombardment against units that are on cultural planets.
 - [x] **Prophecy of Ixth** - The elected player gains this card. The owner of this card applies +1 to the result of their fighter's combat rolls. When the owner of this card uses Production, they discard this card unless they produce 2 or more fighters.
 - [x] **Publicize Weapon Schematics** - If any player owns a war sun technology, all players may ignore all prerequisites on war sun technologies. All war suns lose Sustain Damage.
 

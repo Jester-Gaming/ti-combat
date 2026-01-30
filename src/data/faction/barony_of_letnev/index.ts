@@ -1,7 +1,13 @@
 import type { Faction } from '@/types'
 
+import { arcSecundus } from './arc-secundus'
+import { l4Disruptors } from './l4-disruptors'
+
 export const barony_of_letnev: Faction = {
   name: 'Barony of Letnev',
+  abilities: {
+    faction: [l4Disruptors],
+  },
   units: {
     FLAGSHIP: {
       BASE: {
@@ -16,6 +22,7 @@ export const barony_of_letnev: Faction = {
           SUSTAIN_DAMAGE: true,
           BOMBARDMENT: [5, 3],
         },
+        ABILITIES: [arcSecundus],
       },
     },
     MECH: {

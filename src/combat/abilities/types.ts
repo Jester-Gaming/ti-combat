@@ -58,6 +58,8 @@ export type DiceContext = OwnOpponentContext<DiceApi>
 // void = no context, other type = required context
 export interface TimingContextMap {
   PREPARE: void
+  PREPARE_SPACE: void
+  PREPARE_GROUND: void
   START_OF_COMBAT: void
   START_OF_COMBAT_ROUND: void
   BEFORE_UNIT_ABILITY_ROLL: SidedDiceData
@@ -281,6 +283,8 @@ type UIConfig<Params = Record<string, unknown>> =
 
 /** Conditions for when an ability is available */
 export interface AbilityCondition {
+  /** Ability is only available to the attacker */
+  onlyAttacker?: boolean
   /** Ability is only available to the defender */
   onlyDefender?: boolean
 }
@@ -294,6 +298,7 @@ type AbilityCategory =
   | 'AGENDA'
   | 'ENVIRONMENT'
   | 'TECHNOLOGY'
+  | 'ACTION_CARD'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface Ability<Params extends Record<string, unknown> = any> {
   key: string

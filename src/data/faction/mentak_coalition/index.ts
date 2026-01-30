@@ -1,5 +1,8 @@
 import type { Faction } from '@/types'
 
+import { fourthMoon } from './fourth-moon'
+import { mollTerminus } from './moll-terminus'
+
 export const mentak_coalition: Faction = {
   name: 'Mentak Coalition',
   units: {
@@ -15,6 +18,7 @@ export const mentak_coalition: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [fourthMoon],
       },
     },
     MECH: {
@@ -27,6 +31,7 @@ export const mentak_coalition: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [mollTerminus],
       },
     },
   },

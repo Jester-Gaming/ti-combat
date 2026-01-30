@@ -173,7 +173,11 @@ export class CombatState implements CombatStateData {
 
     // PREPARE runs on the full state (no participating-unit filter)
     // so abilities like Planetary Shield can see all units (e.g. PDS)
-    const { state: newData } = runAbilities('PREPARE', this.data)
+    const prepareTimings =
+      combatMode === 'SPACE'
+        ? (['PREPARE', 'PREPARE_SPACE'] as const)
+        : (['PREPARE', 'PREPARE_GROUND'] as const)
+    const { state: newData } = runAbilities([...prepareTimings], this.data)
 
     this.data = newData
   }

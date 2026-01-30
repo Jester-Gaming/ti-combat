@@ -2,6 +2,7 @@ import factions from '@/data/faction'
 import type { FactionKey } from '@/types'
 
 import type { CombatSide } from '../state/types'
+import actionCard from './list/action-card'
 import agenda from './list/agenda'
 import environment from './list/environment'
 import general from './list/general'
@@ -54,6 +55,7 @@ const allAbilities = [
   ...environment,
   ...agenda,
   ...technology,
+  ...actionCard,
   ...allPromissoryAbilities,
   ...allAgentAbilities,
   ...allCommanderAbilities,
@@ -65,6 +67,7 @@ export function getAvailableAbilities(
 ): Ability[] {
   const baseAbilities = allAbilities.filter(ability => {
     if (!ability.condition) return true
+    if (ability.condition.onlyAttacker && side !== 'attacker') return false
     if (ability.condition.onlyDefender && side !== 'defender') return false
     return true
   })

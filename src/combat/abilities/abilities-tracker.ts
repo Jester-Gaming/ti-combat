@@ -15,6 +15,7 @@ import type {
   Ability,
   AbilityInvoke,
   AbilityTiming,
+  DestroyedUnit,
   DiceContext,
   DiceReadContext,
   InternalTimingContextMap,
@@ -23,10 +24,11 @@ import type {
   TimingContextMap,
 } from './types'
 
-/** Source of an ability - either from config or from a unit */
+/** Source of an ability - either from config, a living unit, or a destroyed unit */
 export type AbilitySource =
   | { type: 'config' }
   | { type: 'unit'; unitType: UnitType; unitIndex: number }
+  | { type: 'destroyed'; unitType: UnitType; destroyedIndex: number }
 
 // Type guard to detect sided objects (attacker/defender)
 function isSidedContext<T>(ctx: unknown): ctx is SidedContext<T> {
@@ -208,7 +210,8 @@ export interface RunAbilitiesResult<T extends AbilityTiming> {
 /** Invocation tracker for a single side's abilities */
 interface SideInvocationTracker {
   configAbilities: Set<AbilityInvoke>
-  unitAbilities: Map<string, Set<number>> // "abilityKey:unitType" -> Set<unitIndex>
+  unitAbilities: Map<string, Set<number>> // "timing:unitType" -> Set<unitIndex>
+  destroyedAbilities: Map<string, Set<number>> // "timing:unitType" -> Set<destroyedIndex>
 }
 
 /** Invocation tracker per side */
@@ -233,8 +236,16 @@ export function runAbilities<T extends AbilityTiming>(
   context?: TimingContextMap[T],
 ): RunAbilitiesResult<T> {
   const tracker: InvocationTracker = {
-    attacker: { configAbilities: new Set(), unitAbilities: new Map() },
-    defender: { configAbilities: new Set(), unitAbilities: new Map() },
+    attacker: {
+      configAbilities: new Set(),
+      unitAbilities: new Map(),
+      destroyedAbilities: new Map(),
+    },
+    defender: {
+      configAbilities: new Set(),
+      unitAbilities: new Map(),
+      destroyedAbilities: new Map(),
+    },
   }
   let consecutiveSkips = 0
   let currentSide: CombatSide = 'attacker'
@@ -288,6 +299,39 @@ function tryResolveOneAbility<T extends AbilityTiming>(
   tracker: InvocationTracker,
 ): AbilityResult | null {
   const invokes = getInvokesForTiming(timing, side, state)
+
+  // Collect AFTER_DESTROY invokes from destroyed units in context
+  const timings = Array.isArray(timing) ? timing : [timing]
+  if (
+    timings.includes('AFTER_DESTROY' as T) &&
+    context !== undefined &&
+    isSidedContext(context)
+  ) {
+    const destroyedUnits = (context as SidedContext<DestroyedUnit[]>)[side]
+    const { meta } = state.currentPhase
+    for (let i = 0; i < destroyedUnits.length; i++) {
+      const { type: unitType, unit } = destroyedUnits[i]
+      if (!unit.ABILITIES) continue
+      for (const ability of unit.ABILITIES) {
+        for (const invoke of ability.invoke) {
+          if (invoke.timing !== 'AFTER_DESTROY') continue
+          if (invoke.context) {
+            const allowed = Array.isArray(invoke.context)
+              ? invoke.context
+              : [invoke.context]
+            if (!allowed.includes(meta)) continue
+          }
+          invokes.push({
+            ability,
+            invoke,
+            params: ability.defaultParams ?? {},
+            source: { type: 'destroyed', unitType, destroyedIndex: i },
+          })
+        }
+      }
+    }
+  }
+
   const readCtx = buildReadContext(side, state)
   const sideTracker = tracker[side]
 
@@ -295,6 +339,13 @@ function tryResolveOneAbility<T extends AbilityTiming>(
     // Check if already invoked
     if (source.type === 'config') {
       if (!invoke.multi && sideTracker.configAbilities.has(invoke)) {
+        continue
+      }
+    } else if (source.type === 'destroyed') {
+      // Destroyed unit ability - no unit-exists check needed
+      const key = `destroyed:${invoke.timing}:${source.unitType}`
+      const invokedIndices = sideTracker.destroyedAbilities.get(key)
+      if (invokedIndices?.has(source.destroyedIndex)) {
         continue
       }
     } else {
@@ -401,6 +452,12 @@ function tryResolveOneAbility<T extends AbilityTiming>(
       // Mark as invoked
       if (source.type === 'config') {
         sideTracker.configAbilities.add(invoke)
+      } else if (source.type === 'destroyed') {
+        const key = `destroyed:${invoke.timing}:${source.unitType}`
+        const invokedIndices =
+          sideTracker.destroyedAbilities.get(key) ?? new Set()
+        invokedIndices.add(source.destroyedIndex)
+        sideTracker.destroyedAbilities.set(key, invokedIndices)
       } else {
         const key = `${invoke.timing}:${source.unitType}`
         const invokedIndices = sideTracker.unitAbilities.get(key) ?? new Set()

@@ -1,5 +1,6 @@
 import type { Faction } from '@/types'
 
+import { quetzecoatl } from './quetzecoatl'
 import { strikeWingAmbuscade } from './strike-wing-ambuscade'
 import { trrakanAunZulok } from './trrakan-aun-zulok'
 
@@ -23,6 +24,7 @@ export const argent_flight: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [quetzecoatl],
       },
     },
     MECH: {

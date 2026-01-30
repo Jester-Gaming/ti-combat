@@ -1,0 +1,30 @@
+import type { Ability } from '../../types'
+
+type Params = {
+  isEnabled: boolean
+}
+
+export const conventionsOfWar: Ability<Params> = {
+  key: 'CONVENTIONS_OF_WAR',
+  name: 'Conventions of War',
+  category: 'AGENDA',
+  defaultParams: {
+    isEnabled: false,
+  },
+  condition: {
+    onlyDefender: true,
+  },
+  enableUI: true,
+  invoke: [
+    {
+      timing: 'PREPARE',
+      isCallable: (params: Params) => params.isEnabled,
+      call: ctx => {
+        ctx.api.opponent.setUnitAbilityCannotBeUsed(
+          'BOMBARDMENT',
+          'CONVENTIONS_OF_WAR',
+        )
+      },
+    },
+  ],
+}
