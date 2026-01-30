@@ -96,6 +96,7 @@ export interface UnitStats {
 export interface UnitState {
   isDamaged?: boolean
   usedSustainThisRound?: boolean
+  subtypes?: string[]
 }
 
 /** A single unit combining stats and runtime state */

@@ -1,11 +1,9 @@
-import type { UnitType } from '@/types'
-import { getUnitListItems } from '@/utils/get-unit-config'
+import { getVariantDisplayName } from '@/combat/utils/unit-variant'
 
 import type { Ability } from '../../types'
-import { getParticipatingUnits } from '../../utils/get-participating-units'
 
 type Params = {
-  unitPriority: UnitType[]
+  unitPriority: string[]
 }
 
 export const unitPriority: Ability<Params> = {
@@ -26,15 +24,19 @@ export const unitPriority: Ability<Params> = {
     ],
   },
   invoke: [],
-  uiConfig: side => {
-    const participatingUnits = getParticipatingUnits(side)
+  uiConfig: ctx => {
+    const variants = ctx.api.own.getParticipatingVariants()
+    const items = variants.map(id => ({
+      label: getVariantDisplayName(id),
+      value: id,
+    }))
 
     return [
       {
         key: 'unitPriority' as const,
         label: 'Unit Priority',
         type: 'order-list' as const,
-        items: getUnitListItems(participatingUnits),
+        items,
       },
     ]
   },

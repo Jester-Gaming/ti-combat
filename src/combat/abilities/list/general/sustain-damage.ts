@@ -1,13 +1,14 @@
 import type { UnitType } from '@/types'
 import { getUnitListItems } from '@/utils/get-unit-config'
 
-import type { SideState, Unit } from '../../../state/types'
+import type { Unit } from '../../../state/types'
 import type { Ability, AbilityReadContext, SideReadApi } from '../../types'
 
-/** Get units that are present on the side and have sustain damage ability */
-function getSustainUnitsForSide(side: SideState): UnitType[] {
+/** Get units from the read API that have sustain damage ability */
+function getSustainUnitsFromApi(api: SideReadApi): UnitType[] {
+  const allUnits = api.getUnits() as Partial<Record<UnitType, Unit[]>>
   const result: UnitType[] = []
-  for (const [unitType, units] of Object.entries(side.units)) {
+  for (const [unitType, units] of Object.entries(allUnits)) {
     if (units && units.length > 0) {
       const hasSustain = units.some(u => u.UNIT_ABILITIES?.SUSTAIN_DAMAGE)
       if (hasSustain) {
@@ -75,8 +76,8 @@ export const sustainDamage: Ability<Params> = {
       'FLAGSHIP',
     ],
   },
-  uiConfig: (side, params) => {
-    const sustainUnits = getSustainUnitsForSide(side)
+  uiConfig: (ctx, params) => {
+    const sustainUnits = getSustainUnitsFromApi(ctx.api.own)
     const sustainUnitItems = getUnitListItems(sustainUnits)
     const sustainUnitsSet = new Set(sustainUnits)
     const validUnits = params.units.filter(u => sustainUnitsSet.has(u))

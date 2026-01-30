@@ -1,4 +1,4 @@
-import type { DieValue } from '@/types'
+import type { DiceGroup } from '@/types'
 
 export interface DiceRollOutcome {
   hits: number
@@ -17,8 +17,8 @@ function binomialCoeff(n: number, k: number): number {
   return result
 }
 
-export function getDiceDistribution(dieValue: DieValue): DiceRollOutcome[] {
-  const [hitValue, diceCount] = dieValue
+export function getDiceDistribution(group: DiceGroup): DiceRollOutcome[] {
+  const [hitValue, diceCount] = group
 
   if (diceCount === 0) {
     return [{ hits: 0, probability: 1 }]

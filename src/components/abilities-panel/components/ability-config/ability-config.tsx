@@ -1,8 +1,7 @@
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons'
 import { useMemo, useState } from 'react'
 
-import type { Ability } from '@/combat/abilities'
-import type { SideState } from '@/combat/state'
+import type { Ability, AbilityReadContext } from '@/combat/abilities'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
@@ -18,14 +17,14 @@ import styles from './ability-config.module.css'
 
 interface AbilityConfigProps {
   ability: Ability
-  sideState: SideState
+  readContext: AbilityReadContext
   params: Record<string, unknown>
   onParamsChange: (params: Record<string, unknown>) => void
 }
 
 export function AbilityConfig({
   ability,
-  sideState,
+  readContext,
   params,
   onParamsChange,
 }: AbilityConfigProps): React.ReactElement {
@@ -34,8 +33,8 @@ export function AbilityConfig({
       return ability.uiConfig
     }
     const effectiveParams = { ...ability.defaultParams, ...params }
-    return ability.uiConfig(sideState, effectiveParams)
-  }, [ability, sideState, params])
+    return ability.uiConfig(readContext, effectiveParams)
+  }, [ability, readContext, params])
 
   const hasConfigItems = uiConfigItems && uiConfigItems.length > 0
   const showLabels = uiConfigItems && uiConfigItems.length > 1

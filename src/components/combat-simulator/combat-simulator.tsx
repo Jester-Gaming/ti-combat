@@ -10,8 +10,10 @@ import {
   type SideState as CombatSideState,
 } from '@/combat'
 import { getAvailableAbilities } from '@/combat/abilities'
+import { buildUIReadContext } from '@/combat/abilities/ability-api'
+import { collectDeclaredSubtypes } from '@/combat/abilities/utils/collect-declared-subtypes'
 import { countUnits } from '@/combat/state/side-state-ops'
-import type { CombatMode } from '@/combat/state/types'
+import type { AbilitiesConfig, CombatMode } from '@/combat/state/types'
 import { AbilitiesPanel } from '@/components/abilities-panel'
 import { BattleCard } from '@/components/battle-card'
 import { GlassCard } from '@/components/ui/glass-card'
@@ -140,6 +142,45 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     })
   }, [attackerAbilities, defenderAbilities, setAbilityParams])
 
+  // Shared abilities config for both combat state and UI read contexts
+  const abilitiesConfig: AbilitiesConfig = useMemo(
+    () => ({
+      attacker: {
+        abilities: attackerAbilities,
+        config: abilityParams.attacker,
+      },
+      defender: {
+        abilities: defenderAbilities,
+        config: abilityParams.defender,
+      },
+    }),
+    [attackerAbilities, defenderAbilities, abilityParams],
+  )
+
+  // Build read contexts for ability UI panels (both sides have full state)
+  const attackerReadContext = useMemo(
+    () =>
+      buildUIReadContext(
+        'attacker',
+        attackerSideState,
+        defenderSideState,
+        abilitiesConfig,
+        combatMode,
+      ),
+    [attackerSideState, defenderSideState, abilitiesConfig, combatMode],
+  )
+  const defenderReadContext = useMemo(
+    () =>
+      buildUIReadContext(
+        'defender',
+        attackerSideState,
+        defenderSideState,
+        abilitiesConfig,
+        combatMode,
+      ),
+    [attackerSideState, defenderSideState, abilitiesConfig, combatMode],
+  )
+
   // Create CombatState from battle configuration
   const combatState = useMemo(() => {
     const hasAttackerUnits = countUnits(attackerSideState) > 0
@@ -152,26 +193,10 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     return new CombatState(
       attackerSideState,
       defenderSideState,
-      {
-        attacker: {
-          abilities: attackerAbilities,
-          config: abilityParams.attacker,
-        },
-        defender: {
-          abilities: defenderAbilities,
-          config: abilityParams.defender,
-        },
-      },
-      combatMode, // pass the combat mode from UI state
+      abilitiesConfig,
+      combatMode,
     )
-  }, [
-    attackerSideState,
-    defenderSideState,
-    attackerAbilities,
-    defenderAbilities,
-    abilityParams,
-    combatMode,
-  ])
+  }, [attackerSideState, defenderSideState, abilitiesConfig, combatMode])
 
   const combatResult = useMemo((): CombatResult | null => {
     if (!combatState) return null
@@ -230,8 +255,13 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     abilityName: string,
     params: Record<string, unknown>,
   ) => {
+    const sideAbilities =
+      side === 'attacker' ? attackerAbilities : defenderAbilities
     setAbilityParams(draft => {
       draft[side][abilityName] = params
+      const subtypes = collectDeclaredSubtypes(sideAbilities, draft[side])
+      if (!draft[side]['SETTINGS']) draft[side]['SETTINGS'] = {}
+      draft[side]['SETTINGS'].declaredSubtypes = subtypes
     })
   }
 
@@ -254,7 +284,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
         <div className={styles.sidePanelScroll}>
           <AbilitiesPanel
             abilities={attackerAbilities}
-            sideState={attackerSideState}
+            readContext={attackerReadContext}
             params={abilityParams.attacker}
             onParamsChange={(abilityName, params) =>
               handleAbilityParamsChange('attacker', abilityName, params)
@@ -295,7 +325,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
         <div className={styles.sidePanelScroll}>
           <AbilitiesPanel
             abilities={defenderAbilities}
-            sideState={defenderSideState}
+            readContext={defenderReadContext}
             params={abilityParams.defender}
             onParamsChange={(abilityName, params) =>
               handleAbilityParamsChange('defender', abilityName, params)

@@ -1,4 +1,4 @@
-import type { DieValue } from '@/types'
+import type { DiceGroup } from '@/types'
 
 import {
   type DiceRollOutcome,
@@ -10,7 +10,7 @@ import {
  * Uses convolution to merge independent probability distributions.
  */
 export function getCombinedDiceDistribution(
-  diceGroups: DieValue[],
+  diceGroups: DiceGroup[],
 ): DiceRollOutcome[] {
   if (diceGroups.length === 0) {
     return [{ hits: 0, probability: 1 }]

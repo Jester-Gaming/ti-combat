@@ -10,7 +10,7 @@ describe('getCombinedDiceDistribution', () => {
   })
 
   it('returns same as single distribution for one group', () => {
-    const dist = getCombinedDiceDistribution([[9, 1, 'FIGHTER']])
+    const dist = getCombinedDiceDistribution([[9, 1]])
     expect(dist.find(d => d.hits === 0)?.probability).toBeCloseTo(0.8)
     expect(dist.find(d => d.hits === 1)?.probability).toBeCloseTo(0.2)
   })
@@ -18,8 +18,8 @@ describe('getCombinedDiceDistribution', () => {
   it('combines two groups correctly', () => {
     // 1 die at 9+ (20% hit) + 1 die at 5+ (60% hit)
     const dist = getCombinedDiceDistribution([
-      [9, 1, 'FIGHTER'],
-      [5, 1, 'CRUISER'],
+      [9, 1],
+      [5, 1],
     ])
 
     // Possible outcomes: 0+0, 0+1, 1+0, 1+1
@@ -33,9 +33,9 @@ describe('getCombinedDiceDistribution', () => {
 
   it('probabilities sum to 1.0', () => {
     const dist = getCombinedDiceDistribution([
-      [9, 2, 'FIGHTER'],
-      [5, 3, 'CRUISER'],
-      [7, 1, 'DESTROYER'],
+      [9, 2],
+      [5, 3],
+      [7, 1],
     ])
     const sum = dist.reduce((acc, d) => acc + d.probability, 0)
     expect(sum).toBeCloseTo(1.0)

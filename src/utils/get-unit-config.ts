@@ -31,6 +31,16 @@ export function getUnitListItems(units: readonly UnitType[]): UnitListItem[] {
   return unitList.filter(unit => units.includes(unit.value))
 }
 
+/** Get display name for a unit type with optional subtypes */
+export function getUnitVariantDisplayName(
+  unitType: UnitType,
+  subtypes?: string[],
+): string {
+  const base = UNIT_DISPLAY_NAMES[unitType]
+  if (!subtypes || subtypes.length === 0) return base
+  return `${base} (${subtypes.join(', ')})`
+}
+
 export interface UnitConfig {
   name: string
   hasUpgrade: boolean

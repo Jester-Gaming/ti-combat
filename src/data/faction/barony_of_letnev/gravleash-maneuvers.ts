@@ -1,12 +1,12 @@
+import { getVariantDisplayName } from '@/combat/utils/unit-variant'
+
 import type {
   Ability,
   AbilityReadContext,
   DiceContext,
   DiceReadContext,
 } from '../../../combat/abilities/types'
-import { getParticipatingUnits } from '../../../combat/abilities/utils/get-participating-units'
 import type { UnitType } from '../../../types'
-import { getUnitListItems } from '../../../utils/get-unit-config'
 
 type Params = {
   isEnabled: boolean
@@ -30,15 +30,19 @@ export const gravleashManeuvers: Ability<Params> = {
     ],
   },
   headerUI: 'isEnabled',
-  uiConfig: side => {
-    const participatingUnits = getParticipatingUnits(side)
+  uiConfig: ctx => {
+    const variants = ctx.api.own.getParticipatingVariants()
+    const items = variants.map(id => ({
+      label: getVariantDisplayName(id),
+      value: id,
+    }))
 
     return [
       {
         key: 'shipPriority' as const,
         label: 'Ship Priority',
         type: 'order-list' as const,
-        items: getUnitListItems(participatingUnits),
+        items: items,
       },
     ]
   },
@@ -55,10 +59,17 @@ export const gravleashManeuvers: Ability<Params> = {
       },
       call: (ctx, params: Params, dice: DiceContext) => {
         const shipTypeCount = Object.keys(ctx.api.own.getUnits()).length
-        const target = params.shipPriority.find(t => ctx.api.own.hasUnit(t))
+        const target = ctx.api.own.findUnitByPriority(params.shipPriority)
 
         if (shipTypeCount > 0 && target) {
-          dice.own.modifyHitValue(-shipTypeCount, target, 0)
+          console.log(
+            'A',
+            params.shipPriority,
+            target,
+            structuredClone(dice.own.getAll()),
+          )
+          dice.own.modifyHitValue(-shipTypeCount, target)
+          console.log('B', structuredClone(dice.own.getAll()))
         }
       },
     },

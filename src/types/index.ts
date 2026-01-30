@@ -3,32 +3,33 @@ import factions from '@/data/faction'
 
 export type UnitType = keyof typeof baseUnits | 'FLAGSHIP' | 'MECH'
 
-export const UNIT_TYPES: UnitType[] = [
+export const NON_FIGHTER_SHIPS: UnitType[] = [
   'FLAGSHIP',
   'WAR_SUN',
   'DREADNOUGHT',
   'CARRIER',
   'CRUISER',
   'DESTROYER',
-  'FIGHTER',
-  'MECH',
-  'INFANTRY',
-  'PDS',
-  'SPACE_DOCK',
+]
+
+export const SHIPS: UnitType[] = [...NON_FIGHTER_SHIPS, 'FIGHTER']
+
+export const GROUND_FORCES: UnitType[] = ['MECH', 'INFANTRY']
+
+export const STRUCTURES: UnitType[] = ['PDS', 'SPACE_DOCK']
+
+export const UNIT_TYPES: UnitType[] = [
+  ...SHIPS,
+  ...GROUND_FORCES,
+  ...STRUCTURES,
 ]
 
 // Unit dice definition: [hitValue, dicePerUnit]
 // Used in unit stats for COMBAT, AFB, etc.
 export type UnitDieValue = [number, number]
 
-// Per-unit dice data: [hitValue, diceCount]
-// Represents dice for a single unit instance
-export type DiceData = [number, number]
-
-// Collected dice for combat: [hitValue, totalDiceCount, source]
-// Source tracks which unit type generated the dice (for unit-specific modifiers)
-// Used in probability calculation (getCombinedDiceDistribution)
-export type DieValue = [number, number, UnitType]
+// Grouped dice for probability calculation: [hitValue, totalDiceCount]
+export type DiceGroup = [number, number]
 
 // Unit abilities
 export interface UnitAbilities {

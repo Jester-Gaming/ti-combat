@@ -1,7 +1,7 @@
-import { UNIT_TYPES, type UnitType } from '@/types'
-import { getUnitListItems } from '@/utils/get-unit-config'
+import { getVariantDisplayName } from '@/combat/utils/unit-variant'
+import { NON_FIGHTER_SHIPS, type UnitType } from '@/types'
 
-import type { Ability, AbilityReadContext, SideReadApi } from '../../types'
+import type { Ability, SideReadApi } from '../../types'
 
 type Params = {
   isEnabled: boolean
@@ -41,13 +41,13 @@ export const assaultCannon: Ability<Params> = {
   category: 'TECHNOLOGY',
   defaultParams: {
     isEnabled: false,
-    targetPriority: [...UNIT_TYPES],
+    targetPriority: [...NON_FIGHTER_SHIPS],
   },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'START_OF_COMBAT',
-      isCallable: (params: Params, ctx: AbilityReadContext) => {
+      isCallable: (params, ctx) => {
         if (!params.isEnabled) return false
 
         // Must have at least 3 non-fighter ships
@@ -66,9 +66,14 @@ export const assaultCannon: Ability<Params> = {
       },
     },
   ],
-  uiConfig: () => {
-    // Show all possible unit types for targeting priority
-    const items = getUnitListItems(UNIT_TYPES)
+  uiConfig: ctx => {
+    const variants = ctx.api.opponent.getParticipatingVariants({
+      exclude: ['FIGHTER'],
+    })
+    const items = variants.map(id => ({
+      label: getVariantDisplayName(id),
+      value: id,
+    }))
 
     return [
       {

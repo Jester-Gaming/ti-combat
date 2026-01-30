@@ -1,3 +1,5 @@
+import { original } from 'immer'
+
 import type { UnitAbilityKey, UnitType } from '@/types'
 
 import {
@@ -5,6 +7,8 @@ import {
   getSettingsValidTargets,
 } from '../state/side-state-ops'
 import type {
+  AbilitiesConfig,
+  CombatMode,
   CombatSide,
   CombatStateData,
   RestrictionEntry,
@@ -13,7 +17,17 @@ import type {
   UnitAbilityRestrictions,
   UnitState,
 } from '../state/types'
-import type { SideApi, SideReadApi } from './types'
+import {
+  makeVariantId,
+  parseVariantId,
+  unitMatchesVariant,
+} from '../utils/unit-variant'
+import type {
+  AbilityReadContext,
+  DeclaredSubtype,
+  SideApi,
+  SideReadApi,
+} from './types'
 
 // ============================================================================
 // HELPERS
@@ -34,6 +48,26 @@ function findUnitInSide(
   )
 
   return index >= 0 ? { unit: units[index], index } : undefined
+}
+
+function findUnitByPriorityInSide(
+  sideState: SideState,
+  priority: string[],
+): Unit | undefined {
+  for (const variantId of priority) {
+    const { type } = parseVariantId(variantId)
+    const units = sideState.units[type]
+    if (!units) continue
+
+    for (let i = 0; i < units.length; i++) {
+      if (unitMatchesVariant(units[i], variantId)) {
+        // Use original() to unwrap Immer proxy so the reference matches
+        // the one stored in DieValue by collectDice
+        return original(units[i]) ?? units[i]
+      }
+    }
+  }
+  return undefined
 }
 
 function countUnitsInSide(
@@ -119,20 +153,75 @@ function removeRestrictionEntry(
   return result
 }
 
-function resolveSettingsValidTargets(
+function resolveSettingsParams(
   state: Readonly<CombatStateData>,
   side: CombatSide,
-): UnitType[] {
+): Record<string, unknown> | undefined {
   const sideConfig = state.abilities[side]
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const settings = (sideConfig.abilities as any[]).find(
     (a: { key: string }) => a.key === 'SETTINGS',
   )
-  if (!settings) return []
-  const params = {
+  if (!settings) return undefined
+  return {
     ...settings.defaultParams,
     ...sideConfig.config?.['SETTINGS'],
   }
+}
+
+function getParticipatingUnitTypesForSide(
+  state: Readonly<CombatStateData>,
+  side: CombatSide,
+): UnitType[] {
+  const sideState = state[side]
+  const params = resolveSettingsParams(state, side)
+  if (!params) {
+    return (Object.keys(sideState.units) as UnitType[]).filter(
+      t => (sideState.units[t]?.length ?? 0) > 0,
+    )
+  }
+  const units =
+    state.combatMode === 'GROUND'
+      ? ((params.groundCombatParticipating as UnitType[]) ?? [])
+      : ((params.spaceCombatParticipating as UnitType[]) ?? [])
+  return units
+}
+
+function getParticipatingVariantsForSide(
+  state: Readonly<CombatStateData>,
+  side: CombatSide,
+  filter?: {
+    include?: UnitType[]
+    exclude?: UnitType[]
+  },
+): string[] {
+  let baseTypes = getParticipatingUnitTypesForSide(state, side)
+  if (filter?.include) {
+    const includeSet = new Set(filter.include)
+    baseTypes = baseTypes.filter(t => includeSet.has(t))
+  }
+  if (filter?.exclude) {
+    const excludeSet = new Set(filter.exclude)
+    baseTypes = baseTypes.filter(t => !excludeSet.has(t))
+  }
+  const params = resolveSettingsParams(state, side)
+  const declaredSubtypes = (params?.declaredSubtypes ?? []) as DeclaredSubtype[]
+
+  const baseSet = new Set(baseTypes)
+  const result: string[] = [...baseTypes]
+  for (const decl of declaredSubtypes) {
+    if (!baseSet.has(decl.unitType)) continue
+    result.push(makeVariantId(decl.unitType, [decl.name]))
+  }
+  return result
+}
+
+function resolveSettingsValidTargets(
+  state: Readonly<CombatStateData>,
+  side: CombatSide,
+): UnitType[] {
+  const params = resolveSettingsParams(state, side)
+  if (!params) return []
   return getSettingsValidTargets(
     params,
     state.currentPhase.meta,
@@ -141,16 +230,16 @@ function resolveSettingsValidTargets(
 }
 
 // ============================================================================
-// READ API (for isCallable — operates on readonly state)
+// SHARED READ API BUILDER
 // ============================================================================
 
-export function buildReadApi(
+function buildSideReadApi(
   side: CombatSide,
-  state: Readonly<CombatStateData>,
+  state: CombatStateData,
 ): SideReadApi {
   const sideState = state[side]
 
-  const api: SideReadApi = {
+  return {
     getFaction() {
       return sideState.faction
     },
@@ -181,8 +270,23 @@ export function buildReadApi(
       return resolveSettingsValidTargets(state, side)
     },
 
+    getParticipatingUnitTypes() {
+      return getParticipatingUnitTypesForSide(state, side)
+    },
+
+    getParticipatingVariants(filter?: {
+      include?: UnitType[]
+      exclude?: UnitType[]
+    }) {
+      return getParticipatingVariantsForSide(state, side, filter)
+    },
+
     findUnit(unitType: UnitType, predicate: Partial<UnitState>) {
       return findUnitInSide(sideState, unitType, predicate)
+    },
+
+    findUnitByPriority(priority: string[]) {
+      return findUnitByPriorityInSide(sideState, priority)
     },
 
     isUnitAbilityLost(ability: UnitAbilityKey, unitType: UnitType) {
@@ -194,7 +298,17 @@ export function buildReadApi(
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any
-  return api
+}
+
+// ============================================================================
+// READ API (for isCallable — operates on readonly state)
+// ============================================================================
+
+export function buildReadApi(
+  side: CombatSide,
+  state: Readonly<CombatStateData>,
+): SideReadApi {
+  return buildSideReadApi(side, state as CombatStateData)
 }
 
 // ============================================================================
@@ -207,47 +321,7 @@ export function buildApi(
   abilityKey: string,
 ): SideApi {
   const api: SideApi = {
-    getFaction() {
-      return draft[side].faction
-    },
-
-    getUnits(unitType?: UnitType) {
-      if (unitType !== undefined) {
-        return draft[side].units[unitType] ?? []
-      }
-      return draft[side].units
-    },
-
-    hasUnit(unitType: UnitType) {
-      const units = draft[side].units[unitType]
-      return !!units && units.length > 0
-    },
-
-    countUnits(filter?: ReadonlySet<UnitType>) {
-      return countUnitsInSide(draft[side], filter)
-    },
-
-    getPendingHits() {
-      return getPendingHitsForSide(draft[side])
-    },
-
-    getHitPoolValidTargets() {
-      const pool = draft[side].hitPools[0]
-      if (pool && pool.validTargets.length > 0) return pool.validTargets
-      return resolveSettingsValidTargets(draft, side)
-    },
-
-    findUnit(unitType: UnitType, predicate: Partial<UnitState>) {
-      return findUnitInSide(draft[side], unitType, predicate)
-    },
-
-    isUnitAbilityLost(ability: UnitAbilityKey, unitType: UnitType) {
-      return isRestricted(draft[side], 'lost', ability, unitType)
-    },
-
-    isUnitAbilityCannotBeUsed(ability: UnitAbilityKey, unitType: UnitType) {
-      return isRestricted(draft[side], 'cannotBeUsed', ability, unitType)
-    },
+    ...buildSideReadApi(side, draft),
 
     destroyUnit(unitTypeOrTypes: UnitType | UnitType[], index?: number): void {
       const sideState = draft[side]
@@ -396,6 +470,25 @@ export function buildApi(
       )
     },
 
+    addSubtype(unitType: UnitType, index: number, subtype: string) {
+      const units = draft[side].units[unitType]
+      if (!units?.[index]) return
+      const unit = units[index]
+      const existing = unit.subtypes ?? []
+      if (!existing.includes(subtype)) {
+        unit.subtypes = [...existing, subtype].sort()
+      }
+    },
+
+    removeSubtype(unitType: UnitType, index: number, subtype: string) {
+      const units = draft[side].units[unitType]
+      if (!units?.[index]) return
+      const unit = units[index]
+      if (!unit.subtypes) return
+      unit.subtypes = unit.subtypes.filter(s => s !== subtype)
+      if (unit.subtypes.length === 0) delete unit.subtypes
+    },
+
     updateAbilityConfig(
       keyOrUpdates: string | Record<string, unknown>,
       maybeUpdates?: Record<string, unknown>,
@@ -457,4 +550,23 @@ export function buildCallContext(
     },
     log: log ?? (() => {}),
   }
+}
+
+/** Build a read-only context for UI rendering (uiConfig functions) */
+export function buildUIReadContext(
+  side: CombatSide,
+  attacker: SideState,
+  defender: SideState,
+  abilities: AbilitiesConfig,
+  combatMode: CombatMode,
+): AbilityReadContext {
+  const meta = combatMode === 'GROUND' ? 'GROUND_COMBAT' : 'SPACE_COMBAT'
+  const state: CombatStateData = {
+    attacker,
+    defender,
+    abilities,
+    combatMode,
+    currentPhase: { meta, micro: 'START' },
+  }
+  return buildReadContext(side, state)
 }

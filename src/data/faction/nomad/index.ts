@@ -1,7 +1,13 @@
 import type { Faction } from '@/types'
 
+import { cavalry } from './cavalry'
+
 export const nomad: Faction = {
   name: 'Nomad',
+  abilities: {
+    faction: [],
+    promissory: [cavalry],
+  },
   units: {
     FLAGSHIP: {
       BASE: {

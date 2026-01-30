@@ -1,4 +1,4 @@
-import type { DieValue, UnitType } from '@/types'
+import type { DiceGroup, UnitType } from '@/types'
 
 import {
   getAbilityParams,
@@ -72,13 +72,12 @@ function getParticipatingUnitsFromData(
   return new Set(units)
 }
 
-/** Flatten a DicePool into DieValue[] for probability calculation */
-function flattenDicePool(pool: DicePool): DieValue[] {
-  const result: DieValue[] = []
+/** Flatten a DicePool into DiceGroup[] for probability calculation */
+function flattenDicePool(pool: DicePool): DiceGroup[] {
+  const result: DiceGroup[] = []
 
-  for (const [type, units] of Object.entries(pool)) {
+  for (const units of Object.values(pool)) {
     if (!units || units.length === 0) continue
-    const unitType = type as UnitType
 
     // Group by hitValue for efficiency
     const grouped = new Map<number, number>()
@@ -87,7 +86,7 @@ function flattenDicePool(pool: DicePool): DieValue[] {
     }
 
     for (const [hitValue, totalDice] of grouped) {
-      result.push([hitValue, totalDice, unitType])
+      result.push([hitValue, totalDice])
     }
   }
 
@@ -176,10 +175,10 @@ export class CombatState implements CombatStateData {
   }
 
   /** Get unit priority from UNIT_PRIORITY ability if present */
-  private getUnitPriority(side: CombatSide): UnitType[] | undefined {
+  private getUnitPriority(side: CombatSide): string[] | undefined {
     const params = getAbilityParams(this.abilities, side, 'UNIT_PRIORITY')
     if (!params) return undefined
-    return params.unitPriority as UnitType[] | undefined
+    return params.unitPriority as string[] | undefined
   }
 
   private runAbilities<T extends AbilityTiming>(

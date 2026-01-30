@@ -1,12 +1,16 @@
-import type { DiceData, FactionKey, UnitAbilityKey, UnitType } from '@/types'
+import type { FactionKey, UnitAbilityKey, UnitType } from '@/types'
 
 import type {
   CombatStateData,
   MetaPhase,
-  SideState,
   Unit,
   UnitState,
 } from '../state/types'
+
+export interface DeclaredSubtype {
+  name: string
+  unitType: UnitType
+}
 
 export interface DestroyedUnit {
   type: UnitType
@@ -25,8 +29,11 @@ export interface OwnOpponentContext<T> {
   opponent: T
 }
 
+// Per-unit die value: [hitValue, diceCount, unit]
+export type DieValue = [number, number, Unit]
+
 // Per-unit dice pool: indices match the unit list for each type
-export type DicePool = Partial<Record<UnitType, DiceData[]>>
+export type DicePool = Partial<Record<UnitType, DieValue[]>>
 
 // Sided version for external API
 export type SidedDiceData = SidedContext<DicePool>
@@ -38,7 +45,7 @@ export type SidedDiceData = SidedContext<DicePool>
 /** Read-only API for querying dice */
 export interface DiceReadApi {
   getAll(): DicePool
-  get(source: UnitType): readonly DiceData[] | undefined
+  get(source: UnitType): readonly DieValue[] | undefined
   count(): number
   isEmpty(): boolean
 }
@@ -46,8 +53,8 @@ export interface DiceReadApi {
 /** Full read-write API for mutating dice */
 export interface DiceApi extends DiceReadApi {
   modifyHitValue(amount: number): void
+  modifyHitValue(amount: number, unit: Unit): void
   modifyHitValue(amount: number, source: UnitType): void
-  modifyHitValue(amount: number, source: UnitType, unitIndex: number): void
   modifyHitValue(amount: number, filter: (source: UnitType) => boolean): void
 
   addDice(count: number): void
@@ -98,10 +105,20 @@ export interface SideReadApi {
   countUnits(filter?: ReadonlySet<UnitType>): number
   getPendingHits(): number
   getHitPoolValidTargets(): UnitType[]
+  /** Get participating base unit types from SETTINGS, filtered to units present on this side */
+  getParticipatingUnitTypes(): UnitType[]
+  /** Get participating unit types + variant IDs from declared subtypes */
+  getParticipatingVariants(filter?: {
+    include?: UnitType[]
+    exclude?: UnitType[]
+  }): string[]
   findUnit(
     unitType: UnitType,
     predicate: Partial<UnitState>,
   ): { unit: Unit; index: number } | undefined
+  /** Find the first unit matching a priority list of variant IDs.
+   *  A plain UnitType matches only units with no subtypes. */
+  findUnitByPriority(priority: string[]): Unit | undefined
   isUnitAbilityLost(ability: UnitAbilityKey, unitType: UnitType): boolean
   isUnitAbilityCannotBeUsed(
     ability: UnitAbilityKey,
@@ -145,6 +162,10 @@ export interface SideApi extends SideReadApi {
     reason: string,
     unitType?: UnitType,
   ): void
+
+  // Subtype operations
+  addSubtype(unitType: UnitType, index: number, subtype: string): void
+  removeSubtype(unitType: UnitType, index: number, subtype: string): void
 
   // Ability config mutations
   updateAbilityConfig(updates: Record<string, unknown>): void
@@ -285,7 +306,7 @@ type UIConfigItem<TParams = Record<string, unknown>> =
 
 type UIConfig<Params = Record<string, unknown>> =
   | UIConfigItem<Params>[]
-  | ((side: SideState, params: Params) => UIConfigItem<Params>[])
+  | ((ctx: AbilityReadContext, params: Params) => UIConfigItem<Params>[])
 
 /** Conditions for when an ability is available */
 export interface AbilityCondition {
@@ -316,6 +337,8 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   uiConfig?: UIConfig<Params>
   /** Conditions restricting which side can use this ability */
   condition?: AbilityCondition
+  /** Declare subtypes this ability creates, based on its params */
+  declareSubtypes?: (params: Params) => DeclaredSubtype[]
   invoke: AbilityInvoke<Params>[]
 }
 

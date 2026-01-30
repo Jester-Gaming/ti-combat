@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import type { FactionKey } from '@/types'
+import type { FactionKey, UnitType } from '@/types'
 
 import { settings } from '../abilities/list/general/settings'
+import type { DicePool } from '../abilities/types'
 import type { LogEntry } from '../types'
 import { CombatState } from './combat-state'
 import {
@@ -20,6 +21,19 @@ function getHitsFromLog(log: LogEntry[] | undefined, side: CombatSide): number {
   return log
     .filter(entry => entry[1] === 'DICE_ROLL' && entry[2] === side)
     .reduce((sum, entry) => sum + (entry[3] as number), 0)
+}
+
+/** Strip unit references from DicePool for test assertions */
+function diceValues(
+  pool: DicePool,
+): Partial<Record<UnitType, [number, number][]>> {
+  const result: Partial<Record<UnitType, [number, number][]>> = {}
+  for (const [type, dice] of Object.entries(pool)) {
+    if (dice) {
+      result[type as UnitType] = dice.map(d => [d[0], d[1]])
+    }
+  }
+  return result
 }
 
 // Test faction constant
@@ -96,14 +110,14 @@ describe('CombatState', () => {
       const attackerDice = state.collectDice('attacker', 'COMBAT')
       const defenderDice = state.collectDice('defender', 'COMBAT')
 
-      expect(attackerDice).toEqual({
+      expect(diceValues(attackerDice)).toEqual({
         FIGHTER: [
           [9, 1],
           [9, 1],
           [9, 1],
         ],
       })
-      expect(defenderDice).toEqual({
+      expect(diceValues(defenderDice)).toEqual({
         CRUISER: [
           [7, 1],
           [7, 1],
@@ -120,7 +134,7 @@ describe('CombatState', () => {
       )
 
       const dice = state.collectDice('attacker', 'AFB')
-      expect(dice).toEqual({
+      expect(diceValues(dice)).toEqual({
         DESTROYER: [
           [9, 2],
           [9, 2],
@@ -475,7 +489,7 @@ describe('CombatState', () => {
 
       // Should only collect dice from ground forces (infantry)
       // Infantry has COMBAT: [8, 1], so 4 infantry = 4 entries
-      expect(dice).toEqual({
+      expect(diceValues(dice)).toEqual({
         INFANTRY: [
           [8, 1],
           [8, 1],
@@ -505,7 +519,7 @@ describe('CombatState', () => {
 
       // Should only collect dice from ships (cruisers)
       // Cruiser has COMBAT: [7, 1], so 2 cruisers = 2 entries
-      expect(dice).toEqual({
+      expect(diceValues(dice)).toEqual({
         CRUISER: [
           [7, 1],
           [7, 1],
@@ -582,7 +596,7 @@ describe('CombatState', () => {
 
       // Defender's PDS should contribute dice for Space Cannon
       const dice = state.collectDice('defender', 'SPACE_CANNON')
-      expect(dice).toEqual({
+      expect(diceValues(dice)).toEqual({
         PDS: [
           [6, 1],
           [6, 1],

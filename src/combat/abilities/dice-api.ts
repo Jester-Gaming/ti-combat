@@ -1,6 +1,6 @@
-import type { DiceData, UnitType } from '@/types'
+import type { UnitType } from '@/types'
 
-import type { DiceApi, DicePool, DiceReadApi } from './types'
+import type { DiceApi, DicePool, DiceReadApi, DieValue } from './types'
 
 function countPool(pool: DicePool): number {
   let total = 0
@@ -19,12 +19,11 @@ export function buildDiceReadApi(pool: DicePool): DiceReadApi {
   }
 }
 
-/** Deep-clone a DicePool so mutations don't affect the original */
 function clonePool(pool: DicePool): DicePool {
   const result: DicePool = {}
-  for (const [type, units] of Object.entries(pool)) {
-    if (units) {
-      result[type as UnitType] = units.map(d => [...d] as DiceData)
+  for (const [type, dice] of Object.entries(pool)) {
+    if (dice) {
+      result[type as UnitType] = dice.map(d => [d[0], d[1], d[2]] as DieValue)
     }
   }
   return result
@@ -39,35 +38,42 @@ export function buildDiceApi(pool: DicePool): DiceApi {
     count: () => countPool(data),
     isEmpty: () => countPool(data) === 0,
 
-    modifyHitValue: (
-      amount: number,
-      filterOrSource?: UnitType | ((source: UnitType) => boolean),
-      unitIndex?: number,
-    ) => {
-      // Overload: (amount, source, unitIndex) — target single unit
-      if (typeof filterOrSource === 'string' && unitIndex !== undefined) {
-        const units = data[filterOrSource]
-        if (units && units[unitIndex]) {
-          units[unitIndex] = [
-            Math.max(1, units[unitIndex][0] + amount),
-            units[unitIndex][1],
-          ]
+    modifyHitValue: (amount: number, filterOrSourceOrUnit?: unknown) => {
+      // Overload: (amount, Unit) — match by reference equality
+      if (
+        typeof filterOrSourceOrUnit === 'object' &&
+        filterOrSourceOrUnit !== null
+      ) {
+        const targetUnit = filterOrSourceOrUnit
+        for (const [, dice] of Object.entries(data)) {
+          if (!dice) continue
+          for (let i = 0; i < dice.length; i++) {
+            if (dice[i][2] === targetUnit) {
+              dice[i] = [
+                Math.max(1, dice[i][0] + amount),
+                dice[i][1],
+                dice[i][2],
+              ]
+              return
+            }
+          }
         }
         return
       }
 
       const predicate =
-        filterOrSource === undefined
+        filterOrSourceOrUnit === undefined
           ? () => true
-          : typeof filterOrSource === 'function'
-            ? (source: UnitType) => filterOrSource(source)
-            : (source: UnitType) => source === filterOrSource
+          : typeof filterOrSourceOrUnit === 'function'
+            ? (source: UnitType) =>
+                (filterOrSourceOrUnit as (s: UnitType) => boolean)(source)
+            : (source: UnitType) => source === filterOrSourceOrUnit
 
-      for (const [type, units] of Object.entries(data)) {
-        if (!units) continue
+      for (const [type, dice] of Object.entries(data)) {
+        if (!dice) continue
         if (!predicate(type as UnitType)) continue
-        for (let i = 0; i < units.length; i++) {
-          units[i] = [Math.max(1, units[i][0] + amount), units[i][1]]
+        for (let i = 0; i < dice.length; i++) {
+          dice[i] = [Math.max(1, dice[i][0] + amount), dice[i][1], dice[i][2]]
         }
       }
     },
@@ -83,17 +89,16 @@ export function buildDiceApi(pool: DicePool): DiceApi {
         strategyOrSource === 'BEST' ||
         strategyOrSource === 'WORST'
       ) {
-        // Find the unit entry with best/worst hit value across entire pool
         const isBest =
           strategyOrSource === undefined || strategyOrSource === 'BEST'
         let bestType: UnitType | undefined
         let bestIndex = -1
         let bestHitValue = isBest ? Infinity : -Infinity
 
-        for (const [type, units] of Object.entries(data)) {
-          if (!units) continue
-          for (let i = 0; i < units.length; i++) {
-            const hitValue = units[i][0]
+        for (const [type, dice] of Object.entries(data)) {
+          if (!dice) continue
+          for (let i = 0; i < dice.length; i++) {
+            const hitValue = dice[i][0]
             const better = isBest
               ? hitValue < bestHitValue
               : hitValue > bestHitValue
@@ -106,14 +111,17 @@ export function buildDiceApi(pool: DicePool): DiceApi {
         }
 
         if (bestType !== undefined && bestIndex >= 0) {
-          const units = data[bestType]!
-          units[bestIndex] = [units[bestIndex][0], units[bestIndex][1] + count]
+          const dice = data[bestType]!
+          dice[bestIndex] = [
+            dice[bestIndex][0],
+            dice[bestIndex][1] + count,
+            dice[bestIndex][2],
+          ]
         }
       } else {
-        // Add to specific source type — add to first unit of that type
-        const units = data[strategyOrSource]
-        if (!units || units.length === 0) return
-        units[0] = [units[0][0], units[0][1] + count]
+        const dice = data[strategyOrSource]
+        if (!dice || dice.length === 0) return
+        dice[0] = [dice[0][0], dice[0][1] + count, dice[0][2]]
       }
     },
   } as DiceApi

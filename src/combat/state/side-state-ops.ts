@@ -1,7 +1,8 @@
-import type { DiceData, UnitAbilityKey, UnitType } from '@/types'
+import type { UnitAbilityKey, UnitType } from '@/types'
 
-import type { DicePool } from '../abilities/types'
+import type { DicePool, DieValue } from '../abilities/types'
 import type { DestroyedUnit } from '../abilities/types'
+import { parseVariantId, unitMatchesVariant } from '../utils/unit-variant'
 import type {
   CombatMode,
   CombatSide,
@@ -208,19 +209,20 @@ export function collectDice(
       }
     }
 
-    const firstUnit = units[0]
-    if (!firstUnit) continue
+    const dice: DieValue[] = []
+    for (let i = 0; i < units.length; i++) {
+      const unit = units[i]
+      const dieData =
+        source === 'COMBAT' ? unit.COMBAT : unit.UNIT_ABILITIES?.[source]
+      if (!dieData) continue
 
-    const dieValue =
-      source === 'COMBAT'
-        ? firstUnit.COMBAT
-        : firstUnit.UNIT_ABILITIES?.[source]
-    if (!dieValue) continue
+      const [hitValue, dicePerUnit] = dieData
+      if (dicePerUnit <= 0) continue
+      dice.push([hitValue, dicePerUnit, unit])
+    }
+    if (dice.length === 0) continue
 
-    const [hitValue, dicePerUnit] = dieValue
-    if (dicePerUnit <= 0) continue
-
-    result[unitType] = units.map(() => [hitValue, dicePerUnit] as DiceData)
+    result[unitType] = dice
   }
 
   return result
@@ -251,7 +253,7 @@ export function assignHits(
   state: CombatStateData,
   side: CombatSide,
   participatingUnits: ReadonlySet<UnitType>,
-  unitPriority?: UnitType[],
+  unitPriority?: string[],
 ): CombatStateData {
   const sideState = state[side]
 
@@ -259,8 +261,11 @@ export function assignHits(
     return state
   }
 
-  const baseOrder = unitPriority ?? DEFAULT_UNIT_SACRIFICE_ORDER
-  const sacrificeOrder = baseOrder.filter(type => participatingUnits.has(type))
+  const baseOrder = unitPriority ?? (DEFAULT_UNIT_SACRIFICE_ORDER as string[])
+  const sacrificeOrder = baseOrder.filter(id => {
+    const { type } = parseVariantId(id)
+    return participatingUnits.has(type)
+  })
   let currentUnits = { ...sideState.units }
 
   for (const pool of sideState.hitPools) {
@@ -286,22 +291,30 @@ function destroyUnitsFromPool(
   units: Partial<Record<UnitType, Unit[]>>,
   hits: number,
   validTargets: UnitType[],
-  sacrificeOrder: UnitType[],
+  sacrificeOrder: string[],
 ): Partial<Record<UnitType, Unit[]>> {
   if (hits <= 0) return units
 
   const targetSet = validTargets.length > 0 ? new Set(validTargets) : null
-  const destroyCount = new Map<UnitType, number>()
+  const destroyIndices = new Map<UnitType, Set<number>>()
   let remaining = hits
 
-  for (const type of sacrificeOrder) {
+  for (const variantId of sacrificeOrder) {
     if (remaining <= 0) break
+    const { type } = parseVariantId(variantId)
     if (targetSet && !targetSet.has(type)) continue
     const typeUnits = units[type]
     if (!typeUnits) continue
-    const toDestroy = Math.min(typeUnits.length, remaining)
-    destroyCount.set(type, toDestroy)
-    remaining -= toDestroy
+
+    const alreadyMarked = destroyIndices.get(type) ?? new Set<number>()
+    for (let i = 0; i < typeUnits.length && remaining > 0; i++) {
+      if (alreadyMarked.has(i)) continue
+      if (unitMatchesVariant(typeUnits[i], variantId)) {
+        alreadyMarked.add(i)
+        remaining--
+      }
+    }
+    destroyIndices.set(type, alreadyMarked)
   }
 
   // Build new units object, removing destroyed units
@@ -309,8 +322,10 @@ function destroyUnitsFromPool(
 
   for (const [type, typeUnits] of Object.entries(units)) {
     const unitType = type as UnitType
-    const removeCount = destroyCount.get(unitType) ?? 0
-    const kept = typeUnits!.slice(removeCount)
+    const indices = destroyIndices.get(unitType)
+    const kept = indices
+      ? typeUnits!.filter((_, i) => !indices.has(i))
+      : typeUnits!
 
     if (kept.length > 0) {
       newUnits[unitType] = kept

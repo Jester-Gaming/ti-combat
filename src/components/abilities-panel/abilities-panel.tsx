@@ -1,14 +1,13 @@
 import { filter, groupBy, pipe } from 'remeda'
 
-import type { Ability } from '@/combat/abilities'
-import type { SideState } from '@/combat/state'
+import type { Ability, AbilityReadContext } from '@/combat/abilities'
 
 import styles from './abilities-panel.module.css'
 import { AbilityConfig } from './components/ability-config'
 
 interface AbilitiesPanelProps {
   abilities: Ability[]
-  sideState: SideState
+  readContext: AbilityReadContext
   params: Record<string, Record<string, unknown>>
   onParamsChange: (abilityName: string, params: Record<string, unknown>) => void
 }
@@ -41,7 +40,7 @@ function compareCategories(a: string, b: string): number {
 
 export function AbilitiesPanel({
   abilities,
-  sideState,
+  readContext,
   params,
   onParamsChange,
 }: AbilitiesPanelProps): React.ReactElement {
@@ -65,7 +64,7 @@ export function AbilitiesPanel({
               <AbilityConfig
                 key={ability.key}
                 ability={ability}
-                sideState={sideState}
+                readContext={readContext}
                 params={params[ability.key] ?? {}}
                 onParamsChange={newParams =>
                   onParamsChange(ability.key, newParams)
