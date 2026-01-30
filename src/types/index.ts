@@ -21,8 +21,13 @@ export const UNIT_TYPES: UnitType[] = [
 // Used in unit stats for COMBAT, AFB, etc.
 export type UnitDieValue = [number, number]
 
+// Per-unit dice data: [hitValue, diceCount]
+// Represents dice for a single unit instance
+export type DiceData = [number, number]
+
 // Collected dice for combat: [hitValue, totalDiceCount, source]
 // Source tracks which unit type generated the dice (for unit-specific modifiers)
+// Used in probability calculation (getCombinedDiceDistribution)
 export type DieValue = [number, number, UnitType]
 
 // Unit abilities

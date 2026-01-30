@@ -43,7 +43,7 @@ export const assaultCannon: Ability<Params> = {
     isEnabled: false,
     targetPriority: [...UNIT_TYPES],
   },
-  enableUI: true,
+  headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'START_OF_COMBAT',

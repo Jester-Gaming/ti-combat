@@ -7,6 +7,7 @@ import styles from './checkbox.module.css'
 interface CheckboxProps {
   checked: boolean
   onChange: (checked: boolean) => void
+  disabled?: boolean
   className?: string
   onClick?: MouseEventHandler<HTMLLabelElement>
 }
@@ -14,14 +15,19 @@ interface CheckboxProps {
 export function Checkbox({
   checked,
   onChange,
+  disabled,
   className,
   onClick,
 }: CheckboxProps): React.ReactElement {
   return (
-    <label className={clsx(styles.wrapper, className)} onClick={onClick}>
+    <label
+      className={clsx(styles.wrapper, disabled && styles.disabled, className)}
+      onClick={onClick}
+    >
       <input
         type="checkbox"
         checked={checked}
+        disabled={disabled}
         onChange={e => onChange(e.target.checked)}
         className={styles.hiddenInput}
       />

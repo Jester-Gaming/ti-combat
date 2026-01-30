@@ -1,7 +1,12 @@
 import type { Faction } from '@/types'
 
+import { arviconRex } from './arvicon-rex'
+
 export const mahact_gene_sorcerers: Faction = {
   name: 'Mahact Gene-Sorcerers',
+  abilities: {
+    faction: [arviconRex],
+  },
   units: {
     FLAGSHIP: {
       BASE: {

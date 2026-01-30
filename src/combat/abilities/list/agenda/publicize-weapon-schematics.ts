@@ -14,7 +14,7 @@ export const publicizeWeaponSchematics: Ability<Params> = {
   condition: {
     onlyDefender: true,
   },
-  enableUI: true,
+  headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'PREPARE',

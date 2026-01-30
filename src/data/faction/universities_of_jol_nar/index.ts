@@ -1,7 +1,12 @@
 import type { Faction } from '@/types'
 
+import { fragile } from './fragile'
+
 export const universities_of_jol_nar: Faction = {
   name: 'Universities of Jol-Nar',
+  abilities: {
+    faction: [fragile],
+  },
   units: {
     FLAGSHIP: {
       BASE: {

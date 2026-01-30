@@ -11,7 +11,8 @@ export const unrelenting: Ability<Params> = {
   defaultParams: {
     isEnabled: true,
   },
-  enableUI: true,
+  headerUI: 'isEnabled',
+  readOnly: true,
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',

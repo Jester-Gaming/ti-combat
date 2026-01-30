@@ -96,8 +96,19 @@ describe('CombatState', () => {
       const attackerDice = state.collectDice('attacker', 'COMBAT')
       const defenderDice = state.collectDice('defender', 'COMBAT')
 
-      expect(attackerDice).toEqual([[9, 3, 'FIGHTER']])
-      expect(defenderDice).toEqual([[7, 2, 'CRUISER']])
+      expect(attackerDice).toEqual({
+        FIGHTER: [
+          [9, 1],
+          [9, 1],
+          [9, 1],
+        ],
+      })
+      expect(defenderDice).toEqual({
+        CRUISER: [
+          [7, 1],
+          [7, 1],
+        ],
+      })
     })
 
     it('collects AFB dice from units with AFB ability', () => {
@@ -109,7 +120,12 @@ describe('CombatState', () => {
       )
 
       const dice = state.collectDice('attacker', 'AFB')
-      expect(dice).toEqual([[9, 4, 'DESTROYER']]) // 2 destroyers * 2 dice each
+      expect(dice).toEqual({
+        DESTROYER: [
+          [9, 2],
+          [9, 2],
+        ],
+      }) // 2 destroyers * 2 dice each
     })
 
     it('returns empty array for no matching units', () => {
@@ -121,7 +137,7 @@ describe('CombatState', () => {
       )
 
       const dice = state.collectDice('attacker', 'AFB')
-      expect(dice).toEqual([])
+      expect(dice).toEqual({})
     })
   })
 
@@ -458,9 +474,15 @@ describe('CombatState', () => {
       const dice = state.collectDice('attacker', 'COMBAT')
 
       // Should only collect dice from ground forces (infantry)
-      // Infantry has COMBAT: [8, 1], so 4 infantry = [[8, 4, 'INFANTRY']]
-      expect(dice).toHaveLength(1)
-      expect(dice[0]).toEqual([8, 4, 'INFANTRY'])
+      // Infantry has COMBAT: [8, 1], so 4 infantry = 4 entries
+      expect(dice).toEqual({
+        INFANTRY: [
+          [8, 1],
+          [8, 1],
+          [8, 1],
+          [8, 1],
+        ],
+      })
 
       // Cruisers should NOT contribute dice (they are not participating in ground combat)
     })
@@ -482,9 +504,13 @@ describe('CombatState', () => {
       const dice = state.collectDice('attacker', 'COMBAT')
 
       // Should only collect dice from ships (cruisers)
-      // Cruiser has COMBAT: [7, 1], so 2 cruisers = [[7, 2, 'CRUISER']]
-      expect(dice).toHaveLength(1)
-      expect(dice[0]).toEqual([7, 2, 'CRUISER'])
+      // Cruiser has COMBAT: [7, 1], so 2 cruisers = 2 entries
+      expect(dice).toEqual({
+        CRUISER: [
+          [7, 1],
+          [7, 1],
+        ],
+      })
 
       // Infantry should NOT contribute dice (they are not participating in space combat)
     })
@@ -556,8 +582,13 @@ describe('CombatState', () => {
 
       // Defender's PDS should contribute dice for Space Cannon
       const dice = state.collectDice('defender', 'SPACE_CANNON')
-      expect(dice).toHaveLength(1)
-      expect(dice[0]).toEqual([6, 3, 'PDS']) // 3 PDS with [6, 1] each
+      expect(dice).toEqual({
+        PDS: [
+          [6, 1],
+          [6, 1],
+          [6, 1],
+        ],
+      }) // 3 PDS with [6, 1] each
     })
   })
 })

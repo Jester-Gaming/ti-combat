@@ -1,11 +1,12 @@
 import type { Faction } from '@/types'
 
+import { imperator } from './imperator'
 import { rickarRickani } from './rickar-rickani'
 
 export const winnu: Faction = {
   name: 'Winnu',
   abilities: {
-    faction: [],
+    faction: [imperator],
     commander: [rickarRickani],
   },
   units: {

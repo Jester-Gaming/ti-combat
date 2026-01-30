@@ -14,7 +14,7 @@ interface AbilitiesPanelProps {
 }
 
 function hasUI(ability: Ability): boolean {
-  return ability.enableUI === true || (ability.uiConfig?.length ?? 0) > 0
+  return !!ability.headerUI || (ability.uiConfig?.length ?? 0) > 0
 }
 
 const CATEGORY_ORDER = [

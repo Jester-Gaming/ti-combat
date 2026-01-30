@@ -44,7 +44,15 @@
   color: hsl(var(--side-color));
 }
 
-.container.clickable .title {
+.container.readOnly {
+  cursor: default;
+}
+
+.container.readOnly:hover .title {
+  color: hsl(var(--muted-foreground));
+}
+
+.container.hasHeaderControl .title {
   flex: 1;
 }
 
@@ -78,6 +86,30 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.headerNumberInput {
+  @apply h-4 w-4 shrink-0 rounded border text-center text-[10px];
+  border-color: rgb(255 255 255 / 20%);
+  background-color: rgb(255 255 255 / 5%);
+  color: hsl(var(--foreground));
+  padding: 0;
+  outline: none;
+  appearance: textfield;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+}
+
+.headerNumberInput::-webkit-outer-spin-button,
+.headerNumberInput::-webkit-inner-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.headerNumberInput:focus {
+  border-color: hsl(var(--checkbox-color, var(--foreground)));
+  background-color: hsl(var(--checkbox-color, var(--foreground)) / 20%);
 }
 
 .configItems {

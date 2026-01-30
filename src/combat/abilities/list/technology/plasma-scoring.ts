@@ -13,7 +13,7 @@ export const plasmaScoring: Ability<Params> = {
     isEnabled: false,
     strategy: 'BEST',
   },
-  enableUI: true,
+  headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',

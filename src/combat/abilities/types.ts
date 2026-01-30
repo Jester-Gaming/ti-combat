@@ -1,4 +1,4 @@
-import type { DieValue, UnitAbilityKey, UnitType } from '@/types'
+import type { DiceData, FactionKey, UnitAbilityKey, UnitType } from '@/types'
 
 import type {
   CombatStateData,
@@ -25,8 +25,11 @@ export interface OwnOpponentContext<T> {
   opponent: T
 }
 
+// Per-unit dice pool: indices match the unit list for each type
+export type DicePool = Partial<Record<UnitType, DiceData[]>>
+
 // Sided version for external API
-export type SidedDiceData = SidedContext<DieValue[]>
+export type SidedDiceData = SidedContext<DicePool>
 
 // ============================================================================
 // DICE API — read-only (for isCallable) and read-write (for call)
@@ -34,8 +37,8 @@ export type SidedDiceData = SidedContext<DieValue[]>
 
 /** Read-only API for querying dice */
 export interface DiceReadApi {
-  getAll(): readonly DieValue[]
-  get(source: UnitType): DieValue | undefined
+  getAll(): DicePool
+  get(source: UnitType): readonly DiceData[] | undefined
   count(): number
   isEmpty(): boolean
 }
@@ -44,6 +47,7 @@ export interface DiceReadApi {
 export interface DiceApi extends DiceReadApi {
   modifyHitValue(amount: number): void
   modifyHitValue(amount: number, source: UnitType): void
+  modifyHitValue(amount: number, source: UnitType, unitIndex: number): void
   modifyHitValue(amount: number, filter: (source: UnitType) => boolean): void
 
   addDice(count: number): void
@@ -87,6 +91,7 @@ export type AbilityTiming = keyof TimingContextMap
 
 /** Read-only API for querying one side's state */
 export interface SideReadApi {
+  getFaction(): FactionKey
   getUnits(): Partial<Record<UnitType, Unit[]>>
   getUnits(unitType: UnitType): Unit[]
   hasUnit(unitType: UnitType): boolean
@@ -188,7 +193,7 @@ type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
       isCallable?: (params: TParams, ctx: AbilityReadContext) => boolean
       call: (ctx: AbilityCallContext, params: TParams) => void
     }
-  : InternalTimingContextMap[T] extends OwnOpponentContext<DieValue[]>
+  : InternalTimingContextMap[T] extends OwnOpponentContext<DicePool>
     ? {
         // Dice timings (BEFORE_DICE_ROLL, BEFORE_UNIT_ABILITY_ROLL)
         isCallable?: (
@@ -305,7 +310,8 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   name: string // Display name for UI
   category: AbilityCategory
   defaultParams?: Params
-  enableUI?: boolean // Show enable checkbox in header, controls ENABLED param
+  headerUI?: string & keyof Params // Param key to render in header (checkbox for boolean, number input for number)
+  readOnly?: boolean // Show UI but prevent user from changing the enable state
   uiConfig?: UIConfig<Params>
   /** Conditions restricting which side can use this ability */
   condition?: AbilityCondition

@@ -21,7 +21,7 @@ export const entropicScar: Ability<Params> = {
   defaultParams: {
     isEnabled: false,
   },
-  enableUI: true,
+  headerUI: 'isEnabled',
   condition: { onlyDefender: true },
   invoke: [
     {

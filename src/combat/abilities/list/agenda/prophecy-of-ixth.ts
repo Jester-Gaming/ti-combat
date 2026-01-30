@@ -11,7 +11,7 @@ export const prophecyOfIxth: Ability<Params> = {
   defaultParams: {
     isEnabled: false,
   },
-  enableUI: true,
+  headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',

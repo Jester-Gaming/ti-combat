@@ -14,7 +14,7 @@ export const twoRam: Ability<Params> = {
   defaultParams: {
     isEnabled: false,
   },
-  enableUI: true,
+  headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'PREPARE',

@@ -4,14 +4,15 @@ type Params = {
   isEnabled: boolean
 }
 
-export const rickarRickani: Ability<Params> = {
-  key: 'RICKAR_RICKANI',
-  name: '(Winnu) Rickar Rickani',
-  category: 'COMMANDER',
+export const fragile: Ability<Params> = {
+  key: 'FRAGILE',
+  name: 'Fragile',
+  category: 'FACTION',
   defaultParams: {
-    isEnabled: false,
+    isEnabled: true,
   },
   headerUI: 'isEnabled',
+  readOnly: true,
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
@@ -19,7 +20,7 @@ export const rickarRickani: Ability<Params> = {
         return params.isEnabled
       },
       call: (_ctx, _params: Params, dice: DiceContext) => {
-        dice.own.modifyHitValue(-2)
+        dice.own.modifyHitValue(1)
       },
     },
   ],

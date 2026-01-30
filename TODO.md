@@ -20,7 +20,7 @@
 - [ ] **Non-Euclidean Shielding** (Faction Technology) — When 1 of your units uses Sustain Damage, cancel 2 hits instead of 1.
 - [x] **Arc Secundus** (Flagship) — Other players' units in this system lose Planetary Shield. At the start of each space combat round, repair this ship.
 - [ ] **Viscount Unlenn** (Agent) — At the start of a space combat round: You may exhaust this card to choose 1 ship in the active system; that ship rolls 1 additional die during this combat round.
-- [ ] **Gravleash Maneuvers** (Breakthrough) — Before you roll dice during space combat, apply +X to the results of 1 of your ship's rolls, where X is the number of ship types you have in the combat.
+- [x] **Gravleash Maneuvers** (Breakthrough) — Before you roll dice during space combat, apply +X to the results of 1 of your ship's rolls, where X is the number of ship types you have in the combat.
 
 ### Clan of Saar
 
@@ -59,8 +59,7 @@
 
 - [ ] **Vos Hollow** (Agent) — When a player's ship is destroyed during any combat: You may exhaust this card; if you do, that player's opponent must destroy 1 of their ships of the same type in the active system.
 - [x] **Aroz Hollow** (Commander) — Apply +1 to the result of each of your units' combat rolls in The Fracture.
-- [ ] **Obsidian Alliance** — Apply +1 to the result of each of your units' combat rolls in The Fracture.
-- [ ] **Assail** (Plot) — Apply +1 to the results of each of your combat and unit ability rolls against the puppeted player.
+- [x] **Assail** (Plot) — Apply +1 to the results of each of your combat and unit ability rolls against the puppeted player.
 
 ### Ghosts of Creuss
 
@@ -72,7 +71,7 @@
 - [ ] **Phoenix Standard** (Faction Ability) — At the end of combat, you may galvanize 1 of your units that participated.
 - [ ] **Raise the Standard** (Promissory Note) — At the end of a combat: Galvanize 1 of your units that participated. Then, return this card to the Last Bastion player.
 - [ ] **Proxima Targeting VI** (Faction Technology) — Cancel 1 hit produced by Bombardment rolls made against your ground forces for each of your galvanized units present. At the start of a round of ground combat you may resolve Bombardment 8 (x3) against your opponent's ground forces; if you do, make an identical roll against your own ground forces.
-- [ ] **The Egeiro** (Flagship) — Apply +1 to the result of each of this unit's combat rolls for each non-home system that contains a planet you control.
+- [x] **The Egeiro** (Flagship) — Apply +1 to the result of each of this unit's combat rolls for each non-home system that contains a planet you control.
 - [ ] **Dame Briar** (Agent) — When a player's unit is destroyed: You may exhaust this card to galvanize another of that player's units in the destroyed unit's system.
 - [ ] **Entity 4X41A "Apollo"** (Hero) — When one of your galvanized units is destroyed: You may purge this card to roll 1 die for each unit in its system that belongs to another player; if the result is equal to or greater than the galvanized unit's combat value, destroy that unit.
 - [ ] **A3 Valiance** (Mech) — When this unit is destroyed, if it was galvanized, galvanize up to 3 of your infantry in its system.
@@ -86,7 +85,7 @@
 
 ### Mahact Gene-Sorcerers
 
-- [ ] **Arvicon Rex** (Flagship) — During combat against an opponent whose command token is not in your fleet pool, apply +2 to the results of this unit's combat rolls.
+- [x] **Arvicon Rex** (Flagship) — During combat against an opponent whose command token is not in your fleet pool, apply +2 to the results of this unit's combat rolls.
 
 ### Mentak Coalition
 
@@ -102,7 +101,7 @@
 
 ### Naaz-Rokha Alliance
 
-- [ ] **Supercharge** (Faction Technology) — At the start of a combat round, you may exhaust this card to apply +1 to the result of each of your unit's combat rolls during this combat round.
+- [x] **Supercharge** (Faction Technology) — At the start of a combat round, you may exhaust this card to apply +1 to the result of each of your unit's combat rolls during this combat round.
 - [ ] **Visz El Vir** (Flagship) — Your mechs in this system roll 1 additional die during combat.
 - [ ] **Eidolon** (Mech) — Combat: 6 (x2). If this unit is in the space area of the active system at the start of a space combat, flip this card.
 - [ ] **Z-Grav Eidolon** (Mech flipped) — Combat: 8 (x2). If this unit is in the space area of the active system, it is also a ship.
@@ -112,7 +111,7 @@
 
 - [ ] **Technological Singularity** (Faction Ability) — Once per combat, after 1 of your opponent's units is destroyed, you may gain 1 technology that is owned by that player.
 - [ ] **The Alastor** (Flagship) — At the start of a space combat, choose any number of your ground forces in this system to participate in that combat as if they were ships.
-- [ ] **Mordred** (Mech) — During combat against an opponent who has an "X" or "Y" token on 1 or more of their technologies, apply +2 to the result of each of this unit's combat rolls.
+- [x] **Mordred** (Mech) — During combat against an opponent who has an "X" or "Y" token on 1 or more of their technologies, apply +2 to the result of each of this unit's combat rolls.
 
 ### Nomad
 
@@ -129,7 +128,7 @@
 ### Sardakk N'orr
 
 - [x] **Unrelenting** (Faction Ability) — Apply +1 to the result of each of your unit's combat rolls.
-- [ ] **Tekklar Legion** (Promissory Note) — At the start of an invasion combat: Apply +1 to the result of each of your unit's combat rolls during this combat. If your opponent is the N'orr player, apply -1 to the result of each of their unit's combat rolls during this combat. Then, return this card to the N'orr player.
+- [x] **Tekklar Legion** (Promissory Note) — At the start of an invasion combat: Apply +1 to the result of each of your unit's combat rolls during this combat. If your opponent is the N'orr player, apply -1 to the result of each of their unit's combat rolls during this combat. Then, return this card to the N'orr player.
 - [ ] **Exotrireme II** (Faction Technology) — This unit cannot be destroyed by "Direct Hit" action cards. After a round of space combat, you may destroy this unit to destroy up to 2 ships in this system.
 - [ ] **Valkyrie Particle Weave** (Faction Technology) — After making combat rolls during a round of ground combat, if your opponent produced 1 or more hits, you produce 1 additional hit.
 - [x] **C'morran N'orr** (Flagship) — Apply +1 to the result of each of your other ship's combat rolls in this system.
@@ -143,7 +142,7 @@
 
 ### Universities of Jol-Nar
 
-- [ ] **Fragile** (Faction Ability) — Apply -1 to the result of each of your unit's combat rolls.
+- [x] **Fragile** (Faction Ability) — Apply -1 to the result of each of your unit's combat rolls.
 - [ ] **J.N.S. Hylarim** (Flagship) — When making a combat roll for this ship, each result of 9 or 10, before applying modifiers, produces 2 additional hits.
 - [ ] **Agnlan Oln** (Commander) — After you roll dice for a unit ability: You may reroll any of those dice.
 - [ ] **Shield Paling** (Mech) — Your infantry on this planet are not affected by your Fragile faction ability.
@@ -154,7 +153,7 @@
 
 - [ ] **Salai Sai Corian** (Flagship) — When this unit makes a combat roll, it rolls a number of dice equal to the number of your opponent's non-fighter ships in this system.
 - [x] **Rickar Rickani** (Commander) — During combat: Apply +2 to the result of each of your unit's combat rolls in the Mecatol Rex system, your home system, and each system that contains a legendary planet.
-- [ ] **Imperator** (Breakthrough) — Apply +1 to the results of each of your unit's combat rolls for each "Support for the Throne" in your opponent's play area.
+- [x] **Imperator** (Breakthrough) — Apply +1 to the results of each of your unit's combat rolls for each "Support for the Throne" in your opponent's play area.
 
 ### Xxcha Kingdom
 
@@ -176,16 +175,16 @@
 
 ## ACTION CARDS
 
-- [ ] **Bunker** — At the start of an invasion: During this invasion, apply -4 to the result of each Bombardment roll against planets you control.
+- [x] **Bunker** — At the start of an invasion: During this invasion, apply -4 to the result of each Bombardment roll against planets you control.
 - [ ] **Courageous to the End** — After 1 of your ships is destroyed during a space combat: Roll 2 dice. For each result equal to or greater than that ship's combat value, your opponent must choose and destroy 1 of their ships.
 - [ ] **Direct Hit** (x4) — After another player's ship uses Sustain Damage to cancel a hit produced by your units or abilities: Destroy that ship.
 - [x] **Disable** — At the start of an invasion in a system that contains 1 or more of your opponents' PDS units: Your opponents' PDS units lose Planetary Shield and Space Cannon during this invasion.
 - [ ] **Emergency Repairs** — At the start or end of a combat round: Repair all of your units that have Sustain Damage in the active system.
 - [ ] **Experimental Battlestation** — After another player moves ships into a system during a tactical action: Choose 1 of your space docks that is either in or adjacent to that system. That space dock uses Space Cannon 5 (x3) against ships in the active system.
-- [ ] **Fighter Prototype** — At the start of the first round of a space combat: Apply +2 to the result of each of your fighters' combat rolls during this combat round.
+- [x] **Fighter Prototype** — At the start of the first round of a space combat: Apply +2 to the result of each of your fighters' combat rolls during this combat round.
 - [ ] **Fire Team** — After your ground forces make combat rolls during a round of ground combat: Reroll any number of your dice.
 - [ ] **Maneuvering Jets** (x4) — Before you assign hits produced by another player's Space Cannon roll: Cancel 1 hit.
-- [ ] **Morale Boost** (x4) — At the start of a combat round: Apply +1 to the result of each of your unit's combat rolls during this combat round.
+- [x] **Morale Boost** (x4) — At the start of a combat round: Apply +1 to the result of each of your unit's combat rolls during this combat round.
 - [ ] **Shields Holding** (x4) — Before you assign hits to your ships during a space combat: Cancel up to 2 hits.
 - [ ] **Blitz** — At the start of an invasion: Each of your non-fighter ships in the active system that do not have Bombardment gain Bombardment 6 until the end of the invasion.
 - [ ] **Reflective Shielding** — When one of your ships uses Sustain Damage during combat: Produce 2 hits against your opponent's ships in the active system.
@@ -199,7 +198,7 @@
 
 ## Technology
 
-- [ ] **Antimass Deflectors** — When other players' units use Space Cannon against your units, apply -1 to the result of each die roll.
+- [x] **Antimass Deflectors** — When other players' units use Space Cannon against your units, apply -1 to the result of each die roll.
 - [ ] **X-89 Bacterial Weapon** — Double the hits produced by your units' Bombardment and ground combat rolls. Exhaust each planet you use Bombardment against.
 - [x] **Plasma Scoring** — When 1 or more of your units use Bombardment or Space Cannon, 1 of those units may roll 1 additional die.
 - [ ] **Magen Defense Grid** — When any player activates a system that contains 1 or more of your structures, place 1 infantry from your reinforcements with each of those structures. At the start of ground combat on a planet that contains 1 or more of your structures, produce 1 hit and assign it to 1 of your opponent's ground forces.

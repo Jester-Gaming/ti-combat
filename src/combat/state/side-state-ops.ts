@@ -1,5 +1,6 @@
-import type { DieValue, UnitAbilityKey, UnitType } from '@/types'
+import type { DiceData, UnitAbilityKey, UnitType } from '@/types'
 
+import type { DicePool } from '../abilities/types'
 import type { DestroyedUnit } from '../abilities/types'
 import type {
   CombatSide,
@@ -143,8 +144,8 @@ export function collectDice(
   sideState: SideState,
   source: HitSource,
   participatingUnits: ReadonlySet<UnitType>,
-): DieValue[] {
-  const result: DieValue[] = []
+): DicePool {
+  const result: DicePool = {}
 
   // SPACE_CANNON and BOMBARDMENT are pre-combat abilities that fire regardless of
   // combat participation. PDS fires Space Cannon but is not a combat participant.
@@ -181,8 +182,7 @@ export function collectDice(
     const [hitValue, dicePerUnit] = dieValue
     if (dicePerUnit <= 0) continue
 
-    const totalDice = units.length * dicePerUnit
-    result.push([hitValue, totalDice, unitType])
+    result[unitType] = units.map(() => [hitValue, dicePerUnit] as DiceData)
   }
 
   return result

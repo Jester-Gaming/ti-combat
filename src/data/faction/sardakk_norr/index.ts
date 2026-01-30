@@ -1,4 +1,5 @@
 import { sardakkFlagshipAbility } from '@/data/faction/sardakk_norr/flagship-ability'
+import { tekklarLegion } from '@/data/faction/sardakk_norr/tekklar-legion'
 import { unrelenting } from '@/data/faction/sardakk_norr/unrelenting'
 import type { Faction } from '@/types'
 
@@ -54,5 +55,6 @@ export const sardakk_norr: Faction = {
   },
   abilities: {
     faction: [unrelenting],
+    promissory: [tekklarLegion],
   },
 }

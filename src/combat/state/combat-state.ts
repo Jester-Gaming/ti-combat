@@ -6,7 +6,11 @@ import {
   type RunAbilitiesResult,
   type SidedDiceData,
 } from '../abilities'
-import type { AbilityTiming, TimingContextMap } from '../abilities/types'
+import type {
+  AbilityTiming,
+  DicePool,
+  TimingContextMap,
+} from '../abilities/types'
 import { getCombinedDiceDistribution } from '../dice'
 import type { LogEntry } from '../types'
 import {
@@ -132,6 +136,28 @@ function getParticipatingUnitsFromData(
   return new Set(units)
 }
 
+/** Flatten a DicePool into DieValue[] for probability calculation */
+function flattenDicePool(pool: DicePool): DieValue[] {
+  const result: DieValue[] = []
+
+  for (const [type, units] of Object.entries(pool)) {
+    if (!units || units.length === 0) continue
+    const unitType = type as UnitType
+
+    // Group by hitValue for efficiency
+    const grouped = new Map<number, number>()
+    for (const [hitValue, diceCount] of units) {
+      grouped.set(hitValue, (grouped.get(hitValue) ?? 0) + diceCount)
+    }
+
+    for (const [hitValue, totalDice] of grouped) {
+      result.push([hitValue, totalDice, unitType])
+    }
+  }
+
+  return result
+}
+
 /** Main combat state class */
 export class CombatState implements CombatStateData {
   readonly data: CombatStateData
@@ -189,7 +215,7 @@ export class CombatState implements CombatStateData {
   }
 
   /** Collect dice for a side and source */
-  collectDice(side: CombatSide, source: HitSource): DieValue[] {
+  collectDice(side: CombatSide, source: HitSource): DicePool {
     const participatingUnits = this.getParticipatingUnits(side)
     return collectDice(this[side], source, participatingUnits)
   }
@@ -440,8 +466,12 @@ export class CombatState implements CombatStateData {
     validTargets: UnitType[],
     prependLog?: LogEntry[],
   ): StateWithProbability[] {
-    const attackerDist = getCombinedDiceDistribution(modifiedDice.attacker)
-    const defenderDist = getCombinedDiceDistribution(modifiedDice.defender)
+    const attackerDist = getCombinedDiceDistribution(
+      flattenDicePool(modifiedDice.attacker),
+    )
+    const defenderDist = getCombinedDiceDistribution(
+      flattenDicePool(modifiedDice.defender),
+    )
     const { meta: metaPhase } = this.currentPhase
 
     const results: StateWithProbability[] = []
@@ -551,10 +581,10 @@ export class CombatState implements CombatStateData {
     // Collect dice based on firing configuration
     const attackerDice = firing.includes('attacker')
       ? this.collectDice('attacker', hitSource)
-      : []
+      : {}
     const defenderDice = firing.includes('defender')
       ? this.collectDice('defender', hitSource)
-      : []
+      : {}
 
     const sidedDiceData: SidedDiceData = {
       attacker: attackerDice,

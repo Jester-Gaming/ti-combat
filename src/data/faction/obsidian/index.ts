@@ -1,11 +1,12 @@
 import type { Faction } from '@/types'
 
 import { arozHollow } from './aroz-hollow'
+import { assail } from './assail'
 
 export const obsidian: Faction = {
   name: 'Obsidian',
   abilities: {
-    faction: [],
+    faction: [assail],
     commander: [arozHollow],
   },
   units: {

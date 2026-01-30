@@ -127,6 +127,10 @@ export function buildReadApi(
   const sideState = state[side]
 
   const api: SideReadApi = {
+    getFaction() {
+      return sideState.faction
+    },
+
     getUnits(unitType?: UnitType) {
       if (unitType !== undefined) {
         return sideState.units[unitType] ?? []
@@ -173,6 +177,10 @@ export function buildApi(
   abilityKey: string,
 ): SideApi {
   const api: SideApi = {
+    getFaction() {
+      return draft[side].faction
+    },
+
     getUnits(unitType?: UnitType) {
       if (unitType !== undefined) {
         return draft[side].units[unitType] ?? []

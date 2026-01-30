@@ -14,7 +14,7 @@ export const conventionsOfWar: Ability<Params> = {
   condition: {
     onlyDefender: true,
   },
-  enableUI: true,
+  headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'PREPARE',

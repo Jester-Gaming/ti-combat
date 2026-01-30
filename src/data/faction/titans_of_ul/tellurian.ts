@@ -9,7 +9,7 @@ export const tellurian: Ability<Params> = {
   key: 'TELLURIAN',
   name: '(Titan) Tellurian',
   category: 'AGENT',
-  enableUI: true,
+  headerUI: 'isEnabled',
   defaultParams: {
     isEnabled: false,
     uses: 1,

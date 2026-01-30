@@ -4,6 +4,10 @@
   @apply inline-flex cursor-pointer;
 }
 
+.disabled {
+  @apply cursor-default opacity-50;
+}
+
 .hiddenInput {
   @apply sr-only;
 }

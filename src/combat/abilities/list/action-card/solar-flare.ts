@@ -11,7 +11,7 @@ export const solarFlare: Ability<Params> = {
   defaultParams: {
     isEnabled: false,
   },
-  enableUI: true,
+  headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'PREPARE_SPACE',

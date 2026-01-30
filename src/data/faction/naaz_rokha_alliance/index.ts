@@ -1,7 +1,12 @@
 import type { Faction } from '@/types'
 
+import { supercharge } from './supercharge'
+
 export const naaz_rokha_alliance: Faction = {
   name: 'Naaz-Rokha Alliance',
+  abilities: {
+    faction: [supercharge],
+  },
   units: {
     FLAGSHIP: {
       BASE: {

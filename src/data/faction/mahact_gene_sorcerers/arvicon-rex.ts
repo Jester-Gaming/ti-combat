@@ -4,10 +4,10 @@ type Params = {
   isEnabled: boolean
 }
 
-export const rickarRickani: Ability<Params> = {
-  key: 'RICKAR_RICKANI',
-  name: '(Winnu) Rickar Rickani',
-  category: 'COMMANDER',
+export const arviconRex: Ability<Params> = {
+  key: 'ARVICON_REX',
+  name: '(Mahact) Arvicon Rex',
+  category: 'FACTION',
   defaultParams: {
     isEnabled: false,
   },
@@ -19,7 +19,7 @@ export const rickarRickani: Ability<Params> = {
         return params.isEnabled
       },
       call: (_ctx, _params: Params, dice: DiceContext) => {
-        dice.own.modifyHitValue(-2)
+        dice.own.modifyHitValue(-2, 'FLAGSHIP')
       },
     },
   ],

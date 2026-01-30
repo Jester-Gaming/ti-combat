@@ -1,6 +1,6 @@
 import { produce } from 'immer'
 
-import type { DieValue, UnitType } from '@/types'
+import type { UnitType } from '@/types'
 
 import { getDestroyedUnits, getOpponentSide } from '../state/side-state-ops'
 import type {
@@ -17,6 +17,7 @@ import type {
   AbilityTiming,
   DestroyedUnit,
   DiceContext,
+  DicePool,
   DiceReadContext,
   InternalTimingContextMap,
   OwnOpponentContext,
@@ -381,7 +382,7 @@ function tryResolveOneAbility<T extends AbilityTiming>(
 
     let canCall: boolean
     if (diceTiming && internalContext) {
-      const rawDice = internalContext as OwnOpponentContext<DieValue[]>
+      const rawDice = internalContext as OwnOpponentContext<DicePool>
       const diceReadCtx: DiceReadContext = {
         own: buildDiceReadApi(rawDice.own),
         opponent: buildDiceReadApi(rawDice.opponent),
@@ -408,7 +409,7 @@ function tryResolveOneAbility<T extends AbilityTiming>(
       // Wrap call in Immer produce
       let resultState: CombatStateData
       if (diceTiming && internalContext) {
-        const rawDice = internalContext as OwnOpponentContext<DieValue[]>
+        const rawDice = internalContext as OwnOpponentContext<DicePool>
         const diceCallCtx: DiceContext = {
           own: buildDiceApi(rawDice.own),
           opponent: buildDiceApi(rawDice.opponent),

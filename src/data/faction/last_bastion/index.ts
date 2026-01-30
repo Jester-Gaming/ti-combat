@@ -1,7 +1,12 @@
 import type { Faction } from '@/types'
 
+import { theEgeiro } from './the-egeiro'
+
 export const last_bastion: Faction = {
   name: 'Last Bastion',
+  abilities: {
+    faction: [theEgeiro],
+  },
   units: {
     FLAGSHIP: {
       BASE: {

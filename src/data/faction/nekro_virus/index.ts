@@ -1,7 +1,12 @@
 import type { Faction } from '@/types'
 
+import { mordred } from './mordred'
+
 export const nekro_virus: Faction = {
   name: 'Nekro Virus',
+  abilities: {
+    faction: [mordred],
+  },
   units: {
     FLAGSHIP: {
       BASE: {

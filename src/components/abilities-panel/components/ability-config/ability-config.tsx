@@ -62,10 +62,17 @@ export function AbilityConfig({
     setIsCollapsed(prev => !prev)
   }
 
+  const headerParamKey = ability.headerUI
+  const headerParamValue = headerParamKey
+    ? (params[headerParamKey] ?? ability.defaultParams?.[headerParamKey])
+    : undefined
+  const isHeaderBoolean = typeof headerParamValue === 'boolean'
+  const isHeaderNumber = typeof headerParamValue === 'number'
+
   function handleContainerClick(e: React.MouseEvent): void {
-    if (ability.enableUI) {
+    if (headerParamKey && isHeaderBoolean && !ability.readOnly) {
       e.stopPropagation()
-      handleCheckboxChange('isEnabled', !params.isEnabled)
+      handleCheckboxChange(headerParamKey, !params[headerParamKey])
     }
   }
 
@@ -74,9 +81,37 @@ export function AbilityConfig({
     toggleCollapsed()
   }
 
+  const headerControl = headerParamKey ? (
+    isHeaderBoolean ? (
+      <Checkbox
+        checked={!!params[headerParamKey]}
+        disabled={ability.readOnly}
+        onChange={checked => handleCheckboxChange(headerParamKey, checked)}
+        onClick={event => event.stopPropagation()}
+      />
+    ) : isHeaderNumber ? (
+      <input
+        type="number"
+        className={styles.headerNumberInput}
+        value={
+          (params[headerParamKey] ??
+            ability.defaultParams?.[headerParamKey] ??
+            0) as number
+        }
+        min={0}
+        disabled={ability.readOnly}
+        onChange={e => {
+          e.stopPropagation()
+          handleNumberChange(headerParamKey, Number(e.target.value))
+        }}
+        onClick={e => e.stopPropagation()}
+      />
+    ) : null
+  ) : null
+
   const header = (
     <div className={styles.header}>
-      {ability.enableUI ? (
+      {headerParamKey ? (
         <>
           {isCollapsible ? (
             <button
@@ -92,11 +127,7 @@ export function AbilityConfig({
             <span className={styles.collapseIndent} />
           )}
           <span className={styles.title}>{ability.name}</span>
-          <Checkbox
-            checked={!!params.isEnabled}
-            onChange={checked => handleCheckboxChange('isEnabled', checked)}
-            onClick={event => event.stopPropagation()}
-          />
+          {headerControl}
         </>
       ) : (
         <button
@@ -120,8 +151,12 @@ export function AbilityConfig({
 
   return (
     <div
-      className={`${styles.container} ${ability.enableUI ? styles.clickable : ''}`}
-      onClick={ability.enableUI ? handleContainerClick : undefined}
+      className={`${styles.container} ${headerParamKey ? styles.hasHeaderControl : ''} ${headerParamKey && isHeaderBoolean ? styles.clickable : ''} ${ability.readOnly ? styles.readOnly : ''}`}
+      onClick={
+        headerParamKey && isHeaderBoolean && !ability.readOnly
+          ? handleContainerClick
+          : undefined
+      }
     >
       {header}
       {hasConfigItems && !isCollapsed && (

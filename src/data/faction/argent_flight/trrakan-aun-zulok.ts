@@ -16,7 +16,7 @@ export const trrakanAunZulok: Ability<Params> = {
   key: 'TRRAKAN_AUN_ZULOK',
   name: '(Argent) Trrakan Aun Zulok',
   category: 'COMMANDER',
-  enableUI: true,
+  headerUI: 'isEnabled',
   defaultParams: {
     isEnabled: false,
     phases: [...UNIT_ABILITY_PHASES],

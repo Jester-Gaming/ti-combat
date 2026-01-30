@@ -17,7 +17,7 @@ export const strikeWingAmbuscade: Ability<Params> = {
   key: 'STRIKE_WING_AMBUSCADE',
   name: '(Argent) Strike Wing Ambuscade',
   category: 'PROMISSORY',
-  enableUI: true,
+  headerUI: 'isEnabled',
   defaultParams: {
     isEnabled: false,
     uses: 1,
