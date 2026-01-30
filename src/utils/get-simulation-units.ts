@@ -1,10 +1,6 @@
-import type { Unit } from '@/combat'
-import {
-  type SideState,
-  UNIT_TYPES,
-  type UnitDataStats,
-  type UnitType,
-} from '@/types'
+import { UNIT_TYPES } from '@/constants/units'
+import type { Unit } from '@/types'
+import { type SideState, type UnitStats, type UnitType } from '@/types'
 
 import { getFactionUnitConfig } from './get-faction-unit-config'
 
@@ -49,10 +45,10 @@ export function getSimulationUnits(
  * Returns null if no valid stats exist.
  */
 function getEffectiveStats(
-  baseStats: UnitDataStats | null | undefined,
-  upgradedStats: Partial<UnitDataStats> | undefined,
+  baseStats: UnitStats,
+  upgradedStats: Partial<UnitStats> | undefined,
   isUpgraded: boolean,
-): UnitDataStats | null {
+): UnitStats | null {
   if (isUpgraded && upgradedStats) {
     return {
       ...baseStats,
@@ -66,10 +62,6 @@ function getEffectiveStats(
 
   if (baseStats) {
     return { ...baseStats }
-  }
-
-  if (upgradedStats) {
-    return { ...upgradedStats }
   }
 
   return null

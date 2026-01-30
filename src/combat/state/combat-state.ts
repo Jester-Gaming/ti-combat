@@ -1,4 +1,4 @@
-import type { DiceGroup, UnitType } from '@/types'
+import type { CombatSide, DiceGroup, UnitType } from '@/types'
 
 import {
   getAbilityParams,
@@ -33,7 +33,6 @@ import {
 import type {
   AbilitiesConfig,
   CombatMode,
-  CombatSide,
   CombatStateData,
   HitSource,
   PhaseIdentifier,
@@ -57,7 +56,7 @@ function getParticipatingUnitsFromData(
   data: CombatStateData,
   side: CombatSide,
 ): ReadonlySet<UnitType> {
-  const params = getAbilityParams(data.abilities, side, 'SETTINGS')
+  const params = getAbilityParams(data, side, 'SETTINGS')
   if (!params) {
     // Fallback: all units with count > 0 are participating
     return new Set(Object.keys(data[side].units) as UnitType[])
@@ -120,14 +119,14 @@ export class CombatState implements CombatStateData {
   constructor(
     attacker: SideState,
     defender: SideState,
-    abilities: AbilitiesConfig,
     combatMode: CombatMode,
+    abilitiesConfig?: AbilitiesConfig,
     currentPhase?: PhaseIdentifier,
   ) {
     this.data = {
       attacker,
       defender,
-      abilities,
+      abilities: abilitiesConfig ?? { attacker: {}, defender: {} },
       combatMode,
       currentPhase: currentPhase ?? getInitialPhaseIdentifier(combatMode),
     }
@@ -138,7 +137,7 @@ export class CombatState implements CombatStateData {
       combatMode === 'SPACE'
         ? (['PREPARE', 'PREPARE_SPACE'] as const)
         : (['PREPARE', 'PREPARE_GROUND'] as const)
-    const { state: newData } = runAbilities([...prepareTimings], this.data)
+    const { state: newData } = this.runAbilities([...prepareTimings])
 
     this.data = newData
   }
@@ -163,9 +162,9 @@ export class CombatState implements CombatStateData {
   /** Get valid targets for the current phase from SETTINGS ability for a specific side */
   private getValidTargetsForPhase(
     side: CombatSide,
-    abilities: AbilitiesConfig = this.abilities,
+    stateData: CombatStateData = this.data,
   ): UnitType[] {
-    const params = getAbilityParams(abilities, side, 'SETTINGS')
+    const params = getAbilityParams(stateData, side, 'SETTINGS')
     if (!params) return []
     return getSettingsValidTargets(
       params,
@@ -176,7 +175,7 @@ export class CombatState implements CombatStateData {
 
   /** Get unit priority from UNIT_PRIORITY ability if present */
   private getUnitPriority(side: CombatSide): string[] | undefined {
-    const params = getAbilityParams(this.abilities, side, 'UNIT_PRIORITY')
+    const params = getAbilityParams(this.data, side, 'UNIT_PRIORITY')
     if (!params) return undefined
     return params.unitPriority as string[] | undefined
   }
@@ -494,8 +493,8 @@ export class CombatState implements CombatStateData {
       afterWhen,
       modifiedDice,
       {
-        attacker: this.getValidTargetsForPhase('attacker', afterWhen.abilities),
-        defender: this.getValidTargetsForPhase('defender', afterWhen.abilities),
+        attacker: this.getValidTargetsForPhase('attacker', afterWhen),
+        defender: this.getValidTargetsForPhase('defender', afterWhen),
       },
       abilityLog.length > 0 ? abilityLog : undefined,
     )
@@ -557,8 +556,8 @@ export class CombatState implements CombatStateData {
       afterWhen,
       modifiedDice,
       {
-        attacker: this.getValidTargetsForPhase('attacker', afterWhen.abilities),
-        defender: this.getValidTargetsForPhase('defender', afterWhen.abilities),
+        attacker: this.getValidTargetsForPhase('attacker', afterWhen),
+        defender: this.getValidTargetsForPhase('defender', afterWhen),
       },
       abilityLog.length > 0 ? abilityLog : undefined,
     )

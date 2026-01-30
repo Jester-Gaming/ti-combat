@@ -1,7 +1,5 @@
-import type { UnitType } from '@/types'
-import { UNIT_DISPLAY_NAMES } from '@/utils/get-unit-config'
-
-import type { Unit } from '../state/types'
+import { UNIT_DISPLAY_NAMES } from '@/constants/units'
+import type { Unit, UnitType } from '@/types'
 
 /**
  * A variant ID is a UnitType optionally suffixed with sorted subtypes.

@@ -1,4 +1,4 @@
-import type { UnitAbilityKey } from '@/types'
+import type { UnitAbility } from '@/types'
 
 import type { Ability } from '../../types'
 
@@ -6,7 +6,7 @@ type Params = {
   isEnabled: boolean
 }
 
-const UNIT_ABILITIES: UnitAbilityKey[] = [
+const UNIT_ABILITIES: UnitAbility[] = [
   'AFB',
   'BOMBARDMENT',
   'SPACE_CANNON',

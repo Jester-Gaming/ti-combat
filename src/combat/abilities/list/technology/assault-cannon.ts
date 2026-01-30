@@ -1,5 +1,6 @@
 import { getVariantDisplayName } from '@/combat/utils/unit-variant'
-import { NON_FIGHTER_SHIPS, type UnitType } from '@/types'
+import { NON_FIGHTER_SHIPS } from '@/constants/units'
+import { type UnitType } from '@/types'
 
 import type { Ability, SideReadApi } from '../../types'
 

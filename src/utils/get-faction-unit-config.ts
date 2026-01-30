@@ -1,11 +1,7 @@
+import { UNIT_TYPES } from '@/constants/units'
 import baseUnits from '@/data/base-units'
 import factions from '@/data/faction'
-import {
-  type FactionKey,
-  UNIT_TYPES,
-  type UnitDefinition,
-  type UnitType,
-} from '@/types'
+import { type FactionKey, type UnitDefinition, type UnitType } from '@/types'
 
 /**
  * Returns merged unit definitions for a faction.
@@ -20,9 +16,9 @@ export function getFactionUnitConfig(
   const result = {} as Record<UnitType, UnitDefinition>
 
   for (const unitType of UNIT_TYPES) {
-    const baseUnit = baseUnits[unitType as keyof typeof baseUnits] as
-      | UnitDefinition
-      | undefined
+    const baseUnit = baseUnits[
+      unitType as keyof typeof baseUnits
+    ] as UnitDefinition
     const factionUnit = factionUnits[unitType]
 
     // Faction unit takes precedence, otherwise use base unit

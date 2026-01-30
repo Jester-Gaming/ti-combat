@@ -1,16 +1,13 @@
 import { produce } from 'immer'
 
-import type { UnitType } from '@/types'
+import type { CombatSide, UnitType } from '@/types'
 
 import { getDestroyedUnits, getOpponentSide } from '../state/side-state-ops'
-import type {
-  CombatSide,
-  CombatStateData,
-  SideAbilitiesConfig,
-} from '../state/types'
+import type { CombatStateData } from '../state/types'
 import type { LogEntry } from '../types'
 import { buildCallContext, buildReadContext } from './ability-api'
 import { buildDiceApi, buildDiceReadApi } from './dice-api'
+import { getAvailableAbilities } from './get-available-abilities'
 import type {
   Ability,
   AbilityInvoke,
@@ -115,12 +112,20 @@ function collectUnitAbilities(
   return results
 }
 
+/** Resolve abilities for a side: use override if present, otherwise derive from faction */
+function resolveAbilities(
+  state: CombatStateData,
+  side: CombatSide,
+): readonly Ability[] {
+  return getAvailableAbilities(side, state[side].faction)
+}
+
 /** Get merged params for an ability */
 function getAbilityMergedParams(
   ability: Ability,
-  sideConfig: SideAbilitiesConfig,
+  config?: Record<string, Record<string, unknown>>,
 ): Record<string, unknown> {
-  return { ...ability.defaultParams, ...sideConfig.config?.[ability.key] }
+  return { ...ability.defaultParams, ...config?.[ability.key] }
 }
 
 /** Get invokes for a timing (or multiple timings) from ability definitions and unit abilities */
@@ -136,7 +141,8 @@ function getInvokesForTiming<T extends AbilityTiming>(
 
   // 1. Collect regular abilities from config
   const sideConfig = state.abilities[side]
-  for (const ability of sideConfig.abilities as Ability[]) {
+  const availableAbilities = resolveAbilities(state, side)
+  for (const ability of availableAbilities) {
     const params = getAbilityMergedParams(ability, sideConfig)
 
     for (const invoke of ability.invoke) {
@@ -183,23 +189,23 @@ function getInvokesForTiming<T extends AbilityTiming>(
 
 /** Get ability params for a side */
 export function getAbilityParams(
-  abilities: CombatStateData['abilities'],
+  state: CombatStateData,
   side: CombatSide,
   key: string,
 ): Record<string, unknown> | undefined {
-  const sideConfig = abilities[side]
-  const ability = (sideConfig.abilities as Ability[]).find(a => a.key === key)
+  const abilities = resolveAbilities(state, side)
+  const ability = abilities.find(a => a.key === key)
   if (!ability) return undefined
-  return { ...ability.defaultParams, ...sideConfig.config?.[key] }
+  return { ...ability.defaultParams, ...state.abilities[side][key] }
 }
 
 /** Check if ability exists on a side */
 export function hasAbility(
-  abilities: CombatStateData['abilities'],
+  state: CombatStateData,
   side: CombatSide,
   key: string,
 ): boolean {
-  return (abilities[side].abilities as Ability[]).some(a => a.key === key)
+  return resolveAbilities(state, side).some(a => a.key === key)
 }
 
 export interface RunAbilitiesResult<T extends AbilityTiming> {

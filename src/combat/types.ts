@@ -1,7 +1,5 @@
 import type { CombatState } from './state/combat-state'
 
-export type { CombatSide } from './state/types'
-
 export type LogEntry = [string, ...unknown[]]
 
 /** A node in the probability tree */

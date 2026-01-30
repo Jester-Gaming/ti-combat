@@ -18,13 +18,13 @@ import { AbilitiesPanel } from '@/components/abilities-panel'
 import { BattleCard } from '@/components/battle-card'
 import { GlassCard } from '@/components/ui/glass-card'
 import { GlowText } from '@/components/ui/glow-text'
+import { UNIT_TYPES } from '@/constants/units'
 import factions from '@/data/faction'
 import {
   type BattleState,
+  type CombatSide,
   type FactionKey,
-  type Side,
   type SideState,
-  UNIT_TYPES,
   type UnitSelection,
   type UnitType,
 } from '@/types'
@@ -145,16 +145,10 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
   // Shared abilities config for both combat state and UI read contexts
   const abilitiesConfig: AbilitiesConfig = useMemo(
     () => ({
-      attacker: {
-        abilities: attackerAbilities,
-        config: abilityParams.attacker,
-      },
-      defender: {
-        abilities: defenderAbilities,
-        config: abilityParams.defender,
-      },
+      attacker: abilityParams.attacker,
+      defender: abilityParams.defender,
     }),
-    [attackerAbilities, defenderAbilities, abilityParams],
+    [abilityParams],
   )
 
   // Build read contexts for ability UI panels (both sides have full state)
@@ -193,10 +187,10 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     return new CombatState(
       attackerSideState,
       defenderSideState,
-      abilitiesConfig,
       combatMode,
+      abilitiesConfig,
     )
-  }, [attackerSideState, defenderSideState, abilitiesConfig, combatMode])
+  }, [attackerSideState, defenderSideState, combatMode, abilitiesConfig])
 
   const combatResult = useMemo((): CombatResult | null => {
     if (!combatState) return null
@@ -232,26 +226,30 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     return { attackerWin, draw, defenderWin }
   }, [combatState])
 
-  const handleFactionChange = (side: Side, faction: FactionKey) => {
+  const handleFactionChange = (side: CombatSide, faction: FactionKey) => {
     setBattle(draft => {
       draft[side].faction = faction
     })
   }
 
-  const handleUnitCountChange = (side: Side, unit: UnitType, count: number) => {
+  const handleUnitCountChange = (
+    side: CombatSide,
+    unit: UnitType,
+    count: number,
+  ) => {
     setBattle(draft => {
       draft[side].units[unit].count = count
     })
   }
 
-  const handleUpgradeToggle = (side: Side, unit: UnitType) => {
+  const handleUpgradeToggle = (side: CombatSide, unit: UnitType) => {
     setBattle(draft => {
       draft[side].units[unit].upgraded = !draft[side].units[unit].upgraded
     })
   }
 
   const handleAbilityParamsChange = (
-    side: Side,
+    side: CombatSide,
     abilityName: string,
     params: Record<string, unknown>,
   ) => {

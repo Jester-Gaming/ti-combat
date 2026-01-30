@@ -1,7 +1,6 @@
 // Types
 export type {
   CombatOutcome,
-  CombatSide,
   LogEntry,
   ProbabilityNode,
   SurvivorSide,
@@ -9,7 +8,7 @@ export type {
 
 // State
 export { flattenTree } from './probability'
-export { CombatState, type SideState, type Unit } from './state'
+export { CombatState, type SideState } from './state'
 
 // Engine
 export { CombatEngine } from './combat-engine'

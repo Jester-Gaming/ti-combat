@@ -5,11 +5,11 @@ import { Fragment } from 'react'
 import type { CombatMode } from '@/combat/state/types'
 import { GlassCard } from '@/components/ui/glass-card'
 import { GlowText } from '@/components/ui/glow-text'
+import { UNIT_TYPES } from '@/constants/units'
 import {
   type BattleState,
+  type CombatSide,
   type FactionKey,
-  type Side,
-  UNIT_TYPES,
   type UnitType,
 } from '@/types'
 import type { UnitConfig } from '@/utils/get-unit-config'
@@ -29,9 +29,9 @@ interface BattleCardProps {
   combatResult: CombatResult | null
   combatMode: CombatMode
   onCombatModeChange: (mode: CombatMode) => void
-  onFactionChange: (side: Side, faction: FactionKey) => void
-  onUnitCountChange: (side: Side, unit: UnitType, count: number) => void
-  onUpgradeToggle: (side: Side, unit: UnitType) => void
+  onFactionChange: (side: CombatSide, faction: FactionKey) => void
+  onUnitCountChange: (side: CombatSide, unit: UnitType, count: number) => void
+  onUpgradeToggle: (side: CombatSide, unit: UnitType) => void
   className?: string
 }
 

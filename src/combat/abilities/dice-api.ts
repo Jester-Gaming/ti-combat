@@ -1,6 +1,6 @@
-import type { UnitType } from '@/types'
+import type { SourcedDiceGroup, UnitType } from '@/types'
 
-import type { DiceApi, DicePool, DiceReadApi, DieValue } from './types'
+import type { DiceApi, DicePool, DiceReadApi } from './types'
 
 function countPool(pool: DicePool): number {
   let total = 0
@@ -23,7 +23,9 @@ function clonePool(pool: DicePool): DicePool {
   const result: DicePool = {}
   for (const [type, dice] of Object.entries(pool)) {
     if (dice) {
-      result[type as UnitType] = dice.map(d => [d[0], d[1], d[2]] as DieValue)
+      result[type as UnitType] = dice.map(
+        d => [d[0], d[1], d[2]] as SourcedDiceGroup,
+      )
     }
   }
   return result

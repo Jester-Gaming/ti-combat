@@ -3,24 +3,19 @@ import { describe, expect, it } from 'vitest'
 import baseUnits from '@/data/base-units'
 import type {
   FactionKey,
-  UnitDataStats,
+  Unit,
   UnitDefinition,
+  UnitStats,
   UnitType,
 } from '@/types'
 
-import { settings } from './abilities/list/general/settings'
 import { CombatEngine } from './combat-engine'
 import { flattenTree } from './probability/flatten-tree'
 import { CombatState } from './state/combat-state'
-import type { CombatMode, SideState, Unit } from './state/types'
+import type { CombatMode, SideState } from './state/types'
 import type { CombatOutcome } from './types'
 
 const TEST_FACTION: FactionKey = 'ARBOREC'
-
-const DEFAULT_ABILITIES = {
-  attacker: { abilities: [settings] },
-  defender: { abilities: [settings] },
-}
 
 /**
  * Get stats for all units from base_units.json.
@@ -28,8 +23,8 @@ const DEFAULT_ABILITIES = {
  */
 function getUnitDataStats(
   upgrades: Partial<Record<UnitType, boolean>> = {},
-): Record<UnitType, UnitDataStats> {
-  const result = {} as Record<UnitType, UnitDataStats>
+): Record<UnitType, UnitStats> {
+  const result = {} as Record<UnitType, UnitStats>
 
   for (const [unitType, unitDef] of Object.entries(baseUnits)) {
     const def = unitDef as UnitDefinition
@@ -40,14 +35,14 @@ function getUnitDataStats(
         ...def.BASE,
         ...def.UPGRADED,
         UNIT_ABILITIES: {
-          ...(def.BASE as UnitDataStats | null)?.UNIT_ABILITIES,
+          ...(def.BASE as UnitStats | null)?.UNIT_ABILITIES,
           ...def.UPGRADED.UNIT_ABILITIES,
         },
-      } as UnitDataStats
+      } as UnitStats
     } else if (def.BASE) {
-      result[unitType as UnitType] = { ...def.BASE } as UnitDataStats
+      result[unitType as UnitType] = { ...def.BASE } as UnitStats
     } else if (def.UPGRADED) {
-      result[unitType as UnitType] = { ...def.UPGRADED } as UnitDataStats
+      result[unitType as UnitType] = { ...def.UPGRADED } as UnitStats
     }
   }
 
@@ -58,7 +53,7 @@ function getUnitDataStats(
  * Create unit arrays from stats and counts.
  */
 function createUnits(
-  stats: Record<UnitType, UnitDataStats>,
+  stats: Record<UnitType, UnitStats>,
   counts: Partial<Record<UnitType, number>>,
 ): Partial<Record<UnitType, Unit[]>> {
   const units: Partial<Record<UnitType, Unit[]>> = {}
@@ -122,7 +117,6 @@ describe('CombatEngine', () => {
       const state = new CombatState(
         createSideState(createUnits(units, { CRUISER: 2 })),
         createSideState(createUnits(units, { CRUISER: 3 })),
-        DEFAULT_ABILITIES,
         'SPACE',
       )
 
@@ -147,7 +141,6 @@ describe('CombatEngine', () => {
       const state = new CombatState(
         createSideState(createUnits(units, { CRUISER: 2 })),
         createSideState(createUnits(units, { DREADNOUGHT: 1, CRUISER: 1 })),
-        DEFAULT_ABILITIES,
         'SPACE',
       )
 
@@ -161,9 +154,9 @@ describe('CombatEngine', () => {
       expect(total).toBeCloseTo(1.0, 10)
 
       // Expected values from simulation
-      expect(summary.attackerWin).toBeCloseTo(0.29643, 5)
-      expect(summary.draw).toBeCloseTo(0.14561, 5)
-      expect(summary.defenderWin).toBeCloseTo(0.55796, 5)
+      expect(summary.attackerWin).toBeCloseTo(0.0972, 5)
+      expect(summary.draw).toBeCloseTo(0.060958, 5)
+      expect(summary.defenderWin).toBeCloseTo(0.84184, 5)
     })
 
     it('2 fighters vs upgraded destroyer (with AFB)', () => {
@@ -173,7 +166,6 @@ describe('CombatEngine', () => {
       const state = new CombatState(
         createSideState(createUnits(units, { FIGHTER: 2 })),
         createSideState(createUnits(defenderStats, { DESTROYER: 1 })),
-        DEFAULT_ABILITIES,
         'SPACE',
       )
 
@@ -199,7 +191,6 @@ describe('CombatEngine', () => {
       const state = new CombatState(
         createSideState(createUnits(units, { INFANTRY: 1 })),
         createSideState(createUnits(units, { INFANTRY: 1 })),
-        DEFAULT_ABILITIES,
         combatMode,
       )
 
@@ -226,7 +217,6 @@ describe('CombatEngine', () => {
       const state = new CombatState(
         createSideState(createUnits(units, { INFANTRY: 2 })),
         createSideState(createUnits(units, { INFANTRY: 1 })),
-        DEFAULT_ABILITIES,
         combatMode,
       )
 
@@ -265,7 +255,6 @@ describe('CombatEngine', () => {
       const state = new CombatState(
         createSideState(dreadnoughtWithGuaranteedBombardment),
         createSideState(createUnits(units, { INFANTRY: 1 })),
-        DEFAULT_ABILITIES,
         combatMode,
       )
 
@@ -303,7 +292,6 @@ describe('CombatEngine', () => {
       const state = new CombatState(
         createSideState(dreadnoughtWithWeakBombardment),
         createSideState(createUnits(units, { INFANTRY: 5 })),
-        DEFAULT_ABILITIES,
         combatMode,
       )
 
@@ -344,7 +332,6 @@ describe('CombatEngine', () => {
       const state = new CombatState(
         createSideState(warSunUnits),
         createSideState(createUnits(units, { INFANTRY: 1 })),
-        DEFAULT_ABILITIES,
         combatMode,
       )
 
@@ -388,7 +375,6 @@ describe('CombatEngine', () => {
       const state = new CombatState(
         createSideState(attackerUnits),
         createSideState(createUnits(units, { INFANTRY: 2 })),
-        DEFAULT_ABILITIES,
         combatMode,
       )
 

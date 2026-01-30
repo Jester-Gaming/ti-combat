@@ -1,6 +1,12 @@
 import { original } from 'immer'
 
-import type { UnitAbilityKey, UnitType } from '@/types'
+import type {
+  CombatSide,
+  Unit,
+  UnitAbility,
+  UnitState,
+  UnitType,
+} from '@/types'
 
 import {
   getOpponentSide,
@@ -9,19 +15,17 @@ import {
 import type {
   AbilitiesConfig,
   CombatMode,
-  CombatSide,
   CombatStateData,
   RestrictionEntry,
   SideState,
-  Unit,
   UnitAbilityRestrictions,
-  UnitState,
 } from '../state/types'
 import {
   makeVariantId,
   parseVariantId,
   unitMatchesVariant,
 } from '../utils/unit-variant'
+import { getAvailableAbilities } from './get-available-abilities'
 import type {
   AbilityReadContext,
   DeclaredSubtype,
@@ -90,7 +94,7 @@ function getPendingHitsForSide(sideState: SideState): number {
 function isRestricted(
   sideState: SideState,
   layer: 'lost' | 'cannotBeUsed',
-  ability: UnitAbilityKey,
+  ability: UnitAbility,
   unitType: UnitType,
 ): boolean {
   const entries = sideState.unitAbilityRestrictions?.[layer]?.[ability]
@@ -101,7 +105,7 @@ function isRestricted(
 function addRestrictionEntry(
   restrictions: UnitAbilityRestrictions | undefined,
   layer: 'lost' | 'cannotBeUsed',
-  ability: UnitAbilityKey,
+  ability: UnitAbility,
   reason: string,
   unitType?: UnitType,
 ): UnitAbilityRestrictions {
@@ -122,7 +126,7 @@ function addRestrictionEntry(
 function removeRestrictionEntry(
   restrictions: UnitAbilityRestrictions | undefined,
   layer: 'lost' | 'cannotBeUsed',
-  ability: UnitAbilityKey,
+  ability: UnitAbility,
   reason: string,
   unitType?: UnitType,
 ): UnitAbilityRestrictions | undefined {
@@ -157,15 +161,12 @@ function resolveSettingsParams(
   state: Readonly<CombatStateData>,
   side: CombatSide,
 ): Record<string, unknown> | undefined {
-  const sideConfig = state.abilities[side]
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const settings = (sideConfig.abilities as any[]).find(
-    (a: { key: string }) => a.key === 'SETTINGS',
-  )
+  const abilities = getAvailableAbilities(side, state[side].faction)
+  const settings = abilities.find(a => a.key === 'SETTINGS')
   if (!settings) return undefined
   return {
     ...settings.defaultParams,
-    ...sideConfig.config?.['SETTINGS'],
+    ...state.abilities[side]['SETTINGS'],
   }
 }
 
@@ -289,11 +290,11 @@ function buildSideReadApi(
       return findUnitByPriorityInSide(sideState, priority)
     },
 
-    isUnitAbilityLost(ability: UnitAbilityKey, unitType: UnitType) {
+    isUnitAbilityLost(ability: UnitAbility, unitType: UnitType) {
       return isRestricted(sideState, 'lost', ability, unitType)
     },
 
-    isUnitAbilityCannotBeUsed(ability: UnitAbilityKey, unitType: UnitType) {
+    isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: UnitType) {
       return isRestricted(sideState, 'cannotBeUsed', ability, unitType)
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -411,7 +412,7 @@ export function buildApi(
     },
 
     setUnitAbilityLost(
-      ability: UnitAbilityKey,
+      ability: UnitAbility,
       reason: string,
       unitType?: UnitType,
     ) {
@@ -426,7 +427,7 @@ export function buildApi(
     },
 
     removeUnitAbilityLost(
-      ability: UnitAbilityKey,
+      ability: UnitAbility,
       reason: string,
       unitType?: UnitType,
     ) {
@@ -441,7 +442,7 @@ export function buildApi(
     },
 
     setUnitAbilityCannotBeUsed(
-      ability: UnitAbilityKey,
+      ability: UnitAbility,
       reason: string,
       unitType?: UnitType,
     ) {
@@ -456,7 +457,7 @@ export function buildApi(
     },
 
     removeUnitAbilityCannotBeUsed(
-      ability: UnitAbilityKey,
+      ability: UnitAbility,
       reason: string,
       unitType?: UnitType,
     ) {
@@ -493,10 +494,7 @@ export function buildApi(
       keyOrUpdates: string | Record<string, unknown>,
       maybeUpdates?: Record<string, unknown>,
     ) {
-      const sideAbilities = draft.abilities[side]
-      if (!sideAbilities.config) {
-        sideAbilities.config = {}
-      }
+      const sideConfig = draft.abilities[side]
 
       let targetKey: string
       let updates: Record<string, unknown>
@@ -509,10 +507,10 @@ export function buildApi(
         updates = keyOrUpdates
       }
 
-      if (!sideAbilities.config[targetKey]) {
-        sideAbilities.config[targetKey] = {}
+      if (!sideConfig[targetKey]) {
+        sideConfig[targetKey] = {}
       }
-      Object.assign(sideAbilities.config[targetKey], updates)
+      Object.assign(sideConfig[targetKey], updates)
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any

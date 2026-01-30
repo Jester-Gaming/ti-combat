@@ -1,12 +1,4 @@
-import type {
-  FactionKey,
-  UnitAbilities,
-  UnitAbilityKey,
-  UnitDieValue,
-  UnitType,
-} from '@/types'
-
-import type { Ability } from '../abilities/types'
+import type { FactionKey, Unit, UnitAbility, UnitType } from '@/types'
 
 // ============================================================================
 // TWO-TIER PHASE SYSTEM
@@ -85,23 +77,6 @@ export interface PhaseIdentifier {
   micro: MicroPhase
 }
 
-/** Unit stats - defines the unit's capabilities */
-export interface UnitStats {
-  COMBAT?: UnitDieValue | null
-  UNIT_ABILITIES?: UnitAbilities
-  ABILITIES?: readonly Ability[]
-}
-
-/** Unit instance state - runtime state of a single unit */
-export interface UnitState {
-  isDamaged?: boolean
-  usedSustainThisRound?: boolean
-  subtypes?: string[]
-}
-
-/** A single unit combining stats and runtime state */
-export type Unit = UnitStats & UnitState
-
 /** A pool of unassigned hits with valid targets */
 export interface HitPool {
   hits: number
@@ -116,8 +91,8 @@ export interface RestrictionEntry {
 
 /** Two-layer restriction system for unit abilities */
 export interface UnitAbilityRestrictions {
-  cannotBeUsed?: Partial<Record<UnitAbilityKey, RestrictionEntry[]>>
-  lost?: Partial<Record<UnitAbilityKey, RestrictionEntry[]>>
+  cannotBeUsed?: Partial<Record<UnitAbility, RestrictionEntry[]>>
+  lost?: Partial<Record<UnitAbility, RestrictionEntry[]>>
 }
 
 /** State for one side of combat */
@@ -128,16 +103,10 @@ export interface SideState {
   unitAbilityRestrictions?: UnitAbilityRestrictions
 }
 
-/** Ability configuration for one side */
-export interface SideAbilitiesConfig {
-  abilities: readonly Ability[]
-  config?: Record<string, Record<string, unknown>>
-}
-
 /** Ability configuration for both sides */
 export interface AbilitiesConfig {
-  attacker: SideAbilitiesConfig
-  defender: SideAbilitiesConfig
+  attacker: Record<string, Record<string, unknown>>
+  defender: Record<string, Record<string, unknown>>
 }
 
 /** Complete combat state data */
@@ -151,6 +120,3 @@ export interface CombatStateData {
 
 /** Hit source determines dice collection */
 export type HitSource = 'COMBAT' | 'AFB' | 'BOMBARDMENT' | 'SPACE_CANNON'
-
-/** Combat side identifier (alias for Side from @/types) */
-export { type Side as CombatSide } from '@/types'

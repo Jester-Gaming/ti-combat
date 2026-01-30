@@ -1,20 +1,7 @@
-import { type FactionKey, UNIT_TYPES, type UnitType } from '@/types'
+import { UNIT_DISPLAY_NAMES, UNIT_TYPES } from '@/constants/units'
+import { type FactionKey, type UnitType } from '@/types'
 
 import { getFactionUnitConfig } from './get-faction-unit-config'
-
-export const UNIT_DISPLAY_NAMES: Record<UnitType, string> = {
-  FLAGSHIP: 'Flagship',
-  WAR_SUN: 'War Sun',
-  DREADNOUGHT: 'Dreadnought',
-  CRUISER: 'Cruiser',
-  CARRIER: 'Carrier',
-  DESTROYER: 'Destroyer',
-  FIGHTER: 'Fighter',
-  MECH: 'Mech',
-  INFANTRY: 'Infantry',
-  PDS: 'PDS',
-  SPACE_DOCK: 'Space Dock',
-}
 
 export interface UnitListItem {
   label: string

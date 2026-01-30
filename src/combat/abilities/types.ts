@@ -1,11 +1,13 @@
-import type { FactionKey, UnitAbilityKey, UnitType } from '@/types'
-
 import type {
-  CombatStateData,
-  MetaPhase,
+  FactionKey,
+  SourcedDiceGroup,
   Unit,
+  UnitAbility,
   UnitState,
-} from '../state/types'
+  UnitType,
+} from '@/types'
+
+import type { CombatStateData, MetaPhase } from '../state/types'
 
 export interface DeclaredSubtype {
   name: string
@@ -29,11 +31,8 @@ export interface OwnOpponentContext<T> {
   opponent: T
 }
 
-// Per-unit die value: [hitValue, diceCount, unit]
-export type DieValue = [number, number, Unit]
-
 // Per-unit dice pool: indices match the unit list for each type
-export type DicePool = Partial<Record<UnitType, DieValue[]>>
+export type DicePool = Partial<Record<UnitType, SourcedDiceGroup[]>>
 
 // Sided version for external API
 export type SidedDiceData = SidedContext<DicePool>
@@ -45,7 +44,7 @@ export type SidedDiceData = SidedContext<DicePool>
 /** Read-only API for querying dice */
 export interface DiceReadApi {
   getAll(): DicePool
-  get(source: UnitType): readonly DieValue[] | undefined
+  get(source: UnitType): readonly SourcedDiceGroup[] | undefined
   count(): number
   isEmpty(): boolean
 }
@@ -119,11 +118,8 @@ export interface SideReadApi {
   /** Find the first unit matching a priority list of variant IDs.
    *  A plain UnitType matches only units with no subtypes. */
   findUnitByPriority(priority: string[]): Unit | undefined
-  isUnitAbilityLost(ability: UnitAbilityKey, unitType: UnitType): boolean
-  isUnitAbilityCannotBeUsed(
-    ability: UnitAbilityKey,
-    unitType: UnitType,
-  ): boolean
+  isUnitAbilityLost(ability: UnitAbility, unitType: UnitType): boolean
+  isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: UnitType): boolean
 }
 
 /** Full read-write API for mutating one side's state (within Immer draft) */
@@ -143,22 +139,22 @@ export interface SideApi extends SideReadApi {
 
   // Ability restrictions
   setUnitAbilityLost(
-    ability: UnitAbilityKey,
+    ability: UnitAbility,
     reason: string,
     unitType?: UnitType,
   ): void
   removeUnitAbilityLost(
-    ability: UnitAbilityKey,
+    ability: UnitAbility,
     reason: string,
     unitType?: UnitType,
   ): void
   setUnitAbilityCannotBeUsed(
-    ability: UnitAbilityKey,
+    ability: UnitAbility,
     reason: string,
     unitType?: UnitType,
   ): void
   removeUnitAbilityCannotBeUsed(
-    ability: UnitAbilityKey,
+    ability: UnitAbility,
     reason: string,
     unitType?: UnitType,
   ): void
@@ -316,21 +312,11 @@ export interface AbilityCondition {
   onlyDefender?: boolean
 }
 
-type AbilityCategory =
-  | 'GENERAL'
-  | 'FACTION'
-  | 'PROMISSORY'
-  | 'AGENT'
-  | 'COMMANDER'
-  | 'AGENDA'
-  | 'ENVIRONMENT'
-  | 'TECHNOLOGY'
-  | 'ACTION_CARD'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface Ability<Params extends Record<string, unknown> = any> {
   key: string
   name: string // Display name for UI
-  category: AbilityCategory
+  category: string
   defaultParams?: Params
   headerUI?: string & keyof Params // Param key to render in header (checkbox for boolean, number input for number)
   readOnly?: boolean // Show UI but prevent user from changing the enable state

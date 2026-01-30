@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { FactionKey, UnitType } from '@/types'
+import type { CombatSide, FactionKey, Unit, UnitType } from '@/types'
 
-import { settings } from '../abilities/list/general/settings'
 import type { DicePool } from '../abilities/types'
 import type { LogEntry } from '../types'
 import { CombatState } from './combat-state'
@@ -13,7 +12,7 @@ import {
   destroyUnit,
   getUnit,
 } from './side-state-ops'
-import type { CombatSide, CombatStateData, SideState, Unit } from './types'
+import type { CombatStateData, SideState } from './types'
 
 /** Extract hit count for a given side from log entries */
 function getHitsFromLog(log: LogEntry[] | undefined, side: CombatSide): number {
@@ -39,15 +38,15 @@ function diceValues(
 // Test faction constant
 const TEST_FACTION: FactionKey = 'ARBOREC'
 
-// Default abilities config for tests
+// Default abilities config for tests (config-only, abilities derived from faction)
 const DEFAULT_ABILITIES = {
-  attacker: { abilities: [settings] },
-  defender: { abilities: [settings] },
+  attacker: {},
+  defender: {},
 }
 
 const EMPTY_ABILITIES = {
-  attacker: { abilities: [] },
-  defender: { abilities: [] },
+  attacker: {},
+  defender: {},
 }
 
 // Helper to create units with stats
@@ -65,9 +64,9 @@ function createSideState(units: Partial<Record<string, Unit[]>>): SideState {
 }
 
 describe('CombatState', () => {
-  const fighterStats: Partial<Unit> = { COMBAT: [9, 1], UNIT_ABILITIES: {} }
-  const cruiserStats: Partial<Unit> = { COMBAT: [7, 1], UNIT_ABILITIES: {} }
-  const destroyerStats: Partial<Unit> = {
+  const fighterStats: Unit = { COMBAT: [9, 1], UNIT_ABILITIES: {} }
+  const cruiserStats: Unit = { COMBAT: [7, 1], UNIT_ABILITIES: {} }
+  const destroyerStats: Unit = {
     COMBAT: [9, 1],
     UNIT_ABILITIES: { AFB: [9, 2] },
   }
@@ -77,7 +76,6 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
-        DEFAULT_ABILITIES,
         'SPACE',
       )
 
@@ -89,7 +87,6 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
-        DEFAULT_ABILITIES,
         'SPACE',
       )
 
@@ -103,7 +100,6 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 3) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
-        DEFAULT_ABILITIES,
         'SPACE',
       )
 
@@ -129,7 +125,6 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ DESTROYER: createUnits(destroyerStats, 2) }),
         createSideState({}),
-        DEFAULT_ABILITIES,
         'SPACE',
       )
 
@@ -146,7 +141,6 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
         createSideState({}),
-        DEFAULT_ABILITIES,
         'SPACE',
       )
 
@@ -178,8 +172,8 @@ describe('CombatState', () => {
       const state = new CombatState(
         stateData.attacker,
         stateData.defender,
-        stateData.abilities,
         stateData.combatMode,
+        stateData.abilities,
         stateData.currentPhase,
       )
       const result = state.assignHits()
@@ -210,8 +204,8 @@ describe('CombatState', () => {
       const state = new CombatState(
         stateData.attacker,
         stateData.defender,
-        stateData.abilities,
         stateData.combatMode,
+        stateData.abilities,
         stateData.currentPhase,
       )
       const result = state.assignHits()
@@ -231,7 +225,6 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({}),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
-        DEFAULT_ABILITIES,
         'SPACE',
       )
 
@@ -242,7 +235,6 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
         createSideState({}),
-        DEFAULT_ABILITIES,
         'SPACE',
       )
 
@@ -253,7 +245,6 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
-        DEFAULT_ABILITIES,
         'SPACE',
       )
 
@@ -269,8 +260,8 @@ describe('CombatState', () => {
         const state = new CombatState(
           createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
           createSideState({ PDS: createUnits(pdsStats, 2) }),
-          DEFAULT_ABILITIES,
           'SPACE',
+          DEFAULT_ABILITIES,
           { meta: 'SPACE_CANNON_OFFENSE', micro: 'START' },
         )
 
@@ -283,8 +274,8 @@ describe('CombatState', () => {
         const state = new CombatState(
           createSideState({ PDS: createUnits(pdsStats, 2) }),
           createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
-          DEFAULT_ABILITIES,
           'SPACE',
+          DEFAULT_ABILITIES,
           { meta: 'SPACE_CANNON_OFFENSE', micro: 'DICE_ROLL' },
         )
 
@@ -295,8 +286,8 @@ describe('CombatState', () => {
         const state = new CombatState(
           createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
           createSideState({ PDS: createUnits(pdsStats, 2) }),
-          DEFAULT_ABILITIES,
           'SPACE',
+          DEFAULT_ABILITIES,
           { meta: 'COMPLETE', micro: 'END' },
         )
 
@@ -307,8 +298,8 @@ describe('CombatState', () => {
         const state = new CombatState(
           createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
           createSideState({ PDS: createUnits(pdsStats, 2) }),
-          DEFAULT_ABILITIES,
           'SPACE',
+          DEFAULT_ABILITIES,
           { meta: 'SPACE_COMBAT', micro: 'START' },
         )
 
@@ -322,8 +313,8 @@ describe('CombatState', () => {
         const state = new CombatState(
           createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
           createSideState({}),
-          EMPTY_ABILITIES,
           'SPACE',
+          EMPTY_ABILITIES,
           { meta: 'SPACE_COMBAT', micro: 'END' },
         )
 
@@ -338,8 +329,8 @@ describe('CombatState', () => {
         const state = new CombatState(
           createSideState({ INFANTRY: createUnits(infantryStats, 1) }),
           createSideState({}),
-          EMPTY_ABILITIES,
           'GROUND',
+          EMPTY_ABILITIES,
           { meta: 'GROUND_COMBAT', micro: 'END' },
         )
 
@@ -353,13 +344,11 @@ describe('CombatState', () => {
       const state1 = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
-        DEFAULT_ABILITIES,
         'SPACE',
       )
       const state2 = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
-        DEFAULT_ABILITIES,
         'SPACE',
       )
 
@@ -370,13 +359,11 @@ describe('CombatState', () => {
       const state1 = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 2) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
-        DEFAULT_ABILITIES,
         'SPACE',
       )
       const state2 = new CombatState(
         createSideState({ FIGHTER: createUnits(fighterStats, 1) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 1) }),
-        DEFAULT_ABILITIES,
         'SPACE',
       )
 
@@ -397,10 +384,6 @@ describe('CombatState', () => {
           MECH: createUnits(mechStats, 1),
         }),
         createSideState({}),
-        {
-          attacker: { abilities: [settings] },
-          defender: { abilities: [] },
-        },
         'SPACE',
       )
 
@@ -426,10 +409,6 @@ describe('CombatState', () => {
           MECH: createUnits(mechStats, 1),
         }),
         createSideState({}),
-        {
-          attacker: { abilities: [settings] },
-          defender: { abilities: [] },
-        },
         'GROUND',
       )
 
@@ -453,10 +432,6 @@ describe('CombatState', () => {
           INFANTRY: createUnits(infantryStats, 4),
         }),
         createSideState({}),
-        {
-          attacker: { abilities: [settings] },
-          defender: { abilities: [] },
-        },
         'SPACE',
       )
 
@@ -478,10 +453,6 @@ describe('CombatState', () => {
           INFANTRY: createUnits(infantryStats, 4), // Ground forces have combat value
         }),
         createSideState({}),
-        {
-          attacker: { abilities: [settings] },
-          defender: { abilities: [] },
-        },
         'GROUND',
       )
 
@@ -508,10 +479,6 @@ describe('CombatState', () => {
           INFANTRY: createUnits(infantryStats, 4),
         }),
         createSideState({}),
-        {
-          attacker: { abilities: [settings] },
-          defender: { abilities: [] },
-        },
         'SPACE',
       )
 
@@ -540,8 +507,8 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
         createSideState({ PDS: createUnits(pdsStats, 2) }),
-        DEFAULT_ABILITIES,
         'SPACE',
+        DEFAULT_ABILITIES,
         { meta: 'SPACE_CANNON_OFFENSE', micro: 'ASSIGN_HITS' }, // Last micro-phase for unit abilities
       )
 
@@ -559,8 +526,8 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ PDS: createUnits(pdsStats, 2) }),
         createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
-        DEFAULT_ABILITIES,
         'SPACE',
+        DEFAULT_ABILITIES,
         { meta: 'SPACE_CANNON_OFFENSE', micro: 'ASSIGN_HITS' }, // Last micro-phase for unit abilities
       )
 
@@ -574,8 +541,8 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
         createSideState({ DESTROYER: createUnits(destroyerStats, 2) }),
-        DEFAULT_ABILITIES,
         'SPACE',
+        DEFAULT_ABILITIES,
         { meta: 'SPACE_CANNON_OFFENSE', micro: 'ASSIGN_HITS' }, // Last micro-phase for unit abilities
       )
 
@@ -589,8 +556,8 @@ describe('CombatState', () => {
       const state = new CombatState(
         createSideState({ CRUISER: createUnits(cruiserStats, 2) }),
         createSideState({ PDS: createUnits(pdsStats, 3) }),
-        DEFAULT_ABILITIES,
         'SPACE',
+        DEFAULT_ABILITIES,
         { meta: 'SPACE_CANNON_OFFENSE', micro: 'START' },
       )
 
@@ -624,8 +591,8 @@ describe('Bombardment', () => {
     const state = new CombatState(
       createSideState({ DREADNOUGHT: createUnits(dreadnoughtStats, 2) }),
       createSideState({ INFANTRY: createUnits(infantryStats, 3) }),
-      DEFAULT_ABILITIES,
       'GROUND',
+      DEFAULT_ABILITIES,
       { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' },
     )
 
@@ -659,8 +626,8 @@ describe('Bombardment', () => {
         WAR_SUN: createUnits(warSunStats, 1),
       }),
       createSideState({ INFANTRY: createUnits(infantryStats, 5) }),
-      DEFAULT_ABILITIES,
       'GROUND',
+      DEFAULT_ABILITIES,
       { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' },
     )
 
@@ -692,8 +659,8 @@ describe('Bombardment', () => {
         MECH: createUnits(mechStats, 1),
         CRUISER: createUnits(cruiserStats, 1),
       }),
-      DEFAULT_ABILITIES,
       'GROUND',
+      DEFAULT_ABILITIES,
       { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' },
     )
 
@@ -721,8 +688,8 @@ describe('Bombardment', () => {
         INFANTRY: createUnits(infantryStats, 2),
         DREADNOUGHT: createUnits(dreadnoughtStats, 2), // Defender has Dreadnoughts too
       }),
-      DEFAULT_ABILITIES,
       'GROUND',
+      DEFAULT_ABILITIES,
       { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' },
     )
 
@@ -743,8 +710,8 @@ describe('Bombardment', () => {
     const state = new CombatState(
       createSideState({ CRUISER: createUnits(cruiserStats, 3) }),
       createSideState({ INFANTRY: createUnits(infantryStats, 3) }),
-      DEFAULT_ABILITIES,
       'GROUND',
+      DEFAULT_ABILITIES,
       { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' },
     )
 
@@ -762,8 +729,8 @@ describe('Bombardment', () => {
     const state = new CombatState(
       createSideState({ DREADNOUGHT: createUnits(dreadnoughtStats, 1) }),
       createSideState({ INFANTRY: createUnits(infantryStats, 2) }),
-      DEFAULT_ABILITIES,
       'GROUND',
+      DEFAULT_ABILITIES,
       { meta: 'BOMBARDMENT', micro: 'DICE_ROLL' }, // First micro-phase for unit abilities
     )
 

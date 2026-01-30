@@ -1,7 +1,6 @@
-import type { UnitType } from '@/types'
+import type { Unit, UnitType } from '@/types'
 import { getUnitListItems } from '@/utils/get-unit-config'
 
-import type { Unit } from '../../../state/types'
 import type { Ability, AbilityReadContext, SideReadApi } from '../../types'
 
 /** Get units from the read API that have sustain damage ability */

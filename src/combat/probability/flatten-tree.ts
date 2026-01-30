@@ -1,11 +1,6 @@
-import type { UnitType } from '@/types'
+import type { CombatSide, UnitType } from '@/types'
 
-import type {
-  CombatOutcome,
-  CombatSide,
-  ProbabilityNode,
-  SurvivorSide,
-} from '../types'
+import type { CombatOutcome, ProbabilityNode, SurvivorSide } from '../types'
 
 /** Outcome with probability relative to reaching the node */
 interface RelativeOutcome {

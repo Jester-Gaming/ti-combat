@@ -30,8 +30,8 @@ describe('collectUnitAbilities', () => {
         hitPools: [],
       },
       abilities: {
-        attacker: { abilities: [] },
-        defender: { abilities: [] },
+        attacker: {},
+        defender: {},
       },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
@@ -67,8 +67,8 @@ describe('collectUnitAbilities', () => {
         hitPools: [],
       },
       abilities: {
-        attacker: { abilities: [] },
-        defender: { abilities: [] },
+        attacker: {},
+        defender: {},
       },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
@@ -107,8 +107,8 @@ describe('collectUnitAbilities', () => {
         hitPools: [],
       },
       abilities: {
-        attacker: { abilities: [] },
-        defender: { abilities: [] },
+        attacker: {},
+        defender: {},
       },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
@@ -156,8 +156,8 @@ describe('unit ability invocation', () => {
         hitPools: [],
       },
       abilities: {
-        attacker: { abilities: [] },
-        defender: { abilities: [] },
+        attacker: {},
+        defender: {},
       },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
@@ -203,8 +203,8 @@ describe('unit ability invocation', () => {
         hitPools: [],
       },
       abilities: {
-        attacker: { abilities: [] },
-        defender: { abilities: [] },
+        attacker: {},
+        defender: {},
       },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
@@ -259,7 +259,15 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
     const state: CombatStateData = {
       attacker: {
         faction: 'SARDAKK_NORR',
-        units: {},
+        units: {
+          // Carrier unit for the test abilities
+          CRUISER: [
+            {
+              COMBAT: [7, 1],
+              ABILITIES: [destroyAbility, afterDestroyAbility],
+            },
+          ],
+        },
         hitPools: [],
       },
       defender: {
@@ -270,10 +278,8 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
         hitPools: [],
       },
       abilities: {
-        attacker: {
-          abilities: [destroyAbility, afterDestroyAbility],
-        },
-        defender: { abilities: [] },
+        attacker: {},
+        defender: {},
       },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
@@ -325,7 +331,12 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       attacker: {
         faction: 'SARDAKK_NORR',
         units: {
-          CRUISER: [{ COMBAT: [7, 1] }],
+          CRUISER: [
+            {
+              COMBAT: [7, 1],
+              ABILITIES: [noopAbility, afterDestroyAbility],
+            },
+          ],
         },
         hitPools: [],
       },
@@ -337,10 +348,8 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
         hitPools: [],
       },
       abilities: {
-        attacker: {
-          abilities: [noopAbility, afterDestroyAbility],
-        },
-        defender: { abilities: [] },
+        attacker: {},
+        defender: {},
       },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
@@ -387,7 +396,15 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
     const state: CombatStateData = {
       attacker: {
         faction: 'SARDAKK_NORR',
-        units: {},
+        units: {
+          // Carrier unit for the test abilities
+          FLAGSHIP: [
+            {
+              COMBAT: [6, 2],
+              ABILITIES: [destroyAbility, afterDestroyAbility],
+            },
+          ],
+        },
         hitPools: [],
       },
       defender: {
@@ -399,10 +416,8 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
         hitPools: [],
       },
       abilities: {
-        attacker: {
-          abilities: [destroyAbility, afterDestroyAbility],
-        },
-        defender: { abilities: [] },
+        attacker: {},
+        defender: {},
       },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
@@ -453,7 +468,14 @@ describe('multi-timing runAbilities', () => {
     const state: CombatStateData = {
       attacker: {
         faction: 'SARDAKK_NORR',
-        units: {},
+        units: {
+          CRUISER: [
+            {
+              COMBAT: [7, 1],
+              ABILITIES: [startOfCombatAbility, startOfRoundAbility],
+            },
+          ],
+        },
         hitPools: [],
       },
       defender: {
@@ -462,10 +484,8 @@ describe('multi-timing runAbilities', () => {
         hitPools: [],
       },
       abilities: {
-        attacker: {
-          abilities: [startOfCombatAbility, startOfRoundAbility],
-        },
-        defender: { abilities: [] },
+        attacker: {},
+        defender: {},
       },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
@@ -498,7 +518,9 @@ describe('multi-timing runAbilities', () => {
     const state: CombatStateData = {
       attacker: {
         faction: 'SARDAKK_NORR',
-        units: {},
+        units: {
+          CRUISER: [{ COMBAT: [7, 1], ABILITIES: [ability] }],
+        },
         hitPools: [],
       },
       defender: {
@@ -507,8 +529,8 @@ describe('multi-timing runAbilities', () => {
         hitPools: [],
       },
       abilities: {
-        attacker: { abilities: [ability] },
-        defender: { abilities: [] },
+        attacker: {},
+        defender: {},
       },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
