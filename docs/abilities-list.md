@@ -53,7 +53,7 @@
 
 ### Firmament
 
-- [ ] **Heaven's Eye** (Flagship) — If the active system contains units that belong to a player who has a control token on 1 of your plots, apply +1 to this ship's move value and repair it at the end of every combat round.
+- [x] **Heaven's Eye** (Flagship) — If the active system contains units that belong to a player who has a control token on 1 of your plots, apply +1 to this ship's move value and repair it at the end of every combat round.
 
 ### Obsidian
 

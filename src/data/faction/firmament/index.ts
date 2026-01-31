@@ -1,5 +1,7 @@
 import type { Faction } from '@/types'
 
+import { heavensEye } from './heavens-eye'
+
 export const firmament: Faction = {
   name: 'Firmament',
   units: {
@@ -15,6 +17,7 @@ export const firmament: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [heavensEye],
       },
     },
     MECH: {
