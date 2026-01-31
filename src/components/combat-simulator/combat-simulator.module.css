@@ -5,7 +5,7 @@
 }
 
 .sidePanel {
-  @apply top-6 overflow-hidden rounded-lg py-4;
+  @apply top-6 overflow-auto rounded-lg px-4 py-4;
   flex: 0 1 240px;
   max-width: 240px;
   max-height: calc(100vh - 104px);
@@ -34,31 +34,20 @@
   font-family: var(--font-heading);
 }
 
-.sidePanelScroll {
-  @apply px-4;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-
-  /* Firefox */
-  scrollbar-width: thin;
-  scrollbar-color: hsl(var(--muted-foreground) / 15%) transparent;
-}
-
-.sidePanelScroll::-webkit-scrollbar {
+.sidePanel::-webkit-scrollbar {
   width: 4px;
 }
 
-.sidePanelScroll::-webkit-scrollbar-track {
+.sidePanel::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.sidePanelScroll::-webkit-scrollbar-thumb {
+.sidePanel::-webkit-scrollbar-thumb {
   background: hsl(var(--muted-foreground) / 15%);
   border-radius: 2px;
 }
 
-.sidePanelScroll::-webkit-scrollbar-thumb:hover {
+.sidePanel::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--muted-foreground) / 30%);
 }
 

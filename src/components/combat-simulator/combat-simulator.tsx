@@ -279,16 +279,14 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
             Attacker Abilities
           </GlowText>
         </div>
-        <div className={styles.sidePanelScroll}>
-          <AbilitiesPanel
-            abilities={attackerAbilities}
-            readContext={attackerReadContext}
-            params={abilityParams.attacker}
-            onParamsChange={(abilityName, params) =>
-              handleAbilityParamsChange('attacker', abilityName, params)
-            }
-          />
-        </div>
+        <AbilitiesPanel
+          abilities={attackerAbilities}
+          readContext={attackerReadContext}
+          params={abilityParams.attacker}
+          onParamsChange={(abilityName, params) =>
+            handleAbilityParamsChange('attacker', abilityName, params)
+          }
+        />
       </GlassCard>
 
       {/* Center column: Battle card */}
