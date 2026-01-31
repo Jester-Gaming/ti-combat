@@ -4,9 +4,6 @@ import { mordred } from './mordred'
 
 export const nekro_virus: Faction = {
   name: 'Nekro Virus',
-  abilities: {
-    faction: [mordred],
-  },
   units: {
     FLAGSHIP: {
       BASE: {
@@ -32,6 +29,7 @@ export const nekro_virus: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [mordred],
       },
     },
   },

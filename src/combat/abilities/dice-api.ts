@@ -1,3 +1,5 @@
+import { isDraft, original } from 'immer'
+
 import type { SourcedDiceGroup, UnitType } from '@/types'
 
 import type { DiceApi, DicePool, DiceReadApi } from './types'
@@ -46,7 +48,11 @@ export function buildDiceApi(pool: DicePool): DiceApi {
         typeof filterOrSourceOrUnit === 'object' &&
         filterOrSourceOrUnit !== null
       ) {
-        const targetUnit = filterOrSourceOrUnit
+        // Unwrap Immer draft so the reference matches the original
+        // stored in SourcedDiceGroup by collectDice
+        const targetUnit = isDraft(filterOrSourceOrUnit)
+          ? original(filterOrSourceOrUnit)
+          : filterOrSourceOrUnit
         for (const [, dice] of Object.entries(data)) {
           if (!dice) continue
           for (let i = 0; i < dice.length; i++) {

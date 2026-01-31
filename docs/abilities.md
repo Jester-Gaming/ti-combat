@@ -159,6 +159,7 @@ interface AbilityReadContext {
     readonly own: SideReadApi
     readonly opponent: SideReadApi
   }
+  getUnit(): Unit // Only for unit abilities — throws otherwise
 }
 ```
 
@@ -174,10 +175,26 @@ interface AbilityCallContext {
     opponent: SideApi
   }
   log(...data: unknown[]): void // Append to ability log entry
+  getUnit(): Unit // Only for unit abilities — throws otherwise (returns Immer draft)
 }
 ```
 
 `own` / `opponent` are relative to the ability's side, not attacker/defender.
+
+### `getUnit()`
+
+Available on both `AbilityReadContext` and `AbilityCallContext`. Returns the unit instance this ability is attached to. Only valid for unit abilities (abilities defined in a unit's `ABILITIES` array). Throws an error if called from a config ability.
+
+In `call`, the returned unit is an Immer draft — mutations are applied directly:
+
+```typescript
+// Unit ability example — modify own unit
+call: ctx => {
+  const unit = ctx.getUnit()
+  // unit is the Immer draft of the unit this ability belongs to
+  ctx.api.own.modifyUnit(unit, { isDamaged: true })
+}
+```
 
 ## SideReadApi
 

@@ -8,6 +8,12 @@ import type {
   UnitType,
 } from '@/types'
 
+/** Identifies the unit a unit-ability is attached to */
+export interface UnitAbilitySource {
+  unitType: UnitType
+  unitIndex: number
+}
+
 import {
   getOpponentSide,
   getSettingsValidTargets,
@@ -524,12 +530,19 @@ export function buildApi(
 export function buildReadContext(
   side: CombatSide,
   state: Readonly<CombatStateData>,
+  unitSource?: UnitAbilitySource,
 ) {
   return {
     state,
     api: {
       own: buildReadApi(side, state),
       opponent: buildReadApi(getOpponentSide(side), state),
+    },
+    getUnit(): Unit {
+      if (!unitSource) {
+        throw new Error('getUnit() can only be called from unit abilities')
+      }
+      return state[side].units[unitSource.unitType]![unitSource.unitIndex]
     },
   }
 }
@@ -539,6 +552,7 @@ export function buildCallContext(
   draft: CombatStateData,
   abilityKey: string,
   log?: (...data: unknown[]) => void,
+  unitSource?: UnitAbilitySource,
 ) {
   return {
     state: draft,
@@ -547,6 +561,12 @@ export function buildCallContext(
       opponent: buildApi(getOpponentSide(side), draft, abilityKey),
     },
     log: log ?? (() => {}),
+    getUnit(): Unit {
+      if (!unitSource) {
+        throw new Error('getUnit() can only be called from unit abilities')
+      }
+      return draft[side].units[unitSource.unitType]![unitSource.unitIndex]
+    },
   }
 }
 

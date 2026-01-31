@@ -179,6 +179,8 @@ export interface AbilityReadContext {
     readonly own: SideReadApi
     readonly opponent: SideReadApi
   }
+  /** Get the unit instance this ability is attached to. Throws if called from a non-unit ability. */
+  getUnit(): Unit
 }
 
 /** Mutable context for call (Immer draft, full API) */
@@ -189,6 +191,8 @@ export interface AbilityCallContext {
     opponent: SideApi
   }
   log(...data: unknown[]): void
+  /** Get the unit instance this ability is attached to (Immer draft). Throws if called from a non-unit ability. */
+  getUnit(): Unit
 }
 
 /** Per-side abilities accessor for use within ability context */

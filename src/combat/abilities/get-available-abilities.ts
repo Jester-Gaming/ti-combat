@@ -1,5 +1,5 @@
 import factions from '@/data/faction'
-import type { CombatSide, FactionKey } from '@/types'
+import type { CombatSide, Faction, FactionKey } from '@/types'
 
 import actionCard from './list/action-card'
 import agenda from './list/agenda'
@@ -34,6 +34,49 @@ const allAbilities = [
   ...allCommanderAbilities,
 ]
 
+/** Collect abilities with UI from faction unit definitions */
+function collectUnitAbilities(faction: Faction): Ability[] {
+  const seen = new Set<string>()
+  const abilities: Ability[] = []
+
+  for (const unitDef of Object.values(faction.units)) {
+    if (!unitDef) continue
+
+    const allUnitAbilities = [
+      ...(unitDef.BASE.ABILITIES ?? []),
+      ...(unitDef.UPGRADED?.ABILITIES ?? []),
+    ]
+
+    for (const ability of allUnitAbilities) {
+      if (seen.has(ability.key)) continue
+      if (!ability.headerUI && !ability.uiConfig) continue
+      seen.add(ability.key)
+      abilities.push(ability)
+    }
+  }
+
+  return abilities
+}
+
+/** Get keys of all abilities defined on faction units (regardless of unit state) */
+export function getUnitDefinitionAbilityKeys(
+  factionKey: FactionKey,
+): Set<string> {
+  const faction = factions[factionKey]
+  if (!faction) return new Set()
+  const keys = new Set<string>()
+  for (const unitDef of Object.values(faction.units)) {
+    if (!unitDef) continue
+    for (const ability of [
+      ...(unitDef.BASE.ABILITIES ?? []),
+      ...(unitDef.UPGRADED?.ABILITIES ?? []),
+    ]) {
+      keys.add(ability.key)
+    }
+  }
+  return keys
+}
+
 export function getAvailableAbilities(
   side: CombatSide,
   factionKey: FactionKey,
@@ -48,6 +91,7 @@ export function getAvailableAbilities(
   // Get faction-specific abilities
   const faction = factions[factionKey]
   const factionAbilities = faction?.abilities?.faction ?? []
+  const unitAbilities = faction ? collectUnitAbilities(faction) : []
 
-  return [...baseAbilities, ...factionAbilities]
+  return [...baseAbilities, ...factionAbilities, ...unitAbilities]
 }

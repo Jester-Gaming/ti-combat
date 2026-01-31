@@ -7,7 +7,10 @@ import type { CombatStateData } from '../state/types'
 import type { LogEntry } from '../types'
 import { buildCallContext, buildReadContext } from './ability-api'
 import { buildDiceApi, buildDiceReadApi } from './dice-api'
-import { getAvailableAbilities } from './get-available-abilities'
+import {
+  getAvailableAbilities,
+  getUnitDefinitionAbilityKeys,
+} from './get-available-abilities'
 import type {
   Ability,
   AbilityInvoke,
@@ -139,10 +142,42 @@ function getInvokesForTiming<T extends AbilityTiming>(
 
   const { meta } = state.currentPhase
 
-  // 1. Collect regular abilities from config
   const sideConfig = state.abilities[side]
+
+  // 1. Collect unit abilities from units on field
+  const unitAbilities = collectUnitAbilities(state, side)
+  // Use faction definition keys (not just living units) so destroyed-unit abilities
+  // are never collected as config abilities
+  const unitAbilityKeys = getUnitDefinitionAbilityKeys(state[side].faction)
+  for (const ua of unitAbilities) {
+    unitAbilityKeys.add(ua.ability.key)
+  }
+
+  for (const { ability, unitType, unitIndex } of unitAbilities) {
+    const params = getAbilityMergedParams(ability, sideConfig)
+
+    for (const invoke of ability.invoke) {
+      if (timings.includes(invoke.timing as T)) {
+        if (invoke.context) {
+          const allowed = Array.isArray(invoke.context)
+            ? invoke.context
+            : [invoke.context]
+          if (!allowed.includes(meta)) continue
+        }
+        results.push({
+          ability,
+          invoke,
+          params,
+          source: { type: 'unit', unitType, unitIndex },
+        })
+      }
+    }
+  }
+
+  // 2. Collect regular abilities from config (skip unit abilities — handled per-unit above)
   const availableAbilities = resolveAbilities(state, side)
   for (const ability of availableAbilities) {
+    if (unitAbilityKeys.has(ability.key)) continue
     const params = getAbilityMergedParams(ability, sideConfig)
 
     for (const invoke of ability.invoke) {
@@ -158,27 +193,6 @@ function getInvokesForTiming<T extends AbilityTiming>(
           invoke,
           params,
           source: { type: 'config' },
-        })
-      }
-    }
-  }
-
-  // 2. Collect unit abilities from units on field
-  const unitAbilities = collectUnitAbilities(state, side)
-  for (const { ability, unitType, unitIndex } of unitAbilities) {
-    for (const invoke of ability.invoke) {
-      if (timings.includes(invoke.timing as T)) {
-        if (invoke.context) {
-          const allowed = Array.isArray(invoke.context)
-            ? invoke.context
-            : [invoke.context]
-          if (!allowed.includes(meta)) continue
-        }
-        results.push({
-          ability,
-          invoke,
-          params: ability.defaultParams ?? {},
-          source: { type: 'unit', unitType, unitIndex },
         })
       }
     }
@@ -339,7 +353,6 @@ function tryResolveOneAbility<T extends AbilityTiming>(
     }
   }
 
-  const readCtx = buildReadContext(side, state)
   const sideTracker = tracker[side]
 
   for (const { ability, invoke, params, source } of invokes) {
@@ -386,6 +399,12 @@ function tryResolveOneAbility<T extends AbilityTiming>(
     const inv = invoke as any
     const diceTiming = isDiceTiming(timing)
 
+    const unitSource =
+      source.type === 'unit'
+        ? { unitType: source.unitType, unitIndex: source.unitIndex }
+        : undefined
+    const readCtx = buildReadContext(side, state, unitSource)
+
     let canCall: boolean
     if (diceTiming && internalContext) {
       const rawDice = internalContext as OwnOpponentContext<DicePool>
@@ -426,6 +445,7 @@ function tryResolveOneAbility<T extends AbilityTiming>(
             draft,
             ability.key,
             logCallback,
+            unitSource,
           )
           inv.call(callCtx, params, diceCallCtx)
         })
@@ -440,6 +460,7 @@ function tryResolveOneAbility<T extends AbilityTiming>(
             draft,
             ability.key,
             logCallback,
+            unitSource,
           )
           const result = inv.call(callCtx, params, internalContext)
           if (result !== undefined) resultContext = result

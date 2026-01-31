@@ -4,9 +4,6 @@ import { arviconRex } from './arvicon-rex'
 
 export const mahact_gene_sorcerers: Faction = {
   name: 'Mahact Gene-Sorcerers',
-  abilities: {
-    faction: [arviconRex],
-  },
   units: {
     FLAGSHIP: {
       BASE: {
@@ -20,6 +17,7 @@ export const mahact_gene_sorcerers: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [arviconRex],
       },
     },
     MECH: {

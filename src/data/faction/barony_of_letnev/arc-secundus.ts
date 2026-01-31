@@ -14,7 +14,7 @@ export const arcSecundus: Ability = {
     {
       timing: 'START_OF_COMBAT_ROUND',
       call: ctx => {
-        ctx.api.own.modifyUnit('FLAGSHIP', {
+        ctx.api.own.modifyUnit(ctx.getUnit(), {
           isDamaged: false,
         })
       },

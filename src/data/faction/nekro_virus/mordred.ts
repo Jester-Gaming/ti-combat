@@ -1,4 +1,4 @@
-import type { Ability, DiceContext } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
 type Params = {
   isEnabled: boolean
@@ -15,11 +15,11 @@ export const mordred: Ability<Params> = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (params: Params) => {
+      isCallable: params => {
         return params.isEnabled
       },
-      call: (_ctx, _params: Params, dice: DiceContext) => {
-        dice.own.modifyHitValue(-2, 'MECH')
+      call: (ctx, _params, dice) => {
+        dice.own.modifyHitValue(-2, ctx.getUnit())
       },
     },
   ],
