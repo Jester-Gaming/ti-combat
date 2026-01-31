@@ -42,7 +42,7 @@ export const assaultCannon: Ability<Params> = {
   category: 'TECHNOLOGY',
   defaultParams: {
     isEnabled: false,
-    targetPriority: [...NON_FIGHTER_SHIPS],
+    targetPriority: [...NON_FIGHTER_SHIPS].reverse(),
   },
   headerUI: 'isEnabled',
   invoke: [

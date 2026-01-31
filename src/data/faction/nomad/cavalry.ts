@@ -23,17 +23,19 @@ export const cavalry: Ability<Params> = {
   category: 'PROMISSORY',
   defaultParams: {
     isEnabled: false,
-    unitType: 'CRUISER',
+    unitType: 'DESTROYER',
   },
   headerUI: 'isEnabled',
   uiConfig: (ctx: AbilityReadContext) => {
-    const variants = ctx.api.own.getParticipatingVariants()
+    const variants = ctx.api.own.getParticipatingVariants({
+      exclude: ['FIGHTER'],
+    })
     return [
       {
         key: 'unitType' as const,
         label: 'Unit Type',
         type: 'select' as const,
-        items: variants.map(id => ({
+        items: variants.reverse().map(id => ({
           label: getVariantDisplayName(id),
           value: id,
         })),
