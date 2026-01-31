@@ -123,7 +123,7 @@
 
 - [ ] **Linkship I** (Special Unit) — Anti-Fighter Barrage 9 (x2). This unit can use the Space Cannon ability of one of your structures in its space area; each structure can only be triggered once.
 - [ ] **Linkship II** (Faction Technology) — Anti-Fighter Barrage 6 (x3). This unit can use the Space Cannon ability of one of your structures in its space area; each linkship can trigger the same structure.
-- [ ] **Alarum** (Mech) — At the end of a round of ground combat on this planet, you may move up to 2 of your ground forces to this planet from planets in adjacent systems.
+- [x] **Alarum** (Mech) — At the end of a round of ground combat on this planet, you may move up to 2 of your ground forces to this planet from planets in adjacent systems.
 
 ### Sardakk N'orr
 

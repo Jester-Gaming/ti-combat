@@ -1,5 +1,7 @@
 import type { Faction } from '@/types'
 
+import { alarum } from './alarum'
+
 export const ral_nel: Faction = {
   name: 'Ral Nel Consortium',
   units: {
@@ -27,6 +29,7 @@ export const ral_nel: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [alarum],
       },
     },
     DESTROYER: {
