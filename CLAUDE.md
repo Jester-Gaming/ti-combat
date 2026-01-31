@@ -101,6 +101,7 @@ import { cn } from '@/lib/utils'
 
 - **Utilities**: One utility function per file in `src/utils/` (e.g., `getFactionUnitConfig.ts`)
 - Console methods like info, time and timeEnd are find in production code, everything else — not
+- All abilities test located in src/tests. If test is for a combination of abilities all abilities should be in filename with + between abilites, names sorted alphabetically. I.e. «cavalry+gravleash-maneuvers.test.ts»
 
 ## Architecture Notes
 
@@ -110,3 +111,17 @@ The project is currently in scaffolding phase with standard Vite + React templat
 - Unit types, abilities, and combat mechanics
 - Dice rolling and probability calculations
 - UI components for unit selection and battle visualization
+
+## Abilities
+
+For abilities info — read `docs/abilities-list.md`.
+When implementing a new ability, read `docs/abilities.md` first — it contains the full development guide with API reference, patterns, and code examples.
+After implementation mark ability as done in `docs/abilities-list.md`.
+
+## Combat System
+
+For phase system, ability timings, unit stats, factions, and ability keys — read `docs/overview.md`.
+
+## Ability Testing
+
+When writing or modifying ability tests, read `docs/testing.md` first — it contains the full testing guide with API reference, test patterns, and code examples.

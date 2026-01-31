@@ -142,7 +142,7 @@ export class CombatState implements CombatStateData {
     this.data = newData
   }
 
-  private static fromData(data: CombatStateData): CombatState {
+  public static fromData(data: CombatStateData): CombatState {
     const instance = Object.create(CombatState.prototype) as CombatState
     ;(instance as { data: CombatStateData }).data = data
     return instance

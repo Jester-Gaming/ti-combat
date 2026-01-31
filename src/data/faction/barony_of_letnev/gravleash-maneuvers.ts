@@ -49,7 +49,6 @@ export const gravleashManeuvers: Ability<Params> = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      context: 'SPACE_COMBAT',
       isCallable: (
         params: Params,
         _ctx: AbilityReadContext,
@@ -62,14 +61,7 @@ export const gravleashManeuvers: Ability<Params> = {
         const target = ctx.api.own.findUnitByPriority(params.shipPriority)
 
         if (shipTypeCount > 0 && target) {
-          console.log(
-            'A',
-            params.shipPriority,
-            target,
-            structuredClone(dice.own.getAll()),
-          )
           dice.own.modifyHitValue(-shipTypeCount, target)
-          console.log('B', structuredClone(dice.own.getAll()))
         }
       },
     },

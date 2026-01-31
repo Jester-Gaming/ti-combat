@@ -1,0 +1,58 @@
+import { describe, expect, it } from 'vitest'
+
+import { combatTest } from './utils/combat-test'
+
+describe('CAVALRY + GRAVLEASH_MANEUVERS', () => {
+  it('Gravleash does not count subtype as a separate type', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'BARONY_OF_LETNEV',
+        units: { DREADNOUGHT: 1, CRUISER: 2, DESTROYER: 1 },
+        abilities: {
+          GRAVLEASH_MANEUVERS: { isEnabled: true, shipPriority: ['CRUISER'] },
+          CAVALRY: { isEnabled: true, unitType: 'CRUISER' },
+        },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 3 },
+      },
+    })
+
+    t.runTiming(['START_OF_COMBAT', 'START_OF_COMBAT_ROUND'])
+
+    expect(t.attacker.units.CRUISER![0].subtypes).toContain('Cavalry')
+
+    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
+    const dice = t.runDiceTiming('COMBAT')
+
+    expect(dice.attacker).toContainDice('CRUISER', [4, 1])
+  })
+
+  it('counts subtypes as separate ship types in priority', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'BARONY_OF_LETNEV',
+        units: { DREADNOUGHT: 1, CRUISER: 2, DESTROYER: 1 },
+        abilities: {
+          GRAVLEASH_MANEUVERS: {
+            isEnabled: true,
+            shipPriority: ['CRUISER:Cavalry', 'CRUISER'],
+          },
+          CAVALRY: { isEnabled: true, unitType: 'CRUISER' },
+        },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+      },
+    })
+
+    t.runTiming(['START_OF_COMBAT', 'START_OF_COMBAT_ROUND'])
+    const dice = t.runDiceTiming('COMBAT')
+
+    expect(dice.attacker).toContainDice('CRUISER', [4, 2])
+  })
+})

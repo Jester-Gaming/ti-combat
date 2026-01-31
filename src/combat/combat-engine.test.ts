@@ -262,9 +262,6 @@ describe('CombatEngine', () => {
       const outcomes = flattenTree(result)
       const summary = summarizeOutcomes(outcomes)
 
-      console.log(outcomes)
-      console.log(summary)
-
       expect(summary.draw).toBe(1.0)
     })
 

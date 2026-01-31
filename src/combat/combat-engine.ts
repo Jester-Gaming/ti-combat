@@ -56,8 +56,8 @@ export class CombatEngine {
     }
 
     this.expandNode(root)
-    console.info('Total', this.outcomes)
-    console.info('Cache length', this.subtreeCache.size)
+    // console.info('Total', this.outcomes)
+    // console.info('Cache length', this.subtreeCache.size)
 
     return root
   }
