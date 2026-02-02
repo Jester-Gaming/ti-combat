@@ -22,27 +22,14 @@ function countNonFighterShips(api: SideReadApi): number {
   return count
 }
 
-/** Find the first available target from priority list */
-function findTarget(
-  opponentApi: SideReadApi,
-  priority: UnitType[],
-): UnitType | null {
-  for (const unitType of priority) {
-    if (unitType === 'FIGHTER') continue
-    if (opponentApi.hasUnit(unitType)) {
-      return unitType
-    }
-  }
-  return null
-}
-
 export const assaultCannon: Ability<Params> = {
   key: 'ASSAULT_CANNON',
   name: 'Assault Cannon',
   category: 'TECHNOLOGY',
+  context: 'SPACE',
   defaultParams: {
     isEnabled: false,
-    targetPriority: [...NON_FIGHTER_SHIPS].reverse(),
+    targetPriority: NON_FIGHTER_SHIPS.toReversed(),
   },
   headerUI: 'isEnabled',
   invoke: [
@@ -56,19 +43,25 @@ export const assaultCannon: Ability<Params> = {
         if (nonFighterCount < 3) return false
 
         // Must have a valid target in opponent's units
-        const target = findTarget(ctx.api.opponent, params.targetPriority)
-        return target !== null
+        const target = ctx.api.opponent.findUnitByPriority(
+          params.targetPriority,
+        )
+        return target !== undefined
       },
       call: (ctx, params: Params) => {
-        const targetType = findTarget(ctx.api.opponent, params.targetPriority)
-        if (!targetType) return
+        const target = ctx.api.opponent.findUnitByPriority(
+          params.targetPriority,
+        )
 
-        ctx.api.opponent.destroyUnit(targetType)
+        if (!target) return
+
+        ctx.api.opponent.destroyUnit(target)
       },
     },
   ],
   uiConfig: ctx => {
     const variants = ctx.api.opponent.getParticipatingVariants({
+      combatMode: 'SPACE',
       exclude: ['FIGHTER'],
     })
     const items = variants.map(id => ({

@@ -29,6 +29,7 @@ interface Ability<Params extends Record<string, unknown>> {
   readOnly?: boolean // Lock UI (user cannot toggle)
   uiConfig?: UIConfig<Params> // Controls for params in UI
   condition?: AbilityCondition // Side restriction
+  context?: CombatMode // Restrict to SPACE or GROUND combat
   declareSubtypes?: (params: Params) => DeclaredSubtype[]
   invoke: AbilityInvoke<Params>[] // Array of timing handlers
 }
@@ -37,6 +38,16 @@ interface Ability<Params extends Record<string, unknown>> {
 **`headerUI`** — renders a control in the ability header row. Boolean params show a checkbox, number params show a numeric input. Most abilities use `headerUI: 'isEnabled'` or `headerUI: 'uses'`.
 
 **`readOnly: true`** — ability appears in UI but cannot be toggled off. Used for always-on faction abilities (e.g., Fragile, Unrelenting).
+
+**`context`** — restricts the ability to a specific combat mode. When set, the ability is skipped during combat if the mode doesn't match, and dimmed (opacity 0.5) in the UI. The ability remains fully interactive when dimmed.
+
+```typescript
+context: 'SPACE' // Only fires during space combat
+context: 'GROUND' // Only fires during ground combat
+// omit for abilities that work in both modes
+```
+
+Note: This is the **ability-level** `context` (combat mode). Don't confuse with the **invoke-level** `context` (meta-phase), which restricts individual invokes to specific phases like `'AFB'` or `'BOMBARDMENT'`.
 
 **`condition`** — restricts which side can use the ability:
 
@@ -110,8 +121,6 @@ Timings define when abilities fire. They run in this order during combat:
 
 ```
 PREPARE               — once at combat construction
-PREPARE_SPACE         — once before space combat
-PREPARE_GROUND        — once before ground combat
 START_OF_COMBAT       — before first round
 START_OF_COMBAT_ROUND — before each round (including first)
 BEFORE_UNIT_ABILITY_ROLL — before AFB / bombardment / space cannon dice
@@ -125,7 +134,7 @@ AFTER_ROUND           — after round cleanup
 
 ### Function Signatures by Timing
 
-**Void timings** (PREPARE, PREPARE_SPACE, PREPARE_GROUND, START_OF_COMBAT, START_OF_COMBAT_ROUND, BEFORE_ASSIGN_HITS, END_OF_COMBAT_ROUND, END_OF_COMBAT, AFTER_ROUND):
+**Void timings** (PREPARE, START_OF_COMBAT, START_OF_COMBAT_ROUND, BEFORE_ASSIGN_HITS, END_OF_COMBAT_ROUND, END_OF_COMBAT, AFTER_ROUND):
 
 ```typescript
 isCallable?: (params: Params, ctx: AbilityReadContext) => boolean
@@ -208,8 +217,8 @@ hasUnit(unitType: UnitType): boolean
 countUnits(filter?: ReadonlySet<UnitType>): number
 getPendingHits(): number
 getHitPoolValidTargets(): UnitType[]
-getParticipatingUnitTypes(): UnitType[]
-getParticipatingVariants(filter?: { include?: UnitType[], exclude?: UnitType[] }): string[]
+getParticipatingUnitTypes(options?: { combatMode?: CombatMode }): UnitType[]
+getParticipatingVariants(filter?: { include?: UnitType[], exclude?: UnitType[], excludeSubtypes?: string[], combatMode?: CombatMode }): string[]
 findUnit(unitType: UnitType, predicate: Partial<UnitState>): { unit: Unit, index: number } | undefined
 findUnitByPriority(priority: string[]): Unit | undefined
 isUnitAbilityLost(ability: UnitAbility, unitType: UnitType): boolean
@@ -223,6 +232,7 @@ Additional write methods available in `call`:
 ### Unit Operations
 
 ```typescript
+destroyUnit(unit: Unit): void                          // By reference
 destroyUnit(unitType: UnitType): void                  // Destroy first of type
 destroyUnit(unitType: UnitType, index: number): void   // Destroy specific index
 destroyUnit(unitTypes: UnitType[]): void               // Destroy first of each type
@@ -371,7 +381,7 @@ export const fourthMoon: Ability = {
   category: 'FACTION',
   invoke: [
     {
-      timing: 'PREPARE_SPACE',
+      timing: 'PREPARE',
       call: ctx => {
         ctx.api.opponent.setUnitAbilityCannotBeUsed('SUSTAIN_DAMAGE', 'FOURTH_MOON')
       },

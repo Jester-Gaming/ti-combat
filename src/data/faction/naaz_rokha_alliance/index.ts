@@ -1,5 +1,6 @@
 import type { Faction } from '@/types'
 
+import { eidolon } from './eidolon'
 import { supercharge } from './supercharge'
 
 export const naaz_rokha_alliance: Faction = {
@@ -32,6 +33,7 @@ export const naaz_rokha_alliance: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [eidolon],
       },
     },
   },

@@ -1,6 +1,7 @@
 import type { Faction } from '@/types'
 
 import { mordred } from './mordred'
+import { theAlastor } from './the-alastor'
 
 export const nekro_virus: Faction = {
   name: 'Nekro Virus',
@@ -17,6 +18,7 @@ export const nekro_virus: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [theAlastor],
       },
     },
     MECH: {

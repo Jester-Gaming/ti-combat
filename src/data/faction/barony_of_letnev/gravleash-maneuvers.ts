@@ -17,6 +17,7 @@ export const gravleashManeuvers: Ability<Params> = {
   key: 'GRAVLEASH_MANEUVERS',
   name: 'Breakthrough',
   category: 'FACTION',
+  context: 'SPACE',
   defaultParams: {
     isEnabled: false,
     shipPriority: [
@@ -31,7 +32,9 @@ export const gravleashManeuvers: Ability<Params> = {
   },
   headerUI: 'isEnabled',
   uiConfig: ctx => {
-    const variants = ctx.api.own.getParticipatingVariants()
+    const variants = ctx.api.own.getParticipatingVariants({
+      combatMode: 'SPACE',
+    })
     const items = variants.map(id => ({
       label: getVariantDisplayName(id),
       value: id,

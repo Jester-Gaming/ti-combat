@@ -8,6 +8,7 @@ export const twoRam: Ability<Params> = {
   key: 'TWO_RAM',
   name: '(L1z1x) 2RAM',
   category: 'COMMANDER',
+  context: 'GROUND',
   condition: {
     onlyAttacker: true,
   },

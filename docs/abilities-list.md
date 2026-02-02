@@ -97,20 +97,20 @@
 
 ### Naalu Collective
 
-- [ ] **Matriarch** (Flagship) — During an invasion in this system, you may commit fighters to planets as if they were ground forces. When combat ends, return those units to the space area.
+- [x] **Matriarch** (Flagship) — During an invasion in this system, you may commit fighters to planets as if they were ground forces. When combat ends, return those units to the space area.
 
 ### Naaz-Rokha Alliance
 
 - [x] **Supercharge** (Faction Technology) — At the start of a combat round, you may exhaust this card to apply +1 to the result of each of your unit's combat rolls during this combat round.
 - [ ] **Visz El Vir** (Flagship) — Your mechs in this system roll 1 additional die during combat.
-- [ ] **Eidolon** (Mech) — Combat: 6 (x2). If this unit is in the space area of the active system at the start of a space combat, flip this card.
-- [ ] **Z-Grav Eidolon** (Mech flipped) — Combat: 8 (x2). If this unit is in the space area of the active system, it is also a ship.
+- [x] **Eidolon** (Mech) — Combat: 6 (x2). If this unit is in the space area of the active system at the start of a space combat, flip this card.
+- [x] **Z-Grav Eidolon** (Mech flipped) — Combat: 8 (x2). If this unit is in the space area of the active system, it is also a ship.
 - [ ] **Eidolon Maximum** (Mech upgraded) — Combat: 4 (x4). This unit is both a ship and a ground force. It cannot be assigned hits from unit abilities. Repair it at the start of every combat round.
 
 ### Nekro Virus
 
 - [ ] **Technological Singularity** (Faction Ability) — Once per combat, after 1 of your opponent's units is destroyed, you may gain 1 technology that is owned by that player.
-- [ ] **The Alastor** (Flagship) — At the start of a space combat, choose any number of your ground forces in this system to participate in that combat as if they were ships.
+- [x] **The Alastor** (Flagship) — At the start of a space combat, choose any number of your ground forces in this system to participate in that combat as if they were ships.
 - [x] **Mordred** (Mech) — During combat against an opponent who has an "X" or "Y" token on 1 or more of their technologies, apply +2 to the result of each of this unit's combat rolls.
 
 ### Nomad
@@ -136,7 +136,7 @@
 
 ### Titans of Ul
 
-- [ ] **Hel-Titan I** (Special Unit) — Combat: 7. Planetary Shield. Sustain Damage. Space Cannon 6. This unit is treated as both a structure and a ground force.
+- [x] **Hel-Titan I** (Special Unit) — Combat: 7. Planetary Shield. Sustain Damage. Space Cannon 6. This unit is treated as both a structure and a ground force.
 - [x] **Tellurian** (Agent) — When a hit is produced against a unit: You may exhaust this card to cancel that hit.
 - [ ] **Geoform** (Hero) — Ready Elysium and attach this card to it. Its resource and influence values are each increased by 3, and it gains the Space Cannon 5 (x3) ability as if it were a unit.
 

@@ -12,6 +12,7 @@ export const theEgeiro: Ability<Params> = {
   key: 'THE_EGEIRO',
   name: '(Bastion) The Egeiro',
   category: 'FACTION',
+  context: 'SPACE',
   defaultParams: {
     nonHomeSystems: 0,
   },

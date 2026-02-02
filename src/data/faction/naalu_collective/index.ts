@@ -1,5 +1,7 @@
 import type { Faction } from '@/types'
 
+import { matriarch } from './matriarch'
+
 export const naalu_collective: Faction = {
   name: 'Naalu Collective',
   units: {
@@ -15,6 +17,7 @@ export const naalu_collective: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [matriarch],
       },
     },
     MECH: {

@@ -19,6 +19,7 @@ export const gravitonLaserSystem: Ability<Params> = {
   key: 'GRAVITON_LASER_SYSTEM',
   name: 'Graviton Laser System',
   category: 'TECHNOLOGY',
+  context: 'SPACE',
   defaultParams: {
     isEnabled: false,
   },

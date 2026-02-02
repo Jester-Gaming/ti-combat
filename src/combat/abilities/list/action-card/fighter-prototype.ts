@@ -9,6 +9,7 @@ export const fighterPrototype: Ability<Params> = {
   key: 'FIGHTER_PROTOTYPE',
   name: 'Fighter Prototype',
   category: 'ACTION_CARD',
+  context: 'SPACE',
   defaultParams: {
     isEnabled: false,
     uses: 1,

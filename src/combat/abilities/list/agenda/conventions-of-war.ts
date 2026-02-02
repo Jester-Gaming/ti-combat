@@ -8,6 +8,7 @@ export const conventionsOfWar: Ability<Params> = {
   key: 'CONVENTIONS_OF_WAR',
   name: 'Conventions of War',
   category: 'AGENDA',
+  context: 'GROUND',
   defaultParams: {
     isEnabled: false,
   },

@@ -8,6 +8,7 @@ export const prophecyOfIxth: Ability<Params> = {
   key: 'PROPHECY_OF_IXTH',
   name: 'Prophecy of Ixth',
   category: 'AGENDA',
+  context: 'SPACE',
   defaultParams: {
     isEnabled: false,
   },

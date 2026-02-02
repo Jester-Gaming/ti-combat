@@ -8,6 +8,7 @@ export const nebula: Ability<Params> = {
   key: 'NEBULA',
   name: 'Nebula',
   category: 'ENVIRONMENT',
+  context: 'SPACE',
   defaultParams: {
     isEnabled: false,
   },

@@ -8,13 +8,14 @@ export const l4Disruptors: Ability<Params> = {
   key: 'L4_DISRUPTORS',
   name: 'L4 Disruptors',
   category: 'FACTION',
+  context: 'GROUND',
   defaultParams: {
     isEnabled: false,
   },
   headerUI: 'isEnabled',
   invoke: [
     {
-      timing: 'PREPARE_GROUND',
+      timing: 'PREPARE',
       isCallable: (params: Params) => params.isEnabled,
       call: ctx => {
         ctx.api.opponent.setUnitAbilityCannotBeUsed(

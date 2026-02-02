@@ -1,5 +1,3 @@
-import { original } from 'immer'
-
 import type {
   CombatSide,
   Unit,
@@ -34,6 +32,7 @@ import {
 import { getAvailableAbilities } from './get-available-abilities'
 import type {
   AbilityReadContext,
+  DeclaredParticipant,
   DeclaredSubtype,
   SideApi,
   SideReadApi,
@@ -71,9 +70,7 @@ function findUnitByPriorityInSide(
 
     for (let i = 0; i < units.length; i++) {
       if (unitMatchesVariant(units[i], variantId)) {
-        // Use original() to unwrap Immer proxy so the reference matches
-        // the one stored in DieValue by collectDice
-        return original(units[i]) ?? units[i]
+        return units[i]
       }
     }
   }
@@ -179,19 +176,28 @@ function resolveSettingsParams(
 function getParticipatingUnitTypesForSide(
   state: Readonly<CombatStateData>,
   side: CombatSide,
+  combatModeOverride?: CombatMode,
 ): UnitType[] {
   const sideState = state[side]
   const params = resolveSettingsParams(state, side)
+  const mode = combatModeOverride ?? state.combatMode
   if (!params) {
     return (Object.keys(sideState.units) as UnitType[]).filter(
       t => (sideState.units[t]?.length ?? 0) > 0,
     )
   }
   const units =
-    state.combatMode === 'GROUND'
+    mode === 'GROUND'
       ? ((params.groundCombatParticipating as UnitType[]) ?? [])
       : ((params.spaceCombatParticipating as UnitType[]) ?? [])
-  return units
+
+  const declaredParticipants = (params.declaredParticipants ??
+    []) as DeclaredParticipant[]
+  const baseSet = new Set(units)
+  for (const decl of declaredParticipants) {
+    if (decl.combatMode === mode) baseSet.add(decl.unitType)
+  }
+  return [...baseSet]
 }
 
 function getParticipatingVariantsForSide(
@@ -200,9 +206,15 @@ function getParticipatingVariantsForSide(
   filter?: {
     include?: UnitType[]
     exclude?: UnitType[]
+    excludeSubtypes?: string[]
+    combatMode?: CombatMode
   },
 ): string[] {
-  let baseTypes = getParticipatingUnitTypesForSide(state, side)
+  let baseTypes = getParticipatingUnitTypesForSide(
+    state,
+    side,
+    filter?.combatMode,
+  )
   if (filter?.include) {
     const includeSet = new Set(filter.include)
     baseTypes = baseTypes.filter(t => includeSet.has(t))
@@ -213,11 +225,15 @@ function getParticipatingVariantsForSide(
   }
   const params = resolveSettingsParams(state, side)
   const declaredSubtypes = (params?.declaredSubtypes ?? []) as DeclaredSubtype[]
+  const excludeSubtypeSet = filter?.excludeSubtypes
+    ? new Set(filter.excludeSubtypes)
+    : null
 
   const baseSet = new Set(baseTypes)
   const result: string[] = [...baseTypes]
   for (const decl of declaredSubtypes) {
     if (!baseSet.has(decl.unitType)) continue
+    if (excludeSubtypeSet?.has(decl.name)) continue
     result.push(makeVariantId(decl.unitType, [decl.name]))
   }
   return result
@@ -277,13 +293,15 @@ function buildSideReadApi(
       return resolveSettingsValidTargets(state, side)
     },
 
-    getParticipatingUnitTypes() {
-      return getParticipatingUnitTypesForSide(state, side)
+    getParticipatingUnitTypes(options?: { combatMode?: CombatMode }) {
+      return getParticipatingUnitTypesForSide(state, side, options?.combatMode)
     },
 
     getParticipatingVariants(filter?: {
       include?: UnitType[]
       exclude?: UnitType[]
+      excludeSubtypes?: string[]
+      combatMode?: CombatMode
     }) {
       return getParticipatingVariantsForSide(state, side, filter)
     },
@@ -330,12 +348,15 @@ export function buildApi(
   const api: SideApi = {
     ...buildSideReadApi(side, draft),
 
-    destroyUnit(unitTypeOrTypes: UnitType | UnitType[], index?: number): void {
+    destroyUnit(
+      unitTypeOrTypesOrUnit: UnitType | UnitType[] | Unit,
+      index?: number,
+    ): void {
       const sideState = draft[side]
 
-      if (Array.isArray(unitTypeOrTypes)) {
+      if (Array.isArray(unitTypeOrTypesOrUnit)) {
         // destroyUnit(unitTypes[]) — destroy first of each type
-        for (const unitType of unitTypeOrTypes) {
+        for (const unitType of unitTypeOrTypesOrUnit) {
           const units = sideState.units[unitType]
           if (units && units.length > 0) {
             units.splice(0, 1)
@@ -347,7 +368,23 @@ export function buildApi(
         return
       }
 
-      const unitType = unitTypeOrTypes
+      if (typeof unitTypeOrTypesOrUnit !== 'string') {
+        // destroyUnit(unit) — by unit reference
+        for (const [type, units] of Object.entries(sideState.units)) {
+          if (!units) continue
+          const idx = units.indexOf(unitTypeOrTypesOrUnit)
+          if (idx !== -1) {
+            units.splice(idx, 1)
+            if (units.length === 0) {
+              delete sideState.units[type as UnitType]
+            }
+            return
+          }
+        }
+        return
+      }
+
+      const unitType = unitTypeOrTypesOrUnit
       const units = sideState.units[unitType]
       if (!units) return
 

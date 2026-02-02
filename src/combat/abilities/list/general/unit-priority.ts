@@ -3,7 +3,8 @@ import { getVariantDisplayName } from '@/combat/utils/unit-variant'
 import type { Ability } from '../../types'
 
 type Params = {
-  unitPriority: string[]
+  spaceUnitPriority: string[]
+  groundUnitPriority: string[]
 }
 
 export const unitPriority: Ability<Params> = {
@@ -11,17 +12,16 @@ export const unitPriority: Ability<Params> = {
   name: 'Assign Hits Order',
   category: 'GENERAL',
   defaultParams: {
-    unitPriority: [
+    spaceUnitPriority: [
       'FIGHTER',
-      'INFANTRY',
       'DESTROYER',
       'CRUISER',
       'CARRIER',
       'DREADNOUGHT',
-      'MECH',
       'WAR_SUN',
       'FLAGSHIP',
     ],
+    groundUnitPriority: ['INFANTRY', 'PDS', 'MECH'],
   },
   invoke: [],
   uiConfig: ctx => {
@@ -31,9 +31,14 @@ export const unitPriority: Ability<Params> = {
       value: id,
     }))
 
+    const key =
+      ctx.state.combatMode === 'GROUND'
+        ? ('groundUnitPriority' as const)
+        : ('spaceUnitPriority' as const)
+
     return [
       {
-        key: 'unitPriority' as const,
+        key,
         label: 'Unit Priority',
         type: 'order-list' as const,
         items,

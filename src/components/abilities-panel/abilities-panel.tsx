@@ -1,6 +1,7 @@
 import { filter, groupBy, pipe } from 'remeda'
 
 import type { Ability, AbilityReadContext } from '@/combat/abilities'
+import type { CombatMode } from '@/combat/state/types'
 
 import styles from './abilities-panel.module.css'
 import { AbilityConfig } from './components/ability-config'
@@ -8,6 +9,7 @@ import { AbilityConfig } from './components/ability-config'
 interface AbilitiesPanelProps {
   abilities: Ability[]
   readContext: AbilityReadContext
+  combatMode: CombatMode
   params: Record<string, Record<string, unknown>>
   onParamsChange: (abilityName: string, params: Record<string, unknown>) => void
 }
@@ -41,6 +43,7 @@ function compareCategories(a: string, b: string): number {
 export function AbilitiesPanel({
   abilities,
   readContext,
+  combatMode,
   params,
   onParamsChange,
 }: AbilitiesPanelProps): React.ReactElement {
@@ -65,6 +68,7 @@ export function AbilitiesPanel({
                 key={ability.key}
                 ability={ability}
                 readContext={readContext}
+                combatMode={combatMode}
                 params={params[ability.key] ?? {}}
                 onParamsChange={newParams =>
                   onParamsChange(ability.key, newParams)

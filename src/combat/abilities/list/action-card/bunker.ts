@@ -8,6 +8,7 @@ export const bunker: Ability<Params> = {
   key: 'BUNKER',
   name: 'Bunker',
   category: 'ACTION_CARD',
+  context: 'GROUND',
   defaultParams: {
     isEnabled: false,
   },

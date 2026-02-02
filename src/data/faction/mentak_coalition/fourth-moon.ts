@@ -4,9 +4,10 @@ export const fourthMoon: Ability = {
   key: 'FOURTH_MOON',
   name: 'Fourth Moon',
   category: 'FACTION',
+  context: 'SPACE',
   invoke: [
     {
-      timing: 'PREPARE_SPACE',
+      timing: 'PREPARE',
       call: ctx => {
         ctx.api.opponent.setUnitAbilityCannotBeUsed(
           'SUSTAIN_DAMAGE',

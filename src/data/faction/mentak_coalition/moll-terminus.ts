@@ -6,7 +6,7 @@ export const mollTerminus: Ability = {
   category: 'FACTION',
   invoke: [
     {
-      timing: 'PREPARE_GROUND',
+      timing: 'PREPARE',
       call: ctx => {
         ctx.api.opponent.setUnitAbilityCannotBeUsed(
           'SUSTAIN_DAMAGE',

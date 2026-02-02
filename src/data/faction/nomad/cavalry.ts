@@ -21,15 +21,23 @@ export const cavalry: Ability<Params> = {
   key: 'CAVALRY',
   name: '(Nomad) Cavalry',
   category: 'PROMISSORY',
+  context: 'SPACE',
   defaultParams: {
     isEnabled: false,
     unitType: 'DESTROYER',
   },
   headerUI: 'isEnabled',
+  declareSubtypes: params => {
+    if (!params.isEnabled) return []
+    return [{ name: 'Cavalry', unitType: params.unitType }]
+  },
   uiConfig: (ctx: AbilityReadContext) => {
     const variants = ctx.api.own.getParticipatingVariants({
       exclude: ['FIGHTER'],
+      excludeSubtypes: ['Cavalry'],
+      combatMode: 'SPACE',
     })
+
     return [
       {
         key: 'unitType' as const,
@@ -41,10 +49,6 @@ export const cavalry: Ability<Params> = {
         })),
       },
     ]
-  },
-  declareSubtypes: params => {
-    if (!params.isEnabled) return []
-    return [{ name: 'Cavalry', unitType: params.unitType }]
   },
   invoke: [
     {

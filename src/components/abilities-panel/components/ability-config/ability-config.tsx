@@ -2,6 +2,7 @@ import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons'
 import { useMemo, useState } from 'react'
 
 import type { Ability, AbilityReadContext } from '@/combat/abilities'
+import type { CombatMode } from '@/combat/state/types'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
@@ -18,6 +19,7 @@ import styles from './ability-config.module.css'
 interface AbilityConfigProps {
   ability: Ability
   readContext: AbilityReadContext
+  combatMode: CombatMode
   params: Record<string, unknown>
   onParamsChange: (params: Record<string, unknown>) => void
 }
@@ -25,6 +27,7 @@ interface AbilityConfigProps {
 export function AbilityConfig({
   ability,
   readContext,
+  combatMode,
   params,
   onParamsChange,
 }: AbilityConfigProps): React.ReactElement {
@@ -150,7 +153,7 @@ export function AbilityConfig({
 
   return (
     <div
-      className={`${styles.container} ${headerParamKey ? styles.hasHeaderControl : ''} ${headerParamKey && isHeaderBoolean ? styles.clickable : ''} ${ability.readOnly ? styles.readOnly : ''}`}
+      className={`${styles.container} ${headerParamKey ? styles.hasHeaderControl : ''} ${headerParamKey && isHeaderBoolean ? styles.clickable : ''} ${ability.readOnly ? styles.readOnly : ''} ${ability.context && ability.context !== combatMode ? styles.dimmed : ''}`}
       onClick={
         headerParamKey && isHeaderBoolean && !ability.readOnly
           ? handleContainerClick

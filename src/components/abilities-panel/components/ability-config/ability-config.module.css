@@ -11,6 +11,10 @@
   border-color: hsl(var(--side-color) / 30%);
 }
 
+.container.dimmed {
+  opacity: 50%;
+}
+
 .header {
   @apply flex items-center gap-1.5;
 }

@@ -1,27 +1,15 @@
+import { getVariantDisplayName } from '@/combat/utils/unit-variant'
+import { GROUND_FORCES, NON_FIGHTER_SHIPS, UNIT_TYPES } from '@/constants/units'
 import type { Unit, UnitType } from '@/types'
-import { getUnitListItems } from '@/utils/get-unit-config'
 
 import type { Ability, AbilityReadContext, SideReadApi } from '../../types'
 
-/** Get units from the read API that have sustain damage ability */
-function getSustainUnitsFromApi(api: SideReadApi): UnitType[] {
-  const allUnits = api.getUnits() as Partial<Record<UnitType, Unit[]>>
-  const result: UnitType[] = []
-  for (const [unitType, units] of Object.entries(allUnits)) {
-    if (units && units.length > 0) {
-      const hasSustain = units.some(u => u.UNIT_ABILITIES?.SUSTAIN_DAMAGE)
-      if (hasSustain) {
-        result.push(unitType as UnitType)
-      }
-    }
-  }
-  return result
-}
-
 type Params = {
   hitPerSustain: number
-  units: UnitType[]
-  unitPriority: UnitType[]
+  spaceUnits: UnitType[]
+  groundUnits: UnitType[]
+  spaceUnitPriority: UnitType[]
+  groundUnitPriority: UnitType[]
 }
 
 /** Find the first undamaged unit that can sustain, following priority order */
@@ -62,46 +50,41 @@ export const sustainDamage: Ability<Params> = {
   category: 'GENERAL',
   defaultParams: {
     hitPerSustain: 1,
-    units: ['DREADNOUGHT', 'MECH', 'FLAGSHIP'],
-    unitPriority: [
-      'FIGHTER',
-      'INFANTRY',
-      'DESTROYER',
-      'CRUISER',
-      'CARRIER',
-      'DREADNOUGHT',
-      'MECH',
-      'WAR_SUN',
-      'FLAGSHIP',
-    ],
+    spaceUnits: UNIT_TYPES,
+    groundUnits: UNIT_TYPES,
+    spaceUnitPriority: NON_FIGHTER_SHIPS.toReversed(),
+    groundUnitPriority: GROUND_FORCES.toReversed(),
   },
-  uiConfig: (ctx, params) => {
-    const sustainUnits = getSustainUnitsFromApi(ctx.api.own)
-    const sustainUnitItems = getUnitListItems(sustainUnits)
-    const sustainUnitsSet = new Set(sustainUnits)
-    const validUnits = params.units.filter(u => sustainUnitsSet.has(u))
+  uiConfig: ctx => {
+    const isGround = ctx.state.combatMode === 'GROUND'
+    const unitsKey = isGround
+      ? ('groundUnits' as const)
+      : ('spaceUnits' as const)
+    const priorityKey = isGround
+      ? ('groundUnitPriority' as const)
+      : ('spaceUnitPriority' as const)
+
+    const participatingUnits = ctx.api.own.getParticipatingVariants({
+      exclude: ['FIGHTER'],
+    })
+    const participatingItems = participatingUnits.map(id => ({
+      label: getVariantDisplayName(id),
+      value: id,
+    }))
 
     return [
-      ...(sustainUnitItems.length > 0
-        ? [
-            {
-              key: 'units' as const,
-              label: 'Sustain Units',
-              type: 'checkbox-list' as const,
-              items: sustainUnitItems,
-            },
-          ]
-        : []),
-      ...(validUnits.length > 0
-        ? [
-            {
-              key: 'unitPriority' as const,
-              label: 'Sustain Priority',
-              type: 'order-list' as const,
-              items: getUnitListItems(validUnits),
-            },
-          ]
-        : []),
+      {
+        key: unitsKey,
+        label: 'Sustain Units',
+        type: 'checkbox-list' as const,
+        items: participatingItems,
+      },
+      {
+        key: priorityKey,
+        label: 'Sustain Priority',
+        type: 'order-list' as const,
+        items: participatingItems,
+      },
     ]
   },
   invoke: [
@@ -112,14 +95,24 @@ export const sustainDamage: Ability<Params> = {
         const hasHits = ctx.api.own.getPendingHits() > 0
         if (!hasHits) return false
 
-        const allowedUnits = new Set(params.units)
-        const priority = params.unitPriority
+        const isGround = ctx.state.combatMode === 'GROUND'
+        const allowedUnits = new Set(
+          isGround ? params.groundUnits : params.spaceUnits,
+        )
+        const priority = isGround
+          ? params.groundUnitPriority
+          : params.spaceUnitPriority
         return findUnitToSustain(ctx.api.own, allowedUnits, priority) !== null
       },
       call: (ctx, params: Params) => {
         const hitPerSustain = params.hitPerSustain ?? 1
-        const allowedUnits = new Set(params.units)
-        const priority = params.unitPriority
+        const isGround = ctx.state.combatMode === 'GROUND'
+        const allowedUnits = new Set(
+          isGround ? params.groundUnits : params.spaceUnits,
+        )
+        const priority = isGround
+          ? params.groundUnitPriority
+          : params.spaceUnitPriority
         const target = findUnitToSustain(ctx.api.own, allowedUnits, priority)
 
         if (!target) return

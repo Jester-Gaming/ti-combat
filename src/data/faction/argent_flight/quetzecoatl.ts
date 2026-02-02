@@ -4,9 +4,10 @@ export const quetzecoatl: Ability = {
   key: 'QUETZECOATL',
   name: 'Quetzecoatl',
   category: 'FACTION',
+  context: 'SPACE',
   invoke: [
     {
-      timing: 'PREPARE_SPACE',
+      timing: 'PREPARE',
       call: ctx => {
         ctx.api.opponent.setUnitAbilityCannotBeUsed(
           'SPACE_CANNON',

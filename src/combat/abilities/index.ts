@@ -13,6 +13,7 @@ export type {
   AbilityInvoke,
   AbilityReadContext,
   AbilityTiming,
+  DeclaredParticipant,
   DeclaredSubtype,
   DiceApi,
   DiceContext,
@@ -25,3 +26,4 @@ export type {
   SidedDiceData,
   SideReadApi,
 } from './types'
+export { collectDeclaredParticipants } from './utils/collect-declared-participants'

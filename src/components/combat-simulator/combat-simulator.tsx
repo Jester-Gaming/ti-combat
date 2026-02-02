@@ -11,6 +11,7 @@ import {
 } from '@/combat'
 import { getAvailableAbilities } from '@/combat/abilities'
 import { buildUIReadContext } from '@/combat/abilities/ability-api'
+import { collectDeclaredParticipants } from '@/combat/abilities/utils/collect-declared-participants'
 import { collectDeclaredSubtypes } from '@/combat/abilities/utils/collect-declared-subtypes'
 import { countUnits } from '@/combat/state/side-state-ops'
 import type { AbilitiesConfig, CombatMode } from '@/combat/state/types'
@@ -139,6 +140,16 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           delete draft.defender[key]
         }
       }
+
+      // Collect declared participants for both sides
+      for (const [side, abilities] of [
+        ['attacker', attackerAbilities],
+        ['defender', defenderAbilities],
+      ] as const) {
+        const participants = collectDeclaredParticipants(abilities, draft[side])
+        if (!draft[side]['SETTINGS']) draft[side]['SETTINGS'] = {}
+        draft[side]['SETTINGS'].declaredParticipants = participants
+      }
     })
   }, [attackerAbilities, defenderAbilities, setAbilityParams])
 
@@ -258,8 +269,13 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     setAbilityParams(draft => {
       draft[side][abilityName] = params
       const subtypes = collectDeclaredSubtypes(sideAbilities, draft[side])
+      const participants = collectDeclaredParticipants(
+        sideAbilities,
+        draft[side],
+      )
       if (!draft[side]['SETTINGS']) draft[side]['SETTINGS'] = {}
       draft[side]['SETTINGS'].declaredSubtypes = subtypes
+      draft[side]['SETTINGS'].declaredParticipants = participants
     })
   }
 
@@ -282,6 +298,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
         <AbilitiesPanel
           abilities={attackerAbilities}
           readContext={attackerReadContext}
+          combatMode={combatMode}
           params={abilityParams.attacker}
           onParamsChange={(abilityName, params) =>
             handleAbilityParamsChange('attacker', abilityName, params)
@@ -322,6 +339,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           <AbilitiesPanel
             abilities={defenderAbilities}
             readContext={defenderReadContext}
+            combatMode={combatMode}
             params={abilityParams.defender}
             onParamsChange={(abilityName, params) =>
               handleAbilityParamsChange('defender', abilityName, params)

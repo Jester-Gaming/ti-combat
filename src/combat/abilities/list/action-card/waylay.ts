@@ -8,6 +8,7 @@ export const waylay: Ability<Params> = {
   key: 'WAYLAY',
   name: 'Waylay',
   category: 'ACTION_CARD',
+  context: 'SPACE',
   defaultParams: {
     isEnabled: false,
   },

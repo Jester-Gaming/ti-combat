@@ -8,13 +8,14 @@ export const solarFlare: Ability<Params> = {
   key: 'SOLAR_FLARE',
   name: 'Solar Flare',
   category: 'ACTION_CARD',
+  context: 'SPACE',
   defaultParams: {
     isEnabled: false,
   },
   headerUI: 'isEnabled',
   invoke: [
     {
-      timing: 'PREPARE_SPACE',
+      timing: 'PREPARE',
       isCallable: (params: Params) => params.isEnabled,
       call: ctx => {
         ctx.api.opponent.setUnitAbilityCannotBeUsed(

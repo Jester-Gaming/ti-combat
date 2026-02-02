@@ -7,7 +7,12 @@ import type {
   UnitType,
 } from '@/types'
 
-import type { CombatStateData, MetaPhase } from '../state/types'
+import type { CombatMode, CombatStateData, MetaPhase } from '../state/types'
+
+export interface DeclaredParticipant {
+  unitType: UnitType
+  combatMode: CombatMode
+}
 
 export interface DeclaredSubtype {
   name: string
@@ -68,8 +73,6 @@ export type DiceContext = OwnOpponentContext<DiceApi>
 // void = no context, other type = required context
 export interface TimingContextMap {
   PREPARE: void
-  PREPARE_SPACE: void
-  PREPARE_GROUND: void
   START_OF_COMBAT: void
   START_OF_COMBAT_ROUND: void
   BEFORE_UNIT_ABILITY_ROLL: SidedDiceData
@@ -104,12 +107,17 @@ export interface SideReadApi {
   countUnits(filter?: ReadonlySet<UnitType>): number
   getPendingHits(): number
   getHitPoolValidTargets(): UnitType[]
-  /** Get participating base unit types from SETTINGS, filtered to units present on this side */
-  getParticipatingUnitTypes(): UnitType[]
-  /** Get participating unit types + variant IDs from declared subtypes */
+  /** Get participating base unit types from SETTINGS, filtered to units present on this side.
+   *  Pass `combatMode` to override the current combat mode (e.g., for abilities with a fixed context). */
+  getParticipatingUnitTypes(options?: { combatMode?: CombatMode }): UnitType[]
+  /** Get participating unit types + variant IDs from declared subtypes.
+   *  Pass `combatMode` in filter to override the current combat mode.
+   *  `include`/`exclude` filter base unit types; `excludeSubtypes` removes variants that contain a given subtype name. */
   getParticipatingVariants(filter?: {
     include?: UnitType[]
     exclude?: UnitType[]
+    excludeSubtypes?: string[]
+    combatMode?: CombatMode
   }): string[]
   findUnit(
     unitType: UnitType,
@@ -125,6 +133,7 @@ export interface SideReadApi {
 /** Full read-write API for mutating one side's state (within Immer draft) */
 export interface SideApi extends SideReadApi {
   // Unit operations
+  destroyUnit(unit: Unit): void
   destroyUnit(unitType: UnitType): void
   destroyUnit(unitType: UnitType, index: number): void
   destroyUnit(unitTypes: UnitType[]): void
@@ -327,8 +336,12 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   uiConfig?: UIConfig<Params>
   /** Conditions restricting which side can use this ability */
   condition?: AbilityCondition
+  /** Restrict ability to a specific combat mode (SPACE or GROUND). When set, the ability is skipped during combat if the mode doesn't match, and dimmed in the UI. */
+  context?: CombatMode
   /** Declare subtypes this ability creates, based on its params */
   declareSubtypes?: (params: Params) => DeclaredSubtype[]
+  /** Declare additional unit types that participate in combat (for UI display) */
+  declareParticipants?: (params: Params) => DeclaredParticipant[]
   invoke: AbilityInvoke<Params>[]
 }
 

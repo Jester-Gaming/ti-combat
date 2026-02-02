@@ -60,6 +60,7 @@ export function getSettingsValidTargets(
 const DEFAULT_UNIT_SACRIFICE_ORDER: UnitType[] = [
   'FIGHTER',
   'INFANTRY',
+  'PDS',
   'DESTROYER',
   'CRUISER',
   'CARRIER',
@@ -270,6 +271,18 @@ export function assignHits(
     const { type } = parseVariantId(id)
     return participatingUnits.has(type)
   })
+
+  // Append participating units not covered by the priority list
+  if (unitPriority) {
+    const coveredTypes = new Set(
+      sacrificeOrder.map(id => parseVariantId(id).type),
+    )
+    for (const type of DEFAULT_UNIT_SACRIFICE_ORDER) {
+      if (participatingUnits.has(type) && !coveredTypes.has(type)) {
+        sacrificeOrder.push(type)
+      }
+    }
+  }
   let currentUnits = { ...sideState.units }
 
   for (const pool of sideState.hitPools) {

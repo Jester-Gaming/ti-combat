@@ -12,6 +12,7 @@ export const tekklarLegion: Ability<Params> = {
   key: 'TEKKLAR_LEGION',
   name: "(N'orr) Tekklar Legion",
   category: 'PROMISSORY',
+  context: 'GROUND',
   defaultParams: {
     isEnabled: false,
   },

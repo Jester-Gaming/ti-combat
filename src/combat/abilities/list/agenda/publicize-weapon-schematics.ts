@@ -8,6 +8,7 @@ export const publicizeWeaponSchematics: Ability<Params> = {
   key: 'PUBLICIZE_WEAPON_SCHEMATICS',
   name: 'Publicize Weapon Schematics',
   category: 'AGENDA',
+  context: 'SPACE',
   defaultParams: {
     isEnabled: false,
   },

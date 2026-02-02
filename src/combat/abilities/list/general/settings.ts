@@ -1,6 +1,6 @@
 import type { UnitType } from '@/types'
 
-import type { Ability, DeclaredSubtype } from '../../types'
+import type { Ability, DeclaredParticipant, DeclaredSubtype } from '../../types'
 
 type Params = {
   spaceCombatParticipating: UnitType[]
@@ -10,6 +10,7 @@ type Params = {
   validTargetsSpaceCannonDefense: UnitType[]
   validTargetsAntiFighterBarrage: UnitType[]
   declaredSubtypes?: DeclaredSubtype[]
+  declaredParticipants?: DeclaredParticipant[]
 }
 
 export const settings: Ability<Params> = {

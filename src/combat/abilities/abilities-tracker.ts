@@ -154,6 +154,7 @@ function getInvokesForTiming<T extends AbilityTiming>(
   }
 
   for (const { ability, unitType, unitIndex } of unitAbilities) {
+    if (ability.context && ability.context !== state.combatMode) continue
     const params = getAbilityMergedParams(ability, sideConfig)
 
     for (const invoke of ability.invoke) {
@@ -178,6 +179,7 @@ function getInvokesForTiming<T extends AbilityTiming>(
   const availableAbilities = resolveAbilities(state, side)
   for (const ability of availableAbilities) {
     if (unitAbilityKeys.has(ability.key)) continue
+    if (ability.context && ability.context !== state.combatMode) continue
     const params = getAbilityMergedParams(ability, sideConfig)
 
     for (const invoke of ability.invoke) {
@@ -334,6 +336,7 @@ function tryResolveOneAbility<T extends AbilityTiming>(
       const { type: unitType, unit } = destroyedUnits[i]
       if (!unit.ABILITIES) continue
       for (const ability of unit.ABILITIES) {
+        if (ability.context && ability.context !== state.combatMode) continue
         for (const invoke of ability.invoke) {
           if (invoke.timing !== 'AFTER_DESTROY') continue
           if (invoke.context) {

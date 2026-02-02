@@ -8,13 +8,14 @@ export const disable: Ability<Params> = {
   key: 'DISABLE',
   name: 'Disable',
   category: 'ACTION_CARD',
+  context: 'GROUND',
   defaultParams: {
     isEnabled: false,
   },
   headerUI: 'isEnabled',
   invoke: [
     {
-      timing: 'PREPARE_GROUND',
+      timing: 'PREPARE',
       isCallable: (params: Params) => params.isEnabled,
       call: ctx => {
         ctx.api.opponent.setUnitAbilityLost(
