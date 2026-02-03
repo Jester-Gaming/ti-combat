@@ -64,6 +64,7 @@ function createUnits(
       units[type as UnitType] = Array.from({ length: count }, () => ({
         COMBAT: unitStats?.COMBAT,
         UNIT_ABILITIES: unitStats?.UNIT_ABILITIES,
+        ABILITIES: unitStats?.ABILITIES,
       }))
     }
   }

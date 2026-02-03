@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 export const xxcha_kingdom: Faction = {
@@ -16,6 +17,7 @@ export const xxcha_kingdom: Faction = {
           SUSTAIN_DAMAGE: true,
           SPACE_CANNON: [5, 3],
         },
+        ABILITIES: [sustainDamage],
       },
     },
     MECH: {
@@ -29,6 +31,7 @@ export const xxcha_kingdom: Faction = {
           SUSTAIN_DAMAGE: true,
           SPACE_CANNON: [8, 1],
         },
+        ABILITIES: [sustainDamage],
       },
     },
   },

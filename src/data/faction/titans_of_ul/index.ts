@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 import { helTitan } from './hel-titan'
@@ -22,6 +23,7 @@ export const titans_of_ul: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     MECH: {
@@ -34,6 +36,7 @@ export const titans_of_ul: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     CRUISER: {
@@ -53,6 +56,7 @@ export const titans_of_ul: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     PDS: {
@@ -67,6 +71,7 @@ export const titans_of_ul: Faction = {
           SPACE_CANNON: [6, 1],
           PRODUCTION: 1,
         },
+        ABILITIES: [sustainDamage],
       },
       UPGRADED: {
         NAME: 'Hel-Titan II',

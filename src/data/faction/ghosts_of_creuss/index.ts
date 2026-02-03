@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 export const ghosts_of_creuss: Faction = {
@@ -15,6 +16,7 @@ export const ghosts_of_creuss: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     MECH: {
@@ -27,6 +29,7 @@ export const ghosts_of_creuss: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
   },

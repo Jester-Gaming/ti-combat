@@ -1,4 +1,5 @@
 import { getVariantDisplayName } from '@/combat/utils/unit-variant'
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { UnitType } from '@/types'
 
 import type {
@@ -61,6 +62,7 @@ export const cavalry: Ability<Params> = {
         ctx.api.own.modifyUnit(params.unitType, 0, {
           COMBAT: NOMAD_FLAGSHIP_COMBAT,
           UNIT_ABILITIES: NOMAD_FLAGSHIP_UNIT_ABILITIES,
+          ABILITIES: [sustainDamage],
         })
       },
     },

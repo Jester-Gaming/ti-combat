@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 import { heavensEye } from './heavens-eye'
@@ -17,7 +18,7 @@ export const firmament: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [heavensEye],
+        ABILITIES: [heavensEye, sustainDamage],
       },
     },
     MECH: {
@@ -30,6 +31,7 @@ export const firmament: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
   },

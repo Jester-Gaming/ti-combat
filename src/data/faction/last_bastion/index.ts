@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 import { theEgeiro } from './the-egeiro'
@@ -21,6 +22,7 @@ export const last_bastion: Faction = {
           SUSTAIN_DAMAGE: true,
           PRODUCTION: 1,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     MECH: {
@@ -33,6 +35,7 @@ export const last_bastion: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     SPACE_DOCK: {

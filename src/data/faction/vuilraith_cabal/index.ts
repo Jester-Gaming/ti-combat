@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 export const vuilraith_cabal: Faction = {
@@ -16,6 +17,7 @@ export const vuilraith_cabal: Faction = {
           SUSTAIN_DAMAGE: true,
           BOMBARDMENT: [5, 1],
         },
+        ABILITIES: [sustainDamage],
       },
     },
     MECH: {
@@ -28,6 +30,7 @@ export const vuilraith_cabal: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     SPACE_DOCK: {

@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 import { eidolon } from './eidolon'
@@ -21,6 +22,7 @@ export const naaz_rokha_alliance: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     MECH: {
@@ -33,7 +35,7 @@ export const naaz_rokha_alliance: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [eidolon],
+        ABILITIES: [eidolon, sustainDamage],
       },
     },
   },

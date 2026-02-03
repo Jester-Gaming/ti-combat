@@ -1,4 +1,5 @@
 import { disablePlanetaryShield } from '@/data/abilities/disable-planetary-shield'
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 
 const baseUnits = {
   WAR_SUN: {
@@ -11,7 +12,7 @@ const baseUnits = {
         SUSTAIN_DAMAGE: true,
         BOMBARDMENT: [3, 3],
       },
-      ABILITIES: [disablePlanetaryShield],
+      ABILITIES: [disablePlanetaryShield, sustainDamage],
     },
     UPGRADED: null,
   },
@@ -39,6 +40,7 @@ const baseUnits = {
         SUSTAIN_DAMAGE: true,
         BOMBARDMENT: [5, 1],
       },
+      ABILITIES: [sustainDamage],
     },
     UPGRADED: {
       MOVE: 2,

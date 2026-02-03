@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 import { quetzecoatl } from './quetzecoatl'
@@ -25,7 +26,7 @@ export const argent_flight: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [quetzecoatl],
+        ABILITIES: [quetzecoatl, sustainDamage],
       },
     },
     MECH: {
@@ -38,6 +39,7 @@ export const argent_flight: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     DESTROYER: {

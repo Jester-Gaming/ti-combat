@@ -191,6 +191,10 @@ export interface AbilityReadContext {
   }
   /** Get the unit instance this ability is attached to. Throws if called from a non-unit ability. */
   getUnit(): Unit
+  /** Get the unit type this ability is attached to. Throws if called from a non-unit ability. */
+  getUnitType(): UnitType
+  /** Get the unit index this ability is attached to. Throws if called from a non-unit ability. */
+  getUnitIndex(): number
 }
 
 /** Mutable context for call (Immer draft, full API) */
@@ -203,6 +207,10 @@ export interface AbilityCallContext {
   log(...data: unknown[]): void
   /** Get the unit instance this ability is attached to (Immer draft). Throws if called from a non-unit ability. */
   getUnit(): Unit
+  /** Get the unit type this ability is attached to. Throws if called from a non-unit ability. */
+  getUnitType(): UnitType
+  /** Get the unit index this ability is attached to. Throws if called from a non-unit ability. */
+  getUnitIndex(): number
 }
 
 /** Per-side abilities accessor for use within ability context */

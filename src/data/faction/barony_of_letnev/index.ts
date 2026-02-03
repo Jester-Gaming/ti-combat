@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 import { arcSecundus } from './arc-secundus'
@@ -24,7 +25,7 @@ export const barony_of_letnev: Faction = {
           SUSTAIN_DAMAGE: true,
           BOMBARDMENT: [5, 3],
         },
-        ABILITIES: [arcSecundus],
+        ABILITIES: [arcSecundus, sustainDamage],
       },
     },
     MECH: {
@@ -37,6 +38,7 @@ export const barony_of_letnev: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
   },

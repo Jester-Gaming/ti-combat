@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 import { twoRam } from './two-ram'
@@ -21,6 +22,7 @@ export const l1z1x_mindnet: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     MECH: {
@@ -34,6 +36,7 @@ export const l1z1x_mindnet: Faction = {
           SUSTAIN_DAMAGE: true,
           BOMBARDMENT: [8, 1],
         },
+        ABILITIES: [sustainDamage],
       },
     },
     DREADNOUGHT: {
@@ -47,6 +50,7 @@ export const l1z1x_mindnet: Faction = {
           BOMBARDMENT: [5, 1],
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
       UPGRADED: {
         NAME: 'Super Dreadnought II',

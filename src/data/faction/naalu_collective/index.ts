@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 import { matriarch } from './matriarch'
@@ -17,7 +18,7 @@ export const naalu_collective: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [matriarch],
+        ABILITIES: [matriarch, sustainDamage],
       },
     },
     MECH: {
@@ -30,6 +31,7 @@ export const naalu_collective: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     FIGHTER: {

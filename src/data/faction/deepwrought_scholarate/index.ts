@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 export const deepwrought_scholarate: Faction = {
@@ -15,6 +16,7 @@ export const deepwrought_scholarate: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     MECH: {
@@ -28,6 +30,7 @@ export const deepwrought_scholarate: Faction = {
           SUSTAIN_DAMAGE: true,
           PRODUCTION: 1,
         },
+        ABILITIES: [sustainDamage],
       },
     },
   },

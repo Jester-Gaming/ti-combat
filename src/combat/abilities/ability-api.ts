@@ -581,6 +581,18 @@ export function buildReadContext(
       }
       return state[side].units[unitSource.unitType]![unitSource.unitIndex]
     },
+    getUnitType(): UnitType {
+      if (!unitSource) {
+        throw new Error('getUnitType() can only be called from unit abilities')
+      }
+      return unitSource.unitType
+    },
+    getUnitIndex(): number {
+      if (!unitSource) {
+        throw new Error('getUnitIndex() can only be called from unit abilities')
+      }
+      return unitSource.unitIndex
+    },
   }
 }
 
@@ -603,6 +615,18 @@ export function buildCallContext(
         throw new Error('getUnit() can only be called from unit abilities')
       }
       return draft[side].units[unitSource.unitType]![unitSource.unitIndex]
+    },
+    getUnitType(): UnitType {
+      if (!unitSource) {
+        throw new Error('getUnitType() can only be called from unit abilities')
+      }
+      return unitSource.unitType
+    },
+    getUnitIndex(): number {
+      if (!unitSource) {
+        throw new Error('getUnitIndex() can only be called from unit abilities')
+      }
+      return unitSource.unitIndex
     },
   }
 }

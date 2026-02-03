@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 import { fourthMoon } from './fourth-moon'
@@ -18,7 +19,7 @@ export const mentak_coalition: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [fourthMoon],
+        ABILITIES: [fourthMoon, sustainDamage],
       },
     },
     MECH: {
@@ -31,7 +32,7 @@ export const mentak_coalition: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [mollTerminus],
+        ABILITIES: [mollTerminus, sustainDamage],
       },
     },
   },

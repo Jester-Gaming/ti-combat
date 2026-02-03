@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 import { cavalry } from './cavalry'
@@ -22,6 +23,7 @@ export const nomad: Faction = {
           SUSTAIN_DAMAGE: true,
           AFB: [8, 3],
         },
+        ABILITIES: [sustainDamage],
       },
       UPGRADED: {
         NAME: 'Memoria II',
@@ -45,6 +47,7 @@ export const nomad: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
   },

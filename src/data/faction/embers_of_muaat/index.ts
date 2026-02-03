@@ -1,4 +1,5 @@
 import { disablePlanetaryShield } from '@/data/abilities/disable-planetary-shield'
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 export const embers_of_muaat: Faction = {
@@ -16,6 +17,7 @@ export const embers_of_muaat: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     MECH: {
@@ -28,6 +30,7 @@ export const embers_of_muaat: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     WAR_SUN: {
@@ -43,7 +46,7 @@ export const embers_of_muaat: Faction = {
           BOMBARDMENT: [3, 3],
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [disablePlanetaryShield],
+        ABILITIES: [disablePlanetaryShield, sustainDamage],
       },
       UPGRADED: {
         NAME: 'Prototype War Sun II',

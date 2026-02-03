@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 import { arviconRex } from './arvicon-rex'
@@ -17,7 +18,7 @@ export const mahact_gene_sorcerers: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [arviconRex],
+        ABILITIES: [arviconRex, sustainDamage],
       },
     },
     MECH: {
@@ -30,6 +31,7 @@ export const mahact_gene_sorcerers: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     INFANTRY: {

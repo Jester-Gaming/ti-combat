@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 export const clan_of_saar: Faction = {
@@ -14,6 +15,7 @@ export const clan_of_saar: Faction = {
           SUSTAIN_DAMAGE: true,
           AFB: [6, 4],
         },
+        ABILITIES: [sustainDamage],
       },
     },
     MECH: {
@@ -26,6 +28,7 @@ export const clan_of_saar: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     SPACE_DOCK: {

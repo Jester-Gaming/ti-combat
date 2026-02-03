@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 export const arborec: Faction = {
@@ -15,6 +16,7 @@ export const arborec: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     MECH: {
@@ -29,6 +31,7 @@ export const arborec: Faction = {
           PRODUCTION: 2,
           PLANETARY_SHIELD: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     INFANTRY: {

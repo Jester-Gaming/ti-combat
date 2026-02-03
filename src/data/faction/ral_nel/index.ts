@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 import { alarum } from './alarum'
@@ -17,6 +18,7 @@ export const ral_nel: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     MECH: {
@@ -29,7 +31,7 @@ export const ral_nel: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [alarum],
+        ABILITIES: [alarum, sustainDamage],
       },
     },
     DESTROYER: {

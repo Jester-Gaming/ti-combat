@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import { sardakkFlagshipAbility } from '@/data/faction/sardakk_norr/flagship-ability'
 import { tekklarLegion } from '@/data/faction/sardakk_norr/tekklar-legion'
 import { unrelenting } from '@/data/faction/sardakk_norr/unrelenting'
@@ -18,7 +19,7 @@ export const sardakk_norr: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [sardakkFlagshipAbility],
+        ABILITIES: [sardakkFlagshipAbility, sustainDamage],
       },
     },
     MECH: {
@@ -31,6 +32,7 @@ export const sardakk_norr: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
     },
     DREADNOUGHT: {
@@ -44,6 +46,7 @@ export const sardakk_norr: Faction = {
           BOMBARDMENT: [4, 2],
           SUSTAIN_DAMAGE: true,
         },
+        ABILITIES: [sustainDamage],
       },
       UPGRADED: {
         NAME: 'Exotrireme II',

@@ -1,3 +1,4 @@
+import { sustainDamage } from '@/data/abilities/sustain-damage'
 import type { Faction } from '@/types'
 
 import { mordred } from './mordred'
@@ -18,7 +19,7 @@ export const nekro_virus: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [theAlastor],
+        ABILITIES: [theAlastor, sustainDamage],
       },
     },
     MECH: {
@@ -31,7 +32,7 @@ export const nekro_virus: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [mordred],
+        ABILITIES: [mordred, sustainDamage],
       },
     },
   },
