@@ -1,4 +1,4 @@
-import { CombatState } from './state/combat-state'
+import { CombatState } from './combat-state/combat-state'
 import type { ProbabilityNode } from './types'
 
 interface EngineOptions {

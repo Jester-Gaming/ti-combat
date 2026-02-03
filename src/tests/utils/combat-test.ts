@@ -1,7 +1,8 @@
+import { getDestroyedUnits } from '@/combat/combat-side-state/utils/get-destroyed-units'
 import type { CombatSide, FactionKey, Unit, UnitType } from '@/types'
 import { getFactionUnitConfig } from '@/utils/get-faction-unit-config'
 
-import { runAbilities, type SidedDiceData } from '../../combat/abilities'
+import { AbilitiesParams, type SidedDiceData } from '../../combat/abilities'
 import type {
   AbilityTiming,
   DestroyedUnit,
@@ -11,8 +12,7 @@ import type {
 import {
   CombatState,
   type StateWithProbability,
-} from '../../combat/state/combat-state'
-import { addHits, getDestroyedUnits } from '../../combat/state/side-state-ops'
+} from '../../combat/combat-state/combat-state'
 import type {
   AbilitiesConfig,
   CombatMode,
@@ -20,8 +20,8 @@ import type {
   HitSource,
   MetaPhase,
   MicroPhase,
-  SideState,
-} from '../../combat/state/types'
+  SideStateData,
+} from '../../combat/combat-state/types'
 import type { LogEntry } from '../../combat/types'
 
 // ============================================================================
@@ -64,8 +64,8 @@ function createUnitsFromConfig(
   return Array.from({ length: count }, () => ({ ...stats }))
 }
 
-/** Build SideState from a SideConfig */
-function buildSideState(config: SideConfig): SideState {
+/** Build SideStateData from a SideConfig */
+function buildSideState(config: SideConfig): SideStateData {
   const upgradedSet = new Set(config.upgrades ?? [])
   const units: Partial<Record<UnitType, Unit[]>> = {}
 
@@ -121,10 +121,12 @@ function buildAbilitiesConfig(
 
 export class CombatTest {
   private _state: CombatStateData
+  private _params: AbilitiesParams
   private _log: LogEntry[] = []
 
   constructor(combatState: CombatState) {
     this._state = combatState.data
+    this._params = combatState.params
   }
 
   // --- State access ---
@@ -133,11 +135,11 @@ export class CombatTest {
     return this._state
   }
 
-  get attacker(): SideState {
+  get attacker(): SideStateData {
     return this._state.attacker
   }
 
-  get defender(): SideState {
+  get defender(): SideStateData {
     return this._state.defender
   }
 
@@ -197,7 +199,7 @@ export class CombatTest {
 
   runTiming(timing: AbilityTiming | AbilityTiming[]): this {
     const timings = Array.isArray(timing) ? timing : [timing]
-    const { state, log } = runAbilities(timings, this._state)
+    const { state, log } = this._params.runAbilities(timings, this._state)
     this._state = state
     this._log.push(...log)
     return this
@@ -223,7 +225,7 @@ export class CombatTest {
       state,
       context: modifiedDice,
       log,
-    } = runAbilities(timing, this._state, sidedDiceData)
+    } = this._params.runAbilities(timing, this._state, sidedDiceData)
     this._state = state
     this._log.push(...log)
 
@@ -236,7 +238,9 @@ export class CombatTest {
   // --- State manipulation ---
 
   addHits(side: CombatSide, hits: number, validTargets?: UnitType[]): this {
-    this._state = addHits(this._state, side, hits, validTargets ?? [])
+    const tempCS = CombatState.fromData(this._state)
+    tempCS.side(side).addHits(hits, validTargets ?? [])
+    this._state = tempCS.data
     return this
   }
 
@@ -273,7 +277,7 @@ export class CombatTest {
         side === 'defender' ? [{ type: unitType, unit: destroyedUnit }] : [],
     }
 
-    const { state, log } = runAbilities(
+    const { state, log } = this._params.runAbilities(
       'AFTER_DESTROY',
       stateAfterRemoval,
       destroyedContext,
@@ -354,8 +358,8 @@ export function combatTest(config: CombatTestConfig): CombatTest {
   const defenderSide = buildSideState(config.defender)
   const abilitiesConfig = buildAbilitiesConfig(config.attacker, config.defender)
 
-  // CombatState constructor runs PREPARE timings
-  const cs = new CombatState(
+  // CombatState.forSimulation runs PREPARE timings
+  const cs = CombatState.forSimulation(
     attackerSide,
     defenderSide,
     config.mode,

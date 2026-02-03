@@ -12,7 +12,7 @@ export const imperator: Ability<Params> = {
   key: 'IMPERATOR',
   name: 'Breakthrough',
   category: 'FACTION',
-  defaultParams: {
+  params: {
     supportCount: 0,
   },
   headerUI: 'supportCount',

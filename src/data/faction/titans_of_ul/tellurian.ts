@@ -10,7 +10,7 @@ export const tellurian: Ability<Params> = {
   name: '(Titan) Tellurian',
   category: 'AGENT',
   headerUI: 'isEnabled',
-  defaultParams: {
+  params: {
     isEnabled: false,
     uses: 1,
   },

@@ -2,16 +2,11 @@ import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { Fragment } from 'react'
 
-import type { CombatMode } from '@/combat/state/types'
+import type { CombatMode } from '@/combat/combat-state/types'
 import { GlassCard } from '@/components/ui/glass-card'
 import { GlowText } from '@/components/ui/glow-text'
 import { UNIT_TYPES } from '@/constants/units'
-import {
-  type BattleState,
-  type CombatSide,
-  type FactionKey,
-  type UnitType,
-} from '@/types'
+import type { CombatSide, FactionKey, UnitSelection, UnitType } from '@/types'
 import type { UnitConfig } from '@/utils/get-unit-config'
 
 import styles from './battle-card.module.css'
@@ -23,7 +18,10 @@ import { FactionSelect } from './components/faction-select'
 import { UnitRowDual } from './components/unit-row-dual'
 
 interface BattleCardProps {
-  battle: BattleState
+  attackerFaction: FactionKey
+  defenderFaction: FactionKey
+  attackerSelections: Record<UnitType, UnitSelection>
+  defenderSelections: Record<UnitType, UnitSelection>
   attackerConfig: Record<UnitType, UnitConfig>
   defenderConfig: Record<UnitType, UnitConfig>
   combatResult: CombatResult | null
@@ -36,7 +34,10 @@ interface BattleCardProps {
 }
 
 export function BattleCard({
-  battle,
+  attackerFaction,
+  defenderFaction,
+  attackerSelections,
+  defenderSelections,
   attackerConfig,
   defenderConfig,
   combatResult,
@@ -63,7 +64,7 @@ export function BattleCard({
             Attacker Fleet
           </GlowText>
           <FactionSelect
-            value={battle.attacker.faction}
+            value={attackerFaction}
             onValueChange={faction => onFactionChange('attacker', faction)}
           />
         </div>
@@ -79,7 +80,7 @@ export function BattleCard({
             Defender Fleet
           </GlowText>
           <FactionSelect
-            value={battle.defender.faction}
+            value={defenderFaction}
             onValueChange={faction => onFactionChange('defender', faction)}
           />
         </div>
@@ -116,8 +117,8 @@ export function BattleCard({
               name={attackerConfig[unitKey].name}
               attackerHasUpgrade={attackerConfig[unitKey].hasUpgrade}
               defenderHasUpgrade={defenderConfig[unitKey].hasUpgrade}
-              attacker={battle.attacker.units[unitKey]}
-              defender={battle.defender.units[unitKey]}
+              attacker={attackerSelections[unitKey]}
+              defender={defenderSelections[unitKey]}
               onAttackerCountChange={count =>
                 onUnitCountChange('attacker', unitKey, count)
               }

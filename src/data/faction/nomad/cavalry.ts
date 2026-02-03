@@ -1,5 +1,6 @@
+import { declareParam } from '@/combat/abilities/declare-param'
 import { getVariantDisplayName } from '@/combat/utils/unit-variant'
-import { sustainDamage } from '@/data/abilities/sustain-damage'
+import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { UnitType } from '@/types'
 
 import type {
@@ -23,15 +24,17 @@ export const cavalry: Ability<Params> = {
   name: '(Nomad) Cavalry',
   category: 'PROMISSORY',
   context: 'SPACE',
-  defaultParams: {
+  params: {
     isEnabled: false,
-    unitType: 'DESTROYER',
+    unitType: declareParam<UnitType>({
+      default: 'DESTROYER',
+      source: 'nonFighterShips',
+    }),
   },
   headerUI: 'isEnabled',
-  declareSubtypes: params => {
-    if (!params.isEnabled) return []
-    return [{ name: 'Cavalry', unitType: params.unitType }]
-  },
+  declareParamChange: params => [
+    { key: 'subtypes', value: { name: 'Cavalry', unitType: params.unitType } },
+  ],
   uiConfig: (ctx: AbilityReadContext) => {
     const variants = ctx.api.own.getParticipatingVariants({
       exclude: ['FIGHTER'],

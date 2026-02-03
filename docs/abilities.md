@@ -30,7 +30,7 @@ interface Ability<Params extends Record<string, unknown>> {
   uiConfig?: UIConfig<Params> // Controls for params in UI
   condition?: AbilityCondition // Side restriction
   context?: CombatMode // Restrict to SPACE or GROUND combat
-  declareSubtypes?: (params: Params) => DeclaredSubtype[]
+  declareParamChange?: (params: Params) => ParamChange[]
   invoke: AbilityInvoke<Params>[] // Array of timing handlers
 }
 ```

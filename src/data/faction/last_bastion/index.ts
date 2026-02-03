@@ -1,4 +1,4 @@
-import { sustainDamage } from '@/data/abilities/sustain-damage'
+import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 import { theEgeiro } from './the-egeiro'

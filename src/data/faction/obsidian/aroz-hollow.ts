@@ -8,7 +8,7 @@ export const arozHollow: Ability<Params> = {
   key: 'AROZ_HOLLOW',
   name: '(Obsidian) Aroz Hollow',
   category: 'COMMANDER',
-  defaultParams: {
+  params: {
     isEnabled: false,
   },
   headerUI: 'isEnabled',

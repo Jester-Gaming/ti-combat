@@ -1,21 +1,27 @@
 import { UNIT_TYPES } from '@/constants/units'
-import type { Unit } from '@/types'
-import { type SideState, type UnitStats, type UnitType } from '@/types'
+import type {
+  FactionKey,
+  Unit,
+  UnitSelection,
+  UnitStats,
+  UnitType,
+} from '@/types'
 
 import { getFactionUnitConfig } from './get-faction-unit-config'
 
 /**
- * Converts a SideState to a unit map suitable for SideState.
+ * Converts faction + unit selections into a unit map for combat simulation.
  * Each unit has both stats (COMBAT, UNIT_ABILITIES) and state (isDamaged).
  */
 export function getSimulationUnits(
-  side: SideState,
+  faction: FactionKey,
+  selections: Record<UnitType, UnitSelection>,
 ): Partial<Record<UnitType, Unit[]>> {
-  const factionConfig = getFactionUnitConfig(side.faction)
+  const factionConfig = getFactionUnitConfig(faction)
   const units: Partial<Record<UnitType, Unit[]>> = {}
 
   for (const unitType of UNIT_TYPES) {
-    const unitState = side.units[unitType]
+    const unitState = selections[unitType]
     if (unitState.count === 0) continue
 
     const unitDef = factionConfig[unitType]

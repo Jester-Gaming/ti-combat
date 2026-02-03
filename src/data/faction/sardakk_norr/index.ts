@@ -1,4 +1,4 @@
-import { sustainDamage } from '@/data/abilities/sustain-damage'
+import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import { sardakkFlagshipAbility } from '@/data/faction/sardakk_norr/flagship-ability'
 import { tekklarLegion } from '@/data/faction/sardakk_norr/tekklar-legion'
 import { unrelenting } from '@/data/faction/sardakk_norr/unrelenting'

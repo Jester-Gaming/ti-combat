@@ -8,11 +8,24 @@ import type {
   UnitType,
 } from '@/types'
 
-import type { CombatMode, CombatStateData, MetaPhase } from '../state/types'
+import type {
+  CombatMode,
+  CombatStateData,
+  MetaPhase,
+} from '../combat-state/types'
 
-export interface DeclaredParticipant {
-  unitType: UnitType
-  combatMode: CombatMode
+export interface ParamChange {
+  key: string
+  value: unknown
+}
+
+export interface SyncSourceConfig {
+  key: string
+  group: string
+  side: 'own' | 'opponent'
+  sort: 'asc' | 'desc'
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  compute?: (value: any) => unknown
 }
 
 export interface DeclaredSubtype {
@@ -233,12 +246,6 @@ export interface AbilityCallContext {
   getUnitIndex(): number
 }
 
-/** Per-side abilities accessor for use within ability context */
-export interface SideAbilities {
-  get(key: string): AbilityInstance | undefined
-  has(key: string): boolean
-}
-
 // Auto-generate invoke type for each timing
 // Uses InternalTimingContextMap for ability perspective (own/opponent)
 type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
@@ -361,7 +368,7 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   key: string
   name: string // Display name for UI
   category: string
-  defaultParams?: Params
+  params?: Params
   headerUI?: string & keyof Params // Param key to render in header (checkbox for boolean, number input for number)
   readOnly?: boolean // Show UI but prevent user from changing the enable state
   uiConfig?: UIConfig<Params>
@@ -369,16 +376,7 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   condition?: AbilityCondition
   /** Restrict ability to a specific combat mode (SPACE or GROUND). When set, the ability is skipped during combat if the mode doesn't match, and dimmed in the UI. */
   context?: CombatMode
-  /** Declare subtypes this ability creates, based on its params */
-  declareSubtypes?: (params: Params) => DeclaredSubtype[]
-  /** Declare additional unit types that participate in combat (for UI display) */
-  declareParticipants?: (params: Params) => DeclaredParticipant[]
+  /** Declare param changes (subtypes, group additions) based on ability params */
+  declareParamChange?: (params: Params) => ParamChange[]
   invoke: AbilityInvoke<Params>[]
-}
-
-export interface AbilityInstance {
-  readonly key: string
-  readonly params: Record<string, unknown>
-  readonly invoke: AbilityInvoke[]
-  readonly enabled: boolean
 }

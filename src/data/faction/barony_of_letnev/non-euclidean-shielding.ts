@@ -8,7 +8,7 @@ export const nonEuclideanShielding: Ability<Params> = {
   key: 'NON_EUCLIDEAN_SHIELDING',
   name: 'Non-Euclidean Shielding',
   category: 'FACTION',
-  defaultParams: {
+  params: {
     isEnabled: false,
   },
   headerUI: 'isEnabled',

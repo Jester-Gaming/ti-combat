@@ -1,4 +1,5 @@
 import type { Ability } from '@/combat/abilities/types'
+import type { UnitType } from '@/types'
 
 type Params = {
   isEnabled: boolean
@@ -9,22 +10,19 @@ export const helTitan: Ability<Params> = {
   name: 'Hel-Titan',
   category: 'FACTION',
   context: 'GROUND',
-  defaultParams: {
+  params: {
     isEnabled: true,
   },
   headerUI: 'isEnabled',
   readOnly: true,
-  declareParticipants: params => {
-    if (!params.isEnabled) return []
-    return [{ unitType: 'PDS', combatMode: 'GROUND' }]
-  },
+  declareParamChange: () => [{ key: 'groundForces', value: 'PDS' }],
   invoke: [
     {
       timing: 'PREPARE',
       isCallable: (params: Params) => params.isEnabled,
       call: ctx => {
         ctx.api.own.updateAbilityConfig('SETTINGS', {
-          groundCombatParticipating: ['MECH', 'INFANTRY', 'PDS'],
+          groundForces: (current: UnitType[]) => [...current, 'PDS'],
         })
       },
     },

@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { CombatStateData } from '../state/types'
-import { collectUnitAbilities, runAbilities } from './abilities-tracker'
+import { CombatState } from '../combat-state/combat-state'
+import type { CombatStateData } from '../combat-state/types'
+import { AbilitiesParams } from './abilities-params'
 import type { Ability, AbilityCallContext, OwnOpponentContext } from './types'
 
 describe('collectUnitAbilities', () => {
@@ -37,7 +38,7 @@ describe('collectUnitAbilities', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    const result = collectUnitAbilities(state, 'attacker')
+    const result = AbilitiesParams.collectUnitAbilities(state, 'attacker')
 
     expect(result).toHaveLength(2)
     expect(result[0]).toMatchObject({
@@ -74,7 +75,7 @@ describe('collectUnitAbilities', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    const result = collectUnitAbilities(state, 'attacker')
+    const result = AbilitiesParams.collectUnitAbilities(state, 'attacker')
 
     expect(result).toHaveLength(0)
   })
@@ -114,7 +115,7 @@ describe('collectUnitAbilities', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    const result = collectUnitAbilities(state, 'attacker')
+    const result = AbilitiesParams.collectUnitAbilities(state, 'attacker')
 
     expect(result).toHaveLength(2)
     expect(result[0].ability).toBe(ability1)
@@ -163,7 +164,10 @@ describe('unit ability invocation', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    runAbilities('START_OF_COMBAT_ROUND', state)
+    CombatState.fromData(state).params.runAbilities(
+      'START_OF_COMBAT_ROUND',
+      state,
+    )
 
     expect(invokeCalls).toHaveLength(2)
   })
@@ -210,7 +214,10 @@ describe('unit ability invocation', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    runAbilities('START_OF_COMBAT_ROUND', state)
+    CombatState.fromData(state).params.runAbilities(
+      'START_OF_COMBAT_ROUND',
+      state,
+    )
 
     // Only first unit should invoke (second destroyed by first)
     expect(invokeCalls).toHaveLength(1)
@@ -285,7 +292,10 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    const result = runAbilities('START_OF_COMBAT_ROUND', state)
+    const result = CombatState.fromData(state).params.runAbilities(
+      'START_OF_COMBAT_ROUND',
+      state,
+    )
 
     // Fighter should be destroyed
     expect(result.state.defender.units.FIGHTER).toBeUndefined()
@@ -355,7 +365,10 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    runAbilities('START_OF_COMBAT_ROUND', state)
+    CombatState.fromData(state).params.runAbilities(
+      'START_OF_COMBAT_ROUND',
+      state,
+    )
 
     expect(afterDestroyCalls).toHaveLength(0)
   })
@@ -423,7 +436,10 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    const result = runAbilities('START_OF_COMBAT_ROUND', state)
+    const result = CombatState.fromData(state).params.runAbilities(
+      'START_OF_COMBAT_ROUND',
+      state,
+    )
 
     // Both units should be destroyed
     expect(result.state.defender.units.FIGHTER).toBeUndefined()
@@ -491,7 +507,10 @@ describe('multi-timing runAbilities', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    runAbilities(['START_OF_COMBAT_ROUND', 'START_OF_COMBAT'], state)
+    CombatState.fromData(state).params.runAbilities(
+      ['START_OF_COMBAT_ROUND', 'START_OF_COMBAT'],
+      state,
+    )
 
     expect(calls).toContain('START_OF_COMBAT')
     expect(calls).toContain('START_OF_COMBAT_ROUND')
@@ -536,7 +555,10 @@ describe('multi-timing runAbilities', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    runAbilities('START_OF_COMBAT_ROUND', state)
+    CombatState.fromData(state).params.runAbilities(
+      'START_OF_COMBAT_ROUND',
+      state,
+    )
 
     expect(calls).toHaveLength(1)
   })

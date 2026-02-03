@@ -2,7 +2,8 @@ import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons'
 import { useMemo, useState } from 'react'
 
 import type { Ability, AbilityReadContext } from '@/combat/abilities'
-import type { CombatMode } from '@/combat/state/types'
+import { extractDefaults } from '@/combat/abilities/declare-param'
+import type { CombatMode } from '@/combat/combat-state/types'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
@@ -31,13 +32,15 @@ export function AbilityConfig({
   params,
   onParamsChange,
 }: AbilityConfigProps): React.ReactElement {
+  const defaults = useMemo(() => extractDefaults(ability), [ability])
+
   const uiConfigItems = useMemo(() => {
     if (typeof ability.uiConfig !== 'function') {
       return ability.uiConfig
     }
-    const effectiveParams = { ...ability.defaultParams, ...params }
+    const effectiveParams = { ...defaults, ...params }
     return ability.uiConfig(readContext, effectiveParams)
-  }, [ability, readContext, params])
+  }, [ability, defaults, readContext, params])
 
   const hasConfigItems = uiConfigItems && uiConfigItems.length > 0
   const showLabels = uiConfigItems && uiConfigItems.length > 1
@@ -66,7 +69,7 @@ export function AbilityConfig({
 
   const headerParamKey = ability.headerUI
   const headerParamValue = headerParamKey
-    ? (params[headerParamKey] ?? ability.defaultParams?.[headerParamKey])
+    ? (params[headerParamKey] ?? defaults?.[headerParamKey])
     : undefined
   const isHeaderBoolean = typeof headerParamValue === 'boolean'
   const isHeaderNumber = typeof headerParamValue === 'number'
@@ -96,9 +99,7 @@ export function AbilityConfig({
         type="number"
         className={styles.headerNumberInput}
         value={
-          (params[headerParamKey] ??
-            ability.defaultParams?.[headerParamKey] ??
-            0) as number
+          (params[headerParamKey] ?? defaults?.[headerParamKey] ?? 0) as number
         }
         min={0}
         disabled={ability.readOnly}
@@ -165,7 +166,7 @@ export function AbilityConfig({
         <div className={styles.configItems} onClick={e => e.stopPropagation()}>
           {uiConfigItems!.map(config => {
             const key = config.key as string
-            const defaultValue = ability.defaultParams?.[key]
+            const defaultValue = defaults?.[key]
 
             if (config.type === 'checkbox') {
               const value = params[key] ?? defaultValue ?? false

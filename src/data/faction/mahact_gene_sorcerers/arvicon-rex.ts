@@ -8,7 +8,7 @@ export const arviconRex: Ability<Params> = {
   key: 'ARVICON_REX',
   name: '(Mahact) Arvicon Rex',
   category: 'FACTION',
-  defaultParams: {
+  params: {
     isEnabled: false,
   },
   headerUI: 'isEnabled',

@@ -8,7 +8,7 @@ export const rickarRickani: Ability<Params> = {
   key: 'RICKAR_RICKANI',
   name: '(Winnu) Rickar Rickani',
   category: 'COMMANDER',
-  defaultParams: {
+  params: {
     isEnabled: false,
   },
   headerUI: 'isEnabled',

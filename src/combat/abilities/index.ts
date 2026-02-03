@@ -1,27 +1,24 @@
 export {
-  getAbilityParams,
-  hasAbility,
-  runAbilities,
+  AbilitiesParams,
   type RunAbilitiesOptions,
   type RunAbilitiesResult,
-} from './abilities-tracker'
+} from './abilities-params'
+export { declareParam, isDeclaredParam } from './declare-param'
 export { getAvailableAbilities } from './get-available-abilities'
 export type {
   Ability,
   AbilityCallContext,
   AbilityCondition,
-  AbilityInstance,
   AbilityInvoke,
   AbilityReadContext,
   AbilityTiming,
-  DeclaredParticipant,
   DeclaredSubtype,
   DiceApi,
   DiceContext,
   DiceReadApi,
   DiceReadContext,
   OwnOpponentContext,
-  SideAbilities,
+  ParamChange,
   SideApi,
   SidedContext,
   SidedDiceData,
@@ -29,4 +26,3 @@ export type {
   TriggerEvent,
   TriggerEventMap,
 } from './types'
-export { collectDeclaredParticipants } from './utils/collect-declared-participants'

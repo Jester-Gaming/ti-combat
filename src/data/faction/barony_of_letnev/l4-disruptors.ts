@@ -9,7 +9,7 @@ export const l4Disruptors: Ability<Params> = {
   name: 'L4 Disruptors',
   category: 'FACTION',
   context: 'GROUND',
-  defaultParams: {
+  params: {
     isEnabled: false,
   },
   headerUI: 'isEnabled',

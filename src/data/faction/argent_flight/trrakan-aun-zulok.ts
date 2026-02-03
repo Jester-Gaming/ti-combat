@@ -4,8 +4,8 @@ import type {
   DiceContext,
   DiceReadContext,
 } from '@/combat/abilities/types'
-import type { MetaPhase } from '@/combat/state/types'
-import { UNIT_ABILITY_PHASES } from '@/combat/state/types'
+import type { MetaPhase } from '@/combat/combat-state/types'
+import { UNIT_ABILITY_PHASES } from '@/combat/combat-state/types'
 
 type Params = {
   isEnabled: boolean
@@ -17,7 +17,7 @@ export const trrakanAunZulok: Ability<Params> = {
   name: '(Argent) Trrakan Aun Zulok',
   category: 'COMMANDER',
   headerUI: 'isEnabled',
-  defaultParams: {
+  params: {
     isEnabled: false,
     phases: [...UNIT_ABILITY_PHASES],
   },

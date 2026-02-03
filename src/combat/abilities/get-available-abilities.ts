@@ -1,11 +1,11 @@
 import factions from '@/data/faction'
 import type { CombatSide, Faction, FactionKey } from '@/types'
 
-import actionCard from './list/action-card'
-import agenda from './list/agenda'
-import environment from './list/environment'
-import general from './list/general'
-import technology from './list/technology'
+import actionCard from '../../data/abilities/action-card'
+import agenda from '../../data/abilities/agenda'
+import environment from '../../data/abilities/environment'
+import general from '../../data/abilities/general'
+import technology from '../../data/abilities/technology'
 import type { Ability } from './types'
 
 // Collect all promissory abilities from every faction (available to all)

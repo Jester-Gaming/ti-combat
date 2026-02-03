@@ -37,7 +37,8 @@ describe('HEL_TITAN', () => {
     })
 
     t.setPhase('GROUND_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
+    // 2 hits: 1 absorbed by Sustain Damage, 1 destroys PDS
+    t.addHits('defender', 2)
 
     t.assignHits()
     expect(t.defender.units.PDS).toBeUndefined()

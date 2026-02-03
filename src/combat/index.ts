@@ -7,8 +7,8 @@ export type {
 } from './types'
 
 // State
+export { CombatState, type SideStateData } from './combat-state'
 export { flattenTree } from './probability'
-export { CombatState, type SideState } from './state'
 
 // Engine
 export { CombatEngine } from './combat-engine'

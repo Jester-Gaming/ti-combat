@@ -1,9 +1,9 @@
+import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
 import {
   getVariantDisplayName,
   parseVariantId,
 } from '@/combat/utils/unit-variant'
-import { NON_FIGHTER_SHIPS } from '@/constants/units'
 
 type Params = {
   targetPriority: string[]
@@ -14,8 +14,12 @@ export const raidFormation: Ability<Params> = {
   name: 'Raid Formation',
   category: 'FACTION',
   context: 'SPACE',
-  defaultParams: {
-    targetPriority: NON_FIGHTER_SHIPS.toReversed(),
+  params: {
+    targetPriority: declareParam({
+      default: [],
+      source: 'nonFighterShips',
+      side: 'opponent',
+    }),
   },
   uiConfig: ctx => {
     const variants = ctx.api.opponent.getParticipatingVariants({

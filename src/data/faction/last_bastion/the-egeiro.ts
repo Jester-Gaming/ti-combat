@@ -13,7 +13,7 @@ export const theEgeiro: Ability<Params> = {
   name: '(Bastion) The Egeiro',
   category: 'FACTION',
   context: 'SPACE',
-  defaultParams: {
+  params: {
     nonHomeSystems: 0,
   },
   headerUI: 'nonHomeSystems',

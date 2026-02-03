@@ -8,7 +8,7 @@ export const fragile: Ability<Params> = {
   key: 'FRAGILE',
   name: 'Fragile',
   category: 'FACTION',
-  defaultParams: {
+  params: {
     isEnabled: true,
   },
   headerUI: 'isEnabled',

@@ -1,4 +1,4 @@
-import type { CombatState } from './state/combat-state'
+import type { CombatState } from './combat-state/combat-state'
 
 export type LogEntry = [string, ...unknown[]]
 

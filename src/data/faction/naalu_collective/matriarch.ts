@@ -1,4 +1,5 @@
-import type { Ability } from '@/combat/abilities/types'
+import type { Ability, AbilityReadContext } from '@/combat/abilities/types'
+import type { UnitType } from '@/types'
 
 type Params = {
   isEnabled: boolean
@@ -9,21 +10,19 @@ export const matriarch: Ability<Params> = {
   name: 'Matriarch',
   category: 'FACTION',
   context: 'GROUND',
-  defaultParams: {
+  params: {
     isEnabled: true,
   },
   headerUI: 'isEnabled',
-  declareParticipants: params => {
-    if (!params.isEnabled) return []
-    return [{ unitType: 'FIGHTER', combatMode: 'GROUND' }]
-  },
+  declareParamChange: () => [{ key: 'groundForces', value: 'FIGHTER' }],
   invoke: [
     {
       timing: 'START_OF_COMBAT',
-      isCallable: (params: Params) => params.isEnabled,
+      isCallable: (params: Params, ctx: AbilityReadContext) =>
+        params.isEnabled && ctx.api.own.hasUnit('FLAGSHIP'),
       call: ctx => {
         ctx.api.own.updateAbilityConfig('SETTINGS', {
-          groundCombatParticipating: ['FIGHTER', 'MECH', 'INFANTRY'],
+          groundForces: (current: UnitType[]) => [...current, 'FIGHTER'],
         })
       },
     },

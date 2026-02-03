@@ -8,7 +8,7 @@ export const unrelenting: Ability<Params> = {
   key: 'UNRELENTING',
   name: 'Unrelenting',
   category: 'FACTION',
-  defaultParams: {
+  params: {
     isEnabled: true,
   },
   headerUI: 'isEnabled',

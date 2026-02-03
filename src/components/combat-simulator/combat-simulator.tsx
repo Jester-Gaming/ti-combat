@@ -1,207 +1,78 @@
 import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
-import { useEffect, useMemo, useState } from 'react'
-import { useImmer } from 'use-immer'
+import { useMemo, useReducer, useRef } from 'react'
 
-import {
-  CombatEngine,
-  CombatState,
-  flattenTree,
-  type SideState as CombatSideState,
-} from '@/combat'
+import { CombatEngine, CombatState, flattenTree } from '@/combat'
 import { getAvailableAbilities } from '@/combat/abilities'
-import { buildUIReadContext } from '@/combat/abilities/ability-api'
-import { collectDeclaredParticipants } from '@/combat/abilities/utils/collect-declared-participants'
-import { collectDeclaredSubtypes } from '@/combat/abilities/utils/collect-declared-subtypes'
-import { countUnits } from '@/combat/state/side-state-ops'
-import type { AbilitiesConfig, CombatMode } from '@/combat/state/types'
+import type { CombatMode } from '@/combat/combat-state/types'
 import { AbilitiesPanel } from '@/components/abilities-panel'
 import { BattleCard } from '@/components/battle-card'
 import { GlassCard } from '@/components/ui/glass-card'
 import { GlowText } from '@/components/ui/glow-text'
-import { UNIT_TYPES } from '@/constants/units'
-import factions from '@/data/faction'
-import {
-  type BattleState,
-  type CombatSide,
-  type FactionKey,
-  type SideState,
-  type UnitSelection,
-  type UnitType,
-} from '@/types'
-import { getSimulationUnits } from '@/utils/get-simulation-units'
+import type { CombatSide, FactionKey, UnitType } from '@/types'
 import { getUnitConfig } from '@/utils/get-unit-config'
 
 import { type CombatResult } from '../battle-card/components/combat-result-bar'
 import styles from './combat-simulator.module.css'
-
-function createInitialUnits(): Record<UnitType, UnitSelection> {
-  return UNIT_TYPES.reduce(
-    (acc, unitType) => {
-      acc[unitType] = { count: 0, upgraded: false }
-      return acc
-    },
-    {} as Record<UnitType, UnitSelection>,
-  )
-}
-
-function createInitialSideState(): SideState {
-  return {
-    faction: Object.keys(factions)[0] as FactionKey,
-    units: createInitialUnits(),
-  }
-}
-
-function createInitialBattleState(): BattleState {
-  return {
-    attacker: createInitialSideState(),
-    defender: createInitialSideState(),
-  }
-}
 
 interface CombatSimulatorProps {
   className?: string
 }
 
 export function CombatSimulator({ className }: CombatSimulatorProps) {
-  const [combatMode, setCombatMode] = useState<CombatMode>('SPACE')
-  const [battle, setBattle] = useImmer<BattleState>(createInitialBattleState)
-  const [abilityParams, setAbilityParams] = useImmer<{
-    attacker: Record<string, Record<string, unknown>>
-    defender: Record<string, Record<string, unknown>>
-  }>({
-    attacker: {},
-    defender: {},
-  })
+  const csRef = useRef(new CombatState())
+  const [, forceRender] = useReducer((x: number) => x + 1, 0)
+
+  const cs = csRef.current
 
   const attackerConfig = useMemo(
-    () => getUnitConfig(battle.attacker.faction),
-    [battle.attacker.faction],
+    () => getUnitConfig(cs.attacker.faction),
+    [cs.attacker.faction],
   )
   const defenderConfig = useMemo(
-    () => getUnitConfig(battle.defender.faction),
-    [battle.defender.faction],
+    () => getUnitConfig(cs.defender.faction),
+    [cs.defender.faction],
   )
 
-  // Create SideState for each side (used for abilities and combat)
-  const attackerSideState: CombatSideState = useMemo(
-    () => ({
-      faction: battle.attacker.faction,
-      units: getSimulationUnits(battle.attacker),
-      hitPools: [],
-    }),
-    [battle.attacker],
-  )
-  const defenderSideState: CombatSideState = useMemo(
-    () => ({
-      faction: battle.defender.faction,
-      units: getSimulationUnits(battle.defender),
-      hitPools: [],
-    }),
-    [battle.defender],
-  )
-
-  // Get available abilities for each side
+  // Get available abilities for each side (derived from faction, safe during render)
   const attackerAbilities = useMemo(
-    () => getAvailableAbilities('attacker', battle.attacker.faction),
-    [battle.attacker.faction],
+    () => getAvailableAbilities('attacker', cs.attacker.faction),
+    [cs.attacker.faction],
   )
   const defenderAbilities = useMemo(
-    () => getAvailableAbilities('defender', battle.defender.faction),
-    [battle.defender.faction],
+    () => getAvailableAbilities('defender', cs.defender.faction),
+    [cs.defender.faction],
   )
 
-  // Initialize ability params with defaults when abilities change
-  useEffect(() => {
-    setAbilityParams(draft => {
-      const attackerKeys = new Set(attackerAbilities.map(a => a.key))
-      const defenderKeys = new Set(defenderAbilities.map(a => a.key))
-
-      // Initialize new abilities with defaults, preserve existing params
-      for (const ability of attackerAbilities) {
-        if (!draft.attacker[ability.key] && ability.defaultParams) {
-          draft.attacker[ability.key] = { ...ability.defaultParams }
-        }
-      }
-      for (const ability of defenderAbilities) {
-        if (!draft.defender[ability.key] && ability.defaultParams) {
-          draft.defender[ability.key] = { ...ability.defaultParams }
-        }
-      }
-
-      // Remove params for abilities that no longer exist
-      for (const key of Object.keys(draft.attacker)) {
-        if (!attackerKeys.has(key)) {
-          delete draft.attacker[key]
-        }
-      }
-      for (const key of Object.keys(draft.defender)) {
-        if (!defenderKeys.has(key)) {
-          delete draft.defender[key]
-        }
-      }
-
-      // Collect declared participants for both sides
-      for (const [side, abilities] of [
-        ['attacker', attackerAbilities],
-        ['defender', defenderAbilities],
-      ] as const) {
-        const participants = collectDeclaredParticipants(abilities, draft[side])
-        if (!draft[side]['SETTINGS']) draft[side]['SETTINGS'] = {}
-        draft[side]['SETTINGS'].declaredParticipants = participants
-      }
-    })
-  }, [attackerAbilities, defenderAbilities, setAbilityParams])
-
-  // Shared abilities config for both combat state and UI read contexts
-  const abilitiesConfig: AbilitiesConfig = useMemo(
-    () => ({
-      attacker: abilityParams.attacker,
-      defender: abilityParams.defender,
-    }),
-    [abilityParams],
-  )
-
-  // Build read contexts for ability UI panels (both sides have full state)
+  // Build read contexts for ability UI panels
   const attackerReadContext = useMemo(
-    () =>
-      buildUIReadContext(
-        'attacker',
-        attackerSideState,
-        defenderSideState,
-        abilitiesConfig,
-        combatMode,
-      ),
-    [attackerSideState, defenderSideState, abilitiesConfig, combatMode],
+    () => cs.getReadContext('attacker'),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cs.data],
   )
   const defenderReadContext = useMemo(
-    () =>
-      buildUIReadContext(
-        'defender',
-        attackerSideState,
-        defenderSideState,
-        abilitiesConfig,
-        combatMode,
-      ),
-    [attackerSideState, defenderSideState, abilitiesConfig, combatMode],
+    () => cs.getReadContext('defender'),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [cs.data],
   )
 
-  // Create CombatState from battle configuration
+  // Create CombatState for simulation
   const combatState = useMemo(() => {
-    const hasAttackerUnits = countUnits(attackerSideState) > 0
-    const hasDefenderUnits = countUnits(defenderSideState) > 0
+    const hasAttackerUnits = cs.attacker.countUnits() > 0
+    const hasDefenderUnits = cs.defender.countUnits() > 0
 
     if (!hasAttackerUnits || !hasDefenderUnits) {
       return null
     }
 
-    return new CombatState(
-      attackerSideState,
-      defenderSideState,
-      combatMode,
-      abilitiesConfig,
+    return CombatState.forSimulation(
+      cs.data.attacker,
+      cs.data.defender,
+      cs.combatMode,
+      cs.data.abilities,
     )
-  }, [attackerSideState, defenderSideState, combatMode, abilitiesConfig])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cs.data])
 
   const combatResult = useMemo((): CombatResult | null => {
     if (!combatState) return null
@@ -238,9 +109,8 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
   }, [combatState])
 
   const handleFactionChange = (side: CombatSide, faction: FactionKey) => {
-    setBattle(draft => {
-      draft[side].faction = faction
-    })
+    cs.side(side).setFaction(faction)
+    forceRender()
   }
 
   const handleUnitCountChange = (
@@ -248,15 +118,14 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     unit: UnitType,
     count: number,
   ) => {
-    setBattle(draft => {
-      draft[side].units[unit].count = count
-    })
+    cs.side(side).setUnitCount(unit, count)
+    forceRender()
   }
 
   const handleUpgradeToggle = (side: CombatSide, unit: UnitType) => {
-    setBattle(draft => {
-      draft[side].units[unit].upgraded = !draft[side].units[unit].upgraded
-    })
+    const ss = cs.side(side)
+    ss.setUpgraded(unit, !ss.isUpgraded(unit))
+    forceRender()
   }
 
   const handleAbilityParamsChange = (
@@ -264,19 +133,13 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     abilityName: string,
     params: Record<string, unknown>,
   ) => {
-    const sideAbilities =
-      side === 'attacker' ? attackerAbilities : defenderAbilities
-    setAbilityParams(draft => {
-      draft[side][abilityName] = params
-      const subtypes = collectDeclaredSubtypes(sideAbilities, draft[side])
-      const participants = collectDeclaredParticipants(
-        sideAbilities,
-        draft[side],
-      )
-      if (!draft[side]['SETTINGS']) draft[side]['SETTINGS'] = {}
-      draft[side]['SETTINGS'].declaredSubtypes = subtypes
-      draft[side]['SETTINGS'].declaredParticipants = participants
-    })
+    cs.side(side).setAbilityParam(abilityName, params)
+    forceRender()
+  }
+
+  const handleCombatModeChange = (mode: CombatMode) => {
+    cs.setCombatMode(mode)
+    forceRender()
   }
 
   return (
@@ -298,8 +161,8 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
         <AbilitiesPanel
           abilities={attackerAbilities}
           readContext={attackerReadContext}
-          combatMode={combatMode}
-          params={abilityParams.attacker}
+          combatMode={cs.combatMode}
+          params={cs.data.abilities.attacker}
           onParamsChange={(abilityName, params) =>
             handleAbilityParamsChange('attacker', abilityName, params)
           }
@@ -309,12 +172,15 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
       {/* Center column: Battle card */}
       <div className={styles.centerColumn}>
         <BattleCard
-          battle={battle}
+          attackerFaction={cs.attacker.faction}
+          defenderFaction={cs.defender.faction}
+          attackerSelections={cs.attacker.unitSelections}
+          defenderSelections={cs.defender.unitSelections}
           attackerConfig={attackerConfig}
           defenderConfig={defenderConfig}
           combatResult={combatResult}
-          combatMode={combatMode}
-          onCombatModeChange={setCombatMode}
+          combatMode={cs.combatMode}
+          onCombatModeChange={handleCombatModeChange}
           onFactionChange={handleFactionChange}
           onUnitCountChange={handleUnitCountChange}
           onUpgradeToggle={handleUpgradeToggle}
@@ -339,8 +205,8 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           <AbilitiesPanel
             abilities={defenderAbilities}
             readContext={defenderReadContext}
-            combatMode={combatMode}
-            params={abilityParams.defender}
+            combatMode={cs.combatMode}
+            params={cs.data.abilities.defender}
             onParamsChange={(abilityName, params) =>
               handleAbilityParamsChange('defender', abilityName, params)
             }

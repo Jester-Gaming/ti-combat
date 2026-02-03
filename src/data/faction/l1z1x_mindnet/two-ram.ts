@@ -12,7 +12,7 @@ export const twoRam: Ability<Params> = {
   condition: {
     onlyAttacker: true,
   },
-  defaultParams: {
+  params: {
     isEnabled: false,
   },
   headerUI: 'isEnabled',

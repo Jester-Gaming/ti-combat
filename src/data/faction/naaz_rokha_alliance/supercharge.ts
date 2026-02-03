@@ -9,7 +9,7 @@ export const supercharge: Ability<Params> = {
   key: 'SUPERCHARGE',
   name: 'Supercharge',
   category: 'FACTION',
-  defaultParams: {
+  params: {
     isEnabled: false,
     uses: 1,
   },

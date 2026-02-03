@@ -8,7 +8,7 @@ export const alarum: Ability<Params> = {
   key: 'ALARUM',
   name: '(Ral Nel) Alarum',
   category: 'FACTION',
-  defaultParams: {
+  params: {
     infantryAvailable: 0,
   },
   headerUI: 'infantryAvailable',

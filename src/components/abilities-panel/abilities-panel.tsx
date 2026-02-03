@@ -1,7 +1,7 @@
 import { filter, groupBy, pipe } from 'remeda'
 
 import type { Ability, AbilityReadContext } from '@/combat/abilities'
-import type { CombatMode } from '@/combat/state/types'
+import type { CombatMode } from '@/combat/combat-state/types'
 
 import styles from './abilities-panel.module.css'
 import { AbilityConfig } from './components/ability-config'

@@ -8,7 +8,7 @@ export const mordred: Ability<Params> = {
   key: 'MORDRED',
   name: '(Nekro) Mordred',
   category: 'FACTION',
-  defaultParams: {
+  params: {
     isEnabled: false,
   },
   headerUI: 'isEnabled',

@@ -1,3 +1,4 @@
+import { declareParam } from '@/combat/abilities/declare-param'
 import { getVariantDisplayName } from '@/combat/utils/unit-variant'
 
 import type {
@@ -18,17 +19,13 @@ export const gravleashManeuvers: Ability<Params> = {
   name: 'Breakthrough',
   category: 'FACTION',
   context: 'SPACE',
-  defaultParams: {
+  params: {
     isEnabled: false,
-    shipPriority: [
-      'FLAGSHIP',
-      'WAR_SUN',
-      'DREADNOUGHT',
-      'CRUISER',
-      'CARRIER',
-      'DESTROYER',
-      'FIGHTER',
-    ],
+    shipPriority: declareParam({
+      default: [],
+      source: 'ships',
+      side: 'opponent',
+    }),
   },
   headerUI: 'isEnabled',
   uiConfig: ctx => {

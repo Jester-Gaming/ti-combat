@@ -15,8 +15,6 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { DragHandleDots2Icon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
-import { useEffect } from 'react'
-import { isShallowEqual, sortBy } from 'remeda'
 
 import styles from './order-list.module.css'
 
@@ -85,15 +83,6 @@ export function OrderList({
       },
     }),
   )
-
-  useEffect(() => {
-    const newValue = sortBy(items, item => value.indexOf(item.value)).map(
-      item => item.value,
-    )
-    if (!isShallowEqual(value, newValue)) {
-      onChange(newValue)
-    }
-  }, [items, value, onChange])
 
   function handleDragEnd(event: DragEndEvent): void {
     const { active, over } = event

@@ -1,4 +1,5 @@
 import type { Ability } from '@/combat/abilities/types'
+import type { UnitType } from '@/types'
 
 type Params = {
   isEnabled: boolean
@@ -9,32 +10,19 @@ export const eidolon: Ability<Params> = {
   name: 'Eidolon',
   category: 'FACTION',
   context: 'SPACE',
-  defaultParams: {
+  params: {
     isEnabled: true,
   },
   headerUI: 'isEnabled',
   readOnly: true,
-  declareParticipants: params => {
-    if (!params.isEnabled) return []
-    return [{ unitType: 'MECH', combatMode: 'SPACE' }]
-  },
+  declareParamChange: () => [{ key: 'ships', value: 'MECH' }],
   invoke: [
     {
       timing: 'START_OF_COMBAT',
       isCallable: (params: Params) => params.isEnabled,
       call: ctx => {
-        // Add mech to space combat participation
         ctx.api.own.updateAbilityConfig('SETTINGS', {
-          spaceCombatParticipating: [
-            'FLAGSHIP',
-            'WAR_SUN',
-            'DREADNOUGHT',
-            'CARRIER',
-            'CRUISER',
-            'DESTROYER',
-            'FIGHTER',
-            'MECH',
-          ],
+          ships: (current: UnitType[]) => [...current, 'MECH'],
         })
 
         // Z-Grav form loses Sustain Damage

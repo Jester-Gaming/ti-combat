@@ -4,8 +4,8 @@ import type {
   DiceContext,
   DiceReadContext,
 } from '@/combat/abilities/types'
-import type { MetaPhase } from '@/combat/state/types'
-import { UNIT_ABILITY_PHASES } from '@/combat/state/types'
+import type { MetaPhase } from '@/combat/combat-state/types'
+import { UNIT_ABILITY_PHASES } from '@/combat/combat-state/types'
 
 type Params = {
   isEnabled: boolean
@@ -18,7 +18,7 @@ export const strikeWingAmbuscade: Ability<Params> = {
   name: '(Argent) Strike Wing Ambuscade',
   category: 'PROMISSORY',
   headerUI: 'isEnabled',
-  defaultParams: {
+  params: {
     isEnabled: false,
     uses: 1,
     phases: [...UNIT_ABILITY_PHASES],

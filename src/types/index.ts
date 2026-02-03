@@ -1,6 +1,3 @@
-import type { Faction, FactionKey } from './faction'
-import type { UnitType } from './unit'
-
 export interface UnitSelection {
   count: number
   upgraded: boolean
@@ -8,18 +5,8 @@ export interface UnitSelection {
 
 export type CombatSide = 'attacker' | 'defender'
 
-export interface SideState {
-  faction: FactionKey
-  units: Record<UnitType, UnitSelection>
-}
-
-export interface BattleState {
-  attacker: SideState
-  defender: SideState
-}
-
-export type { Faction, FactionKey }
 export type { DiceGroup, SourcedDiceGroup } from './die'
+export type { Faction, FactionKey } from './faction'
 export type {
   Unit,
   UnitAbility,
@@ -27,4 +14,4 @@ export type {
   UnitState,
   UnitStats,
 } from './unit'
-export type { UnitType }
+export type { UnitType } from './unit'

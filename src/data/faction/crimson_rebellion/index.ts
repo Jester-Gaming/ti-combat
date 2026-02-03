@@ -1,4 +1,4 @@
-import { sustainDamage } from '@/data/abilities/sustain-damage'
+import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 export const crimson_rebellion: Faction = {
@@ -6,7 +6,7 @@ export const crimson_rebellion: Faction = {
   units: {
     FLAGSHIP: {
       BASE: {
-        NAME: 'Artemiris',
+        NAME: 'Quietus',
         DESCRIPTION:
           "While this unit is in a system that contains an active breach, other players' units in systems with active breaches lose all of their unit abilities.",
         COST: 8,

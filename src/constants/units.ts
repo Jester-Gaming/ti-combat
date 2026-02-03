@@ -21,6 +21,20 @@ export const UNIT_TYPES: UnitType[] = [
   ...STRUCTURES,
 ]
 
+export const UNIT_PRICE: Record<UnitType, number> = {
+  WAR_SUN: 12,
+  FLAGSHIP: 8,
+  DREADNOUGHT: 4,
+  CARRIER: 3,
+  PDS: 3,
+  MECH: 2,
+  CRUISER: 2,
+  DESTROYER: 1,
+  FIGHTER: 0.5,
+  INFANTRY: 0.5,
+  SPACE_DOCK: 0,
+}
+
 export const UNIT_DISPLAY_NAMES: Record<UnitType, string> = {
   FLAGSHIP: 'Flagship',
   WAR_SUN: 'War Sun',
