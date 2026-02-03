@@ -58,8 +58,10 @@ export const l1z1x_mindnet: Faction = {
           'This unit cannot be destroyed by Direct Hit action cards.',
         COMBAT: [4, 1],
         MOVE: 2,
+        DIRECT_HIT_IMMUNE: true,
         UNIT_ABILITIES: {
           BOMBARDMENT: [4, 1],
+          SUSTAIN_DAMAGE: true,
         },
       },
     },

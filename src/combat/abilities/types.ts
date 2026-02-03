@@ -1,4 +1,5 @@
 import type {
+  CombatSide,
   FactionKey,
   SourcedDiceGroup,
   Unit,
@@ -79,10 +80,16 @@ export interface TimingContextMap {
   AFTER_UNIT_ABILITY_ROLL: void
   BEFORE_DICE_ROLL: SidedDiceData
   BEFORE_ASSIGN_HITS: void
+  AFTER_SUSTAIN_DAMAGE_USE: Unit
   AFTER_DESTROY: SidedContext<DestroyedUnit[]>
   END_OF_COMBAT_ROUND: void
   END_OF_COMBAT: void
   AFTER_ROUND: void
+}
+
+/** Events that can be emitted via ctx.trigger() during produce */
+export interface TriggerEventMap {
+  AFTER_SUSTAIN_DAMAGE_USE: Unit
 }
 
 // Internal map for ability calls (uses own/opponent)
@@ -197,6 +204,14 @@ export interface AbilityReadContext {
   getUnitIndex(): number
 }
 
+/** Stored trigger event emitted via ctx.trigger() */
+export interface TriggerEvent {
+  name: keyof TriggerEventMap
+  side: CombatSide
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  context: any
+}
+
 /** Mutable context for call (Immer draft, full API) */
 export interface AbilityCallContext {
   state: CombatStateData // Immer draft
@@ -205,6 +220,11 @@ export interface AbilityCallContext {
     opponent: SideApi
   }
   log(...data: unknown[]): void
+  /** Emit a trigger event to be processed immediately after produce */
+  trigger<K extends keyof TriggerEventMap>(
+    name: K,
+    context: TriggerEventMap[K],
+  ): void
   /** Get the unit instance this ability is attached to (Immer draft). Throws if called from a non-unit ability. */
   getUnit(): Unit
   /** Get the unit type this ability is attached to. Throws if called from a non-unit ability. */
@@ -227,6 +247,8 @@ type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
   multi?: boolean
   /** Restrict this invoke to specific meta-phase(s). When set, the invoke only fires if the current meta-phase matches. */
   context?: MetaPhase | MetaPhase[]
+  /** Filter invoke by trigger side. 'OWN' = only fires for the side that caused the trigger. 'OPPONENT' = only fires for the other side. Omit for no filtering. */
+  side?: 'OWN' | 'OPPONENT'
 } & (InternalTimingContextMap[T] extends void
   ? {
       // Void timings (PREPARE, START_OF_COMBAT, etc.)

@@ -53,6 +53,7 @@ export const sardakk_norr: Faction = {
         DESCRIPTION:
           'This unit cannot be destroyed by Direct Hit action cards. After a round of space combat, you may destroy this unit to destroy up to 2 ships in this system.',
         MOVE: 2,
+        DIRECT_HIT_IMMUNE: true,
       },
     },
   },

@@ -2,6 +2,7 @@ export {
   getAbilityParams,
   hasAbility,
   runAbilities,
+  type RunAbilitiesOptions,
   type RunAbilitiesResult,
 } from './abilities-tracker'
 export { getAvailableAbilities } from './get-available-abilities'
@@ -25,5 +26,7 @@ export type {
   SidedContext,
   SidedDiceData,
   SideReadApi,
+  TriggerEvent,
+  TriggerEventMap,
 } from './types'
 export { collectDeclaredParticipants } from './utils/collect-declared-participants'

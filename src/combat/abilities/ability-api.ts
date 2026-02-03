@@ -36,6 +36,7 @@ import type {
   DeclaredSubtype,
   SideApi,
   SideReadApi,
+  TriggerEvent,
 } from './types'
 
 // ============================================================================
@@ -602,6 +603,7 @@ export function buildCallContext(
   abilityKey: string,
   log?: (...data: unknown[]) => void,
   unitSource?: UnitAbilitySource,
+  triggerCallback?: (event: TriggerEvent) => void,
 ) {
   return {
     state: draft,
@@ -610,6 +612,11 @@ export function buildCallContext(
       opponent: buildApi(getOpponentSide(side), draft, abilityKey),
     },
     log: log ?? (() => {}),
+    trigger(name: TriggerEvent['name'], context: unknown): void {
+      if (triggerCallback) {
+        triggerCallback({ name, side, context })
+      }
+    },
     getUnit(): Unit {
       if (!unitSource) {
         throw new Error('getUnit() can only be called from unit abilities')

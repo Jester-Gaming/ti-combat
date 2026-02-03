@@ -100,6 +100,7 @@ invoke: [
     timing: AbilityTiming,         // When to fire
     multi?: boolean,               // Allow multiple calls per phase (default: false)
     context?: MetaPhase | MetaPhase[],  // Restrict to specific meta-phases
+    side?: 'OWN' | 'OPPONENT',    // Filter by trigger side (see Trigger System)
     isCallable?: (...) => boolean, // Guard (optional, default: always callable)
     call: (...) => void,           // Execution
   }
@@ -107,6 +108,8 @@ invoke: [
 ```
 
 **`multi: true`** — ability can fire repeatedly until `isCallable` returns false. Used by Sustain Damage (sustain multiple units).
+
+**`side: 'OWN' | 'OPPONENT'`** — filters the invoke by which side caused the trigger. Only meaningful for triggered timings (e.g., `AFTER_SUSTAIN_DAMAGE_USE`). `'OWN'` means the invoke fires only for the side that triggered the event. `'OPPONENT'` means it fires only for the other side. Omit for no filtering (fires for both sides).
 
 **`context`** — restricts invoke to specific meta-phases. Only fires when `state.currentPhase.meta` matches:
 
@@ -127,6 +130,7 @@ BEFORE_UNIT_ABILITY_ROLL — before AFB / bombardment / space cannon dice
 AFTER_UNIT_ABILITY_ROLL  — after unit ability dice are rolled (hits assigned to opponent)
 BEFORE_DICE_ROLL      — before combat dice
 BEFORE_ASSIGN_HITS    — before hit assignment (sustain damage fires here)
+AFTER_SUSTAIN_DAMAGE_USE — triggered immediately after a sustain damage use
 AFTER_DESTROY         — after units are destroyed
 END_OF_COMBAT_ROUND   — after each round
 END_OF_COMBAT         — when combat ends
@@ -136,6 +140,8 @@ AFTER_ROUND           — after round cleanup
 ### Function Signatures by Timing
 
 **Void timings** (PREPARE, START_OF_COMBAT, START_OF_COMBAT_ROUND, AFTER_UNIT_ABILITY_ROLL, BEFORE_ASSIGN_HITS, END_OF_COMBAT_ROUND, END_OF_COMBAT, AFTER_ROUND):
+
+> Note: `AFTER_SUSTAIN_DAMAGE_USE` has `Unit` context type but is a **triggered timing** — it fires automatically when sustain damage is used via `ctx.trigger()`. Its context is the sustaining unit. Uses the same void-style signature (context is not passed to the invoke).
 
 ```typescript
 isCallable?: (params: Params, ctx: AbilityReadContext) => boolean
@@ -185,6 +191,7 @@ interface AbilityCallContext {
     opponent: SideApi
   }
   log(...data: unknown[]): void // Append to ability log entry
+  trigger(name: keyof TriggerEventMap): void // Emit trigger event (processed after produce)
   getUnit(): Unit // Only for unit abilities — throws otherwise (returns Immer draft)
 }
 ```
@@ -457,6 +464,37 @@ For a given timing, the tracker ensures:
 - `multi: true` abilities re-fire on each pass until `isCallable` returns false
 
 If an ability destroys units (and the timing is not AFTER_DESTROY), the system automatically runs `AFTER_DESTROY` for any destroyed units.
+
+## Trigger System
+
+Abilities can emit **trigger events** via `ctx.trigger()` during their `call`. Triggers are processed immediately after the ability's `produce()` completes, before `AFTER_DESTROY` checks.
+
+Currently supported triggers:
+
+| Trigger Name               | Emitted By     | Description                             |
+| -------------------------- | -------------- | --------------------------------------- |
+| `AFTER_SUSTAIN_DAMAGE_USE` | Sustain Damage | Fires immediately after a unit sustains |
+
+### How Triggers Work
+
+1. During `call`, the ability calls `ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE')`
+2. After `produce()`, the system runs `runAbilities('AFTER_SUSTAIN_DAMAGE_USE', ...)` with `triggerSide` set to the side that used sustain
+3. Invokes with `side: 'OWN'` fire only for the trigger side; `side: 'OPPONENT'` fire only for the other side
+4. The trigger side goes first in the alternating resolution loop
+5. Abilities in triggered windows cannot emit new triggers (recursion prevention)
+
+### Example: Reacting to Sustain Damage
+
+```typescript
+invoke: [
+  {
+    timing: 'AFTER_SUSTAIN_DAMAGE_USE',
+    side: 'OPPONENT', // React when opponent sustains
+    isCallable: (params, ctx) => { ... },
+    call: (ctx, params) => { ... },
+  },
+]
+```
 
 ## Checklist for New Abilities
 

@@ -44,6 +44,7 @@ const baseUnits = {
     },
     UPGRADED: {
       MOVE: 2,
+      DIRECT_HIT_IMMUNE: true,
     },
   },
   DESTROYER: {

@@ -24,6 +24,7 @@ export interface UnitStats {
   COMBAT?: DiceGroup | null
   MOVE?: number | null
   CAPACITY?: number | null
+  DIRECT_HIT_IMMUNE?: boolean
   UNIT_ABILITIES?: UnitAbilities
   ABILITIES?: readonly Ability[]
 }
