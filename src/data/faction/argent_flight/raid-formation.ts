@@ -1,0 +1,92 @@
+import type { Ability } from '@/combat/abilities/types'
+import {
+  getVariantDisplayName,
+  parseVariantId,
+} from '@/combat/utils/unit-variant'
+import { NON_FIGHTER_SHIPS } from '@/constants/units'
+
+type Params = {
+  targetPriority: string[]
+}
+
+export const raidFormation: Ability<Params> = {
+  key: 'RAID_FORMATION',
+  name: 'Raid Formation',
+  category: 'FACTION',
+  context: 'SPACE',
+  defaultParams: {
+    targetPriority: NON_FIGHTER_SHIPS.toReversed(),
+  },
+  uiConfig: ctx => {
+    const variants = ctx.api.opponent.getParticipatingVariants({
+      combatMode: 'SPACE',
+      exclude: ['FIGHTER'],
+    })
+    const items = variants.map(id => ({
+      label: getVariantDisplayName(id),
+      value: id,
+    }))
+
+    return [
+      {
+        key: 'targetPriority' as const,
+        label: 'Target Priority',
+        type: 'order-list' as const,
+        items,
+      },
+    ]
+  },
+  invoke: [
+    {
+      timing: 'AFTER_UNIT_ABILITY_ROLL',
+      context: 'AFB',
+      isCallable: (_, ctx) => {
+        const pendingHits = ctx.api.opponent.getPendingHits()
+        const fighterCount = ctx.api.opponent.getUnits('FIGHTER').length
+
+        return pendingHits > fighterCount
+      },
+      call: (ctx, params) => {
+        const pendingHits = ctx.api.opponent.getPendingHits()
+        const fighterCount = ctx.api.opponent.getUnits('FIGHTER').length
+        const excess = pendingHits - fighterCount
+
+        let damaged = 0
+
+        for (let i = 0; i < excess; i++) {
+          let found = false
+
+          for (const variantId of params.targetPriority) {
+            const { type: unitType } = parseVariantId(variantId)
+
+            if (
+              ctx.api.opponent.isUnitAbilityLost('SUSTAIN_DAMAGE', unitType)
+            ) {
+              continue
+            }
+
+            const units = ctx.api.opponent.getUnits(unitType)
+            const index = units.findIndex(
+              unit => !unit.isDamaged && unit.UNIT_ABILITIES?.SUSTAIN_DAMAGE,
+            )
+
+            if (index >= 0) {
+              ctx.api.opponent.modifyUnit(unitType, index, {
+                isDamaged: true,
+              })
+              damaged++
+              found = true
+              break
+            }
+          }
+
+          if (!found) break
+        }
+
+        if (damaged > 0) {
+          ctx.log(`Raid Formation: ${damaged} ship(s) damaged`)
+        }
+      },
+    },
+  ],
+}

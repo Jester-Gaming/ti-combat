@@ -354,6 +354,7 @@ export class CombatState implements CombatStateData {
     modifiedDice: SidedDiceData,
     validTargets: { attacker: UnitType[]; defender: UnitType[] },
     prependLog?: LogEntry[],
+    runAfterRoll = false,
   ): StateWithProbability[] {
     const attackerDist = getCombinedDiceDistribution(
       flattenDicePool(modifiedDice.attacker),
@@ -387,6 +388,16 @@ export class CombatState implements CombatStateData {
         const log: LogEntry[] = [...(prependLog ?? [])]
         log.push([metaPhase, 'DICE_ROLL', 'attacker', attOutcome.hits])
         log.push([metaPhase, 'DICE_ROLL', 'defender', defOutcome.hits])
+
+        if (runAfterRoll) {
+          const { state: afterRoll, log: afterRollLog } = this.runAbilities(
+            'AFTER_UNIT_ABILITY_ROLL',
+            undefined,
+            resultData,
+          )
+          resultData = afterRoll
+          log.push(...afterRollLog)
+        }
 
         const nextState = this.transitionPhaseWithData(resultData, log)
 
@@ -495,6 +506,7 @@ export class CombatState implements CombatStateData {
         defender: this.getValidTargetsForPhase('defender', afterWhen),
       },
       abilityLog.length > 0 ? abilityLog : undefined,
+      true,
     )
   }
 

@@ -124,6 +124,7 @@ PREPARE               — once at combat construction
 START_OF_COMBAT       — before first round
 START_OF_COMBAT_ROUND — before each round (including first)
 BEFORE_UNIT_ABILITY_ROLL — before AFB / bombardment / space cannon dice
+AFTER_UNIT_ABILITY_ROLL  — after unit ability dice are rolled (hits assigned to opponent)
 BEFORE_DICE_ROLL      — before combat dice
 BEFORE_ASSIGN_HITS    — before hit assignment (sustain damage fires here)
 AFTER_DESTROY         — after units are destroyed
@@ -134,7 +135,7 @@ AFTER_ROUND           — after round cleanup
 
 ### Function Signatures by Timing
 
-**Void timings** (PREPARE, START_OF_COMBAT, START_OF_COMBAT_ROUND, BEFORE_ASSIGN_HITS, END_OF_COMBAT_ROUND, END_OF_COMBAT, AFTER_ROUND):
+**Void timings** (PREPARE, START_OF_COMBAT, START_OF_COMBAT_ROUND, AFTER_UNIT_ABILITY_ROLL, BEFORE_ASSIGN_HITS, END_OF_COMBAT_ROUND, END_OF_COMBAT, AFTER_ROUND):
 
 ```typescript
 isCallable?: (params: Params, ctx: AbilityReadContext) => boolean

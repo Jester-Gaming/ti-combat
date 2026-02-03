@@ -1,13 +1,14 @@
 import type { Faction } from '@/types'
 
 import { quetzecoatl } from './quetzecoatl'
+import { raidFormation } from './raid-formation'
 import { strikeWingAmbuscade } from './strike-wing-ambuscade'
 import { trrakanAunZulok } from './trrakan-aun-zulok'
 
 export const argent_flight: Faction = {
   name: 'Argent Flight',
   abilities: {
-    faction: [],
+    faction: [raidFormation],
     promissory: [strikeWingAmbuscade],
     commander: [trrakanAunZulok],
   },
