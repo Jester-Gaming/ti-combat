@@ -1,6 +1,7 @@
 import { getDestroyedUnits } from '@/combat/combat-side-state/utils/get-destroyed-units'
 import type { CombatSide, FactionKey, Unit, UnitType } from '@/types'
 import { getFactionUnitConfig } from '@/utils/get-faction-unit-config'
+import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 
 import { AbilitiesParams, type SidedDiceData } from '../../combat/abilities'
 import type {
@@ -84,6 +85,7 @@ function buildSideState(config: SideConfig): SideStateData {
   return {
     faction: config.faction,
     units,
+    unitStats: buildUnitStatsMap(config.faction, upgradedSet),
     hitPools: [],
   }
 }

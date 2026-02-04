@@ -8,7 +8,10 @@ import type {
   UnitSelection,
   UnitType,
 } from '@/types'
-import { getSimulationUnits } from '@/utils/get-simulation-units'
+import {
+  buildUnitStatsMap,
+  getSimulationUnits,
+} from '@/utils/get-simulation-units'
 
 import type { DicePool } from '../abilities/types'
 import type { CombatState } from '../combat-state/combat-state'
@@ -239,7 +242,11 @@ export class CombatSideState {
 
   setFaction(faction: FactionKey): void {
     const units = getSimulationUnits(faction, this.unitSelections)
-    this.updateSideData({ faction, units })
+    const upgrades = new Set(
+      UNIT_TYPES.filter(t => this.unitSelections[t].upgraded),
+    )
+    const unitStats = buildUnitStatsMap(faction, upgrades)
+    this.updateSideData({ faction, units, unitStats })
     this._combatState.params.reconcileFaction(this._side, faction)
   }
 
@@ -252,7 +259,9 @@ export class CombatSideState {
       [unitType]: { ...this.unitSelections[unitType], ...update },
     }
     const units = getSimulationUnits(this.data.faction, selections)
-    this.updateSideData({ units, unitSelections: selections })
+    const upgrades = new Set(UNIT_TYPES.filter(t => selections[t].upgraded))
+    const unitStats = buildUnitStatsMap(this.data.faction, upgrades)
+    this.updateSideData({ units, unitSelections: selections, unitStats })
   }
 
   setUnitCount(unitType: UnitType, count: number): void {

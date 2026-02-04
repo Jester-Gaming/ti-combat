@@ -19,6 +19,11 @@ describe('Alarum', () => {
 
     // Should add 2 infantry (min of 2 and 4 available)
     expect(t.attacker.units.INFANTRY).toHaveLength(3)
+
+    t.setPhase('GROUND_COMBAT', 'DICE_ROLL')
+    const dice = t.runDiceTiming('COMBAT')
+    expect(dice.attacker).toContainDice('INFANTRY', [8, 1])
+    expect(dice.attacker.INFANTRY).toHaveLength(3)
   })
 
   it('adds only available infantry when less than 2', () => {

@@ -393,8 +393,9 @@ export function buildApi(
         if (!sideState.units[unitType]) {
           sideState.units[unitType] = []
         }
+        const template = sideState.unitStats?.[unitType]
         for (let i = 0; i < count; i++) {
-          sideState.units[unitType]!.push({})
+          sideState.units[unitType]!.push({ ...template })
         }
       }
     },

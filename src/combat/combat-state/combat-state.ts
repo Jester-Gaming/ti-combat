@@ -1,5 +1,6 @@
 import factions from '@/data/faction'
 import type { CombatSide, DiceGroup, FactionKey, UnitType } from '@/types'
+import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 
 import {
   AbilitiesParams,
@@ -111,18 +112,22 @@ export class CombatState {
   constructor() {
     const defaultFaction = Object.keys(factions)[0] as FactionKey
 
+    const defaultUnitStats = buildUnitStatsMap(defaultFaction)
+
     this.data = {
       attacker: {
         faction: defaultFaction,
         units: {},
         hitPools: [],
         unitSelections: createDefaultUnitSelections(),
+        unitStats: defaultUnitStats,
       },
       defender: {
         faction: defaultFaction,
         units: {},
         hitPools: [],
         unitSelections: createDefaultUnitSelections(),
+        unitStats: defaultUnitStats,
       },
       abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',

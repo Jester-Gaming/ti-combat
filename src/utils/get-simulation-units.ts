@@ -47,6 +47,31 @@ export function getSimulationUnits(
 }
 
 /**
+ * Builds a map of original unit stats templates for all unit types
+ * that have valid definitions. Used by addUnit to initialize new units
+ * with correct (unmodified) stats.
+ */
+export function buildUnitStatsMap(
+  faction: FactionKey,
+  upgrades?: ReadonlySet<UnitType>,
+): Partial<Record<UnitType, UnitStats>> {
+  const factionConfig = getFactionUnitConfig(faction)
+  const result: Partial<Record<UnitType, UnitStats>> = {}
+
+  for (const unitType of UNIT_TYPES) {
+    const unitDef = factionConfig[unitType]
+    if (!unitDef?.BASE) continue
+    result[unitType] = getEffectiveStats(
+      unitDef.BASE,
+      unitDef.UPGRADED,
+      upgrades?.has(unitType) ?? false,
+    )
+  }
+
+  return result
+}
+
+/**
  * Merges BASE and UPGRADED stats based on upgrade status.
  * Returns null if no valid stats exist.
  */

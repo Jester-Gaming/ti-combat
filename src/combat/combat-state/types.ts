@@ -3,6 +3,7 @@ import type {
   Unit,
   UnitAbility,
   UnitSelection,
+  UnitStats,
   UnitType,
 } from '@/types'
 
@@ -108,6 +109,8 @@ export interface SideStateData {
   hitPools: HitPool[]
   unitAbilityRestrictions?: UnitAbilityRestrictions
   unitSelections?: Record<UnitType, UnitSelection>
+  /** Original (unmodified) stats templates per unit type, used by addUnit */
+  unitStats?: Partial<Record<UnitType, UnitStats>>
 }
 
 /** Ability configuration for both sides */
