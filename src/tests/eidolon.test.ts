@@ -13,12 +13,12 @@ describe('EIDOLON', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.runTiming('START_OF_COMBAT')
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Mech Z-Grav form: [8, 2]
-    expect(dice.attacker).toContainDice('MECH', [8, 2])
+    expect(pool.attacker).toContainDice('MECH', [8, 2])
   })
 
   it('multiple mechs all get [8, 2] stats', () => {
@@ -31,12 +31,12 @@ describe('EIDOLON', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.runTiming('START_OF_COMBAT')
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Each mech rolls [8, 2] — 3 mechs = 3 groups of [8, 2]
-    const mechDice = dice.attacker.MECH!
+    const mechDice = pool.attacker.MECH!
     expect(mechDice).toHaveLength(3)
     for (const group of mechDice) {
       expect(group[0]).toBe(8)
@@ -51,14 +51,11 @@ describe('EIDOLON', () => {
         faction: 'NAAZ_ROKHA_ALLIANCE',
         units: { CRUISER: 1, MECH: 1 },
       },
-      defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
-    t.runTiming('START_OF_COMBAT')
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 2)
-
-    t.assignHits()
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ attacker: 2 })
 
     expect(t.attacker.units.MECH).toBeUndefined()
     expect(t.attacker.units.CRUISER).toBeUndefined()
@@ -80,10 +77,8 @@ describe('EIDOLON', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.runTiming('START_OF_COMBAT')
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ attacker: 1 })
 
     // Mech should NOT sustain — it's not in spaceUnits for SUSTAIN_DAMAGE
     expect(t.attacker.units.MECH![0].isDamaged).toBeFalsy()
@@ -106,17 +101,14 @@ describe('EIDOLON', () => {
     })
 
     // Eidolon has context: 'SPACE' so it doesn't fire in ground combat
-    t.setPhase('GROUND_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound({ attacker: 1 })
+    const pool = t.dicePool()!
 
     // Mech normal stats: [6, 2]
-    expect(dice.attacker).toContainDice('MECH', [6, 2])
+    expect(pool.attacker).toContainDice('MECH', [6, 2])
 
     // Sustain should work in ground combat
-    t.setPhase('GROUND_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
-
     expect(t.attacker.units.MECH![0].isDamaged).toBe(true)
   })
 
@@ -130,11 +122,11 @@ describe('EIDOLON', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.runTiming('START_OF_COMBAT')
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Mech should not roll dice for non-Naaz-Rokha factions
-    expect(dice.attacker.MECH).toBeUndefined()
+    expect(pool.attacker.MECH).toBeUndefined()
   })
 })

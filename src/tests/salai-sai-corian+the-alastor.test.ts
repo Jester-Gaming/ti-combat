@@ -17,12 +17,11 @@ describe('Salai Sai Corian + The Alastor', () => {
     })
 
     // The Alastor adds ground forces as participating ships
-    t.runTiming('START_OF_COMBAT')
-
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // 1 flagship + 2 infantry + 1 mech = 4 non-fighter ships
-    expect(dice.attacker).toContainDice('FLAGSHIP', [7, 4])
+    expect(pool.attacker).toContainDice('FLAGSHIP', [7, 4])
   })
 })

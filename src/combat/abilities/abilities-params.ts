@@ -7,6 +7,7 @@ import { getOpponentSide } from '../combat-side-state/combat-side-state'
 import { getDestroyedUnits } from '../combat-side-state/utils/get-destroyed-units'
 import { CombatState } from '../combat-state/combat-state'
 import type { AbilitiesConfig, CombatStateData } from '../combat-state/types'
+import { Logger } from '../logger'
 import type { LogEntry } from '../types'
 import { makeVariantId, parseVariantId } from '../utils/unit-variant'
 import { buildCallContext, buildReadContext } from './api/ability-api'
@@ -303,7 +304,6 @@ interface AbilityResult {
   state: CombatStateData
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context?: any
-  log: LogEntry[]
 }
 
 export interface RunAbilitiesOptions {
@@ -501,7 +501,11 @@ export class AbilitiesParams {
     state: CombatStateData,
     context?: TimingContextMap[T],
     options?: RunAbilitiesOptions,
+    logger?: Logger,
   ): RunAbilitiesResult<T> {
+    const activeLogger = logger ?? Logger.create()
+    const startIndex = activeLogger.entries.length
+
     const tracker: InvocationTracker = {
       attacker: {
         configAbilities: new Set(),
@@ -522,7 +526,6 @@ export class AbilitiesParams {
     let currentState = state
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let workingContext: any = context
-    const accumulatedLog: LogEntry[] = []
 
     // Snapshot SETTINGS before abilities run to detect changes
     const settingsBefore = {
@@ -538,6 +541,7 @@ export class AbilitiesParams {
         workingContext,
         tracker,
         options?.triggerSide,
+        activeLogger,
       )
 
       if (result) {
@@ -546,7 +550,6 @@ export class AbilitiesParams {
         if (result.context !== undefined) {
           workingContext = result.context
         }
-        accumulatedLog.push(...result.log)
         consecutiveSkips = 0
       } else {
         consecutiveSkips += 1
@@ -571,7 +574,7 @@ export class AbilitiesParams {
     return {
       state: currentState,
       context: workingContext as TimingContextMap[T],
-      log: accumulatedLog,
+      log: activeLogger.entries.slice(startIndex) as LogEntry[],
     }
   }
 
@@ -584,6 +587,7 @@ export class AbilitiesParams {
     context: TimingContextMap[T] | undefined,
     tracker: InvocationTracker,
     triggerSide?: CombatSide,
+    logger?: Logger,
   ): AbilityResult | null {
     const invokes = this.getInvokesForTiming(timing, side, state, triggerSide)
 
@@ -779,15 +783,18 @@ export class AbilitiesParams {
           draftRef = null
         }
 
-        // Single log entry per ability: auto fields + any ctx.log() data
-        const log: LogEntry[] = [
-          [
-            state.currentPhase.meta,
-            `${invoke.timing}:${ability.key}`,
-            side,
-            ...logData,
-          ],
-        ]
+        // Single structured log entry per ability
+        if (logger) {
+          const abilityLogger = logger
+            .child(invoke.timing)
+            .child(ability.key)
+            .forSide(side)
+          if (logData.length > 0) {
+            abilityLogger.log(...logData)
+          } else {
+            abilityLogger.log()
+          }
+        }
 
         // Mark as invoked
         if (source.type === 'config') {
@@ -812,9 +819,9 @@ export class AbilitiesParams {
             resultState,
             event.context,
             { triggerSide: event.side },
+            logger,
           )
           resultState = triggerResult.state
-          log.push(...triggerResult.log)
         }
 
         // Trigger AFTER_DESTROY if units were destroyed by the ability (or trigger processing)
@@ -837,9 +844,10 @@ export class AbilitiesParams {
                 attacker: destroyedAttacker,
                 defender: destroyedDefender,
               },
+              undefined,
+              logger,
             )
             resultState = afterDestroy.state
-            log.push(...afterDestroy.log)
           }
         }
 
@@ -861,7 +869,6 @@ export class AbilitiesParams {
         return {
           state: resultState,
           context: resultContext,
-          log,
         }
       }
     }

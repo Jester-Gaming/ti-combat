@@ -20,14 +20,13 @@ describe('CAVALRY + GRAVLEASH_MANEUVERS', () => {
       },
     })
 
-    t.runTiming(['START_OF_COMBAT', 'START_OF_COMBAT_ROUND'])
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
 
     expect(t.attacker.units.CRUISER![0].subtypes).toContain('Cavalry')
 
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
-
-    expect(dice.attacker).toContainDice('CRUISER', [4, 1])
+    const pool = t.dicePool()!
+    expect(pool.attacker).toContainDice('CRUISER', [4, 1])
   })
 
   it('counts subtypes as separate ship types in priority', () => {
@@ -50,9 +49,10 @@ describe('CAVALRY + GRAVLEASH_MANEUVERS', () => {
       },
     })
 
-    t.runTiming(['START_OF_COMBAT', 'START_OF_COMBAT_ROUND'])
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
-    expect(dice.attacker).toContainDice('CRUISER', [4, 2])
+    expect(pool.attacker).toContainDice('CRUISER', [4, 2])
   })
 })

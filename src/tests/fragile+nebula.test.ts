@@ -22,10 +22,11 @@ describe('FRAGILE + NEBULA', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Cruiser: 7 + 1(fragile) - 1(nebula) = 7
-    expect(dice.defender).toContainDice('CRUISER', [7, 1])
+    expect(pool.defender).toContainDice('CRUISER', [7, 1])
   })
 })

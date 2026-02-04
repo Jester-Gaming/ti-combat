@@ -1,15 +1,8 @@
-import { getDestroyedUnits } from '@/combat/combat-side-state/utils/get-destroyed-units'
 import type { CombatSide, FactionKey, Unit, UnitType } from '@/types'
 import { getFactionUnitConfig } from '@/utils/get-faction-unit-config'
 import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 
-import { AbilitiesParams, type SidedDiceData } from '../../combat/abilities'
-import type {
-  AbilityTiming,
-  DestroyedUnit,
-  DicePool,
-  SidedContext,
-} from '../../combat/abilities/types'
+import type { DicePool } from '../../combat/abilities/types'
 import {
   CombatState,
   type StateWithProbability,
@@ -18,7 +11,6 @@ import type {
   AbilitiesConfig,
   CombatMode,
   CombatStateData,
-  HitSource,
   MetaPhase,
   MicroPhase,
   SideStateData,
@@ -41,6 +33,12 @@ export interface CombatTestConfig {
   attacker: SideConfig
   defender: SideConfig
 }
+
+// ============================================================================
+// HITS SPEC
+// ============================================================================
+
+export type HitsSpec = number | { attacker?: number; defender?: number }
 
 // ============================================================================
 // UNIT CREATION HELPERS
@@ -123,12 +121,11 @@ function buildAbilitiesConfig(
 
 export class CombatTest {
   private _state: CombatStateData
-  private _params: AbilitiesParams
   private _log: LogEntry[] = []
+  private _round = 1
 
   constructor(combatState: CombatState) {
     this._state = combatState.data
-    this._params = combatState.params
   }
 
   // --- State access ---
@@ -151,16 +148,7 @@ export class CombatTest {
 
   // --- Phase control ---
 
-  setPhase(meta: MetaPhase, micro: MicroPhase): this {
-    this._state = {
-      ...this._state,
-      currentPhase: { meta, micro },
-    }
-    return this
-  }
-
-  advanceTo(meta: MetaPhase, micro?: MicroPhase, hits = 0): this {
-    let round = 1
+  advanceTo(meta: MetaPhase, micro?: MicroPhase, hits: HitsSpec = 0): this {
     const MAX_ITERATIONS = 100
 
     for (let i = 0; i < MAX_ITERATIONS; i++) {
@@ -174,7 +162,7 @@ export class CombatTest {
       if (curMeta === 'COMPLETE') break
 
       const cs = CombatState.fromData(this._state)
-      const outcomes = cs.advance(round)
+      const outcomes = cs.advance(this._round)
 
       const best = pickOutcomeByHits(outcomes, hits)
       this._state = best.state.data
@@ -185,7 +173,39 @@ export class CombatTest {
         curMicro === 'END' &&
         (curMeta === 'SPACE_COMBAT' || curMeta === 'GROUND_COMBAT')
       ) {
-        round++
+        this._round++
+      }
+    }
+
+    return this
+  }
+
+  advanceRound(hits: HitsSpec = 0): this {
+    const MAX_ITERATIONS = 100
+    let passedEnd = false
+
+    for (let i = 0; i < MAX_ITERATIONS; i++) {
+      const { meta: curMeta, micro: curMicro } = this._state.currentPhase
+
+      if (curMeta === 'COMPLETE') break
+
+      // Stop after we've processed an END micro-phase
+      if (passedEnd) break
+
+      const cs = CombatState.fromData(this._state)
+      const outcomes = cs.advance(this._round)
+
+      const best = pickOutcomeByHits(outcomes, hits)
+      this._state = best.state.data
+      if (best.log) this._log.push(...best.log)
+
+      // Detect when we process END
+      if (
+        curMicro === 'END' &&
+        (curMeta === 'SPACE_COMBAT' || curMeta === 'GROUND_COMBAT')
+      ) {
+        this._round++
+        passedEnd = true
       }
     }
 
@@ -194,128 +214,32 @@ export class CombatTest {
 
   step(round?: number): StateWithProbability[] {
     const cs = CombatState.fromData(this._state)
-    return cs.advance(round ?? 1)
+    return cs.advance(round ?? this._round)
   }
 
-  // --- Timing execution ---
+  // --- Log query methods ---
 
-  runTiming(timing: AbilityTiming | AbilityTiming[]): this {
-    const timings = Array.isArray(timing) ? timing : [timing]
-    const { state, log } = this._params.runAbilities(timings, this._state)
-    this._state = state
-    this._log.push(...log)
-    return this
+  abilityLog(key: string, side?: CombatSide): LogEntry[] {
+    return this._log.filter(entry => {
+      if (!entry.path.includes(key)) return false
+      if (side !== undefined && entry.side !== side) return false
+      return true
+    })
   }
 
-  runDiceTiming(hitSource: HitSource): {
-    attacker: DicePool
-    defender: DicePool
-  } {
-    const timing: AbilityTiming =
-      hitSource === 'COMBAT' ? 'BEFORE_DICE_ROLL' : 'BEFORE_UNIT_ABILITY_ROLL'
-
-    const cs = CombatState.fromData(this._state)
-    const attackerDice = cs.collectDice('attacker', hitSource)
-    const defenderDice = cs.collectDice('defender', hitSource)
-
-    const sidedDiceData: SidedDiceData = {
-      attacker: attackerDice,
-      defender: defenderDice,
-    }
-
-    const {
-      state,
-      context: modifiedDice,
-      log,
-    } = this._params.runAbilities(timing, this._state, sidedDiceData)
-    this._state = state
-    this._log.push(...log)
-
-    return {
-      attacker: modifiedDice.attacker,
-      defender: modifiedDice.defender,
-    }
-  }
-
-  // --- State manipulation ---
-
-  addHits(side: CombatSide, hits: number, validTargets?: UnitType[]): this {
-    const tempCS = CombatState.fromData(this._state)
-    tempCS.side(side).addHits(hits, validTargets ?? [])
-    this._state = tempCS.data
-    return this
-  }
-
-  destroyUnit(side: CombatSide, unitType: UnitType, index?: number): this {
-    const idx = index ?? 0
-    const sideState = this._state[side]
-    const units = sideState.units[unitType]
-    if (!units || idx < 0 || idx >= units.length) return this
-
-    const destroyedUnit = units[idx]
-
-    // Remove the unit
-    const remaining = [...units.slice(0, idx), ...units.slice(idx + 1)]
-    const newUnits = { ...sideState.units }
-    if (remaining.length > 0) {
-      newUnits[unitType] = remaining
-    } else {
-      delete newUnits[unitType]
-    }
-
-    const stateAfterRemoval: CombatStateData = {
-      ...this._state,
-      [side]: {
-        ...sideState,
-        units: newUnits,
-      },
-    }
-
-    // Build destroyed context and run AFTER_DESTROY
-    const destroyedContext: SidedContext<DestroyedUnit[]> = {
-      attacker:
-        side === 'attacker' ? [{ type: unitType, unit: destroyedUnit }] : [],
-      defender:
-        side === 'defender' ? [{ type: unitType, unit: destroyedUnit }] : [],
-    }
-
-    const { state, log } = this._params.runAbilities(
-      'AFTER_DESTROY',
-      stateAfterRemoval,
-      destroyedContext,
-    )
-    this._state = state
-    this._log.push(...log)
-    return this
-  }
-
-  assignHits(): this {
-    const cs = CombatState.fromData(this._state)
-    const result = cs.assignHits()
-    // Compute log by comparing states
-    const beforeUnits = {
-      attacker: this._state.attacker.units,
-      defender: this._state.defender.units,
-    }
-    this._state = result.data
-
-    // Log destroyed units
-    for (const side of ['attacker', 'defender'] as CombatSide[]) {
-      const destroyed = getDestroyedUnits(
-        beforeUnits[side],
-        this._state[side].units,
-      )
-      if (destroyed.length > 0) {
-        this._log.push([
-          this._state.currentPhase.meta,
-          'ASSIGN_HITS',
-          side,
-          destroyed.map(d => d.type),
-        ])
+  dicePool(): { attacker: DicePool; defender: DicePool } | undefined {
+    // Find the last DICE_POOL entry
+    for (let i = this._log.length - 1; i >= 0; i--) {
+      const entry = this._log[i]
+      if (entry.path[entry.path.length - 1] === 'DICE_POOL' && entry.data) {
+        const data = entry.data[0] as {
+          attacker: DicePool
+          defender: DicePool
+        }
+        return { attacker: data.attacker, defender: data.defender }
       }
     }
-
-    return this
+    return undefined
   }
 }
 
@@ -323,34 +247,56 @@ export class CombatTest {
 // HELPERS
 // ============================================================================
 
-/** Pick the outcome matching the requested total hit count */
+/** Pick the outcome matching the requested hit spec */
 function pickOutcomeByHits(
   outcomes: StateWithProbability[],
-  hits: number,
+  hits: HitsSpec,
 ): StateWithProbability {
   if (outcomes.length === 1) return outcomes[0]
 
   const match = outcomes.find(outcome => {
-    const totalHits =
-      outcome.state.attacker.hitPools.reduce((sum, p) => sum + p.hits, 0) +
-      outcome.state.defender.hitPools.reduce((sum, p) => sum + p.hits, 0)
-    return totalHits === hits
+    const attackerHits = outcome.state.data.attacker.hitPools.reduce(
+      (sum, p) => sum + p.hits,
+      0,
+    )
+    const defenderHits = outcome.state.data.defender.hitPools.reduce(
+      (sum, p) => sum + p.hits,
+      0,
+    )
+
+    if (typeof hits === 'number') {
+      return attackerHits + defenderHits === hits
+    }
+
+    const wantAttacker = hits.attacker ?? 0
+    const wantDefender = hits.defender ?? 0
+    return attackerHits === wantAttacker && defenderHits === wantDefender
   })
 
   if (!match) {
     const available = outcomes.map(o => {
-      const total =
-        o.state.attacker.hitPools.reduce((sum, p) => sum + p.hits, 0) +
-        o.state.defender.hitPools.reduce((sum, p) => sum + p.hits, 0)
-      return total
+      const a = o.state.data.attacker.hitPools.reduce(
+        (sum, p) => sum + p.hits,
+        0,
+      )
+      const d = o.state.data.defender.hitPools.reduce(
+        (sum, p) => sum + p.hits,
+        0,
+      )
+      return `{a:${a},d:${d}}`
     })
+    const hitsStr =
+      typeof hits === 'number'
+        ? `${hits} total`
+        : `{a:${hits.attacker ?? 0},d:${hits.defender ?? 0}}`
     throw new Error(
-      `No outcome with ${hits} total hits. Available: [${available.join(', ')}]`,
+      `No outcome with ${hitsStr} hits. Available: [${available.join(', ')}]`,
     )
   }
 
   return match
 }
+
 // ============================================================================
 // FACTORY FUNCTION
 // ============================================================================

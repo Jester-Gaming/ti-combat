@@ -17,9 +17,10 @@ describe('Claire Gibson', () => {
       },
     })
 
-    t.setPhase('GROUND_COMBAT', 'START')
-    t.runTiming(['START_OF_COMBAT_ROUND', 'START_OF_COMBAT'])
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound()
 
+    expect(t.abilityLog('CLAIRE_GIBSON')).toHaveLength(1)
     expect(t.defender.units.INFANTRY).toHaveLength(3)
   })
 
@@ -59,9 +60,10 @@ describe('Claire Gibson', () => {
       },
     })
 
-    t.setPhase('GROUND_COMBAT', 'START')
-    t.runTiming(['START_OF_COMBAT_ROUND', 'START_OF_COMBAT'])
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound()
 
+    expect(t.abilityLog('CLAIRE_GIBSON')).toHaveLength(0)
     expect(t.defender.units.INFANTRY).toHaveLength(2)
   })
 
@@ -79,8 +81,8 @@ describe('Claire Gibson', () => {
       },
     })
 
-    t.setPhase('GROUND_COMBAT', 'START')
-    t.runTiming(['START_OF_COMBAT_ROUND', 'START_OF_COMBAT'])
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound()
 
     // Attacker should not gain infantry
     expect(t.attacker.units.INFANTRY).toHaveLength(2)

@@ -17,18 +17,20 @@ describe('CAVALRY + VISCOUNT_UNLENN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.runTiming(['START_OF_COMBAT', 'START_OF_COMBAT_ROUND'])
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
 
-    // Cavalry on Cruiser[0], Viscount on Cruiser[1]
-    expect(t.attacker.units.CRUISER![0].subtypes).toContain('Cavalry')
-    expect(t.attacker.units.CRUISER![0].subtypes).not.toContain('Viscount')
-    expect(t.attacker.units.CRUISER![1].subtypes).toContain('Viscount')
+    // Both abilities fired
+    expect(t.abilityLog('CAVALRY')).toHaveLength(1)
+    expect(t.abilityLog('VISCOUNT_UNLENN')).toHaveLength(2) // START_OF_COMBAT_ROUND + BEFORE_DICE_ROLL
 
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    const pool = t.dicePool()!
 
-    expect(dice.attacker).not.toContainDice('CRUISER', [7, 3])
-    expect(dice.attacker).toContainDice('CRUISER', [7, 2])
+    // Cavalry Cruiser gets Nomad flagship stats, Viscount on different Cruiser
+    // Cavalry and Viscount on separate Cruisers — Viscount adds 1 die to its Cruiser
+    // Base Cruiser: [7, 1], Viscount adds 1 die: [7, 2]
+    expect(pool.attacker).not.toContainDice('CRUISER', [7, 3])
+    expect(pool.attacker).toContainDice('CRUISER', [7, 2])
   })
 
   it('Viscount targets Cruiser:Cavalry — both affect the same unit', () => {
@@ -48,16 +50,16 @@ describe('CAVALRY + VISCOUNT_UNLENN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.runTiming(['START_OF_COMBAT', 'START_OF_COMBAT_ROUND'])
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
 
-    // Both on Cruiser[0]
-    expect(t.attacker.units.CRUISER![0].subtypes).toContain('Cavalry')
-    expect(t.attacker.units.CRUISER![0].subtypes).toContain('Viscount')
+    // Both abilities fired on the same unit
+    expect(t.abilityLog('CAVALRY')).toHaveLength(1)
+    expect(t.abilityLog('VISCOUNT_UNLENN')).toHaveLength(2)
 
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    const pool = t.dicePool()!
 
     // Cavalry Cruiser [7, 2] + 1 from Viscount = [7, 3]
-    expect(dice.attacker).toContainDice('CRUISER', [7, 3])
+    expect(pool.attacker).toContainDice('CRUISER', [7, 3])
   })
 })

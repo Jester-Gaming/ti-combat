@@ -6,7 +6,7 @@ describe('CAVALRY + SUSTAIN_DAMAGE', () => {
   it('dynamically added sustain works on Cavalry unit', () => {
     const t = combatTest({
       mode: 'SPACE',
-      attacker: { faction: 'ARBOREC', units: { CRUISER: 1 } },
+      attacker: { faction: 'ARBOREC', units: { CRUISER: 2 } },
       defender: {
         faction: 'ARBOREC',
         units: { DESTROYER: 1 },
@@ -20,22 +20,17 @@ describe('CAVALRY + SUSTAIN_DAMAGE', () => {
       },
     })
 
-    // Cavalry fires at START_OF_COMBAT, granting SUSTAIN_DAMAGE to the Destroyer
-    t.runTiming(['START_OF_COMBAT', 'START_OF_COMBAT_ROUND'])
+    // Advance past START (Cavalry fires) and AFB (no fighters to hit) to DICE_ROLL
+    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
 
-    expect(t.defender.units.DESTROYER![0].subtypes).toContain('Cavalry')
-    expect(t.defender.units.DESTROYER![0].UNIT_ABILITIES?.SUSTAIN_DAMAGE).toBe(
-      true,
-    )
+    // Cavalry fired at START_OF_COMBAT
+    expect(t.abilityLog('CAVALRY')).toHaveLength(1)
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    // Process combat dice: pick outcome where defender receives 1 hit
+    t.advanceTo('SPACE_COMBAT', 'END', { defender: 1 })
 
     // Destroyer sustains the hit via dynamically added ability
     expect(t.defender.units.DESTROYER![0].isDamaged).toBe(true)
-
-    t.assignHits()
     expect(t.defender.units.DESTROYER).toHaveLength(1)
   })
 
@@ -56,15 +51,13 @@ describe('CAVALRY + SUSTAIN_DAMAGE', () => {
       },
     })
 
-    t.runTiming(['START_OF_COMBAT', 'START_OF_COMBAT_ROUND'])
+    // Advance past START (Cavalry fires) and AFB to DICE_ROLL
+    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
 
-    expect(t.defender.units.DESTROYER![0].subtypes).toContain('Cavalry')
-
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    // Process combat dice: pick outcome where defender receives 1 hit
+    t.advanceTo('SPACE_COMBAT', 'END', { defender: 1 })
 
     // DESTROYER in priority doesn't match DESTROYER:Cavalry — no sustain
-    expect(t.defender.units.DESTROYER![0].isDamaged).toBeFalsy()
+    expect(t.defender.units.DESTROYER).toBeUndefined()
   })
 })

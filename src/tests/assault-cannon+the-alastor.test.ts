@@ -45,15 +45,16 @@ describe('ASSAULT_CANNON + THE_ALASTOR', () => {
     // participates. Then defender's Assault Cannon fires,
     // destroying the Flagship. But infantry is already in
     // space combat, so combat continues.
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
 
     expect(t.state.currentPhase.meta).not.toBe('COMPLETE')
     expect(t.attacker.units.FLAGSHIP).toBeUndefined()
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
 
     // Infantry can roll dice in combat
-    const dice = t.runDiceTiming('COMBAT')
+    const pool = t.dicePool()!
     // Infantry: [8, 1] per unit
-    expect(dice.attacker).toContainDice('INFANTRY', [8, 1])
+    expect(pool.attacker).toContainDice('INFANTRY', [8, 1])
   })
 })

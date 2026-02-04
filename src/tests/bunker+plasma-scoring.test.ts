@@ -24,12 +24,12 @@ describe('BUNKER + PLASMA_SCORING', () => {
       },
     })
 
-    t.setPhase('BOMBARDMENT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('BOMBARDMENT')
+    t.advanceTo('SPACE_CANNON_DEFENSE')
+    const pool = t.dicePool()!
 
     // Sardakk Dreadnought (Exotrireme) bombardment: base [4, 2]
     // +1 die from Plasma Scoring = 3 dice
     // +4 hit value from Bunker = hit value 8
-    expect(dice.attacker).toContainDice('DREADNOUGHT', [8, 3])
+    expect(pool.attacker).toContainDice('DREADNOUGHT', [8, 3])
   })
 })

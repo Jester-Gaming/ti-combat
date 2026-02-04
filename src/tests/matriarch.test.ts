@@ -13,12 +13,12 @@ describe('MATRIARCH', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
     })
 
-    t.runTiming('START_OF_COMBAT')
-    t.setPhase('GROUND_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Hybrid Crystal Fighter I: [8, 1]
-    expect(dice.attacker).toContainDice('FIGHTER', [8, 1])
+    expect(pool.attacker).toContainDice('FIGHTER', [8, 1])
   })
 
   it('fighters are valid hit targets in ground combat', () => {
@@ -28,14 +28,12 @@ describe('MATRIARCH', () => {
         faction: 'NAALU_COLLECTIVE',
         units: { FLAGSHIP: 1, FIGHTER: 1, INFANTRY: 1 },
       },
-      defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
+      defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
     })
 
-    t.runTiming('START_OF_COMBAT')
-    t.setPhase('GROUND_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 2)
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound({ attacker: 2 })
 
-    t.assignHits()
     expect(t.attacker.units.FIGHTER).toBeUndefined()
     expect(t.attacker.units.INFANTRY).toBeUndefined()
   })
@@ -47,14 +45,12 @@ describe('MATRIARCH', () => {
         faction: 'NAALU_COLLECTIVE',
         units: { FLAGSHIP: 1, FIGHTER: 2, INFANTRY: 2 },
       },
-      defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
+      defender: { faction: 'ARBOREC', units: { INFANTRY: 3 } },
     })
 
-    t.runTiming('START_OF_COMBAT')
-    t.setPhase('GROUND_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 3)
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound({ attacker: 3 })
 
-    t.assignHits()
     expect(t.attacker.units.INFANTRY).toBeUndefined()
     expect(t.attacker.units.FIGHTER).toHaveLength(1)
   })
@@ -69,12 +65,12 @@ describe('MATRIARCH', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
     })
 
-    t.runTiming('START_OF_COMBAT')
-    t.setPhase('GROUND_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Fighters should not roll dice without flagship present
-    expect(dice.attacker.FIGHTER).toBeUndefined()
+    expect(pool.attacker.FIGHTER).toBeUndefined()
   })
 
   it('does not affect non-Naalu factions', () => {
@@ -87,12 +83,12 @@ describe('MATRIARCH', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
     })
 
-    t.runTiming('START_OF_COMBAT')
-    t.setPhase('GROUND_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Fighters should not roll dice for non-Naalu factions
-    expect(dice.attacker.FIGHTER).toBeUndefined()
+    expect(pool.attacker.FIGHTER).toBeUndefined()
   })
 
   it('does not affect space combat', () => {
@@ -105,10 +101,11 @@ describe('MATRIARCH', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Fighters participate in space combat normally (not via Matriarch)
-    expect(dice.attacker).toContainDice('FIGHTER', [8, 1])
+    expect(pool.attacker).toContainDice('FIGHTER', [8, 1])
   })
 })

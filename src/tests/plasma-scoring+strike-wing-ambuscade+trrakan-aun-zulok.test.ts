@@ -30,11 +30,11 @@ describe('PLASMA_SCORING + STRIKE_WING_AMBUSCADE + TRRAKAN_AUN_ZULOK', () => {
       },
     })
 
-    t.setPhase('SPACE_CANNON_OFFENSE', 'DICE_ROLL')
-    const dice = t.runDiceTiming('SPACE_CANNON')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    const pool = t.dicePool()!
 
     // PDS base space cannon: [6, 1]
     // +1 die from Plasma Scoring, +1 from SWA, +1 from Commander = [6, 4]
-    expect(dice.defender).toContainDice('PDS', [6, 4])
+    expect(pool.defender).toContainDice('PDS', [6, 4])
   })
 })

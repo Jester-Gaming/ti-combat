@@ -24,12 +24,12 @@ describe('ANTIMASS_DEFLECTORS + PLASMA_SCORING', () => {
       },
     })
 
-    t.setPhase('SPACE_CANNON_OFFENSE', 'DICE_ROLL')
-    const dice = t.runDiceTiming('SPACE_CANNON')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    const pool = t.dicePool()!
 
     // PDS base space cannon: [6, 1]
     // +1 die from Plasma Scoring = [6, 2]
     // +1 hit value from Antimass = [7, 2]
-    expect(dice.defender).toContainDice('PDS', [7, 2])
+    expect(pool.defender).toContainDice('PDS', [7, 2])
   })
 })

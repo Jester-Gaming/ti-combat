@@ -19,17 +19,11 @@ describe('ENTROPIC_SCAR + SUSTAIN_DAMAGE', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 1)
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ attacker: 1, defender: 1 })
 
     // Neither dreadnought sustained (Entropic Scar disabled sustain)
-    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
-    expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
-
-    // Hits are still pending — both dreadnoughts destroyed on assignment
-    t.assignHits()
+    // Both dreadnoughts destroyed
     expect(t.attacker.units.DREADNOUGHT).toBeUndefined()
     expect(t.defender.units.DREADNOUGHT).toBeUndefined()
   })

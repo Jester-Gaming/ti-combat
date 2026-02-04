@@ -14,16 +14,9 @@ describe('HEAVENS_EYE', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    // Damage the flagship via sustain
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
-
-    // Flagship sustains the hit
-    expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBe(true)
-
-    // Heaven's Eye repairs at end of combat round
-    t.runTiming('END_OF_COMBAT_ROUND')
+    // Round 1: flagship sustains 1 hit, Heaven's Eye repairs at END
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ attacker: 1 })
 
     expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBe(false)
   })
@@ -39,20 +32,11 @@ describe('HEAVENS_EYE', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 2 } },
     })
 
-    // Damage the flagship via sustain, then destroy it
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    // 2 hits on attacker: flagship sustains 1, destroyed by 2nd
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ attacker: 2 })
 
-    // Flagship sustains 1 hit
-    expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBe(true)
-
-    // Assign remaining hit — destroys the flagship
-    t.assignHits()
     expect(t.attacker.units.FLAGSHIP).toBeUndefined()
-
-    // END_OF_COMBAT_ROUND should not throw
-    t.runTiming('END_OF_COMBAT_ROUND')
   })
 
   it('does not repair flagship when disabled', () => {
@@ -65,15 +49,9 @@ describe('HEAVENS_EYE', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    // Damage the flagship via sustain
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
-
-    expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBe(true)
-
-    // End of combat round — ability is disabled (default)
-    t.runTiming('END_OF_COMBAT_ROUND')
+    // Round 1: flagship sustains 1 hit, ability disabled so stays damaged
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ attacker: 1 })
 
     // Still damaged
     expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBe(true)

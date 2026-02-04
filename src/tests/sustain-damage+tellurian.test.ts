@@ -8,7 +8,7 @@ describe('SUSTAIN_DAMAGE + TELLURIAN', () => {
       mode: 'SPACE',
       attacker: {
         faction: 'ARBOREC',
-        units: { CRUISER: 1 },
+        units: { CRUISER: 2 },
       },
       defender: {
         faction: 'TITANS_OF_UL',
@@ -19,15 +19,13 @@ describe('SUSTAIN_DAMAGE + TELLURIAN', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 2 })
 
     // Dreadnought sustained 1 hit (marked as damaged)
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
 
-    // Both abilities absorbed hits, dreadnought survives assignment
-    t.assignHits()
+    // Both abilities absorbed hits, dreadnought survives
     expect(t.defender.units.DREADNOUGHT).toHaveLength(1)
   })
 })

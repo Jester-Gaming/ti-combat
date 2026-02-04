@@ -16,11 +16,12 @@ describe('HEL_TITAN', () => {
       },
     })
 
-    t.setPhase('GROUND_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Hel-Titan I: Combat [7, 1]
-    expect(dice.defender).toContainDice('PDS', [7, 1])
+    expect(pool.defender).toContainDice('PDS', [7, 1])
   })
 
   it('PDS is a valid hit target in ground combat', () => {
@@ -28,7 +29,7 @@ describe('HEL_TITAN', () => {
       mode: 'GROUND',
       attacker: {
         faction: 'ARBOREC',
-        units: { INFANTRY: 1 },
+        units: { INFANTRY: 2 },
       },
       defender: {
         faction: 'TITANS_OF_UL',
@@ -36,11 +37,10 @@ describe('HEL_TITAN', () => {
       },
     })
 
-    t.setPhase('GROUND_COMBAT', 'ASSIGN_HITS')
     // 2 hits: 1 absorbed by Sustain Damage, 1 destroys PDS
-    t.addHits('defender', 2)
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound({ defender: 2 })
 
-    t.assignHits()
     expect(t.defender.units.PDS).toBeUndefined()
   })
 
@@ -57,10 +57,11 @@ describe('HEL_TITAN', () => {
       },
     })
 
-    t.setPhase('GROUND_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // PDS should not roll dice for non-Titan factions
-    expect(dice.defender.PDS).toBeUndefined()
+    expect(pool.defender.PDS).toBeUndefined()
   })
 })

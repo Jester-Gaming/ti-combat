@@ -20,10 +20,10 @@ describe('BUNKER + CONVENTIONS_OF_WAR', () => {
       },
     })
 
-    t.setPhase('BOMBARDMENT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('BOMBARDMENT')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    const pool = t.dicePool()!
 
     // No bombardment dice (Conventions disabled it)
-    expect(dice.attacker.DREADNOUGHT).toBeUndefined()
+    expect(pool.attacker.DREADNOUGHT).toBeUndefined()
   })
 })

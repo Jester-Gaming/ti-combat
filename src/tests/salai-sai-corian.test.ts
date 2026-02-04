@@ -16,11 +16,12 @@ describe('Salai Sai Corian', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // 2 cruisers + 1 destroyer = 3 non-fighter ships
-    expect(dice.attacker).toContainDice('FLAGSHIP', [7, 3])
+    expect(pool.attacker).toContainDice('FLAGSHIP', [7, 3])
   })
 
   it('rolls 0 dice when opponent has only fighters', () => {
@@ -33,10 +34,11 @@ describe('Salai Sai Corian', () => {
       defender: { faction: 'ARBOREC', units: { FIGHTER: 4 } },
     })
 
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
-    expect(dice.attacker).toContainDice('FLAGSHIP', [7, 0])
+    expect(pool.attacker).toContainDice('FLAGSHIP', [7, 0])
   })
 
   it('counts all non-fighter ship types', () => {
@@ -52,11 +54,12 @@ describe('Salai Sai Corian', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // 2 dreadnoughts + 1 carrier = 3
-    expect(dice.attacker).toContainDice('FLAGSHIP', [7, 3])
+    expect(pool.attacker).toContainDice('FLAGSHIP', [7, 3])
   })
 
   it('counts opponent flagship', () => {
@@ -72,10 +75,11 @@ describe('Salai Sai Corian', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // 1 cruiser + 1 flagship = 2
-    expect(dice.attacker).toContainDice('FLAGSHIP', [7, 2])
+    expect(pool.attacker).toContainDice('FLAGSHIP', [7, 2])
   })
 })

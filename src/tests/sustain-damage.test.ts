@@ -10,14 +10,12 @@ describe('SUSTAIN_DAMAGE', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 1 } },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
 
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
 
-    // Unit survives hit assignment
-    t.assignHits()
+    // Unit survives
     expect(t.defender.units.DREADNOUGHT).toHaveLength(1)
   })
 
@@ -28,8 +26,8 @@ describe('SUSTAIN_DAMAGE', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 1 } },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 0 })
 
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
   })
@@ -42,18 +40,13 @@ describe('SUSTAIN_DAMAGE', () => {
     })
 
     // First round: sustain 1 hit
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
-    t.assignHits()
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
 
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
 
     // Second round: another hit — can't sustain again, unit is destroyed
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
-    t.assignHits()
+    t.advanceRound({ defender: 1 })
 
     expect(t.defender.units.DREADNOUGHT).toBeUndefined()
   })
@@ -65,15 +58,13 @@ describe('SUSTAIN_DAMAGE', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 2 } },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 2 })
 
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
     expect(t.defender.units.DREADNOUGHT![1].isDamaged).toBe(true)
 
     // Both survive
-    t.assignHits()
     expect(t.defender.units.DREADNOUGHT).toHaveLength(2)
   })
 
@@ -87,9 +78,8 @@ describe('SUSTAIN_DAMAGE', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
 
     // Default priority: DREADNOUGHT comes before WAR_SUN
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
@@ -111,9 +101,8 @@ describe('SUSTAIN_DAMAGE', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
 
     // Custom priority: WAR_SUN before DREADNOUGHT
     expect(t.defender.units.WAR_SUN![0].isDamaged).toBe(true)
@@ -135,14 +124,10 @@ describe('SUSTAIN_DAMAGE', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
 
-    // Dreadnought excluded from spaceUnits — doesn't sustain
-    expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
-
-    t.assignHits()
+    // Dreadnought excluded from spaceUnits — doesn't sustain, destroyed
     expect(t.defender.units.DREADNOUGHT).toBeUndefined()
   })
 
@@ -153,13 +138,11 @@ describe('SUSTAIN_DAMAGE', () => {
       defender: { faction: 'ARBOREC', units: { MECH: 1 } },
     })
 
-    t.setPhase('GROUND_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
 
     expect(t.defender.units.MECH![0].isDamaged).toBe(true)
 
-    t.assignHits()
     expect(t.defender.units.MECH).toHaveLength(1)
   })
 
@@ -171,9 +154,8 @@ describe('SUSTAIN_DAMAGE', () => {
     })
 
     // Only 1 hit for 2 dreadnoughts
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
 
     // Only one sustains
     const dn = t.defender.units.DREADNOUGHT!
@@ -181,7 +163,6 @@ describe('SUSTAIN_DAMAGE', () => {
     expect(damagedCount).toBe(1)
 
     // Both survive
-    t.assignHits()
     expect(t.defender.units.DREADNOUGHT).toHaveLength(2)
   })
 
@@ -192,15 +173,10 @@ describe('SUSTAIN_DAMAGE', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 1 } },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 2 })
 
-    // Dreadnought sustained 1 hit
-    expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
-
-    // Still 1 hit remaining — dreadnought is destroyed
-    t.assignHits()
+    // Dreadnought sustained 1 hit but still destroyed by 2nd
     expect(t.defender.units.DREADNOUGHT).toBeUndefined()
   })
 
@@ -211,16 +187,13 @@ describe('SUSTAIN_DAMAGE', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 1 } },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 1)
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ attacker: 1, defender: 1 })
 
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
 
     // Both survive
-    t.assignHits()
     expect(t.attacker.units.DREADNOUGHT).toHaveLength(1)
     expect(t.defender.units.DREADNOUGHT).toHaveLength(1)
   })

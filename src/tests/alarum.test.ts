@@ -14,16 +14,17 @@ describe('Alarum', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
     })
 
-    t.setPhase('GROUND_COMBAT', 'END')
-    t.runTiming('END_OF_COMBAT_ROUND')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound()
 
     // Should add 2 infantry (min of 2 and 4 available)
     expect(t.attacker.units.INFANTRY).toHaveLength(3)
 
-    t.setPhase('GROUND_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
-    expect(dice.attacker).toContainDice('INFANTRY', [8, 1])
-    expect(dice.attacker.INFANTRY).toHaveLength(3)
+    // Verify newly added infantry participates in next round dice
+    t.advanceRound()
+    const pool = t.dicePool()!
+    expect(pool.attacker).toContainDice('INFANTRY', [8, 1])
+    expect(pool.attacker.INFANTRY).toHaveLength(3)
   })
 
   it('adds only available infantry when less than 2', () => {
@@ -37,8 +38,8 @@ describe('Alarum', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
     })
 
-    t.setPhase('GROUND_COMBAT', 'END')
-    t.runTiming('END_OF_COMBAT_ROUND')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound()
 
     // Should add only 1 infantry
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
@@ -55,8 +56,8 @@ describe('Alarum', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
     })
 
-    t.setPhase('GROUND_COMBAT', 'END')
-    t.runTiming('END_OF_COMBAT_ROUND')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound()
 
     expect(t.attacker.units.INFANTRY).toHaveLength(1)
   })
@@ -72,17 +73,18 @@ describe('Alarum', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 4 } },
     })
 
+    t.advanceTo('GROUND_COMBAT', 'START')
+
     // First round: adds 2, leaves 1 available
-    t.setPhase('GROUND_COMBAT', 'END')
-    t.runTiming('END_OF_COMBAT_ROUND')
+    t.advanceRound()
     expect(t.attacker.units.INFANTRY).toHaveLength(3)
 
     // Second round: adds 1 (only 1 left), leaves 0 available
-    t.runTiming('END_OF_COMBAT_ROUND')
+    t.advanceRound()
     expect(t.attacker.units.INFANTRY).toHaveLength(4)
 
     // Third round: no more available
-    t.runTiming('END_OF_COMBAT_ROUND')
+    t.advanceRound()
     expect(t.attacker.units.INFANTRY).toHaveLength(4)
   })
 
@@ -97,18 +99,19 @@ describe('Alarum', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 6 } },
     })
 
+    t.advanceTo('GROUND_COMBAT', 'START')
+
     // 2 mechs each add 2 infantry, counter decreases by 4
-    t.setPhase('GROUND_COMBAT', 'END')
-    t.runTiming('END_OF_COMBAT_ROUND')
+    t.advanceRound()
     expect(t.attacker.units.INFANTRY).toHaveLength(5)
 
     // 2 remaining: each mech wants 2 but only 2 left total
     // First mech adds 2, counter hits 0, second mech can't fire
-    t.runTiming('END_OF_COMBAT_ROUND')
+    t.advanceRound()
     expect(t.attacker.units.INFANTRY).toHaveLength(7)
 
     // No more available
-    t.runTiming('END_OF_COMBAT_ROUND')
+    t.advanceRound()
     expect(t.attacker.units.INFANTRY).toHaveLength(7)
   })
 })

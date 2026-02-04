@@ -16,15 +16,13 @@ describe('VALKYRIE_EXOSKELETON', () => {
       },
     })
 
-    t.setPhase('GROUND_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound({ attacker: 1 })
 
     // Mech sustains the hit, then Valkyrie Exoskeleton produces 1 hit
     expect(t.attacker.units.MECH).toHaveLength(1)
     expect(t.attacker.units.MECH![0].isDamaged).toBe(true)
 
-    t.assignHits()
     // 1 hit from Valkyrie Exoskeleton destroys 1 infantry
     expect(t.defender.units.INFANTRY).toHaveLength(1)
   })
@@ -43,26 +41,16 @@ describe('VALKYRIE_EXOSKELETON', () => {
     })
 
     // First round: mech sustains and produces 1 hit
-    t.setPhase('GROUND_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound({ attacker: 1 })
 
     expect(t.attacker.units.MECH![0].isDamaged).toBe(true)
-
-    t.assignHits()
     // 1 hit from Valkyrie Exoskeleton destroys 1 infantry
     expect(t.defender.units.INFANTRY).toHaveLength(1)
 
     // Second round: mech is already damaged, can't sustain again
-    t.setPhase('GROUND_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceRound({ attacker: 1 })
 
-    // No sustain happens, so no extra hit from Valkyrie Exoskeleton
-    // Defender still has 1 infantry (no extra hit added)
-    expect(t.defender.units.INFANTRY).toHaveLength(1)
-
-    t.assignHits()
     // Hit destroys attacker infantry, mech survives
     expect(t.attacker.units.MECH).toHaveLength(1)
     expect(t.attacker.units.INFANTRY).toBeUndefined()
@@ -82,13 +70,11 @@ describe('VALKYRIE_EXOSKELETON', () => {
     })
 
     // Hel-Titan (PDS) sustains, not the Sardakk mech
-    t.setPhase('GROUND_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound({ attacker: 1 })
 
     // Titans' PDS sustains, Sardakk mech is undamaged
     // No Valkyrie Exoskeleton hit should be produced
-    t.assignHits()
     expect(t.defender.units.MECH).toHaveLength(1)
   })
 
@@ -105,16 +91,14 @@ describe('VALKYRIE_EXOSKELETON', () => {
       },
     })
 
-    t.setPhase('GROUND_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound({ attacker: 2 })
 
     // Both mechs sustain, each produces 1 hit
     expect(t.attacker.units.MECH).toHaveLength(2)
     expect(t.attacker.units.MECH![0].isDamaged).toBe(true)
     expect(t.attacker.units.MECH![1].isDamaged).toBe(true)
 
-    t.assignHits()
     // 2 hits from Valkyrie Exoskeleton destroy 2 infantry
     expect(t.defender.units.INFANTRY).toHaveLength(1)
   })

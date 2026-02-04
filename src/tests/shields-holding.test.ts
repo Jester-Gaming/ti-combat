@@ -14,11 +14,12 @@ describe('Shields Holding', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 3)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ attacker: 3 })
 
-    expect(t.attacker.hitPools[0].hits).toBe(1)
+    // 3 hits - 2 cancelled = 1 effective → 2 cruisers survive
+    expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(1)
+    expect(t.attacker.units.CRUISER).toHaveLength(2)
   })
 
   it('cancels all hits when pending is less than 2', () => {
@@ -32,11 +33,12 @@ describe('Shields Holding', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ attacker: 1 })
 
-    expect(t.attacker.hitPools[0].hits).toBe(0)
+    // 1 hit - cancelled = 0 effective → both cruisers survive
+    expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(1)
+    expect(t.attacker.units.CRUISER).toHaveLength(2)
   })
 
   it('does not fire during ground combat', () => {
@@ -50,11 +52,12 @@ describe('Shields Holding', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 3 } },
     })
 
-    t.setPhase('GROUND_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound({ attacker: 2 })
 
-    expect(t.attacker.hitPools[0].hits).toBe(2)
+    // Hits unchanged — Shields Holding only works in space combat
+    expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(0)
+    expect(t.attacker.units.INFANTRY).toHaveLength(1)
   })
 
   it('does not fire when uses are 0', () => {
@@ -68,11 +71,12 @@ describe('Shields Holding', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ attacker: 2 })
 
-    expect(t.attacker.hitPools[0].hits).toBe(2)
+    // No cancellation — 2 cruisers destroyed
+    expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(0)
+    expect(t.attacker.units.CRUISER).toHaveLength(1)
   })
 
   it('decrements uses after each activation', () => {
@@ -86,18 +90,16 @@ describe('Shields Holding', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
     })
 
+    t.advanceTo('SPACE_COMBAT', 'START')
+
     // First round: cancels 2 hits, uses decremented to 0
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 3)
-    t.runTiming('BEFORE_ASSIGN_HITS')
-    expect(t.attacker.hitPools[0].hits).toBe(1)
+    t.advanceRound({ attacker: 3 })
+    expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(1)
+    expect(t.attacker.units.CRUISER).toHaveLength(2)
 
-    t.assignHits()
-
-    // Second round: no uses left, hits remain
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
-    expect(t.attacker.hitPools[0].hits).toBe(2)
+    // Second round: no uses left, hits remain → 2 more cruisers destroyed
+    t.advanceRound({ attacker: 2 })
+    expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(1) // still just 1
+    expect(t.attacker.units.CRUISER).toBeUndefined()
   })
 })

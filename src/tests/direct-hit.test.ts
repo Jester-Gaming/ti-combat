@@ -17,9 +17,8 @@ describe('DIRECT_HIT', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
 
     // Dreadnought sustained then was destroyed by Direct Hit
     expect(t.defender.units.DREADNOUGHT).toBeUndefined()
@@ -39,9 +38,8 @@ describe('DIRECT_HIT', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
 
     // Dreadnought sustains normally — no Direct Hit
     expect(t.defender.units.DREADNOUGHT).toHaveLength(1)
@@ -62,9 +60,8 @@ describe('DIRECT_HIT', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 2 })
 
     // First dreadnought sustained and was destroyed (used 1 Direct Hit)
     // Second dreadnought sustained normally (no uses left)
@@ -86,9 +83,8 @@ describe('DIRECT_HIT', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 2 })
 
     // Both dreadnoughts sustained and were destroyed
     expect(t.defender.units.DREADNOUGHT).toBeUndefined()
@@ -108,12 +104,10 @@ describe('DIRECT_HIT', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
 
-    // Fighter can't sustain — Direct Hit doesn't trigger
-    t.assignHits()
+    // Fighter can't sustain — Direct Hit doesn't trigger, fighter destroyed
     expect(t.defender.units.FIGHTER).toBeUndefined()
   })
 
@@ -132,9 +126,8 @@ describe('DIRECT_HIT', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
 
     // Upgraded L1Z1X Dreadnought sustains normally — immune to Direct Hit
     expect(t.defender.units.DREADNOUGHT).toHaveLength(1)
@@ -156,9 +149,8 @@ describe('DIRECT_HIT', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
 
     // Uses should remain at 1 — not consumed on immune unit
     expect(t.state.abilities.attacker.DIRECT_HIT.uses).toBe(1)
@@ -179,9 +171,8 @@ describe('DIRECT_HIT', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
 
     // Upgraded Sardakk Dreadnought sustains normally — immune to Direct Hit
     expect(t.defender.units.DREADNOUGHT).toHaveLength(1)
@@ -203,10 +194,8 @@ describe('DIRECT_HIT', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 1)
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ attacker: 1, defender: 1 })
 
     // Both dreadnoughts sustained and were destroyed by opponent's Direct Hit
     expect(t.attacker.units.DREADNOUGHT).toBeUndefined()

@@ -13,12 +13,12 @@ describe('THE_ALASTOR', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.runTiming('START_OF_COMBAT')
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Infantry: [8, 1]
-    expect(dice.attacker).toContainDice('INFANTRY', [8, 1])
+    expect(pool.attacker).toContainDice('INFANTRY', [8, 1])
   })
 
   it('mech participates in space combat', () => {
@@ -31,12 +31,12 @@ describe('THE_ALASTOR', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.runTiming('START_OF_COMBAT')
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Nekro Mordred mech: [6, 1]
-    expect(dice.attacker).toContainDice('MECH', [6, 1])
+    expect(pool.attacker).toContainDice('MECH', [6, 1])
   })
 
   it('infantry is a valid hit target in space combat', () => {
@@ -46,15 +46,13 @@ describe('THE_ALASTOR', () => {
         faction: 'NEKRO_VIRUS',
         units: { FLAGSHIP: 1, INFANTRY: 1 },
       },
-      defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
-    t.runTiming('START_OF_COMBAT')
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
     // 2 hits: 1 absorbed by flagship sustain, 1 destroys infantry
-    t.addHits('attacker', 2)
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ attacker: 2 })
 
-    t.assignHits()
     expect(t.attacker.units.INFANTRY).toBeUndefined()
     expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBe(true)
   })
@@ -66,14 +64,12 @@ describe('THE_ALASTOR', () => {
         faction: 'NEKRO_VIRUS',
         units: { FLAGSHIP: 1, MECH: 1 },
       },
-      defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
-    t.runTiming('START_OF_COMBAT')
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
     // 2 hits: both units sustain
-    t.addHits('attacker', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ attacker: 2 })
 
     expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBe(true)
     expect(t.attacker.units.MECH![0].isDamaged).toBe(true)
@@ -89,11 +85,11 @@ describe('THE_ALASTOR', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.runTiming('START_OF_COMBAT')
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Infantry should not roll dice for non-Nekro factions
-    expect(dice.attacker.INFANTRY).toBeUndefined()
+    expect(pool.attacker.INFANTRY).toBeUndefined()
   })
 })

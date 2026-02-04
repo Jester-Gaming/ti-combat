@@ -19,20 +19,28 @@ describe('PUBLICIZE_WEAPON_SCHEMATICS + SUSTAIN_DAMAGE', () => {
       },
       defender: {
         faction: 'ARBOREC',
-        units: { CRUISER: 1 },
+        units: { CRUISER: 2 },
         abilities: {
           PUBLICIZE_WEAPON_SCHEMATICS: true,
         },
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
 
-    // Dreadnought sustained (ability not affected by PWS)
+    // 1 hit: Dreadnought sustains — verifies sustain not removed by PWS
+    t.advanceRound({ attacker: 1 })
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
-    // War Sun did NOT sustain (PWS removed its sustain ability)
+    expect(t.attacker.units.DREADNOUGHT).toHaveLength(1)
+    // War Sun is undamaged — PWS removed its sustain, so it can't sustain
+    expect(t.attacker.units.WAR_SUN![0].isDamaged).toBeFalsy()
+
+    // 1 more hit: Dreadnought already damaged, War Sun can't sustain (PWS)
+    // Hit assigned to Dreadnought (lower priority in assignment) — destroyed
+    t.advanceRound({ attacker: 1 })
+    expect(t.attacker.units.DREADNOUGHT).toBeUndefined()
+    // War Sun survives but remains undamaged (can't sustain due to PWS)
+    expect(t.attacker.units.WAR_SUN).toHaveLength(1)
     expect(t.attacker.units.WAR_SUN![0].isDamaged).toBeFalsy()
   })
 })

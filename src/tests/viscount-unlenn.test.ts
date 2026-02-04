@@ -16,17 +16,16 @@ describe('VISCOUNT_UNLENN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.runTiming('START_OF_COMBAT_ROUND')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
 
-    expect(t.attacker.units.DREADNOUGHT![0].subtypes).toContain('Viscount')
+    expect(t.abilityLog('VISCOUNT_UNLENN')).toHaveLength(2)
 
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
-
+    const pool = t.dicePool()!
     // Dreadnought base: [5, 1] -> [5, 2]
-    expect(dice.attacker).toContainDice('DREADNOUGHT', [5, 2])
+    expect(pool.attacker).toContainDice('DREADNOUGHT', [5, 2])
     // Cruiser unchanged: [7, 1]
-    expect(dice.attacker).toContainDice('CRUISER', [7, 1])
+    expect(pool.attacker).toContainDice('CRUISER', [7, 1])
   })
 
   it('subtype removed after dice roll, no extra die next round', () => {
@@ -42,22 +41,18 @@ describe('VISCOUNT_UNLENN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.runTiming('START_OF_COMBAT_ROUND')
-    expect(t.attacker.units.DREADNOUGHT![0].subtypes).toContain('Viscount')
+    // Round 1: Viscount adds extra die
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool1 = t.dicePool()!
+    expect(pool1.attacker).toContainDice('DREADNOUGHT', [5, 2])
 
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    t.runDiceTiming('COMBAT')
-
-    // Subtype removed after dice roll
-    expect(t.attacker.units.DREADNOUGHT![0].subtypes).toBeUndefined()
-
-    // Next round: no extra die
-    t.runTiming(['END_OF_COMBAT_ROUND', 'START_OF_COMBAT_ROUND'])
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    // Round 2: no extra die (subtype removed after dice roll)
+    t.advanceRound()
+    const pool2 = t.dicePool()!
 
     // Dreadnought back to base: [5, 1]
-    expect(dice.attacker).toContainDice('DREADNOUGHT', [5, 1])
+    expect(pool2.attacker).toContainDice('DREADNOUGHT', [5, 1])
   })
 
   it('does not fire when isEnabled is false', () => {
@@ -73,13 +68,11 @@ describe('VISCOUNT_UNLENN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.runTiming('START_OF_COMBAT_ROUND')
-    expect(t.attacker.units.DREADNOUGHT![0].subtypes).toBeUndefined()
-
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Dreadnought unchanged: [5, 1]
-    expect(dice.attacker).toContainDice('DREADNOUGHT', [5, 1])
+    expect(pool.attacker).toContainDice('DREADNOUGHT', [5, 1])
   })
 })

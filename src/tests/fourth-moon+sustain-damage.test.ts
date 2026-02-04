@@ -16,12 +16,12 @@ describe('FOURTH_MOON + SUSTAIN_DAMAGE', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
 
-    // Dreadnought can't sustain (Fourth Moon disabled it)
+    // Dreadnought can't sustain (Fourth Moon disabled it), fighter is destroyed
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
+    expect(t.defender.units.FIGHTER).toBeUndefined()
   })
 
   it('re-enables opponent sustain after a unit is destroyed', () => {
@@ -37,14 +37,15 @@ describe('FOURTH_MOON + SUSTAIN_DAMAGE', () => {
       },
     })
 
-    // Destroy fighter — triggers AFTER_DESTROY which re-enables sustain
-    t.destroyUnit('defender', 'FIGHTER')
+    // Round 1: kill fighter via combat hits, triggers AFTER_DESTROY which re-enables sustain
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    // Fighter destroyed, sustain re-enabled
+    expect(t.defender.units.FIGHTER).toBeUndefined()
 
-    // Sustain is re-enabled, dreadnought sustains
+    // Round 2: dreadnought can now sustain
+    t.advanceRound({ defender: 1 })
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
   })
 })

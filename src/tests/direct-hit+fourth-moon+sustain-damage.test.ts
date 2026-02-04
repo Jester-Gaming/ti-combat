@@ -17,11 +17,9 @@ describe('DIRECT_HIT + FOURTH_MOON + SUSTAIN_DAMAGE', () => {
       },
     })
 
-    // Flagship sustains → Direct Hit destroys it → AFTER_DESTROY re-enables sustain
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 1)
-    t.addHits('defender', 1)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    // Flagship sustains -> Direct Hit destroys it -> AFTER_DESTROY re-enables sustain
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ attacker: 1, defender: 1 })
 
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
     expect(t.defender.units.FLAGSHIP).toBeUndefined()

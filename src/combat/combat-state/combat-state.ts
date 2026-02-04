@@ -20,6 +20,7 @@ import {
 } from '../combat-side-state/combat-side-state'
 import { getDestroyedUnits } from '../combat-side-state/utils/get-destroyed-units'
 import { getSettingsValidTargets } from '../combat-side-state/utils/get-settings-valid-targets'
+import { Logger } from '../logger'
 import type { LogEntry } from '../types'
 import { getCombinedDiceDistribution } from '../utils'
 import {
@@ -256,8 +257,16 @@ export class CombatState {
     timing: T | T[],
     context?: TimingContextMap[T],
     stateData: CombatStateData = this.data,
+    logger?: Logger,
   ): RunAbilitiesResult<T> {
-    return this._params.runAbilities(timing, stateData, context)
+    const activeLogger = logger ?? Logger.create().child(this.currentPhase.meta)
+    return this._params.runAbilities(
+      timing,
+      stateData,
+      context,
+      undefined,
+      activeLogger,
+    )
   }
 
   assignHits(): CombatState {
@@ -442,14 +451,18 @@ export class CombatState {
         let resultData = tempCS.data
 
         const log: LogEntry[] = [...(prependLog ?? [])]
-        log.push([metaPhase, 'DICE_ROLL', 'attacker', attOutcome.hits])
-        log.push([metaPhase, 'DICE_ROLL', 'defender', defOutcome.hits])
+        log.push({
+          path: [metaPhase, 'DICE_ROLL'],
+          data: [{ attacker: attOutcome.hits, defender: defOutcome.hits }],
+        })
 
         if (runAfterRoll) {
+          const afterRollLogger = Logger.create().child(metaPhase)
           const { state: afterRoll, log: afterRollLog } = this.runAbilities(
             'AFTER_UNIT_ABILITY_ROLL',
             undefined,
             resultData,
+            afterRollLogger,
           )
           resultData = afterRoll
           log.push(...afterRollLog)
@@ -563,6 +576,14 @@ export class CombatState {
       log: abilityLog,
     } = this.runAbilities('BEFORE_UNIT_ABILITY_ROLL', sidedDiceData)
 
+    const dicePoolLog: LogEntry = {
+      path: [this.currentPhase.meta, 'DICE_POOL'],
+      data: [
+        { attacker: modifiedDice.attacker, defender: modifiedDice.defender },
+      ],
+    }
+    const prependLog = [...abilityLog, dicePoolLog]
+
     return this.rollDiceOutcomes(
       afterWhen,
       modifiedDice,
@@ -570,7 +591,7 @@ export class CombatState {
         attacker: this.getValidTargetsForPhase('attacker', afterWhen),
         defender: this.getValidTargetsForPhase('defender', afterWhen),
       },
-      abilityLog.length > 0 ? abilityLog : undefined,
+      prependLog,
       true,
     )
   }
@@ -630,6 +651,14 @@ export class CombatState {
       log: abilityLog,
     } = this.runAbilities('BEFORE_DICE_ROLL', sidedDiceData)
 
+    const dicePoolLog: LogEntry = {
+      path: [this.currentPhase.meta, 'DICE_POOL'],
+      data: [
+        { attacker: modifiedDice.attacker, defender: modifiedDice.defender },
+      ],
+    }
+    const prependLog = [...abilityLog, dicePoolLog]
+
     return this.rollDiceOutcomes(
       afterWhen,
       modifiedDice,
@@ -637,7 +666,7 @@ export class CombatState {
         attacker: this.getValidTargetsForPhase('attacker', afterWhen),
         defender: this.getValidTargetsForPhase('defender', afterWhen),
       },
-      abilityLog.length > 0 ? abilityLog : undefined,
+      prependLog,
     )
   }
 

@@ -22,10 +22,10 @@ describe('ANTIMASS_DEFLECTORS + SOLAR_FLARE', () => {
       },
     })
 
-    t.setPhase('SPACE_CANNON_OFFENSE', 'DICE_ROLL')
-    const dice = t.runDiceTiming('SPACE_CANNON')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    const pool = t.dicePool()!
 
     // No PDS dice (Solar Flare disabled space cannon)
-    expect(dice.defender.PDS).toBeUndefined()
+    expect(pool.defender.PDS).toBeUndefined()
   })
 })

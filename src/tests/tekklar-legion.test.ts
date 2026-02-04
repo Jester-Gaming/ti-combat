@@ -21,13 +21,14 @@ describe('TEKKLAR_LEGION', () => {
       },
     })
 
-    t.setPhase('GROUND_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Attacker: 8 - 1(tekklar) = 7
-    expect(dice.attacker).toContainDice('INFANTRY', [7, 1])
+    expect(pool.attacker).toContainDice('INFANTRY', [7, 1])
     // Defender (Sardakk): 7 + 1(tekklar penalty) = 9
-    expect(dice.defender).toContainDice('INFANTRY', [8, 1])
+    expect(pool.defender).toContainDice('INFANTRY', [8, 1])
   })
 
   it('only improves own dice, does not affect opponent vs non-Sardakk', () => {
@@ -46,12 +47,13 @@ describe('TEKKLAR_LEGION', () => {
       },
     })
 
-    t.setPhase('GROUND_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Attacker: 8 - 1(tekklar) = 7
-    expect(dice.attacker).toContainDice('INFANTRY', [7, 1])
+    expect(pool.attacker).toContainDice('INFANTRY', [7, 1])
     // Defender (not Sardakk): unchanged at 8
-    expect(dice.defender).toContainDice('INFANTRY', [8, 1])
+    expect(pool.defender).toContainDice('INFANTRY', [8, 1])
   })
 })

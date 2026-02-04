@@ -14,11 +14,11 @@ describe('Maneuvering Jets', () => {
       defender: { faction: 'ARBOREC', units: { PDS: 2, CRUISER: 1 } },
     })
 
-    t.setPhase('SPACE_CANNON_OFFENSE', 'ASSIGN_HITS')
-    t.addHits('attacker', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    // SCO: 2 PDS hits, Maneuvering Jets cancels 1 → 1 cruiser destroyed
+    t.advanceTo('SPACE_COMBAT', 'START', { attacker: 2 })
 
-    expect(t.attacker.hitPools[0].hits).toBe(1)
+    expect(t.abilityLog('MANEUVERING_JETS')).toHaveLength(1)
+    expect(t.attacker.units.CRUISER).toHaveLength(1)
   })
 
   it('cancels 1 hit from space cannon defense', () => {
@@ -27,46 +27,40 @@ describe('Maneuvering Jets', () => {
       attacker: {
         faction: 'ARBOREC',
         units: { INFANTRY: 2 },
+        abilities: { MANEUVERING_JETS: { uses: 1 } },
       },
       defender: {
         faction: 'ARBOREC',
         units: { PDS: 2, INFANTRY: 1 },
-        abilities: { MANEUVERING_JETS: { uses: 1 } },
       },
     })
 
-    // Space Cannon Defense targets the attacker's ground forces;
-    // hits are assigned to the attacker, but the defender uses
-    // Maneuvering Jets — wait, that's wrong.
-    // Actually: Space Cannon Defense is fired by the defender against
-    // the attacker. The attacker receives hits. The attacker can play
-    // Maneuvering Jets to cancel hits on their units.
-    t.setPhase('SPACE_CANNON_DEFENSE', 'ASSIGN_HITS')
-    t.addHits('attacker', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    // SCD: 2 PDS hits, attacker's Maneuvering Jets cancels 1 → 1 infantry destroyed
+    t.advanceTo('GROUND_COMBAT', 'START', { attacker: 2 })
 
-    expect(t.attacker.hitPools[0].hits).toBe(2)
+    expect(t.abilityLog('MANEUVERING_JETS')).toHaveLength(1)
+    expect(t.attacker.units.INFANTRY).toHaveLength(1)
   })
 
-  it('attacker cancels hit from space cannon defense', () => {
+  it('defender cannot cancel hits from own space cannon defense', () => {
     const t = combatTest({
       mode: 'GROUND',
       attacker: {
         faction: 'ARBOREC',
         units: { INFANTRY: 2 },
-        abilities: { MANEUVERING_JETS: { uses: 1 } },
       },
       defender: {
         faction: 'ARBOREC',
         units: { PDS: 2, INFANTRY: 1 },
+        abilities: { MANEUVERING_JETS: { uses: 1 } },
       },
     })
 
-    t.setPhase('SPACE_CANNON_DEFENSE', 'ASSIGN_HITS')
-    t.addHits('attacker', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    // SCD: 2 PDS hits, defender's Maneuvering Jets should NOT fire — both infantry destroyed
+    t.advanceTo('GROUND_COMBAT', 'START', { attacker: 2 })
 
-    expect(t.attacker.hitPools[0].hits).toBe(1)
+    expect(t.abilityLog('MANEUVERING_JETS')).toHaveLength(0)
+    expect(t.attacker.units.INFANTRY).toBeUndefined()
   })
 
   it('does not fire during space combat', () => {
@@ -80,12 +74,12 @@ describe('Maneuvering Jets', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
-    t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-    t.addHits('attacker', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ attacker: 2 })
 
     // Hits unchanged — Maneuvering Jets only works vs Space Cannon
-    expect(t.attacker.hitPools[0].hits).toBe(2)
+    expect(t.abilityLog('MANEUVERING_JETS')).toHaveLength(0)
+    expect(t.attacker.units.CRUISER).toBeUndefined()
   })
 
   it('does not fire when uses are 0', () => {
@@ -99,10 +93,10 @@ describe('Maneuvering Jets', () => {
       defender: { faction: 'ARBOREC', units: { PDS: 2, CRUISER: 1 } },
     })
 
-    t.setPhase('SPACE_CANNON_OFFENSE', 'ASSIGN_HITS')
-    t.addHits('attacker', 2)
-    t.runTiming('BEFORE_ASSIGN_HITS')
+    // SCO: 2 PDS hits, no Maneuvering Jets → both cruisers destroyed
+    t.advanceTo('SPACE_COMBAT', 'START', { attacker: 2 })
 
-    expect(t.attacker.hitPools[0].hits).toBe(2)
+    expect(t.abilityLog('MANEUVERING_JETS')).toHaveLength(0)
+    expect(t.attacker.units.CRUISER).toBeUndefined()
   })
 })

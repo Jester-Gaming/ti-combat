@@ -21,12 +21,13 @@ describe('SARDAKK_FLAGSHIP + UNRELENTING', () => {
       },
     })
 
-    t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-    const dice = t.runDiceTiming('COMBAT')
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+    const pool = t.dicePool()!
 
     // Flagship: 6 - 1(unrelenting) = 5 (aura doesn't apply to self)
-    expect(dice.attacker).toContainDice('FLAGSHIP', [5, 2])
+    expect(pool.attacker).toContainDice('FLAGSHIP', [5, 2])
     // Cruiser: 7 - 1(unrelenting) - 1(flagship aura) = 5
-    expect(dice.attacker).toContainDice('CRUISER', [5, 1])
+    expect(pool.attacker).toContainDice('CRUISER', [5, 1])
   })
 })
