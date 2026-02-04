@@ -3,6 +3,7 @@ import type { Faction } from '@/types'
 
 import { imperator } from './imperator'
 import { rickarRickani } from './rickar-rickani'
+import { salaiSaiCorian } from './salai-sai-corian'
 
 export const winnu: Faction = {
   name: 'Winnu',
@@ -17,12 +18,13 @@ export const winnu: Faction = {
         DESCRIPTION:
           "When this unit makes a combat roll, it rolls a number of dice equal to the number of your opponent's non-fighter ships in this system.",
         COST: 8,
+        COMBAT: [7, 1],
         MOVE: 1,
         CAPACITY: 3,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [sustainDamage, salaiSaiCorian],
       },
     },
     MECH: {
