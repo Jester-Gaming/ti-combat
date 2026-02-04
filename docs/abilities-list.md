@@ -19,7 +19,7 @@
 - [x] **L4 Disruptors** (Faction Technology) — During an invasion, units cannot use Space Cannon against your units.
 - [x] **Non-Euclidean Shielding** (Faction Technology) — When 1 of your units uses Sustain Damage, cancel 2 hits instead of 1.
 - [x] **Arc Secundus** (Flagship) — Other players' units in this system lose Planetary Shield. At the start of each space combat round, repair this ship.
-- [ ] **Viscount Unlenn** (Agent) — At the start of a space combat round: You may exhaust this card to choose 1 ship in the active system; that ship rolls 1 additional die during this combat round.
+- [x] **Viscount Unlenn** (Agent) — At the start of a space combat round: You may exhaust this card to choose 1 ship in the active system; that ship rolls 1 additional die during this combat round.
 - [x] **Gravleash Maneuvers** (Breakthrough) — Before you roll dice during space combat, apply +X to the results of 1 of your ship's rolls, where X is the number of ship types you have in the combat.
 
 ### Clan of Saar

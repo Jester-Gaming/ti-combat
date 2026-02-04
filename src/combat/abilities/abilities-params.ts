@@ -8,7 +8,7 @@ import { getDestroyedUnits } from '../combat-side-state/utils/get-destroyed-unit
 import { CombatState } from '../combat-state/combat-state'
 import type { AbilitiesConfig, CombatStateData } from '../combat-state/types'
 import type { LogEntry } from '../types'
-import { makeVariantId } from '../utils/unit-variant'
+import { makeVariantId, parseVariantId } from '../utils/unit-variant'
 import { buildCallContext, buildReadContext } from './api/ability-api'
 import { buildDiceApi, buildDiceReadApi } from './api/dice-api'
 import { extractDefaults, extractSyncSources } from './declare-param'
@@ -190,13 +190,17 @@ function expandWithSubtypes(
   sortedTypes: UnitType[],
   subtypes: DeclaredSubtype[],
 ): string[] {
-  const subtypesByType = new Map<UnitType, DeclaredSubtype[]>()
+  const simpleByType = new Map<UnitType, DeclaredSubtype[]>()
+  const compound: DeclaredSubtype[] = []
+
   for (const st of subtypes) {
-    const list = subtypesByType.get(st.unitType)
-    if (list) {
-      list.push(st)
+    const { type, subtypes: parentSubs } = parseVariantId(st.unitType)
+    if (parentSubs.length === 0) {
+      const list = simpleByType.get(type)
+      if (list) list.push(st)
+      else simpleByType.set(type, [st])
     } else {
-      subtypesByType.set(st.unitType, [st])
+      compound.push(st)
     }
   }
 
@@ -207,7 +211,7 @@ function expandWithSubtypes(
       result.push(unitType)
       seen.add(unitType)
     }
-    const subs = subtypesByType.get(unitType)
+    const subs = simpleByType.get(unitType)
     if (subs) {
       for (const sub of subs) {
         const variantId = makeVariantId(sub.unitType, [sub.name])
@@ -218,6 +222,18 @@ function expandWithSubtypes(
       }
     }
   }
+
+  for (const sub of compound) {
+    if (!seen.has(sub.unitType)) continue
+    const { type, subtypes: parentSubs } = parseVariantId(sub.unitType)
+    const variantId = makeVariantId(type, [...parentSubs, sub.name])
+    if (!seen.has(variantId)) {
+      const parentIndex = result.indexOf(sub.unitType)
+      result.splice(parentIndex + 1, 0, variantId)
+      seen.add(variantId)
+    }
+  }
+
   return result
 }
 

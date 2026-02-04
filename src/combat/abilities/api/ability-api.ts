@@ -216,12 +216,17 @@ function getParticipatingVariantsForSide(
 
   const baseSet = new Set<string>(baseTypes)
   const result: string[] = [...baseTypes]
+  const addedSet = new Set<string>(baseTypes)
   for (const decl of declaredSubtypes) {
-    if (!baseSet.has(decl.unitType)) continue
     if (excludeSubtypeSet?.has(decl.name)) continue
-    const variantId = makeVariantId(decl.unitType, [decl.name])
-    if (baseSet.has(variantId)) continue
+    const { type, subtypes: parentSubs } = parseVariantId(decl.unitType)
+    if (!baseSet.has(decl.unitType) && !addedSet.has(decl.unitType)) continue
+    if (excludeSubtypeSet && parentSubs.some(s => excludeSubtypeSet.has(s)))
+      continue
+    const variantId = makeVariantId(type, [...parentSubs, decl.name])
+    if (addedSet.has(variantId)) continue
     result.push(variantId)
+    addedSet.add(variantId)
   }
   return result
 }
@@ -497,22 +502,28 @@ export function buildApi(
       )
     },
 
-    addSubtype(unitType: UnitType, index: number, subtype: string) {
-      const units = draft[side].units[unitType]
-      if (!units?.[index]) return
-      const unit = units[index]
+    addSubtype(variantId: string, subtype: string) {
+      const { type } = parseVariantId(variantId)
+      const units = draft[side].units[type]
+      if (!units) return
+      const unit = units.find(u => unitMatchesVariant(u, variantId))
+      if (!unit) return
       const existing = unit.subtypes ?? []
       if (!existing.includes(subtype)) {
         unit.subtypes = [...existing, subtype].sort()
       }
     },
 
-    removeSubtype(unitType: UnitType, index: number, subtype: string) {
-      const units = draft[side].units[unitType]
-      if (!units?.[index]) return
-      const unit = units[index]
-      if (!unit.subtypes) return
-      unit.subtypes = unit.subtypes.filter(s => s !== subtype)
+    removeSubtype(variantId: string, subtype: string) {
+      const { type, subtypes: requiredSubtypes } = parseVariantId(variantId)
+      const units = draft[side].units[type]
+      if (!units) return
+      const unit = units.find(u => {
+        if (!u.subtypes?.includes(subtype)) return false
+        return requiredSubtypes.every(s => u.subtypes!.includes(s))
+      })
+      if (!unit) return
+      unit.subtypes = unit.subtypes!.filter(s => s !== subtype)
       if (unit.subtypes.length === 0) delete unit.subtypes
     },
 

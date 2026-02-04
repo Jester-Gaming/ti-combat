@@ -78,6 +78,7 @@ export interface DiceApi extends DiceReadApi {
   addDice(count: number): void
   addDice(count: number, strategy: 'BEST' | 'WORST'): void
   addDice(count: number, source: UnitType): void
+  addDice(count: number, unit: Unit): void
 }
 
 export type DiceReadContext = OwnOpponentContext<DiceReadApi>
@@ -190,8 +191,8 @@ export interface SideApi extends SideReadApi {
   ): void
 
   // Subtype operations
-  addSubtype(unitType: UnitType, index: number, subtype: string): void
-  removeSubtype(unitType: UnitType, index: number, subtype: string): void
+  addSubtype(variantId: string, subtype: string): void
+  removeSubtype(variantId: string, subtype: string): void
 
   // Ability config mutations
   updateAbilityConfig(updates: Record<string, unknown>): void

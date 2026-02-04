@@ -61,7 +61,7 @@ export const cavalry: Ability<Params> = {
         return params.isEnabled && ctx.api.own.hasUnit(params.unitType)
       },
       call: (ctx, params: Params) => {
-        ctx.api.own.addSubtype(params.unitType, 0, 'Cavalry')
+        ctx.api.own.addSubtype(params.unitType, 'Cavalry')
         ctx.api.own.modifyUnit(params.unitType, 0, {
           COMBAT: NOMAD_FLAGSHIP_COMBAT,
           UNIT_ABILITIES: NOMAD_FLAGSHIP_UNIT_ABILITIES,

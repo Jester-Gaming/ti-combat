@@ -88,17 +88,38 @@ export function buildDiceApi(pool: DicePool): DiceApi {
 
     addDice: (
       count: number,
-      strategyOrSource?: 'BEST' | 'WORST' | UnitType,
+      strategyOrSourceOrUnit?: 'BEST' | 'WORST' | UnitType | object,
     ) => {
       if (countPool(data) === 0) return
 
+      // Overload: (count, Unit) — match by reference equality
       if (
-        strategyOrSource === undefined ||
-        strategyOrSource === 'BEST' ||
-        strategyOrSource === 'WORST'
+        typeof strategyOrSourceOrUnit === 'object' &&
+        strategyOrSourceOrUnit !== null
+      ) {
+        const targetUnit = isDraft(strategyOrSourceOrUnit)
+          ? original(strategyOrSourceOrUnit)
+          : strategyOrSourceOrUnit
+        for (const [, dice] of Object.entries(data)) {
+          if (!dice) continue
+          for (let i = 0; i < dice.length; i++) {
+            if (dice[i][2] === targetUnit) {
+              dice[i] = [dice[i][0], dice[i][1] + count, dice[i][2]]
+              return
+            }
+          }
+        }
+        return
+      }
+
+      if (
+        strategyOrSourceOrUnit === undefined ||
+        strategyOrSourceOrUnit === 'BEST' ||
+        strategyOrSourceOrUnit === 'WORST'
       ) {
         const isBest =
-          strategyOrSource === undefined || strategyOrSource === 'BEST'
+          strategyOrSourceOrUnit === undefined ||
+          strategyOrSourceOrUnit === 'BEST'
         let bestType: UnitType | undefined
         let bestIndex = -1
         let bestHitValue = isBest ? Infinity : -Infinity
@@ -127,7 +148,7 @@ export function buildDiceApi(pool: DicePool): DiceApi {
           ]
         }
       } else {
-        const dice = data[strategyOrSource]
+        const dice = data[strategyOrSourceOrUnit]
         if (!dice || dice.length === 0) return
         dice[0] = [dice[0][0], dice[0][1] + count, dice[0][2]]
       }

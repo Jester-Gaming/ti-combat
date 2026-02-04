@@ -5,11 +5,13 @@ import { arcSecundus } from './arc-secundus'
 import { gravleashManeuvers } from './gravleash-maneuvers'
 import { l4Disruptors } from './l4-disruptors'
 import { nonEuclideanShielding } from './non-euclidean-shielding'
+import { viscountUnlenn } from './viscount-unlenn'
 
 export const barony_of_letnev: Faction = {
   name: 'Barony of Letnev',
   abilities: {
     faction: [gravleashManeuvers, l4Disruptors, nonEuclideanShielding],
+    agent: [viscountUnlenn],
   },
   units: {
     FLAGSHIP: {

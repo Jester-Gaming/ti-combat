@@ -9,11 +9,12 @@ import type { Unit, UnitType } from '@/types'
 export type UnitVariantId = string
 
 export function makeVariantId(
-  type: UnitType,
+  variantId: UnitVariantId,
   subtypes?: string[],
 ): UnitVariantId {
+  const { type, subtypes: currentSubtypes } = parseVariantId(variantId)
   if (!subtypes || subtypes.length === 0) return type
-  const sorted = [...subtypes].sort()
+  const sorted = [...subtypes, ...currentSubtypes].sort()
   return `${type}:${sorted.join(',')}`
 }
 
