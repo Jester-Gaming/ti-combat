@@ -48,7 +48,7 @@
 
 ### Federation of Sol
 
-- [ ] **Evelyn DeLouis** (Agent) — At the start of a ground combat round: You may exhaust this card to choose 1 ground force in the active system; that ground force rolls 1 additional die during this combat round.
+- [x] **Evelyn DeLouis** (Agent) — At the start of a ground combat round: You may exhaust this card to choose 1 ground force in the active system; that ground force rolls 1 additional die during this combat round.
 - [ ] **Claire Gibson** (Commander) — At the start of a ground combat on a planet you control: You may place 1 infantry from your reinforcements on that planet.
 
 ### Firmament
