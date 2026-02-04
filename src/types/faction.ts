@@ -4,7 +4,7 @@ import factions from '@/data/faction'
 import type { UnitDefinition, UnitType } from './unit'
 
 interface FactionAbilities {
-  faction: readonly Ability[]
+  faction?: readonly Ability[]
   promissory?: readonly Ability[]
   agent?: readonly Ability[]
   commander?: readonly Ability[]
