@@ -15,6 +15,7 @@ import {
 
 import { CheckboxList } from '../checkbox-list'
 import { OrderList } from '../order-list'
+import { PriorityList } from '../priority-list'
 import styles from './ability-config.module.css'
 
 interface AbilityConfigProps {
@@ -230,11 +231,16 @@ export function AbilityConfig({
 
             if (
               config.type === 'order-list' ||
-              config.type === 'checkbox-list'
+              config.type === 'checkbox-list' ||
+              config.type === 'priority-list'
             ) {
               const value = (params[key] ?? defaultValue ?? []) as string[]
               const ListComponent =
-                config.type === 'order-list' ? OrderList : CheckboxList
+                config.type === 'order-list'
+                  ? OrderList
+                  : config.type === 'priority-list'
+                    ? PriorityList
+                    : CheckboxList
 
               return (
                 <div key={key} className={styles.configItemGroup}>

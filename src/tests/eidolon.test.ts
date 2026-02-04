@@ -69,8 +69,7 @@ describe('EIDOLON', () => {
         units: { CRUISER: 1, MECH: 1 },
         abilities: {
           SUSTAIN_DAMAGE: {
-            spaceUnits: ['MECH'],
-            spaceUnitPriority: ['MECH'],
+            spacePriority: ['MECH'],
           },
         },
       },
@@ -80,7 +79,7 @@ describe('EIDOLON', () => {
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound({ attacker: 1 })
 
-    // Mech should NOT sustain — it's not in spaceUnits for SUSTAIN_DAMAGE
+    // Mech should NOT sustain — it's not in spacePriority for SUSTAIN_DAMAGE
     expect(t.attacker.units.MECH![0].isDamaged).toBeFalsy()
   })
 
@@ -92,8 +91,7 @@ describe('EIDOLON', () => {
         units: { MECH: 1, INFANTRY: 1 },
         abilities: {
           SUSTAIN_DAMAGE: {
-            groundUnits: ['MECH'],
-            groundUnitPriority: ['MECH'],
+            groundPriority: ['MECH'],
           },
         },
       },

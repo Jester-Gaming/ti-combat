@@ -9,10 +9,8 @@ import {
 
 type Params = {
   hitPerSustain: number
-  spaceUnits: string[]
-  groundUnits: string[]
-  spaceUnitPriority: string[]
-  groundUnitPriority: string[]
+  spacePriority: string[]
+  groundPriority: string[]
 }
 
 /**
@@ -25,12 +23,8 @@ function isHighestPrioritySustainTarget(
   ctx: AbilityReadContext,
 ): boolean {
   const isGround = ctx.state.combatMode === 'GROUND'
-  const allowedUnits = new Set(
-    isGround ? params.groundUnits : params.spaceUnits,
-  )
-  const priority = isGround
-    ? params.groundUnitPriority
-    : params.spaceUnitPriority
+  const priority = isGround ? params.groundPriority : params.spacePriority
+  const allowedUnits = new Set(priority)
 
   const validTargets = ctx.api.own.getHitPoolValidTargets()
   const validTargetSet = validTargets.length > 0 ? new Set(validTargets) : null
@@ -69,19 +63,11 @@ export const sustainDamage: Ability<Params> = {
   category: 'GENERAL',
   params: {
     hitPerSustain: 1,
-    spaceUnits: declareParam({
+    spacePriority: declareParam({
       default: [],
       source: 'nonFighterShips',
     }),
-    groundUnits: declareParam({
-      default: [],
-      source: 'groundForces',
-    }),
-    spaceUnitPriority: declareParam({
-      default: [],
-      source: 'nonFighterShips',
-    }),
-    groundUnitPriority: declareParam({
+    groundPriority: declareParam({
       default: [],
       source: 'groundForces',
     }),
@@ -101,7 +87,7 @@ export const sustainDamage: Ability<Params> = {
 
         const isGround = ctx.state.combatMode === 'GROUND'
         const allowedUnits = new Set(
-          isGround ? params.groundUnits : params.spaceUnits,
+          isGround ? params.groundPriority : params.spacePriority,
         )
         if (!allowedUnits.has(variantId)) return false
 
@@ -133,12 +119,9 @@ export const sustainDamage: Ability<Params> = {
   ],
   uiConfig: ctx => {
     const isGround = ctx.state.combatMode === 'GROUND'
-    const unitsKey = isGround
-      ? ('groundUnits' as const)
-      : ('spaceUnits' as const)
-    const priorityKey = isGround
-      ? ('groundUnitPriority' as const)
-      : ('spaceUnitPriority' as const)
+    const key = isGround
+      ? ('groundPriority' as const)
+      : ('spacePriority' as const)
 
     const participatingUnits = ctx.api.own.getParticipatingVariants({
       exclude: ['FIGHTER'],
@@ -150,15 +133,9 @@ export const sustainDamage: Ability<Params> = {
 
     return [
       {
-        key: unitsKey,
-        label: 'Sustain Units',
-        type: 'checkbox-list' as const,
-        items: participatingItems,
-      },
-      {
-        key: priorityKey,
+        key,
         label: 'Sustain Priority',
-        type: 'order-list' as const,
+        type: 'priority-list' as const,
         items: participatingItems,
       },
     ]

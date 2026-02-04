@@ -1,0 +1,57 @@
+@reference "tailwindcss";
+
+.list {
+  @apply flex flex-col gap-1;
+}
+
+.item {
+  --checkbox-color: var(--side-color);
+
+  @apply flex cursor-grab items-center gap-2 rounded border px-2 py-1 text-[12px];
+  border-color: hsl(var(--side-color) / 15%);
+  background-color: hsl(var(--side-color) / 5%);
+  color: hsl(var(--muted-foreground));
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+}
+
+.item:hover {
+  border-color: hsl(var(--side-color) / 30%);
+  background-color: hsl(var(--side-color) / 10%);
+}
+
+.checked {
+  border-color: hsl(var(--side-color) / 40%);
+  background-color: hsl(var(--side-color) / 12%);
+}
+
+.dragging {
+  @apply z-10 opacity-90 shadow-lg;
+  border-color: hsl(var(--side-color) / 50%);
+  background-color: hsl(var(--side-color) / 15%);
+}
+
+.item:active {
+  cursor: grabbing;
+}
+
+.checkboxWrapper {
+  @apply flex h-4 w-4 shrink-0 items-center justify-center;
+  pointer-events: none;
+}
+
+.label {
+  @apply flex-1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dragHandle {
+  @apply flex h-4 w-4 shrink-0 items-center justify-center text-white/30;
+}
+
+.item:hover .dragHandle {
+  color: hsl(var(--side-color) / 60%);
+}

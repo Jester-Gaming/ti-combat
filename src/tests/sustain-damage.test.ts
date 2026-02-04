@@ -95,7 +95,7 @@ describe('SUSTAIN_DAMAGE', () => {
         units: { WAR_SUN: 1, DREADNOUGHT: 1 },
         abilities: {
           SUSTAIN_DAMAGE: {
-            spaceUnitPriority: ['WAR_SUN', 'DREADNOUGHT'],
+            spacePriority: ['WAR_SUN', 'DREADNOUGHT'],
           },
         },
       },
@@ -118,7 +118,7 @@ describe('SUSTAIN_DAMAGE', () => {
         units: { DREADNOUGHT: 1 },
         abilities: {
           SUSTAIN_DAMAGE: {
-            spaceUnits: ['WAR_SUN', 'FLAGSHIP'],
+            spacePriority: ['WAR_SUN', 'FLAGSHIP'],
           },
         },
       },
@@ -127,7 +127,7 @@ describe('SUSTAIN_DAMAGE', () => {
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound({ defender: 1 })
 
-    // Dreadnought excluded from spaceUnits — doesn't sustain, destroyed
+    // Dreadnought excluded from spacePriority — doesn't sustain, destroyed
     expect(t.defender.units.DREADNOUGHT).toBeUndefined()
   })
 

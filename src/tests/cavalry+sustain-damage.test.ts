@@ -13,8 +13,7 @@ describe('CAVALRY + SUSTAIN_DAMAGE', () => {
         abilities: {
           CAVALRY: { isEnabled: true, unitType: 'DESTROYER' },
           SUSTAIN_DAMAGE: {
-            spaceUnits: ['DESTROYER:Cavalry'],
-            spaceUnitPriority: ['DESTROYER:Cavalry'],
+            spacePriority: ['DESTROYER:Cavalry'],
           },
         },
       },
@@ -44,8 +43,7 @@ describe('CAVALRY + SUSTAIN_DAMAGE', () => {
         abilities: {
           CAVALRY: { isEnabled: true, unitType: 'DESTROYER' },
           SUSTAIN_DAMAGE: {
-            spaceUnits: ['DESTROYER'],
-            spaceUnitPriority: ['DESTROYER', 'DESTROYER:Cavalry'],
+            spacePriority: ['DESTROYER'],
           },
         },
       },

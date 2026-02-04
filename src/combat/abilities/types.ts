@@ -329,6 +329,16 @@ interface UIConfigCheckboxList<
   }[]
 }
 
+interface UIConfigPriorityList<
+  TParams = Record<string, unknown>,
+> extends UIConfigItemBase<TParams> {
+  type: 'priority-list'
+  items: {
+    label: string
+    value: string
+  }[]
+}
+
 interface UIConfigNumber<
   TParams = Record<string, unknown>,
 > extends UIConfigItemBase<TParams> {
@@ -351,6 +361,7 @@ type UIConfigItem<TParams = Record<string, unknown>> =
   | UIConfigCheckbox<TParams>
   | UIConfigOrderList<TParams>
   | UIConfigCheckboxList<TParams>
+  | UIConfigPriorityList<TParams>
   | UIConfigNumber<TParams>
   | UIConfigSelect<TParams>
 

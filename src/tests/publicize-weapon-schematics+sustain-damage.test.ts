@@ -12,8 +12,7 @@ describe('PUBLICIZE_WEAPON_SCHEMATICS + SUSTAIN_DAMAGE', () => {
         abilities: {
           SUSTAIN_DAMAGE: {
             hitPerSustain: 1,
-            spaceUnits: ['DREADNOUGHT', 'WAR_SUN'],
-            spaceUnitPriority: ['DREADNOUGHT', 'WAR_SUN'],
+            spacePriority: ['DREADNOUGHT', 'WAR_SUN'],
           },
         },
       },
