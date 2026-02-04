@@ -2,6 +2,7 @@ import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import { sardakkFlagshipAbility } from '@/data/faction/sardakk_norr/flagship-ability'
 import { tekklarLegion } from '@/data/faction/sardakk_norr/tekklar-legion'
 import { unrelenting } from '@/data/faction/sardakk_norr/unrelenting'
+import { valkyrieExoskeleton } from '@/data/faction/sardakk_norr/valkyrie-exoskeleton'
 import type { Faction } from '@/types'
 
 export const sardakk_norr: Faction = {
@@ -32,7 +33,7 @@ export const sardakk_norr: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [valkyrieExoskeleton, sustainDamage],
       },
     },
     DREADNOUGHT: {
