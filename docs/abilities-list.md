@@ -102,7 +102,7 @@
 ### Naaz-Rokha Alliance
 
 - [x] **Supercharge** (Faction Technology) — At the start of a combat round, you may exhaust this card to apply +1 to the result of each of your unit's combat rolls during this combat round.
-- [ ] **Visz El Vir** (Flagship) — Your mechs in this system roll 1 additional die during combat.
+- [x] **Visz El Vir** (Flagship) — Your mechs in this system roll 1 additional die during combat.
 - [x] **Eidolon** (Mech) — Combat: 6 (x2). If this unit is in the space area of the active system at the start of a space combat, flip this card.
 - [x] **Z-Grav Eidolon** (Mech flipped) — Combat: 8 (x2). If this unit is in the space area of the active system, it is also a ship.
 - [ ] **Eidolon Maximum** (Mech upgraded) — Combat: 4 (x4). This unit is both a ship and a ground force. It cannot be assigned hits from unit abilities. Repair it at the start of every combat round.
@@ -177,7 +177,7 @@
 
 - [x] **Bunker** — At the start of an invasion: During this invasion, apply -4 to the result of each Bombardment roll against planets you control.
 - [ ] **Courageous to the End** — After 1 of your ships is destroyed during a space combat: Roll 2 dice. For each result equal to or greater than that ship's combat value, your opponent must choose and destroy 1 of their ships.
-- [ ] **Direct Hit** (x4) — After another player's ship uses Sustain Damage to cancel a hit produced by your units or abilities: Destroy that ship.
+- [x] **Direct Hit** (x4) — After another player's ship uses Sustain Damage to cancel a hit produced by your units or abilities: Destroy that ship.
 - [x] **Disable** — At the start of an invasion in a system that contains 1 or more of your opponents' PDS units: Your opponents' PDS units lose Planetary Shield and Space Cannon during this invasion.
 - [ ] **Emergency Repairs** — At the start or end of a combat round: Repair all of your units that have Sustain Damage in the active system.
 - [ ] **Experimental Battlestation** — After another player moves ships into a system during a tactical action: Choose 1 of your space docks that is either in or adjacent to that system. That space dock uses Space Cannon 5 (x3) against ships in the active system.

@@ -3,6 +3,7 @@ import type { Faction } from '@/types'
 
 import { eidolon } from './eidolon'
 import { supercharge } from './supercharge'
+import { viszElVir } from './visz-el-vir'
 
 export const naaz_rokha_alliance: Faction = {
   name: 'Naaz-Rokha Alliance',
@@ -22,7 +23,7 @@ export const naaz_rokha_alliance: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [viszElVir, sustainDamage],
       },
     },
     MECH: {
