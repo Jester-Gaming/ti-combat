@@ -172,11 +172,11 @@ export function AbilityConfig({
               const value = params[key] ?? defaultValue ?? false
               return (
                 <label key={key} className={styles.configItemLabel}>
+                  <span className={styles.configItemText}>{config.label}</span>
                   <Checkbox
                     checked={!!value}
                     onChange={checked => handleCheckboxChange(key, checked)}
                   />
-                  <span className={styles.configItemText}>{config.label}</span>
                 </label>
               )
             }

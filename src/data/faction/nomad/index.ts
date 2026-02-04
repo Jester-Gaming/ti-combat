@@ -33,6 +33,7 @@ export const nomad: Faction = {
         MOVE: 2,
         CAPACITY: 6,
         UNIT_ABILITIES: {
+          SUSTAIN_DAMAGE: true,
           AFB: [5, 3],
         },
       },

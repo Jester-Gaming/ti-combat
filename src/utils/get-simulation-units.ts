@@ -50,11 +50,11 @@ export function getSimulationUnits(
  * Merges BASE and UPGRADED stats based on upgrade status.
  * Returns null if no valid stats exist.
  */
-function getEffectiveStats(
+export function getEffectiveStats(
   baseStats: UnitStats,
   upgradedStats: Partial<UnitStats> | undefined,
   isUpgraded: boolean,
-): UnitStats | null {
+): UnitStats {
   if (isUpgraded && upgradedStats) {
     return {
       ...baseStats,
@@ -66,9 +66,5 @@ function getEffectiveStats(
     }
   }
 
-  if (baseStats) {
-    return { ...baseStats }
-  }
-
-  return null
+  return { ...baseStats }
 }

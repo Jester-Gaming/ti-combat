@@ -1,21 +1,17 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 import { getVariantDisplayName } from '@/combat/utils/unit-variant'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { UnitType } from '@/types'
+import { getEffectiveStats } from '@/utils/get-simulation-units'
 
 import type {
   Ability,
   AbilityReadContext,
 } from '../../../combat/abilities/types'
-
-const NOMAD_FLAGSHIP_COMBAT: [number, number] = [7, 2]
-const NOMAD_FLAGSHIP_UNIT_ABILITIES = {
-  SUSTAIN_DAMAGE: true as const,
-  AFB: [8, 3] as [number, number],
-}
+import { nomad } from './index'
 
 type Params = {
   isEnabled: boolean
+  memoria2: boolean
   unitType: UnitType
 }
 
@@ -26,6 +22,7 @@ export const cavalry: Ability<Params> = {
   context: 'SPACE',
   params: {
     isEnabled: false,
+    memoria2: false,
     unitType: declareParam<UnitType>({
       default: 'DESTROYER',
       source: 'nonFighterShips',
@@ -44,6 +41,11 @@ export const cavalry: Ability<Params> = {
 
     return [
       {
+        key: 'memoria2' as const,
+        label: 'Memoria II',
+        type: 'checkbox' as const,
+      },
+      {
         key: 'unitType' as const,
         label: 'Unit Type',
         type: 'select' as const,
@@ -61,11 +63,18 @@ export const cavalry: Ability<Params> = {
         return params.isEnabled && ctx.api.own.hasUnit(params.unitType)
       },
       call: (ctx, params: Params) => {
+        const flagship = nomad.units.FLAGSHIP!
+        const stats = getEffectiveStats(
+          flagship.BASE,
+          flagship.UPGRADED,
+          params.memoria2,
+        )
+
         ctx.api.own.addSubtype(params.unitType, 'Cavalry')
-        ctx.api.own.modifyUnit(params.unitType, 0, {
-          COMBAT: NOMAD_FLAGSHIP_COMBAT,
-          UNIT_ABILITIES: NOMAD_FLAGSHIP_UNIT_ABILITIES,
-          ABILITIES: [sustainDamage],
+        ctx.api.own.modifyUnit(params.unitType, {
+          COMBAT: stats.COMBAT,
+          UNIT_ABILITIES: stats.UNIT_ABILITIES,
+          ...(stats.ABILITIES ? { ABILITIES: stats.ABILITIES } : {}),
         })
       },
     },
