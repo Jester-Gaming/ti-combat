@@ -1,12 +1,14 @@
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
+import { claireGibson } from './claire-gibson'
 import { evelynDelouis } from './evelyn-delouis'
 
 export const federation_of_sol: Faction = {
   name: 'Federation of Sol',
   abilities: {
     agent: [evelynDelouis],
+    commander: [claireGibson],
   },
   units: {
     FLAGSHIP: {
