@@ -183,9 +183,9 @@
 - [ ] **Experimental Battlestation** — After another player moves ships into a system during a tactical action: Choose 1 of your space docks that is either in or adjacent to that system. That space dock uses Space Cannon 5 (x3) against ships in the active system.
 - [x] **Fighter Prototype** — At the start of the first round of a space combat: Apply +2 to the result of each of your fighters' combat rolls during this combat round.
 - [ ] **Fire Team** — After your ground forces make combat rolls during a round of ground combat: Reroll any number of your dice.
-- [ ] **Maneuvering Jets** (x4) — Before you assign hits produced by another player's Space Cannon roll: Cancel 1 hit.
+- [x] **Maneuvering Jets** (x4) — Before you assign hits produced by another player's Space Cannon roll: Cancel 1 hit.
 - [x] **Morale Boost** (x4) — At the start of a combat round: Apply +1 to the result of each of your unit's combat rolls during this combat round.
-- [ ] **Shields Holding** (x4) — Before you assign hits to your ships during a space combat: Cancel up to 2 hits.
+- [x] **Shields Holding** (x4) — Before you assign hits to your ships during a space combat: Cancel up to 2 hits.
 - [ ] **Blitz** — At the start of an invasion: Each of your non-fighter ships in the active system that do not have Bombardment gain Bombardment 6 until the end of the invasion.
 - [ ] **Reflective Shielding** — When one of your ships uses Sustain Damage during combat: Produce 2 hits against your opponent's ships in the active system.
 - [ ] **Scramble Frequency** — After another player makes a Bombardment, Space Cannon, or Anti-Fighter Barrage roll: That player rerolls all of their dice.
