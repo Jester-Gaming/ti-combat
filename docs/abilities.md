@@ -130,6 +130,7 @@ BEFORE_UNIT_ABILITY_ROLL — before AFB / bombardment / space cannon dice
 AFTER_UNIT_ABILITY_ROLL  — after unit ability dice are rolled (hits assigned to opponent)
 BEFORE_DICE_ROLL      — before combat dice
 BEFORE_ASSIGN_HITS    — before hit assignment (sustain damage fires here)
+WHEN_SUSTAIN_DAMAGE_USE  — triggered immediately when a sustain damage use occurs (before AFTER)
 AFTER_SUSTAIN_DAMAGE_USE — triggered immediately after a sustain damage use
 AFTER_DESTROY         — after units are destroyed
 END_OF_COMBAT_ROUND   — after each round
@@ -141,7 +142,7 @@ AFTER_ROUND           — after round cleanup
 
 **Void timings** (PREPARE, START_OF_COMBAT, START_OF_COMBAT_ROUND, AFTER_UNIT_ABILITY_ROLL, BEFORE_ASSIGN_HITS, END_OF_COMBAT_ROUND, END_OF_COMBAT, AFTER_ROUND):
 
-> Note: `AFTER_SUSTAIN_DAMAGE_USE` has `Unit` context type but is a **triggered timing** — it fires automatically when sustain damage is used via `ctx.trigger()`. Its context is the sustaining unit. Uses the same void-style signature (context is not passed to the invoke).
+> Note: `WHEN_SUSTAIN_DAMAGE_USE` and `AFTER_SUSTAIN_DAMAGE_USE` have `Unit` context type but are **triggered timings** — they fire automatically when sustain damage is used via `ctx.trigger()`. Their context is the sustaining unit. They use the same void-style signature (context is not passed to the invoke). `WHEN_` fires before `AFTER_`.
 
 ```typescript
 isCallable?: (params: Params, ctx: AbilityReadContext) => boolean
@@ -471,14 +472,15 @@ Abilities can emit **trigger events** via `ctx.trigger()` during their `call`. T
 
 Currently supported triggers:
 
-| Trigger Name               | Emitted By     | Description                             |
-| -------------------------- | -------------- | --------------------------------------- |
-| `AFTER_SUSTAIN_DAMAGE_USE` | Sustain Damage | Fires immediately after a unit sustains |
+| Trigger Name               | Emitted By     | Description                                           |
+| -------------------------- | -------------- | ----------------------------------------------------- |
+| `WHEN_SUSTAIN_DAMAGE_USE`  | Sustain Damage | Fires immediately when a unit sustains (before AFTER) |
+| `AFTER_SUSTAIN_DAMAGE_USE` | Sustain Damage | Fires immediately after a unit sustains               |
 
 ### How Triggers Work
 
-1. During `call`, the ability calls `ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE')`
-2. After `produce()`, the system runs `runAbilities('AFTER_SUSTAIN_DAMAGE_USE', ...)` with `triggerSide` set to the side that used sustain
+1. During `call`, the ability calls `ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE')` then `ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE')`
+2. After `produce()`, the system runs `runAbilities(...)` for each trigger sequentially — `WHEN_` resolves fully before `AFTER_` begins
 3. Invokes with `side: 'OWN'` fire only for the trigger side; `side: 'OPPONENT'` fire only for the other side
 4. The trigger side goes first in the alternating resolution loop
 5. Abilities in triggered windows cannot emit new triggers (recursion prevention)

@@ -1,8 +1,13 @@
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
+import { dimensionalSplicer } from './dimensional-splicer'
+
 export const ghosts_of_creuss: Faction = {
   name: 'Ghosts of Creuss',
+  abilities: {
+    faction: [dimensionalSplicer],
+  },
   units: {
     FLAGSHIP: {
       BASE: {

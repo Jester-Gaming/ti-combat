@@ -59,37 +59,34 @@ const t = combatTest({
 
 ### Phase Control
 
-| Method                             | Description                                                                                                          |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| `t.setPhase(meta, micro)`          | Set phase directly (no simulation)                                                                                   |
-| `t.advanceTo(meta, micro?, hits?)` | Advance through combat picking the branch with the given total hits (default 0). Throws if no matching branch exists |
-| `t.step(round?)`                   | Single advance step, returns all `StateWithProbability[]` outcomes                                                   |
+| Method                             | Description                                                                                           |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| `t.advanceTo(meta, micro?, hits?)` | Advance through combat, stopping **before** the target phase. Picks outcome matching hits (default 0) |
+| `t.advanceRound(hits?)`            | Process one full combat round from current position through END                                       |
+| `t.step(round?)`                   | Single advance step, returns all `StateWithProbability[]` outcomes                                    |
 
-### Timing Execution
+### HitsSpec
 
-| Method                       | Description                                                                             |
-| ---------------------------- | --------------------------------------------------------------------------------------- |
-| `t.runTiming(timing)`        | Run abilities at one or more timings                                                    |
-| `t.runDiceTiming(hitSource)` | Collect dice, run BEFORE_DICE_ROLL/BEFORE_UNIT_ABILITY_ROLL, return modified dice pools |
+The `hits` parameter accepts `HitsSpec`:
 
-### State Manipulation
+```typescript
+type HitsSpec = number | { attacker?: number; defender?: number }
+```
 
-| Method                                  | Description                             |
-| --------------------------------------- | --------------------------------------- |
-| `t.addHits(side, count, validTargets?)` | Add pending hits to a side              |
-| `t.assignHits()`                        | Resolve hit assignment (destroys units) |
-| `t.destroyUnit(side, unitType, index?)` | Remove a unit and run AFTER_DESTROY     |
+- `number` — match total hits across both sides
+- `{ attacker?: n, defender?: n }` — match per-side hits received (missing side defaults to 0)
+
+**Important:** `{ attacker: 1 }` means attacker **receives** 1 hit (from defender dice). To produce N hits on a side, the opposing side needs enough dice-producing units.
+
+### Log Query Methods
+
+| Method                    | Description                                          |
+| ------------------------- | ---------------------------------------------------- |
+| `t.abilityLog(key)`       | Log entries where path includes `key`                |
+| `t.abilityLog(key, side)` | Same, filtered by combat side                        |
+| `t.dicePool()`            | Last DICE_POOL entry: `{ attacker, defender }` pools |
 
 For phase system, ability timings, unit stats, factions, and ability keys — see `docs/overview.md`.
-
-## HitSource to Timing Mapping
-
-| HitSource        | Timing triggered by `runDiceTiming()` |
-| ---------------- | ------------------------------------- |
-| `'COMBAT'`       | `BEFORE_DICE_ROLL`                    |
-| `'AFB'`          | `BEFORE_UNIT_ABILITY_ROLL`            |
-| `'BOMBARDMENT'`  | `BEFORE_UNIT_ABILITY_ROLL`            |
-| `'SPACE_CANNON'` | `BEFORE_UNIT_ABILITY_ROLL`            |
 
 ## Custom Matcher: `toContainDice`
 
@@ -103,7 +100,7 @@ Checks that the dice pool for `unitType` contains a dice group matching `[hitVal
 
 ### 1. Dice Modifier (hit value changes, extra dice)
 
-Set phase to the relevant `DICE_ROLL` micro-phase, call `runDiceTiming()` with the appropriate hit source, assert dice values.
+Advance to combat START, run a round, then check the logged dice pool.
 
 ```typescript
 it('modifies combat dice', () => {
@@ -117,53 +114,52 @@ it('modifies combat dice', () => {
     defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
   })
 
-  t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-  const dice = t.runDiceTiming('COMBAT')
+  t.advanceTo('SPACE_COMBAT', 'START')
+  t.advanceRound()
+  const pool = t.dicePool()!
 
   // Cruiser base combat: [7, 1] -> modified to [6, 1]
-  expect(dice.attacker).toContainDice('CRUISER', [6, 1])
+  expect(pool.attacker).toContainDice('CRUISER', [6, 1])
 })
 ```
 
-For bombardment/space cannon/AFB dice:
+For unit ability dice (bombardment/space cannon/AFB), advance to the right point and check dicePool:
 
 ```typescript
-t.setPhase('BOMBARDMENT', 'DICE_ROLL')
-const dice = t.runDiceTiming('BOMBARDMENT')
+// Bombardment dice
+t.advanceTo('SPACE_CANNON_DEFENSE') // stops after bombardment processed
+const pool = t.dicePool()!
+expect(pool.attacker).toContainDice('DREADNOUGHT', [5, 1])
 
-t.setPhase('SPACE_CANNON_OFFENSE', 'DICE_ROLL')
-const dice = t.runDiceTiming('SPACE_CANNON')
-
-t.setPhase('AFB', 'DICE_ROLL')
-const dice = t.runDiceTiming('AFB')
+// Space cannon offense dice
+t.advanceTo('AFB') // stops after SCO processed
+const pool = t.dicePool()!
+expect(pool.defender).toContainDice('PDS', [6, 1])
 ```
 
 ### 2. Sustain Damage / Hit Absorption
 
-Set phase to `ASSIGN_HITS`, add hits, run `BEFORE_ASSIGN_HITS`, check `isDamaged` state and pending hit reduction.
+Advance to combat, run a round with hits, check `isDamaged` and unit survival.
 
 ```typescript
 it('absorbs a hit via sustain', () => {
   const t = combatTest({
     mode: 'SPACE',
-    attacker: { faction: 'ARBOREC', units: { CRUISER: 1 } },
+    attacker: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 1 } },
   })
 
-  t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-  t.addHits('defender', 1)
-  t.runTiming('BEFORE_ASSIGN_HITS')
+  t.advanceTo('SPACE_COMBAT', 'START')
+  t.advanceRound({ defender: 1 })
 
   expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
-
-  t.assignHits()
   expect(t.defender.units.DREADNOUGHT).toHaveLength(1)
 })
 ```
 
 ### 3. Unit Destruction (START_OF_COMBAT abilities)
 
-Use `advanceTo()` to advance past the ability timing and verify unit counts.
+Advance past the ability timing and verify unit counts.
 
 ```typescript
 it('destroys a unit at start of combat', () => {
@@ -177,7 +173,8 @@ it('destroys a unit at start of combat', () => {
     defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
   })
 
-  t.advanceTo('AFB')
+  // Advance past START where Assault Cannon fires
+  t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
 
   expect(t.attacker.units.CRUISER).toHaveLength(3)
   expect(t.defender.units.CRUISER).toHaveLength(2)
@@ -186,7 +183,7 @@ it('destroys a unit at start of combat', () => {
 
 ### 4. Ability Disabling (losing unit abilities)
 
-Test that an ability prevents another ability from working. The disabling ability fires at PREPARE or START_OF_COMBAT and uses `setUnitAbilityLost`/`setUnitAbilityCannotBeUsed`.
+Advance through combat and verify that the disabled ability doesn't trigger.
 
 ```typescript
 it('disables opponent sustain', () => {
@@ -196,20 +193,23 @@ it('disables opponent sustain', () => {
       faction: 'MENTAK_COALITION',
       units: { FLAGSHIP: 1, CRUISER: 1 },
     },
-    defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 1, FIGHTER: 1 } },
+    defender: {
+      faction: 'ARBOREC',
+      units: { DREADNOUGHT: 1, FIGHTER: 1 },
+    },
   })
 
-  t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-  t.addHits('defender', 1)
-  t.runTiming('BEFORE_ASSIGN_HITS')
+  t.advanceTo('SPACE_COMBAT', 'START')
+  t.advanceRound({ defender: 1 })
 
+  // Dreadnought can't sustain (disabled by Mentak flagship)
   expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
 })
 ```
 
 ### 5. Ability Completely Disabling a Phase
 
-When an ability removes all dice from a phase (e.g., Solar Flare disabling space cannon):
+Advance past the phase and check the logged dice pool.
 
 ```typescript
 it('disables space cannon entirely', () => {
@@ -223,16 +223,17 @@ it('disables space cannon entirely', () => {
     defender: { faction: 'ARBOREC', units: { PDS: 1, CRUISER: 1 } },
   })
 
-  t.setPhase('SPACE_CANNON_OFFENSE', 'DICE_ROLL')
-  const dice = t.runDiceTiming('SPACE_CANNON')
+  t.advanceTo('AFB') // past SCO
+  const pool = t.dicePool()
 
-  expect(dice.defender.PDS).toBeUndefined()
+  // No dice pool logged (phase skipped entirely) or PDS absent
+  expect(pool?.defender?.PDS).toBeUndefined()
 })
 ```
 
 ### 6. Subtypes (Cavalry-style abilities)
 
-Run the timings that create subtypes, then verify subtypes and dice behavior.
+Advance through combat and verify via abilityLog and dice pool.
 
 ```typescript
 it('creates subtype and modifies dice', () => {
@@ -246,33 +247,75 @@ it('creates subtype and modifies dice', () => {
     defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
   })
 
-  t.runTiming(['START_OF_COMBAT', 'START_OF_COMBAT_ROUND'])
-  expect(t.attacker.units.CRUISER![0].subtypes).toContain('Cavalry')
+  t.advanceTo('SPACE_COMBAT', 'START')
+  t.advanceRound()
 
-  t.setPhase('SPACE_COMBAT', 'DICE_ROLL')
-  const dice = t.runDiceTiming('COMBAT')
-  expect(dice.attacker).toContainDice('CRUISER', [4, 1])
+  // Verify ability fired
+  expect(t.abilityLog('CAVALRY')).toHaveLength(1)
+
+  // Check dice pool from log
+  const pool = t.dicePool()!
+  // Cavalry Cruiser gets Nomad flagship stats: [4, 2]
+  expect(pool.attacker).toContainDice('CRUISER', [4, 2])
 })
 ```
 
-### 7. Destroyed Unit Triggers (AFTER_DESTROY)
+### 7. Hit Reduction (cancel hits)
 
-Use `destroyUnit()` which automatically runs AFTER_DESTROY, then verify the post-destruction effects.
+Use `advanceRound` with hits and verify ability fired + unit survival.
 
 ```typescript
-it('re-enables sustain after unit destroyed', () => {
+it('cancels hits', () => {
   const t = combatTest({
-    /* ... */
+    mode: 'SPACE',
+    attacker: {
+      faction: 'ARBOREC',
+      units: { CRUISER: 3 },
+      abilities: { SHIELDS_HOLDING: { uses: 1 } },
+    },
+    defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
   })
 
-  t.destroyUnit('defender', 'FIGHTER')
+  t.advanceTo('SPACE_COMBAT', 'START')
+  // 3 hits received, Shields Holding cancels 2 → 1 effective hit
+  t.advanceRound({ attacker: 3 })
 
-  t.setPhase('SPACE_COMBAT', 'ASSIGN_HITS')
-  t.addHits('defender', 1)
-  t.runTiming('BEFORE_ASSIGN_HITS')
-
-  expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
+  expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(1)
+  expect(t.attacker.units.CRUISER).toHaveLength(2)
 })
+```
+
+### 8. END_OF_COMBAT_ROUND Tests
+
+Use `advanceRound` which processes through END.
+
+```typescript
+it('adds infantry at end of round', () => {
+  const t = combatTest({
+    mode: 'GROUND',
+    attacker: {
+      faction: 'YIN_BROTHERHOOD',
+      units: { MECH: 1 },
+    },
+    defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
+  })
+
+  t.advanceTo('GROUND_COMBAT', 'START')
+  t.advanceRound()
+
+  // Ability fires at END_OF_COMBAT_ROUND
+  expect(t.attacker.units.INFANTRY).toHaveLength(2)
+})
+```
+
+### 9. Multi-Round Tests
+
+Call `advanceRound` multiple times.
+
+```typescript
+t.advanceTo('SPACE_COMBAT', 'START')
+t.advanceRound({ defender: 1 }) // round 1
+t.advanceRound({ defender: 1 }) // round 2
 ```
 
 ## Common Assertions
@@ -290,21 +333,28 @@ expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
 // Unit NOT damaged (sustain didn't fire)
 expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
 
-// Dice value check (requires import './utils/expect')
-expect(dice.attacker).toContainDice('CRUISER', [7, 1])
+// Dice value check
+const pool = t.dicePool()!
+expect(pool.attacker).toContainDice('CRUISER', [7, 1])
 
 // No dice for a unit type
-expect(dice.defender.PDS).toBeUndefined()
+expect(pool.defender.PDS).toBeUndefined()
 
-// Subtype check
-expect(t.attacker.units.CRUISER![0].subtypes).toContain('Cavalry')
+// Ability fired
+expect(t.abilityLog('MY_ABILITY')).toHaveLength(1)
+
+// Ability did not fire
+expect(t.abilityLog('MY_ABILITY')).toHaveLength(0)
 ```
 
 ## Tips
 
 - Use `ARBOREC` as the default "vanilla" faction when you need a side with no special abilities
-- `advanceTo()` picks 0-hit outcomes, making it deterministic for testing setup abilities
-- `runDiceTiming()` does NOT roll dice — it collects dice pools and runs modifier abilities, returning the final dice configuration for assertions
+- `advanceTo()` picks 0-hit outcomes by default, making it deterministic for testing setup abilities
+- `advanceTo()` stops **before** the target phase executes
+- `advanceRound()` processes from the current position through the END of the combat round
+- `dicePool()` returns the **last** logged DICE_POOL entry — be aware that later phases may overwrite earlier ones
+- `{ attacker: N }` means attacker **receives** N hits — ensure the defender has enough dice-producing units to generate N hits
 - Comment dice calculations inline: `// Cruiser: 7 - 1(ability) = 6`
 - Test both positive cases (ability works) and edge cases (ability doesn't trigger when conditions aren't met)
 - For abilities with `uses` parameter, test both when uses > 0 and when uses === 0

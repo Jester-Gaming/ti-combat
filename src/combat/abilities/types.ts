@@ -94,6 +94,7 @@ export interface TimingContextMap {
   AFTER_UNIT_ABILITY_ROLL: void
   BEFORE_DICE_ROLL: SidedDiceData
   BEFORE_ASSIGN_HITS: void
+  WHEN_SUSTAIN_DAMAGE_USE: Unit
   AFTER_SUSTAIN_DAMAGE_USE: Unit
   AFTER_DESTROY: SidedContext<DestroyedUnit[]>
   END_OF_COMBAT_ROUND: void
@@ -103,6 +104,7 @@ export interface TimingContextMap {
 
 /** Events that can be emitted via ctx.trigger() during produce */
 export interface TriggerEventMap {
+  WHEN_SUSTAIN_DAMAGE_USE: Unit
   AFTER_SUSTAIN_DAMAGE_USE: Unit
 }
 

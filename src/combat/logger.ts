@@ -36,6 +36,10 @@ export class Logger {
     this._entries.push(entry)
   }
 
+  addEntries(entries: LogEntry[]): void {
+    this._entries.push(...entries)
+  }
+
   get entries(): readonly LogEntry[] {
     return this._entries
   }

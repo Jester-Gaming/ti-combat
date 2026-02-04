@@ -269,13 +269,16 @@ export class CombatState {
     )
   }
 
-  assignHits(): CombatState {
-    return this.assignHitsInternal().state
-  }
+  assignHits(parentLogger?: Logger): { state: CombatState; log: LogEntry[] } {
+    const logger = parentLogger ?? Logger.create().child(this.currentPhase.meta)
+    const startIndex = logger.entries.length
 
-  private assignHitsInternal(): { state: CombatState; log: LogEntry[] } {
-    const { state: afterAbilities, log: beforeLog } =
-      this.runAbilities('BEFORE_ASSIGN_HITS')
+    const { state: afterAbilities } = this.runAbilities(
+      'BEFORE_ASSIGN_HITS',
+      undefined,
+      this.data,
+      logger,
+    )
 
     const tempState = CombatState.fromData(afterAbilities, this._params)
     const attackerParticipating = tempState.getParticipatingUnits('attacker')
@@ -298,24 +301,29 @@ export class CombatState {
       ),
     }
 
-    const log: LogEntry[] = [...beforeLog]
+    logger.child('ASSIGN_HITS').log(destroyedContext)
 
     if (
       destroyedContext.attacker.length === 0 &&
       destroyedContext.defender.length === 0
     ) {
-      return { state: CombatState.fromData(resultData, this._params), log }
+      return {
+        state: CombatState.fromData(resultData, this._params),
+        log: [...logger.entries.slice(startIndex)],
+      }
     }
 
-    const { state: afterDestroy, log: afterDestroyLog } = this.runAbilities(
+    const { state: afterDestroy } = this.runAbilities(
       'AFTER_DESTROY',
       destroyedContext,
       resultData,
+      logger,
     )
 
-    log.push(...afterDestroyLog)
-
-    return { state: CombatState.fromData(afterDestroy, this._params), log }
+    return {
+      state: CombatState.fromData(afterDestroy, this._params),
+      log: [...logger.entries.slice(startIndex)],
+    }
   }
 
   isFinished(): boolean {
@@ -671,7 +679,7 @@ export class CombatState {
   }
 
   private processAssignHits(): StateWithProbability[] {
-    const { state: afterAssign, log } = this.assignHitsInternal()
+    const { state: afterAssign, log } = this.assignHits()
 
     return this.transitionPhaseWithData(
       afterAssign.data,

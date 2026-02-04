@@ -784,15 +784,13 @@ export class AbilitiesParams {
         }
 
         // Single structured log entry per ability
-        if (logger) {
-          const abilityLogger = logger
-            .child(invoke.timing)
-            .child(ability.key)
-            .forSide(side)
+        const childLogger = logger?.child(invoke.timing).child(ability.key)
+        if (childLogger) {
+          const sideLogger = childLogger.forSide(side)
           if (logData.length > 0) {
-            abilityLogger.log(...logData)
+            sideLogger.log(...logData)
           } else {
-            abilityLogger.log()
+            sideLogger.log()
           }
         }
 
@@ -819,7 +817,7 @@ export class AbilitiesParams {
             resultState,
             event.context,
             { triggerSide: event.side },
-            logger,
+            childLogger,
           )
           resultState = triggerResult.state
         }
@@ -845,10 +843,25 @@ export class AbilitiesParams {
                 defender: destroyedDefender,
               },
               undefined,
-              logger,
+              childLogger,
             )
             resultState = afterDestroy.state
           }
+        }
+
+        // Process pending hit pools produced by the ability.
+        // Skip during BEFORE_ASSIGN_HITS (recursion) and during DICE_ROLL
+        // micro-phase (hits from dice flow are assigned at ASSIGN_HITS).
+        if (
+          !timingArray.some(t => t === 'BEFORE_ASSIGN_HITS') &&
+          state.currentPhase.micro !== 'DICE_ROLL' &&
+          state.currentPhase.micro !== 'ASSIGN_HITS' &&
+          (resultState.attacker.hitPools.length > 0 ||
+            resultState.defender.hitPools.length > 0)
+        ) {
+          const cs = CombatState.fromData(resultState, this)
+          const { state: afterAssign } = cs.assignHits(childLogger)
+          resultState = afterAssign.data
         }
 
         // Adjust tracker indices when units were destroyed by triggers/AFTER_DESTROY
