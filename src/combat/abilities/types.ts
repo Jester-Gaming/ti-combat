@@ -26,6 +26,7 @@ export interface SyncSourceConfig {
   sort: 'asc' | 'desc'
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   compute?: (value: any) => unknown
+  filter?: (value: string) => boolean
 }
 
 export interface DeclaredSubtype {

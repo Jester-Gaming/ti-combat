@@ -9,6 +9,7 @@ interface DeclaredParamOptions<T> {
   sort?: 'asc' | 'desc'
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   compute?: (value: any) => T
+  filter?: (value: string) => boolean
 }
 
 interface DeclaredParamValue<T> {
@@ -19,6 +20,7 @@ interface DeclaredParamValue<T> {
   sort: 'asc' | 'desc'
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   compute?: (value: any) => T
+  filter?: (value: string) => boolean
 }
 
 /**
@@ -33,6 +35,7 @@ export function declareParam<T>(options: DeclaredParamOptions<T>): T {
     side: options.side ?? 'own',
     sort: options.sort ?? 'asc',
     compute: options.compute,
+    filter: options.filter,
   } as unknown as T
 }
 
@@ -81,6 +84,7 @@ export function extractSyncSources(
         side: value.side,
         sort: value.sort,
         compute: value.compute,
+        filter: value.filter,
       })
     }
   }

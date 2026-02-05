@@ -1168,13 +1168,17 @@ export class AbilitiesParams {
           continue
         }
 
-        const validList = buildValidList(
+        let validList = buildValidList(
           config,
           ownSettings,
           opponentSettings,
           ownSubtypes,
           opponentSubtypes,
         )
+
+        if (config.filter) {
+          validList = validList.filter(config.filter)
+        }
 
         const currentValue = abilityParams[config.key]
 

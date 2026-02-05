@@ -1,8 +1,14 @@
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
+import { devotion } from './devotion'
+import { impulseCore } from './impulse-core'
+
 export const yin_brotherhood: Faction = {
   name: 'Yin Brotherhood',
+  abilities: {
+    faction: [devotion, impulseCore],
+  },
   units: {
     FLAGSHIP: {
       BASE: {
