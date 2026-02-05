@@ -345,9 +345,17 @@ export class CombatState {
     const attackerTotalUnits = this.attacker.countUnits()
     const defenderTotalUnits = this.defender.countUnits()
 
-    // If either side has NO units at all, combat is finished
+    // If either side has NO units at all, combat is finished —
+    // unless we're in a unit ability phase where abilities can still inject dice
     if (attackerTotalUnits === 0 || defenderTotalUnits === 0) {
-      return true
+      if (
+        meta !== 'SPACE_CANNON_OFFENSE' &&
+        meta !== 'SPACE_CANNON_DEFENSE' &&
+        meta !== 'BOMBARDMENT' &&
+        meta !== 'AFB'
+      ) {
+        return true
+      }
     }
 
     // During combat phases, check if either side has no participating units

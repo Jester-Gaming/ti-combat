@@ -68,7 +68,7 @@ export const evelynDelouis: Ability<Params> = {
         const variantId = makeVariantId(params.unitType, ['Evelyn'])
         const unit = ctx.api.own.findUnitByPriority([variantId])
         if (!unit) return
-        dice.own.addDice(1, unit)
+        dice.own.addDiceCount(1, unit)
         ctx.api.own.removeSubtype(variantId, 'Evelyn')
       },
     },

@@ -60,7 +60,7 @@ export const strikeWingAmbuscade: Ability<Params> = {
         return params.phases.includes(currentPhase)
       },
       call: (ctx, params: Params, dice: DiceContext) => {
-        dice.own.addDice(1)
+        dice.own.addDiceCount(1)
         ctx.api.own.updateAbilityConfig({ uses: params.uses - 1 })
       },
     },

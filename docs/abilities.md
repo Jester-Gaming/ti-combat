@@ -313,10 +313,13 @@ modifyHitValue(amount: number, unit: Unit): void                 // By unit ref
 modifyHitValue(amount: number, source: UnitType): void           // By unit type
 modifyHitValue(amount: number, filter: (source: UnitType) => boolean): void
 
-// Add dice
-addDice(count: number): void                           // To best unit (lowest hit value)
-addDice(count: number, strategy: 'BEST' | 'WORST'): void
-addDice(count: number, source: UnitType): void         // To specific unit type
+// Add dice count to existing group
+addDiceCount(count: number): void                           // To best unit (lowest hit value)
+addDiceCount(count: number, strategy: 'BEST' | 'WORST'): void
+addDiceCount(count: number, source: UnitType): void         // To specific unit type
+
+// Add new dice group to pool
+addDiceGroup(source: UnitType, unit: Unit, diceGroup: DiceGroup): void
 ```
 
 Dice format: `[hitValue, diceCount, sourceUnit]` (SourcedDiceGroup). Hit value is the threshold — needs to roll >= hitValue to hit.

@@ -1,6 +1,6 @@
 import { isDraft, original } from 'immer'
 
-import type { SourcedDiceGroup, UnitType } from '@/types'
+import type { DiceGroup, SourcedDiceGroup, Unit, UnitType } from '@/types'
 
 import type { DiceApi, DicePool, DiceReadApi } from '../types'
 
@@ -15,7 +15,7 @@ function countPool(pool: DicePool): number {
 export function buildDiceReadApi(pool: DicePool): DiceReadApi {
   return {
     getAll: () => pool,
-    get: (source: UnitType) => pool[source],
+    get: (source: string) => pool[source],
     count: () => countPool(pool),
     isEmpty: () => countPool(pool) === 0,
   }
@@ -38,7 +38,7 @@ export function buildDiceApi(pool: DicePool): DiceApi {
 
   const api: DiceApi = {
     getAll: () => data,
-    get: (source: UnitType) => data[source],
+    get: (source: string) => data[source],
     count: () => countPool(data),
     isEmpty: () => countPool(data) === 0,
 
@@ -86,7 +86,7 @@ export function buildDiceApi(pool: DicePool): DiceApi {
       }
     },
 
-    addDice: (
+    addDiceCount: (
       count: number,
       strategyOrSourceOrUnit?: 'BEST' | 'WORST' | UnitType | object,
     ) => {
@@ -152,6 +152,11 @@ export function buildDiceApi(pool: DicePool): DiceApi {
         if (!dice || dice.length === 0) return
         dice[0] = [dice[0][0], dice[0][1] + count, dice[0][2]]
       }
+    },
+
+    addDiceGroup: (source: string, unit: Unit, diceGroup: DiceGroup) => {
+      const existing = data[source] ?? []
+      data[source] = [...existing, [diceGroup[0], diceGroup[1], unit]]
     },
   } as DiceApi
 

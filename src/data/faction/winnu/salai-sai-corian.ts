@@ -27,7 +27,7 @@ export const salaiSaiCorian: Ability<Params> = {
         }
 
         // Flagship has COMBAT: [7, 1] as base — adjust to non-fighter count
-        dice.own.addDice(nonFighterCount - 1, ctx.getUnit())
+        dice.own.addDiceCount(nonFighterCount - 1, ctx.getUnit())
       },
     },
   ],

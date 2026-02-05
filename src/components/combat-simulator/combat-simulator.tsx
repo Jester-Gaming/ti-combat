@@ -58,13 +58,6 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
 
   // Create CombatState for simulation
   const combatState = useMemo(() => {
-    const hasAttackerUnits = cs.attacker.countUnits() > 0
-    const hasDefenderUnits = cs.defender.countUnits() > 0
-
-    if (!hasAttackerUnits || !hasDefenderUnits) {
-      return null
-    }
-
     return CombatState.forSimulation(
       cs.data.attacker,
       cs.data.defender,

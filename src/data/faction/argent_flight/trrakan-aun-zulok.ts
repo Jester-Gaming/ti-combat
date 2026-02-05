@@ -51,7 +51,7 @@ export const trrakanAunZulok: Ability<Params> = {
         return params.phases.includes(currentPhase)
       },
       call: (_ctx, _params: Params, dice: DiceContext) => {
-        dice.own.addDice(1)
+        dice.own.addDiceCount(1)
       },
     },
   ],

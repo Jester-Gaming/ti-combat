@@ -26,7 +26,7 @@ export const plasmaScoring: Ability<Params> = {
         return params.isEnabled && !dice.own.isEmpty()
       },
       call: (_ctx, params: Params, dice: DiceContext) => {
-        dice.own.addDice(1, params.strategy)
+        dice.own.addDiceCount(1, params.strategy)
       },
     },
   ],

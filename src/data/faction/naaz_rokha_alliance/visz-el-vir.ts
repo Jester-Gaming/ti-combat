@@ -20,7 +20,7 @@ export const viszElVir: Ability<Params> = {
       call: (ctx, _params: Params, dice: DiceContext) => {
         const mechs = ctx.api.own.getUnits('MECH')
         for (const mech of mechs) {
-          dice.own.addDice(1, mech)
+          dice.own.addDiceCount(1, mech)
         }
       },
     },

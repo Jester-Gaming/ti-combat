@@ -1,6 +1,7 @@
 import { bunker } from './bunker'
 import { directHit } from './direct-hit'
 import { disable } from './disable'
+import { experimentalBattlestation } from './experimental-battlestation'
 import { fighterPrototype } from './fighter-prototype'
 import { maneuveringJets } from './maneuvering-jets'
 import { moraleBoost } from './morale-boost'
@@ -13,6 +14,7 @@ export default [
   bunker,
   directHit,
   disable,
+  experimentalBattlestation,
   fighterPrototype,
   maneuveringJets,
   moraleBoost,

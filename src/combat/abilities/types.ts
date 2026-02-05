@@ -1,5 +1,6 @@
 import type {
   CombatSide,
+  DiceGroup,
   FactionKey,
   SourcedDiceGroup,
   Unit,
@@ -51,8 +52,8 @@ export interface OwnOpponentContext<T> {
   opponent: T
 }
 
-// Per-unit dice pool: indices match the unit list for each type
-export type DicePool = Partial<Record<UnitType, SourcedDiceGroup[]>>
+// Dice pool: keyed by unit type or ability name
+export type DicePool = Partial<Record<string, SourcedDiceGroup[]>>
 
 // Sided version for external API
 export type SidedDiceData = SidedContext<DicePool>
@@ -64,7 +65,7 @@ export type SidedDiceData = SidedContext<DicePool>
 /** Read-only API for querying dice */
 export interface DiceReadApi {
   getAll(): DicePool
-  get(source: UnitType): readonly SourcedDiceGroup[] | undefined
+  get(source: string): readonly SourcedDiceGroup[] | undefined
   count(): number
   isEmpty(): boolean
 }
@@ -76,10 +77,12 @@ export interface DiceApi extends DiceReadApi {
   modifyHitValue(amount: number, source: UnitType): void
   modifyHitValue(amount: number, filter: (source: UnitType) => boolean): void
 
-  addDice(count: number): void
-  addDice(count: number, strategy: 'BEST' | 'WORST'): void
-  addDice(count: number, source: UnitType): void
-  addDice(count: number, unit: Unit): void
+  addDiceCount(count: number): void
+  addDiceCount(count: number, strategy: 'BEST' | 'WORST'): void
+  addDiceCount(count: number, source: UnitType): void
+  addDiceCount(count: number, unit: Unit): void
+
+  addDiceGroup(source: string, unit: Unit, diceGroup: DiceGroup): void
 }
 
 export type DiceReadContext = OwnOpponentContext<DiceReadApi>

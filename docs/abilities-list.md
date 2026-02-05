@@ -180,7 +180,7 @@
 - [x] **Direct Hit** (x4) — After another player's ship uses Sustain Damage to cancel a hit produced by your units or abilities: Destroy that ship.
 - [x] **Disable** — At the start of an invasion in a system that contains 1 or more of your opponents' PDS units: Your opponents' PDS units lose Planetary Shield and Space Cannon during this invasion.
 - [ ] **Emergency Repairs** — At the start or end of a combat round: Repair all of your units that have Sustain Damage in the active system.
-- [ ] **Experimental Battlestation** — After another player moves ships into a system during a tactical action: Choose 1 of your space docks that is either in or adjacent to that system. That space dock uses Space Cannon 5 (x3) against ships in the active system.
+- [x] **Experimental Battlestation** — After another player moves ships into a system during a tactical action: Choose 1 of your space docks that is either in or adjacent to that system. That space dock uses Space Cannon 5 (x3) against ships in the active system.
 - [x] **Fighter Prototype** — At the start of the first round of a space combat: Apply +2 to the result of each of your fighters' combat rolls during this combat round.
 - [ ] **Fire Team** — After your ground forces make combat rolls during a round of ground combat: Reroll any number of your dice.
 - [x] **Maneuvering Jets** (x4) — Before you assign hits produced by another player's Space Cannon roll: Cancel 1 hit.
