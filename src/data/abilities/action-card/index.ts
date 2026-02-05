@@ -1,3 +1,4 @@
+import { blitz } from './blitz'
 import { bunker } from './bunker'
 import { directHit } from './direct-hit'
 import { disable } from './disable'
@@ -11,6 +12,7 @@ import { solarFlare } from './solar-flare'
 import { waylay } from './waylay'
 
 export default [
+  blitz,
   bunker,
   directHit,
   disable,

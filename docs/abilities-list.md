@@ -192,7 +192,7 @@
 - [x] **Maneuvering Jets** (x4) — Before you assign hits produced by another player's Space Cannon roll: Cancel 1 hit.
 - [x] **Morale Boost** (x4) — At the start of a combat round: Apply +1 to the result of each of your unit's combat rolls during this combat round.
 - [x] **Shields Holding** (x4) — Before you assign hits to your ships during a space combat: Cancel up to 2 hits.
-- [ ] **Blitz** — At the start of an invasion: Each of your non-fighter ships in the active system that do not have Bombardment gain Bombardment 6 until the end of the invasion.
+- [x] **Blitz** — At the start of an invasion: Each of your non-fighter ships in the active system that do not have Bombardment gain Bombardment 6 until the end of the invasion.
 - [x] **Reflective Shielding** — When one of your ships uses Sustain Damage during combat: Produce 2 hits against your opponent's ships in the active system.
 - [ ] **Scramble Frequency** — After another player makes a Bombardment, Space Cannon, or Anti-Fighter Barrage roll: That player rerolls all of their dice.
 - [x] **Solar Flare** — After you activate a system: During this movement, other players cannot use Space Cannon against your ships.
