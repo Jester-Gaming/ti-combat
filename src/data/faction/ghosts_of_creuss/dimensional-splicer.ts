@@ -1,10 +1,6 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
-import {
-  getVariantDisplayName,
-  parseVariantId,
-  unitMatchesVariant,
-} from '@/combat/utils/unit-variant'
+import { parseVariantId, unitMatchesVariant } from '@/combat/utils/unit-variant'
 import type { UnitType } from '@/types'
 
 type Params = {
@@ -53,20 +49,14 @@ export const dimensionalSplicer: Ability<Params> = {
     },
   ],
   uiConfig: ctx => {
-    const variants = ctx.api.opponent.getParticipatingVariants({
-      combatMode: 'SPACE',
-    })
-    const items = variants.map(id => ({
-      label: getVariantDisplayName(id),
-      value: id,
-    }))
-
     return [
       {
         key: 'targetPriority' as const,
         label: 'Target Priority',
         type: 'order-list' as const,
-        items,
+        items: ctx.api.opponent.getParticipatingVariantsOptions({
+          combatMode: 'SPACE',
+        }),
       },
     ]
   },

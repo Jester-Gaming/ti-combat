@@ -1,4 +1,3 @@
-import { getVariantDisplayName } from '@/combat/utils/unit-variant'
 import { type UnitType } from '@/types'
 
 import { declareParam } from '../../../combat/abilities/declare-param'
@@ -64,21 +63,15 @@ export const assaultCannon: Ability<Params> = {
     },
   ],
   uiConfig: ctx => {
-    const variants = ctx.api.opponent.getParticipatingVariants({
-      combatMode: 'SPACE',
-      exclude: ['FIGHTER'],
-    })
-    const items = variants.map(id => ({
-      label: getVariantDisplayName(id),
-      value: id,
-    }))
-
     return [
       {
         key: 'targetPriority' as const,
         label: 'Target Priority',
         type: 'order-list' as const,
-        items,
+        items: ctx.api.opponent.getParticipatingVariantsOptions({
+          combatMode: 'SPACE',
+          exclude: ['FIGHTER'],
+        }),
       },
     ]
   },

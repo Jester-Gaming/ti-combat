@@ -1,9 +1,6 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
-import {
-  getVariantDisplayName,
-  parseVariantId,
-} from '@/combat/utils/unit-variant'
+import { parseVariantId } from '@/combat/utils/unit-variant'
 
 type Params = {
   targetPriority: string[]
@@ -22,21 +19,15 @@ export const raidFormation: Ability<Params> = {
     }),
   },
   uiConfig: ctx => {
-    const variants = ctx.api.opponent.getParticipatingVariants({
-      combatMode: 'SPACE',
-      exclude: ['FIGHTER'],
-    })
-    const items = variants.map(id => ({
-      label: getVariantDisplayName(id),
-      value: id,
-    }))
-
     return [
       {
         key: 'targetPriority' as const,
         label: 'Target Priority',
         type: 'order-list' as const,
-        items,
+        items: ctx.api.opponent.getParticipatingVariantsOptions({
+          combatMode: 'SPACE',
+          exclude: ['FIGHTER'],
+        }),
       },
     ]
   },

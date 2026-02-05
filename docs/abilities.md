@@ -228,6 +228,7 @@ getPendingHits(): number
 getHitPoolValidTargets(): UnitType[]
 getParticipatingUnitTypes(options?: { combatMode?: CombatMode }): UnitType[]
 getParticipatingVariants(filter?: { include?: UnitType[], exclude?: UnitType[], excludeSubtypes?: string[], combatMode?: CombatMode }): string[]
+getParticipatingVariantsOptions(filter?: { ... same as above }): { label: string, value: string }[]  // For uiConfig items
 findUnit(unitType: UnitType, predicate: Partial<UnitState>): { unit: Unit, index: number } | undefined
 findUnitByPriority(priority: string[]): Unit | undefined
 isUnitAbilityLost(ability: UnitAbility, unitType: UnitType): boolean
@@ -429,16 +430,12 @@ uiConfig: [
 
 // Dynamic (context-aware)
 uiConfig: (ctx, params) => {
-  const variants = ctx.api.opponent.getParticipatingVariants({ exclude: ['FIGHTER'] })
   return [
     {
       key: 'targetPriority',
       label: 'Target Priority',
       type: 'order-list',
-      items: variants.map(id => ({
-        label: getVariantDisplayName(id),
-        value: id,
-      })),
+      items: ctx.api.opponent.getParticipatingVariantsOptions({ exclude: ['FIGHTER'] }),
     },
   ]
 }

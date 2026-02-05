@@ -2,7 +2,6 @@ import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability, AbilityReadContext } from '@/combat/abilities/types'
 import {
   getUnitVariantId,
-  getVariantDisplayName,
   parseVariantId,
   unitMatchesVariant,
 } from '@/combat/utils/unit-variant'
@@ -123,20 +122,14 @@ export const sustainDamage: Ability<Params> = {
       ? ('groundPriority' as const)
       : ('spacePriority' as const)
 
-    const participatingUnits = ctx.api.own.getParticipatingVariants({
-      exclude: ['FIGHTER'],
-    })
-    const participatingItems = participatingUnits.map(id => ({
-      label: getVariantDisplayName(id),
-      value: id,
-    }))
-
     return [
       {
         key,
         label: 'Sustain Priority',
         type: 'priority-list' as const,
-        items: participatingItems,
+        items: ctx.api.own.getParticipatingVariantsOptions({
+          exclude: ['FIGHTER'],
+        }),
       },
     ]
   },

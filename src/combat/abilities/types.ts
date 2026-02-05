@@ -144,6 +144,13 @@ export interface SideReadApi {
     excludeSubtypes?: string[]
     combatMode?: CombatMode
   }): string[]
+  /** Same as getParticipatingVariants but returns { label, value } items for UI config. */
+  getParticipatingVariantsOptions(filter?: {
+    include?: UnitType[]
+    exclude?: UnitType[]
+    excludeSubtypes?: string[]
+    combatMode?: CombatMode
+  }): { label: string; value: string }[]
   findUnit(
     unitType: UnitType,
     predicate: Partial<UnitState>,

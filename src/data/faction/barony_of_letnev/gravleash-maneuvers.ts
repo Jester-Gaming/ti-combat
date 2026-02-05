@@ -1,5 +1,4 @@
 import { declareParam } from '@/combat/abilities/declare-param'
-import { getVariantDisplayName } from '@/combat/utils/unit-variant'
 
 import type {
   Ability,
@@ -29,20 +28,14 @@ export const gravleashManeuvers: Ability<Params> = {
   },
   headerUI: 'isEnabled',
   uiConfig: ctx => {
-    const variants = ctx.api.own.getParticipatingVariants({
-      combatMode: 'SPACE',
-    })
-    const items = variants.map(id => ({
-      label: getVariantDisplayName(id),
-      value: id,
-    }))
-
     return [
       {
         key: 'shipPriority' as const,
         label: 'Ship Priority',
         type: 'order-list' as const,
-        items: items,
+        items: ctx.api.own.getParticipatingVariantsOptions({
+          combatMode: 'SPACE',
+        }),
       },
     ]
   },

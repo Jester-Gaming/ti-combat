@@ -1,9 +1,5 @@
 import { declareParam } from '@/combat/abilities/declare-param'
-import {
-  getVariantDisplayName,
-  makeVariantId,
-  parseVariantId,
-} from '@/combat/utils/unit-variant'
+import { makeVariantId, parseVariantId } from '@/combat/utils/unit-variant'
 import type { UnitType } from '@/types'
 
 import type {
@@ -33,20 +29,17 @@ export const evelynDelouis: Ability<Params> = {
   ],
   headerUI: 'isEnabled',
   uiConfig: (ctx: AbilityReadContext) => {
-    const variants = ctx.api.own.getParticipatingVariants({
-      excludeSubtypes: ['Evelyn'],
-      combatMode: 'GROUND',
-    })
-
     return [
       {
         key: 'unitType' as const,
         label: 'Unit Type',
         type: 'select' as const,
-        items: variants.reverse().map(id => ({
-          label: getVariantDisplayName(id),
-          value: id,
-        })),
+        items: ctx.api.own
+          .getParticipatingVariantsOptions({
+            excludeSubtypes: ['Evelyn'],
+            combatMode: 'GROUND',
+          })
+          .reverse(),
       },
     ]
   },

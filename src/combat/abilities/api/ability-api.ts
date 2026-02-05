@@ -23,6 +23,7 @@ import type {
   UnitAbilityRestrictions,
 } from '../../combat-state/types'
 import {
+  getVariantDisplayName,
   makeVariantId,
   parseVariantId,
   unitMatchesVariant,
@@ -292,6 +293,18 @@ function buildSideReadApi(
       combatMode?: CombatMode
     }) {
       return getParticipatingVariantsForSide(state, side, filter)
+    },
+
+    getParticipatingVariantsOptions(filter?: {
+      include?: UnitType[]
+      exclude?: UnitType[]
+      excludeSubtypes?: string[]
+      combatMode?: CombatMode
+    }) {
+      return getParticipatingVariantsForSide(state, side, filter).map(id => ({
+        label: getVariantDisplayName(id),
+        value: id,
+      }))
     },
 
     findUnit(unitType: UnitType, predicate: Partial<UnitState>) {

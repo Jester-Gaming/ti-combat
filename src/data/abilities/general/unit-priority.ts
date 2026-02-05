@@ -1,5 +1,3 @@
-import { getVariantDisplayName } from '@/combat/utils/unit-variant'
-
 import { declareParam } from '../../../combat/abilities/declare-param'
 import type { Ability } from '../../../combat/abilities/types'
 
@@ -24,12 +22,6 @@ export const unitPriority: Ability<Params> = {
   },
   invoke: [],
   uiConfig: ctx => {
-    const variants = ctx.api.own.getParticipatingVariants()
-    const items = variants.map(id => ({
-      label: getVariantDisplayName(id),
-      value: id,
-    }))
-
     const key =
       ctx.state.combatMode === 'GROUND'
         ? ('groundUnitPriority' as const)
@@ -40,7 +32,7 @@ export const unitPriority: Ability<Params> = {
         key,
         label: 'Unit Priority',
         type: 'order-list' as const,
-        items,
+        items: ctx.api.own.getParticipatingVariantsOptions(),
       },
     ]
   },

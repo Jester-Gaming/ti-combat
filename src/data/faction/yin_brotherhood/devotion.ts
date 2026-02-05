@@ -1,9 +1,6 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
-import {
-  getVariantDisplayName,
-  parseVariantId,
-} from '@/combat/utils/unit-variant'
+import { parseVariantId } from '@/combat/utils/unit-variant'
 
 type Params = {
   isEnabled: boolean
@@ -64,32 +61,23 @@ export const devotion: Ability<Params> = {
     },
   ],
   uiConfig: ctx => {
-    const ownVariants = ctx.api.own.getParticipatingVariants({
-      include: ['CRUISER', 'DESTROYER'],
-      combatMode: 'SPACE',
-    })
-    const opponentVariants = ctx.api.opponent.getParticipatingVariants({
-      combatMode: 'SPACE',
-    })
-
     return [
       {
         key: 'sacrificePriority' as const,
         label: 'Sacrifice Priority',
         type: 'priority-list' as const,
-        items: ownVariants.map(id => ({
-          label: getVariantDisplayName(id),
-          value: id,
-        })),
+        items: ctx.api.own.getParticipatingVariantsOptions({
+          include: ['CRUISER', 'DESTROYER'],
+          combatMode: 'SPACE',
+        }),
       },
       {
         key: 'targetPriority' as const,
         label: 'Target Priority',
         type: 'priority-list' as const,
-        items: opponentVariants.map(id => ({
-          label: getVariantDisplayName(id),
-          value: id,
-        })),
+        items: ctx.api.opponent.getParticipatingVariantsOptions({
+          combatMode: 'SPACE',
+        }),
       },
     ]
   },

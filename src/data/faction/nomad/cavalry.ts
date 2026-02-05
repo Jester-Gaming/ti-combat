@@ -1,5 +1,4 @@
 import { declareParam } from '@/combat/abilities/declare-param'
-import { getVariantDisplayName } from '@/combat/utils/unit-variant'
 import type { UnitType } from '@/types'
 import { getEffectiveStats } from '@/utils/get-simulation-units'
 
@@ -33,12 +32,6 @@ export const cavalry: Ability<Params> = {
     { key: 'subtypes', value: { name: 'Cavalry', unitType: params.unitType } },
   ],
   uiConfig: (ctx: AbilityReadContext) => {
-    const variants = ctx.api.own.getParticipatingVariants({
-      exclude: ['FIGHTER'],
-      excludeSubtypes: ['Cavalry'],
-      combatMode: 'SPACE',
-    })
-
     return [
       {
         key: 'memoria2' as const,
@@ -49,10 +42,13 @@ export const cavalry: Ability<Params> = {
         key: 'unitType' as const,
         label: 'Unit Type',
         type: 'select' as const,
-        items: variants.reverse().map(id => ({
-          label: getVariantDisplayName(id),
-          value: id,
-        })),
+        items: ctx.api.own
+          .getParticipatingVariantsOptions({
+            exclude: ['FIGHTER'],
+            excludeSubtypes: ['Cavalry'],
+            combatMode: 'SPACE',
+          })
+          .reverse(),
       },
     ]
   },
