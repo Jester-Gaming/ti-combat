@@ -5,6 +5,7 @@ import actionCard from '../../data/abilities/action-card'
 import agenda from '../../data/abilities/agenda'
 import environment from '../../data/abilities/environment'
 import general from '../../data/abilities/general'
+import relic from '../../data/abilities/relic'
 import technology from '../../data/abilities/technology'
 import type { Ability } from './types'
 
@@ -29,6 +30,7 @@ const allAbilities = [
   ...agenda,
   ...technology,
   ...actionCard,
+  ...relic,
   ...allPromissoryAbilities,
   ...allAgentAbilities,
   ...allCommanderAbilities,

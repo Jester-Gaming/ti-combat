@@ -212,7 +212,7 @@
 
 - [ ] **The Crown of Thalnos** - During each combat round, this card's owner may reroll any number of their dice, applying +1 to the results; any units that reroll dice but do not produce at least 1 hit are destroyed.
 - [ ] **Heart of Ixth** - After any die is rolled, you may exhaust this card to add or subtract 1 from its result.
-- [ ] **Metali Void Armaments** - During the "Anti-Fighter Barrage" step of space combat, you may resolve Anti-Fighter Barrage 6 (x3) against your opponent's units.
+- [x] **Metali Void Armaments** - During the "Anti-Fighter Barrage" step of space combat, you may resolve Anti-Fighter Barrage 6 (x3) against your opponent's units.
 - [ ] **Lightrail Ordnance** - Your space docks gain Space Cannon 5 (x2). You may use your space dock's Space Cannon against ships that are adjacent to their systems.
 - [ ] **Metali Void Shielding** - Each time hits are produced against 1 or more of your non-fighter ships, 1 of those ships may use Sustain Damage as if it had that ability.
 
