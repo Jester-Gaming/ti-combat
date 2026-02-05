@@ -41,6 +41,26 @@ describe('Shields Holding', () => {
     expect(t.attacker.units.CRUISER).toHaveLength(2)
   })
 
+  it('cancels AFB hits', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { FIGHTER: 3 },
+        abilities: { SHIELDS_HOLDING: { uses: 1 } },
+      },
+      // 2 destroyers: AFB 9x2 each = 4 dice total
+      defender: { faction: 'ARBOREC', units: { DESTROYER: 2 } },
+    })
+
+    // Advance past AFB entirely; pick 3-hit AFB outcome
+    // Shields Holding cancels 2 → 1 effective hit → 2 fighters survive
+    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL', 3)
+
+    expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(1)
+    expect(t.attacker.units.FIGHTER).toHaveLength(2)
+  })
+
   it('does not fire during ground combat', () => {
     const t = combatTest({
       mode: 'GROUND',

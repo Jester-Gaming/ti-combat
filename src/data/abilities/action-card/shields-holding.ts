@@ -19,7 +19,7 @@ export const shieldsHolding: Ability<Params> = {
   invoke: [
     {
       timing: 'BEFORE_ASSIGN_HITS',
-      context: 'SPACE_COMBAT',
+      context: ['SPACE_COMBAT', 'AFB'],
       isCallable: (params: Params, ctx: AbilityReadContext) => {
         if (params.uses <= 0) return false
         return ctx.api.own.getPendingHits() > 0
