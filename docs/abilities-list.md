@@ -20,6 +20,7 @@
 - [x] **Non-Euclidean Shielding** (Faction Technology) — When 1 of your units uses Sustain Damage, cancel 2 hits instead of 1.
 - [x] **Arc Secundus** (Flagship) — Other players' units in this system lose Planetary Shield. At the start of each space combat round, repair this ship.
 - [x] **Viscount Unlenn** (Agent) — At the start of a space combat round: You may exhaust this card to choose 1 ship in the active system; that ship rolls 1 additional die during this combat round.
+- [ ] **Dunlain Reaper** (Mech) — Deploy: At the start of a round of ground combat, you may spend 2 resources to replace 1 of your infantry in that combat with 1 mech.
 - [x] **Gravleash Maneuvers** (Breakthrough) — Before you roll dice during space combat, apply +X to the results of 1 of your ship's rolls, where X is the number of ship types you have in the combat.
 
 ### Clan of Saar
@@ -54,6 +55,7 @@
 ### Firmament
 
 - [x] **Heaven's Eye** (Flagship) — If the active system contains units that belong to a player who has a control token on 1 of your plots, apply +1 to this ship's move value and repair it at the end of every combat round.
+- [ ] **Myru Vos** (Agent) - When a player moves ships: You may exhaust this card; if you do, Space Cannon cannot be used against those ships. If they are not transporting units, they can also move through other players' ships.
 
 ### Obsidian
 
@@ -124,6 +126,7 @@
 - [ ] **Linkship I** (Special Unit) — Anti-Fighter Barrage 9 (x2). This unit can use the Space Cannon ability of one of your structures in its space area; each structure can only be triggered once.
 - [ ] **Linkship II** (Faction Technology) — Anti-Fighter Barrage 6 (x3). This unit can use the Space Cannon ability of one of your structures in its space area; each linkship can trigger the same structure.
 - [x] **Alarum** (Mech) — At the end of a round of ground combat on this planet, you may move up to 2 of your ground forces to this planet from planets in adjacent systems.
+- [ ] **Last Dispatch** (Flagship) — When this unit retreats, you may destroy 1 ship in the active system that does not have Sustain Damage.
 
 ### Sardakk N'orr
 
@@ -133,6 +136,7 @@
 - [ ] **Valkyrie Particle Weave** (Faction Technology) — After making combat rolls during a round of ground combat, if your opponent produced 1 or more hits, you produce 1 additional hit.
 - [x] **C'morran N'orr** (Flagship) — Apply +1 to the result of each of your other ship's combat rolls in this system.
 - [x] **Valkyrie Exoskeleton** (Mech) — After this unit uses its Sustain Damage ability during ground combat, it produces 1 hit against your opponent's ground forces on this planet.
+- [ ] **G'hom Sek'kus** (Commander) — You can commit up to 1 ground force from each planet in the active system and each planet in adjacent systems that do not contain 1 of your command tokens.
 
 ### Titans of Ul
 
@@ -170,6 +174,8 @@
 - [ ] **Brother Milor** (Agent) — After a player's unit is destroyed: You may exhaust this card to allow that player to place 2 fighters in the destroyed unit's system if it was a ship, or 2 infantry on its planet if it was a ground force.
 
 ### Yssaril Tribes
+
+- [ ] **Ssruu** (Agent) — This card has the text ability of each other player's agent, even if that agent is exhausted.
 
 ---
 
@@ -231,3 +237,9 @@
 
 - [x] **Nebula**
 - [x] **Scar**
+
+---
+
+## Other
+
+- [ ] Neutrals
