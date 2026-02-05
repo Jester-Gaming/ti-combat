@@ -9,6 +9,7 @@ export const helTitan: Ability<Params> = {
   key: 'HEL_TITAN',
   name: 'Hel-Titan',
   category: 'FACTION',
+  subcategory: 'UNIT',
   context: 'GROUND',
   params: {
     isEnabled: true,

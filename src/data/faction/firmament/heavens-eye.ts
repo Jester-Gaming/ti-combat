@@ -8,6 +8,7 @@ export const heavensEye: Ability<Params> = {
   key: 'HEAVENS_EYE',
   name: "(Firmament) Heaven's Eye",
   category: 'FACTION',
+  subcategory: 'UNIT',
   params: {
     isEnabled: false,
   },

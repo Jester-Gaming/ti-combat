@@ -10,8 +10,9 @@ type Params = {
 
 export const imperator: Ability<Params> = {
   key: 'IMPERATOR',
-  name: 'Breakthrough',
+  name: 'Imperator',
   category: 'FACTION',
+  subcategory: 'BREAKTHROUGH',
   params: {
     supportCount: 0,
   },

@@ -10,6 +10,12 @@
   color: hsl(var(--muted-foreground));
 }
 
+.subcategoryLabel {
+  @apply mt-2 mb-1.5 text-[9px] font-medium tracking-wider uppercase;
+  font-family: var(--font-heading);
+  color: hsl(var(--muted-foreground) / 70%);
+}
+
 .abilitiesList {
   @apply space-y-2;
 }

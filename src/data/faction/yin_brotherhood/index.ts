@@ -7,7 +7,8 @@ import { impulseCore } from './impulse-core'
 export const yin_brotherhood: Faction = {
   name: 'Yin Brotherhood',
   abilities: {
-    faction: [devotion, impulseCore],
+    faction: [devotion],
+    technology: [impulseCore],
   },
   units: {
     FLAGSHIP: {

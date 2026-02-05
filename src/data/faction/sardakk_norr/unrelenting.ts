@@ -8,6 +8,7 @@ export const unrelenting: Ability<Params> = {
   key: 'UNRELENTING',
   name: 'Unrelenting',
   category: 'FACTION',
+  subcategory: 'ABILITY',
   params: {
     isEnabled: true,
   },

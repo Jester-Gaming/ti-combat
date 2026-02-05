@@ -15,8 +15,9 @@ type Params = {
 
 export const gravleashManeuvers: Ability<Params> = {
   key: 'GRAVLEASH_MANEUVERS',
-  name: 'Breakthrough',
+  name: 'Gravleash Maneuvers',
   category: 'FACTION',
+  subcategory: 'BREAKTHROUGH',
   context: 'SPACE',
   params: {
     isEnabled: false,

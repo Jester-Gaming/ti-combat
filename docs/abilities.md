@@ -24,6 +24,7 @@ interface Ability<Params extends Record<string, unknown>> {
   key: string // Unique identifier, SCREAMING_SNAKE_CASE
   name: string // Display name for UI
   category: string // 'GENERAL' | 'TECHNOLOGY' | 'ACTION_CARD' | 'ENVIRONMENT' | 'AGENDA' | 'FACTION'
+  subcategory?: string // For FACTION abilities: 'ABILITY' | 'TECHNOLOGY' | 'BREAKTHROUGH' | 'HERO' | 'UNIT'
   defaultParams?: Params // Default parameter values
   headerUI?: string & keyof Params // Param key shown in ability header
   readOnly?: boolean // Lock UI (user cannot toggle)
@@ -502,7 +503,7 @@ invoke: [
 3. Choose correct timing(s) — see [Timing System](#timing-system)
 4. Implement `isCallable` guard if ability is conditional
 5. Implement `call` with the correct signature for the timing
-6. Add `headerUI` if ability needs a toggle/counter
+6. Add `headerUI` — every ability must be visible in the UI. For always-on abilities with no user controls, use `params: { isEnabled: true }`, `headerUI: 'isEnabled'`, and `readOnly: true`
 7. Add `uiConfig` if ability has configurable params beyond the header
 8. Add `condition` if ability is side-restricted
 9. Register in the category's `index.ts` (or faction's `index.ts`)

@@ -1,9 +1,19 @@
 import type { Ability } from '../../../combat/abilities/types'
 
-export const mollTerminus: Ability = {
+type Params = {
+  isEnabled: boolean
+}
+
+export const mollTerminus: Ability<Params> = {
   key: 'MOLL_TERMINUS',
   name: 'Moll Terminus',
   category: 'FACTION',
+  subcategory: 'UNIT',
+  params: {
+    isEnabled: true,
+  },
+  headerUI: 'isEnabled',
+  readOnly: true,
   invoke: [
     {
       timing: 'PREPARE',

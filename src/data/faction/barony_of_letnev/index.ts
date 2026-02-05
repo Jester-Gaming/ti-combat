@@ -10,8 +10,9 @@ import { viscountUnlenn } from './viscount-unlenn'
 export const barony_of_letnev: Faction = {
   name: 'Barony of Letnev',
   abilities: {
-    faction: [gravleashManeuvers, l4Disruptors, nonEuclideanShielding],
+    technology: [l4Disruptors, nonEuclideanShielding],
     agent: [viscountUnlenn],
+    breakthrough: [gravleashManeuvers],
   },
   units: {
     FLAGSHIP: {

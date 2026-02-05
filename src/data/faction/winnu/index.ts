@@ -8,8 +8,8 @@ import { salaiSaiCorian } from './salai-sai-corian'
 export const winnu: Faction = {
   name: 'Winnu',
   abilities: {
-    faction: [imperator],
     commander: [rickarRickani],
+    breakthrough: [imperator],
   },
   units: {
     FLAGSHIP: {

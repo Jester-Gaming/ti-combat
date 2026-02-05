@@ -390,6 +390,7 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   key: string
   name: string // Display name for UI
   category: string
+  subcategory?: string
   params?: Params
   headerUI?: string & keyof Params // Param key to render in header (checkbox for boolean, number input for number)
   readOnly?: boolean // Show UI but prevent user from changing the enable state

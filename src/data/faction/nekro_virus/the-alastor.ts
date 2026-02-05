@@ -9,6 +9,7 @@ export const theAlastor: Ability<Params> = {
   key: 'THE_ALASTOR',
   name: 'The Alastor',
   category: 'FACTION',
+  subcategory: 'UNIT',
   context: 'SPACE',
   params: {
     isEnabled: true,

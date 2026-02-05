@@ -5,9 +5,12 @@ import type { UnitDefinition, UnitType } from './unit'
 
 interface FactionAbilities {
   faction?: readonly Ability[]
+  technology?: readonly Ability[]
   promissory?: readonly Ability[]
   agent?: readonly Ability[]
   commander?: readonly Ability[]
+  hero?: readonly Ability[]
+  breakthrough?: readonly Ability[]
 }
 
 // Faction data structure

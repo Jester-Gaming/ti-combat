@@ -14,6 +14,7 @@ export const impulseCore: Ability<Params> = {
   key: 'IMPULSE_CORE',
   name: 'Impulse Core',
   category: 'FACTION',
+  subcategory: 'TECHNOLOGY',
   context: 'SPACE',
   params: {
     isEnabled: false,

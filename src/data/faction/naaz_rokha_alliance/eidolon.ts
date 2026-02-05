@@ -9,6 +9,7 @@ export const eidolon: Ability<Params> = {
   key: 'EIDOLON',
   name: 'Eidolon',
   category: 'FACTION',
+  subcategory: 'UNIT',
   context: 'SPACE',
   params: {
     isEnabled: true,

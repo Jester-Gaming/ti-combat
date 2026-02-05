@@ -14,6 +14,7 @@ export const devotion: Ability<Params> = {
   key: 'DEVOTION',
   name: 'Devotion',
   category: 'FACTION',
+  subcategory: 'ABILITY',
   context: 'SPACE',
   params: {
     isEnabled: false,

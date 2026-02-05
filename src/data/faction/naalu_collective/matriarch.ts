@@ -9,6 +9,7 @@ export const matriarch: Ability<Params> = {
   key: 'MATRIARCH',
   name: 'Matriarch',
   category: 'FACTION',
+  subcategory: 'UNIT',
   context: 'GROUND',
   params: {
     isEnabled: true,

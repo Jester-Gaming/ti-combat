@@ -12,6 +12,7 @@ export const assail: Ability<Params> = {
   key: 'ASSAIL',
   name: '(Obsidian) Assail',
   category: 'FACTION',
+  subcategory: 'ABILITY',
   params: {
     isEnabled: false,
   },

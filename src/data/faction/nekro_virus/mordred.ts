@@ -8,6 +8,7 @@ export const mordred: Ability<Params> = {
   key: 'MORDRED',
   name: '(Nekro) Mordred',
   category: 'FACTION',
+  subcategory: 'UNIT',
   params: {
     isEnabled: false,
   },

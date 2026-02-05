@@ -8,6 +8,7 @@ export const fragile: Ability<Params> = {
   key: 'FRAGILE',
   name: 'Fragile',
   category: 'FACTION',
+  subcategory: 'ABILITY',
   params: {
     isEnabled: true,
   },

@@ -6,7 +6,7 @@ import { dimensionalSplicer } from './dimensional-splicer'
 export const ghosts_of_creuss: Faction = {
   name: 'Ghosts of Creuss',
   abilities: {
-    faction: [dimensionalSplicer],
+    technology: [dimensionalSplicer],
   },
   units: {
     FLAGSHIP: {

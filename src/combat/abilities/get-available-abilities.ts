@@ -90,7 +90,13 @@ export function getAvailableAbilities(
 
   // Get faction-specific abilities
   const faction = factions[factionKey]
-  const factionAbilities = faction?.abilities?.faction ?? []
+  const abilities = faction?.abilities
+  const factionAbilities = [
+    ...(abilities?.faction ?? []),
+    ...(abilities?.technology ?? []),
+    ...(abilities?.hero ?? []),
+    ...(abilities?.breakthrough ?? []),
+  ]
   const unitAbilities = faction ? collectUnitAbilities(faction) : []
 
   return [...baseAbilities, ...factionAbilities, ...unitAbilities]

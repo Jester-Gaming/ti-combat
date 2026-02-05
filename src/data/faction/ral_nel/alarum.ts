@@ -8,6 +8,7 @@ export const alarum: Ability<Params> = {
   key: 'ALARUM',
   name: '(Ral Nel) Alarum',
   category: 'FACTION',
+  subcategory: 'UNIT',
   params: {
     infantryAvailable: 0,
   },

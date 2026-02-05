@@ -8,7 +8,7 @@ import { viszElVir } from './visz-el-vir'
 export const naaz_rokha_alliance: Faction = {
   name: 'Naaz-Rokha Alliance',
   abilities: {
-    faction: [supercharge],
+    technology: [supercharge],
   },
   units: {
     FLAGSHIP: {

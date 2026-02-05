@@ -10,6 +10,7 @@ export const raidFormation: Ability<Params> = {
   key: 'RAID_FORMATION',
   name: 'Raid Formation',
   category: 'FACTION',
+  subcategory: 'ABILITY',
   context: 'SPACE',
   params: {
     targetPriority: declareParam({

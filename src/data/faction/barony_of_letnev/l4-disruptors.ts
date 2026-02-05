@@ -8,6 +8,7 @@ export const l4Disruptors: Ability<Params> = {
   key: 'L4_DISRUPTORS',
   name: 'L4 Disruptors',
   category: 'FACTION',
+  subcategory: 'TECHNOLOGY',
   context: 'GROUND',
   params: {
     isEnabled: false,

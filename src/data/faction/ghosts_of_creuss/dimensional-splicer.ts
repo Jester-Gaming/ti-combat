@@ -12,6 +12,7 @@ export const dimensionalSplicer: Ability<Params> = {
   key: 'DIMENSIONAL_SPLICER',
   name: 'Dimensional Splicer',
   category: 'FACTION',
+  subcategory: 'TECHNOLOGY',
   context: 'SPACE',
   params: {
     isEnabled: false,
