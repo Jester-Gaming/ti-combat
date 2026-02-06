@@ -5,6 +5,7 @@ import { brotherMilor } from './brother-milor'
 import { devotion } from './devotion'
 import { impulseCore } from './impulse-core'
 import { indoctrination } from './indoctrination'
+import { vanHauge } from './van-hauge'
 
 export const yin_brotherhood: Faction = {
   name: 'Yin Brotherhood',
@@ -26,7 +27,7 @@ export const yin_brotherhood: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [vanHauge, sustainDamage],
       },
     },
     MECH: {

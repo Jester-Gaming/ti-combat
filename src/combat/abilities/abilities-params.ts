@@ -636,10 +636,11 @@ export class AbilitiesParams {
   ): AbilityResult | null {
     const invokes = this.getInvokesForTiming(timing, side, state, triggerSide)
 
-    // Collect AFTER_DESTROY invokes from destroyed units in context
+    // Collect WHEN_DESTROY / AFTER_DESTROY invokes from destroyed units in context
     const timings = Array.isArray(timing) ? timing : [timing]
     if (
-      timings.includes('AFTER_DESTROY' as T) &&
+      (timings.includes('AFTER_DESTROY' as T) ||
+        timings.includes('WHEN_DESTROY' as T)) &&
       context !== undefined &&
       isSidedContext(context)
     ) {
@@ -651,7 +652,12 @@ export class AbilitiesParams {
         for (const ability of unit.ABILITIES) {
           if (ability.context && ability.context !== state.combatMode) continue
           for (const invoke of ability.invoke) {
-            if (invoke.timing !== 'AFTER_DESTROY') continue
+            if (
+              invoke.timing !== 'AFTER_DESTROY' &&
+              invoke.timing !== 'WHEN_DESTROY'
+            )
+              continue
+            if (!timings.includes(invoke.timing as T)) continue
             if (invoke.context) {
               const allowed = Array.isArray(invoke.context)
                 ? invoke.context
@@ -867,10 +873,12 @@ export class AbilitiesParams {
           resultState = triggerResult.state
         }
 
-        // Trigger AFTER_DESTROY if units were destroyed by the ability (or trigger processing)
-        // Skip if already resolving AFTER_DESTROY to prevent recursion
+        // Trigger WHEN_DESTROY then AFTER_DESTROY if units were destroyed by the ability (or trigger processing)
+        // Skip if already resolving WHEN_DESTROY or AFTER_DESTROY to prevent recursion
         const timingArray = Array.isArray(timing) ? timing : [timing]
-        if (!timingArray.some(t => t === 'AFTER_DESTROY')) {
+        if (
+          !timingArray.some(t => t === 'AFTER_DESTROY' || t === 'WHEN_DESTROY')
+        ) {
           let destroyedAttacker = getDestroyedUnits(
             state.attacker.units,
             resultState.attacker.units,
@@ -902,13 +910,44 @@ export class AbilitiesParams {
           }
 
           if (destroyedAttacker.length > 0 || destroyedDefender.length > 0) {
+            const destroyedContext = {
+              attacker: destroyedAttacker,
+              defender: destroyedDefender,
+            }
+
+            // First run WHEN_DESTROY (may destroy additional units)
+            const whenDestroy = this.runAbilities(
+              'WHEN_DESTROY',
+              resultState,
+              destroyedContext,
+              undefined,
+              childLogger,
+            )
+            const stateAfterWhen = whenDestroy.state
+
+            // Compute additional destroyed units from WHEN_DESTROY effects
+            const additionalAttacker = getDestroyedUnits(
+              resultState.attacker.units,
+              stateAfterWhen.attacker.units,
+            )
+            const additionalDefender = getDestroyedUnits(
+              resultState.defender.units,
+              stateAfterWhen.defender.units,
+            )
+
+            // Merge all destroyed units for AFTER_DESTROY
+            const mergedContext = {
+              attacker: [...destroyedAttacker, ...additionalAttacker],
+              defender: [...destroyedDefender, ...additionalDefender],
+            }
+
+            resultState = stateAfterWhen
+
+            // Then run AFTER_DESTROY with all destroyed units
             const afterDestroy = this.runAbilities(
               'AFTER_DESTROY',
               resultState,
-              {
-                attacker: destroyedAttacker,
-                defender: destroyedDefender,
-              },
+              mergedContext,
               undefined,
               childLogger,
             )
@@ -985,6 +1024,14 @@ export class AbilitiesParams {
 
       for (const invoke of ability.invoke) {
         if (!timings.includes(invoke.timing as T)) continue
+        // Unit abilities with WHEN_DESTROY/AFTER_DESTROY only fire when that
+        // specific unit is destroyed — handled via destroyed context, not here
+        if (
+          source.type === 'unit' &&
+          (invoke.timing === 'WHEN_DESTROY' ||
+            invoke.timing === 'AFTER_DESTROY')
+        )
+          continue
         if (invoke.context) {
           const allowed = Array.isArray(invoke.context)
             ? invoke.context

@@ -226,7 +226,7 @@ describe('unit ability invocation', () => {
 
 describe('AFTER_DESTROY triggered by destroyUnit', () => {
   it('should trigger AFTER_DESTROY when an ability destroys units', () => {
-    const afterDestroyCalls: { attacker: unknown[]; defender: unknown[] }[] = []
+    const afterDestroyCalls: { own: unknown[]; opponent: unknown[] }[] = []
 
     const destroyAbility: Ability = {
       key: 'DESTROY_ABILITY',
@@ -255,8 +255,8 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
             context: OwnOpponentContext<unknown[]>,
           ) => {
             afterDestroyCalls.push({
-              attacker: context.own,
-              defender: context.opponent,
+              own: context.own,
+              opponent: context.opponent,
             })
           },
         },
@@ -267,11 +267,10 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       attacker: {
         faction: 'SARDAKK_NORR',
         units: {
-          // Carrier unit for the test abilities
           CRUISER: [
             {
               COMBAT: [7, 1],
-              ABILITIES: [destroyAbility, afterDestroyAbility],
+              ABILITIES: [destroyAbility],
             },
           ],
         },
@@ -280,7 +279,8 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       defender: {
         faction: 'FEDERATION_OF_SOL',
         units: {
-          FIGHTER: [{ COMBAT: [9, 1] }],
+          // AFTER_DESTROY on the unit that gets destroyed
+          FIGHTER: [{ COMBAT: [9, 1], ABILITIES: [afterDestroyAbility] }],
         },
         hitPools: [],
       },
@@ -299,11 +299,11 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
 
     // Fighter should be destroyed
     expect(result.state.defender.units.FIGHTER).toBeUndefined()
-    // AFTER_DESTROY should have been called
+    // AFTER_DESTROY should have been called (from the destroyed fighter's ability)
     expect(afterDestroyCalls).toHaveLength(1)
-    // Defender lost a fighter (from attacker's perspective: opponent lost it)
-    expect(afterDestroyCalls[0].defender).toHaveLength(1)
-    expect(afterDestroyCalls[0].defender[0]).toMatchObject({ type: 'FIGHTER' })
+    // Fighter was destroyed (from fighter's perspective: own side lost it)
+    expect(afterDestroyCalls[0].own).toHaveLength(1)
+    expect(afterDestroyCalls[0].own[0]).toMatchObject({ type: 'FIGHTER' })
   })
 
   it('should NOT trigger AFTER_DESTROY when no units are destroyed', () => {
@@ -400,7 +400,8 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
           timing: 'AFTER_DESTROY',
           call: (ctx: AbilityCallContext) => {
             afterDestroyCalls.push('called')
-            ctx.api.opponent.destroyUnit('CRUISER')
+            // From defender's FIGHTER perspective, own = defender side
+            ctx.api.own.destroyUnit('CRUISER')
           },
         },
       ],
@@ -410,11 +411,10 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       attacker: {
         faction: 'SARDAKK_NORR',
         units: {
-          // Carrier unit for the test abilities
           FLAGSHIP: [
             {
               COMBAT: [6, 2],
-              ABILITIES: [destroyAbility, afterDestroyAbility],
+              ABILITIES: [destroyAbility],
             },
           ],
         },
@@ -423,7 +423,8 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       defender: {
         faction: 'FEDERATION_OF_SOL',
         units: {
-          FIGHTER: [{ COMBAT: [9, 1] }],
+          // AFTER_DESTROY on the unit that gets destroyed
+          FIGHTER: [{ COMBAT: [9, 1], ABILITIES: [afterDestroyAbility] }],
           CRUISER: [{ COMBAT: [7, 1] }],
         },
         hitPools: [],

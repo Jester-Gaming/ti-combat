@@ -133,6 +133,7 @@ BEFORE_DICE_ROLL      — before combat dice
 BEFORE_ASSIGN_HITS    — before hit assignment (sustain damage fires here)
 WHEN_SUSTAIN_DAMAGE_USE  — triggered immediately when a sustain damage use occurs (before AFTER)
 AFTER_SUSTAIN_DAMAGE_USE — triggered immediately after a sustain damage use
+WHEN_DESTROY          — when units are destroyed (before AFTER_DESTROY, fires from destroyed unit's ABILITIES)
 AFTER_DESTROY         — after units are destroyed
 END_OF_COMBAT_ROUND   — after each round
 END_OF_COMBAT         — when combat ends
@@ -157,7 +158,7 @@ isCallable?: (params: Params, ctx: AbilityReadContext, dice: DiceReadContext) =>
 call: (ctx: AbilityCallContext, params: Params, dice: DiceContext) => void
 ```
 
-**Units timings** (AFTER_DESTROY):
+**Units timings** (WHEN_DESTROY, AFTER_DESTROY):
 
 ```typescript
 isCallable?: (params: Params, ctx: AbilityReadContext, units: OwnOpponentContext<DestroyedUnit[]>) => boolean

@@ -313,10 +313,35 @@ export class CombatState {
       }
     }
 
-    const { state: afterDestroy } = this.runAbilities(
-      'AFTER_DESTROY',
+    // Run WHEN_DESTROY first (may destroy additional units, e.g. Van Hauge)
+    const { state: afterWhenDestroy } = this.runAbilities(
+      'WHEN_DESTROY',
       destroyedContext,
       resultData,
+      logger,
+    )
+
+    // Compute additional destroyed units from WHEN_DESTROY effects
+    const additionalAttacker = getDestroyedUnits(
+      resultData.attacker.units,
+      afterWhenDestroy.attacker.units,
+    )
+    const additionalDefender = getDestroyedUnits(
+      resultData.defender.units,
+      afterWhenDestroy.defender.units,
+    )
+
+    // Merge all destroyed units for AFTER_DESTROY
+    const mergedDestroyedContext = {
+      attacker: [...destroyedContext.attacker, ...additionalAttacker],
+      defender: [...destroyedContext.defender, ...additionalDefender],
+    }
+
+    // Then run AFTER_DESTROY with all destroyed units
+    const { state: afterDestroy } = this.runAbilities(
+      'AFTER_DESTROY',
+      mergedDestroyedContext,
+      afterWhenDestroy,
       logger,
     )
 

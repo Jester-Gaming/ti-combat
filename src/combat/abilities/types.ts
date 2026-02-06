@@ -100,6 +100,7 @@ export interface TimingContextMap {
   BEFORE_ASSIGN_HITS: void
   WHEN_SUSTAIN_DAMAGE_USE: Unit
   AFTER_SUSTAIN_DAMAGE_USE: Unit
+  WHEN_DESTROY: SidedContext<DestroyedUnit[]>
   AFTER_DESTROY: SidedContext<DestroyedUnit[]>
   END_OF_COMBAT_ROUND: void
   END_OF_COMBAT: void
