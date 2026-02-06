@@ -172,6 +172,10 @@ export interface SideApi extends SideReadApi {
   destroyUnit(unitType: UnitType): void
   destroyUnit(unitType: UnitType, index: number): void
   destroyUnit(unitTypes: UnitType[]): void
+  /** Remove a unit without triggering AFTER_DESTROY */
+  removeUnit(unit: Unit): void
+  removeUnit(unitType: UnitType): void
+  removeUnit(unitType: UnitType, index: number): void
   addUnit(units: Partial<Record<UnitType, number>>): void
   modifyUnit(unitType: UnitType, index: number, updates: Partial<Unit>): void
   modifyUnit(unitType: UnitType, updates: Partial<Unit>): void

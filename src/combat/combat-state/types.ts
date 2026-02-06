@@ -102,6 +102,12 @@ export interface UnitAbilityRestrictions {
   lost?: Partial<Record<UnitAbility, RestrictionEntry[]>>
 }
 
+/** A unit that was removed (not destroyed) — excluded from AFTER_DESTROY detection */
+export interface RemovedUnit {
+  type: UnitType
+  unit: Unit
+}
+
 /** State data for one side of combat */
 export interface SideStateData {
   faction: FactionKey
@@ -111,6 +117,8 @@ export interface SideStateData {
   unitSelections?: Record<UnitType, UnitSelection>
   /** Original (unmodified) stats templates per unit type, used by addUnit */
   unitStats?: Partial<Record<UnitType, UnitStats>>
+  /** Units removed via removeUnit (not destroyed) — excluded from AFTER_DESTROY detection */
+  _removedUnits?: RemovedUnit[]
 }
 
 /** Ability configuration for both sides */

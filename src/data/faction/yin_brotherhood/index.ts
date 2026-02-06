@@ -4,11 +4,12 @@ import type { Faction } from '@/types'
 import { brotherMilor } from './brother-milor'
 import { devotion } from './devotion'
 import { impulseCore } from './impulse-core'
+import { indoctrination } from './indoctrination'
 
 export const yin_brotherhood: Faction = {
   name: 'Yin Brotherhood',
   abilities: {
-    faction: [devotion],
+    faction: [devotion, indoctrination],
     technology: [impulseCore],
     agent: [brotherMilor],
   },

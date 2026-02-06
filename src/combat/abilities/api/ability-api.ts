@@ -398,6 +398,49 @@ export function buildApi(
       }
     },
 
+    removeUnit(unitTypeOrUnit: UnitType | Unit, index?: number): void {
+      const sideState = draft[side]
+      if (!sideState._removedUnits) {
+        sideState._removedUnits = []
+      }
+
+      if (typeof unitTypeOrUnit !== 'string') {
+        // removeUnit(unit) — by unit reference
+        for (const [type, units] of Object.entries(sideState.units)) {
+          if (!units) continue
+          const idx = units.indexOf(unitTypeOrUnit)
+          if (idx !== -1) {
+            sideState._removedUnits.push({
+              type: type as UnitType,
+              unit: { ...unitTypeOrUnit },
+            })
+            units.splice(idx, 1)
+            if (units.length === 0) {
+              delete sideState.units[type as UnitType]
+            }
+            return
+          }
+        }
+        return
+      }
+
+      const unitType = unitTypeOrUnit
+      const units = sideState.units[unitType]
+      if (!units) return
+
+      const idx = index ?? 0
+      if (idx < 0 || idx >= units.length) return
+
+      sideState._removedUnits.push({
+        type: unitType,
+        unit: { ...units[idx] },
+      })
+      units.splice(idx, 1)
+      if (units.length === 0) {
+        delete sideState.units[unitType]
+      }
+    },
+
     addUnit(unitsToAdd: Partial<Record<UnitType, number>>) {
       const sideState = draft[side]
       for (const [type, count] of Object.entries(unitsToAdd)) {

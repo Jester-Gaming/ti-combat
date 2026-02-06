@@ -6,7 +6,11 @@ import type { CombatSide, FactionKey, UnitType } from '@/types'
 import { getOpponentSide } from '../combat-side-state/combat-side-state'
 import { getDestroyedUnits } from '../combat-side-state/utils/get-destroyed-units'
 import { CombatState } from '../combat-state/combat-state'
-import type { AbilitiesConfig, CombatStateData } from '../combat-state/types'
+import type {
+  AbilitiesConfig,
+  CombatStateData,
+  RemovedUnit,
+} from '../combat-state/types'
 import { Logger } from '../logger'
 import type { LogEntry } from '../types'
 import { makeVariantId, parseVariantId } from '../utils/unit-variant'
@@ -38,6 +42,31 @@ import type {
 type SideConfig = Record<string, Record<string, unknown>>
 
 // ── Ability execution engine (module-private helpers) ────────────────────
+
+/**
+ * Filter out units that were removed (via removeUnit) from the destroyed list.
+ * Each removed unit cancels one matching destroyed entry by type.
+ */
+function excludeRemovedUnits(
+  destroyed: DestroyedUnit[],
+  removed: RemovedUnit[] | undefined,
+): DestroyedUnit[] {
+  if (!removed || removed.length === 0) return destroyed
+
+  const remainingRemoved = new Map<UnitType, number>()
+  for (const r of removed) {
+    remainingRemoved.set(r.type, (remainingRemoved.get(r.type) ?? 0) + 1)
+  }
+
+  return destroyed.filter(d => {
+    const count = remainingRemoved.get(d.type)
+    if (count && count > 0) {
+      remainingRemoved.set(d.type, count - 1)
+      return false
+    }
+    return true
+  })
+}
 
 /** Source of an ability - either from config, a living unit, or a destroyed unit */
 type AbilitySource =
@@ -527,6 +556,12 @@ export class AbilitiesParams {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let workingContext: any = context
 
+    // Snapshot unit counts to detect elimination during resolution
+    const initialUnits = {
+      attacker: this._combatState.attacker.countUnits(),
+      defender: this._combatState.defender.countUnits(),
+    }
+
     // Snapshot SETTINGS before abilities run to detect changes
     const settingsBefore = {
       attacker: state.abilities.attacker['SETTINGS'],
@@ -551,6 +586,16 @@ export class AbilitiesParams {
           workingContext = result.context
         }
         consecutiveSkips = 0
+
+        // Stop resolving abilities if a side that had units was eliminated
+        if (
+          (initialUnits.attacker > 0 &&
+            this._combatState.attacker.countUnits() === 0) ||
+          (initialUnits.defender > 0 &&
+            this._combatState.defender.countUnits() === 0)
+        ) {
+          break
+        }
       } else {
         consecutiveSkips += 1
       }
@@ -826,14 +871,36 @@ export class AbilitiesParams {
         // Skip if already resolving AFTER_DESTROY to prevent recursion
         const timingArray = Array.isArray(timing) ? timing : [timing]
         if (!timingArray.some(t => t === 'AFTER_DESTROY')) {
-          const destroyedAttacker = getDestroyedUnits(
+          let destroyedAttacker = getDestroyedUnits(
             state.attacker.units,
             resultState.attacker.units,
           )
-          const destroyedDefender = getDestroyedUnits(
+          let destroyedDefender = getDestroyedUnits(
             state.defender.units,
             resultState.defender.units,
           )
+
+          // Exclude units that were removed (not destroyed) via removeUnit
+          destroyedAttacker = excludeRemovedUnits(
+            destroyedAttacker,
+            resultState.attacker._removedUnits,
+          )
+          destroyedDefender = excludeRemovedUnits(
+            destroyedDefender,
+            resultState.defender._removedUnits,
+          )
+
+          // Clear _removedUnits from result state
+          if (
+            resultState.attacker._removedUnits ||
+            resultState.defender._removedUnits
+          ) {
+            resultState = produce(resultState, draft => {
+              delete draft.attacker._removedUnits
+              delete draft.defender._removedUnits
+            })
+          }
+
           if (destroyedAttacker.length > 0 || destroyedDefender.length > 0) {
             const afterDestroy = this.runAbilities(
               'AFTER_DESTROY',

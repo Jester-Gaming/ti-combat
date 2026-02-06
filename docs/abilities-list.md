@@ -166,7 +166,7 @@
 
 ### Yin Brotherhood
 
-- [ ] **Indoctrination** (Faction Ability) — At the start of a ground combat, you may spend 2 influence to replace 1 of your opponent's participating infantry with 1 infantry from your reinforcements.
+- [x] **Indoctrination** (Faction Ability) — At the start of a ground combat, you may spend 2 influence to replace 1 of your opponent's participating infantry with 1 infantry from your reinforcements.
 - [x] **Devotion** (Faction Ability) — After each space battle round, you may destroy 1 of your cruisers or destroyers in the active system to produce 1 hit and assign it to 1 of your opponent's ships in that system.
 - [ ] **Greyfire Mutagen** (Promissory Note) — At the start of a ground combat against 2 or more ground forces that are not controlled by the Yin player: Replace 1 of your opponent's infantry with 1 infantry from your reinforcements. Then, return this card to the Yin player.
 - [x] **Impulse Core** (Faction Technology) — At the start of a space combat, you may destroy 1 of your cruisers or destroyers in the active system to produce 1 hit against your opponent's ships; that hit must be assigned by your opponent to 1 of their non-fighter ships if able.
