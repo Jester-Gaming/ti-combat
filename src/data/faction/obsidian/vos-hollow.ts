@@ -22,8 +22,7 @@ function findDestroyedShipTypes(destroyed: DestroyedUnit[]): Set<UnitType> {
 export const vosHollow: Ability<Params> = {
   key: 'VOS_HOLLOW',
   name: '(Obsidian) Vos Hollow',
-  category: 'FACTION',
-  subcategory: 'AGENT',
+  category: 'AGENT',
   context: 'SPACE',
   params: {
     isEnabled: false,
