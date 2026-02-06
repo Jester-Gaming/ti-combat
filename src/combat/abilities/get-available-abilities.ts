@@ -36,6 +36,15 @@ const allAbilities = [
   ...allCommanderAbilities,
 ]
 
+const NEUTRAL_HIDDEN_CATEGORIES = new Set([
+  'AGENDA',
+  'TECHNOLOGY',
+  'ACTION_CARD',
+  'COMMANDER',
+  'RELIC',
+  'PROMISSORY',
+])
+
 /** Collect abilities with UI from faction unit definitions */
 function collectUnitAbilities(faction: Faction): Ability[] {
   const seen = new Set<string>()
@@ -83,8 +92,12 @@ export function getAvailableAbilities(
   side: CombatSide,
   factionKey: FactionKey,
 ): Ability[] {
+  const isNeutral = factionKey === 'NEUTRAL'
+
   const baseAbilities = allAbilities.filter(ability => {
     if (ability.side && ability.side !== side) return false
+    if (isNeutral && NEUTRAL_HIDDEN_CATEGORIES.has(ability.category))
+      return false
     return true
   })
 

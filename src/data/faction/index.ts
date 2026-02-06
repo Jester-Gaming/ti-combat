@@ -20,6 +20,7 @@ import { mentak_coalition } from './mentak_coalition'
 import { naalu_collective } from './naalu_collective'
 import { naaz_rokha_alliance } from './naaz_rokha_alliance'
 import { nekro_virus } from './nekro_virus'
+import { neutral } from './neutral'
 import { nomad } from './nomad'
 import { obsidian } from './obsidian'
 import { ral_nel } from './ral_nel'
@@ -64,4 +65,5 @@ export default {
   XXCHA_KINGDOM: xxcha_kingdom,
   YIN_BROTHERHOOD: yin_brotherhood,
   YSSARIL_TRIBES: yssaril_tribes,
+  NEUTRAL: neutral,
 } satisfies Record<string, Faction>
