@@ -1,17 +1,11 @@
-import type {
-  Ability,
-  AbilityReadContext,
-} from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  uses: number
-}
-
-export const maneuveringJets: Ability<Params> = {
+export const maneuveringJets: Ability = {
   key: 'MANEUVERING_JETS',
   name: 'Maneuvering Jets',
   category: 'ACTION_CARD',
   params: {
+    isEnabled: true,
     uses: 0,
   },
   headerUI: 'uses',
@@ -19,13 +13,11 @@ export const maneuveringJets: Ability<Params> = {
     {
       timing: 'BEFORE_ASSIGN_HITS',
       context: ['SPACE_CANNON_OFFENSE', 'SPACE_CANNON_DEFENSE'],
-      isCallable: (params: Params, ctx: AbilityReadContext) => {
-        if (params.uses <= 0) return false
+      isCallable: (_params, ctx) => {
         return ctx.api.own.getPendingHits() > 0
       },
-      call: (ctx, params: Params) => {
+      call: ctx => {
         ctx.api.own.reduceHits(1)
-        ctx.api.own.updateAbilityConfig({ uses: params.uses - 1 })
       },
     },
   ],

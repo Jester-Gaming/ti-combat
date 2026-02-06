@@ -1,29 +1,22 @@
-import type {
-  Ability,
-  DiceContext,
-  DiceReadContext,
-} from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const antimassDeflectors: Ability<Params> = {
+export const antimassDeflectors: Ability = {
   key: 'ANTIMASS_DEFLECTORS',
   name: 'Antimass Deflectors',
   category: 'TECHNOLOGY',
   params: {
     isEnabled: false,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: ['SPACE_CANNON_OFFENSE', 'SPACE_CANNON_DEFENSE'],
-      isCallable: (params: Params, _ctx, dice: DiceReadContext) => {
-        return params.isEnabled && !dice.opponent.isEmpty()
+      isCallable: (_params, _ctx, dice) => {
+        return !dice.opponent.isEmpty()
       },
-      call: (_ctx, _params: Params, dice: DiceContext) => {
+      call: (_ctx, _params, dice) => {
         dice.opponent.modifyHitValue(1)
       },
     },

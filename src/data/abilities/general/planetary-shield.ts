@@ -1,10 +1,6 @@
 import type { UnitType } from '@/types'
 
-import type {
-  Ability,
-  AbilityReadContext,
-  SideReadApi,
-} from '../../../combat/abilities/types'
+import type { Ability, SideReadApi } from '../../../combat/abilities/types'
 
 /** Check if any unit on the side has an active Planetary Shield */
 function hasPlanetaryShield(api: SideReadApi): boolean {
@@ -31,12 +27,15 @@ export const planetaryShield: Ability = {
   key: 'PLANETARY_SHIELD',
   name: 'Planetary Shield',
   category: 'GENERAL',
-  condition: { onlyDefender: true },
+  params: {
+    isEnabled: true,
+    uses: Infinity,
+  },
+  side: 'defender',
   invoke: [
     {
       timing: 'PREPARE',
-      isCallable: (_params: Record<string, unknown>, ctx: AbilityReadContext) =>
-        hasPlanetaryShield(ctx.api.own),
+      isCallable: (_params, ctx) => hasPlanetaryShield(ctx.api.own),
       call: ctx => {
         ctx.api.opponent.setUnitAbilityCannotBeUsed(
           'BOMBARDMENT',

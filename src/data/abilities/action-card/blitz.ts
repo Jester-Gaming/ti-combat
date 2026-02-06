@@ -1,31 +1,23 @@
 import { NON_FIGHTER_SHIPS } from '@/constants/units'
 
-import type {
-  Ability,
-  AbilityCallContext,
-  DiceContext,
-} from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const blitz: Ability<Params> = {
+export const blitz: Ability = {
   key: 'BLITZ',
   name: 'Blitz',
   category: 'ACTION_CARD',
   context: 'GROUND',
   params: {
     isEnabled: false,
+    uses: 1,
   },
   headerUI: 'isEnabled',
-  condition: { onlyAttacker: true },
+  side: 'attacker',
   invoke: [
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: 'BOMBARDMENT',
-      isCallable: (params: Params) => params.isEnabled,
-      call: (ctx: AbilityCallContext, _params: Params, dice: DiceContext) => {
+      call: (ctx, _params, dice) => {
         for (const unitType of NON_FIGHTER_SHIPS) {
           const units = ctx.api.own.getUnits(unitType)
           for (const unit of units) {

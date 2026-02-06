@@ -1,31 +1,24 @@
-import type {
-  Ability,
-  DiceContext,
-  DiceReadContext,
-} from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const bunker: Ability<Params> = {
+export const bunker: Ability = {
   key: 'BUNKER',
   name: 'Bunker',
   category: 'ACTION_CARD',
   context: 'GROUND',
   params: {
     isEnabled: false,
+    uses: 1,
   },
   headerUI: 'isEnabled',
-  condition: { onlyDefender: true },
+  side: 'defender',
   invoke: [
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: 'BOMBARDMENT',
-      isCallable: (params: Params, _ctx, dice: DiceReadContext) => {
-        return params.isEnabled && !dice.opponent.isEmpty()
+      isCallable: (_params, _ctx, dice) => {
+        return !dice.opponent.isEmpty()
       },
-      call: (_ctx, _params: Params, dice: DiceContext) => {
+      call: (_ctx, _params, dice) => {
         dice.opponent.modifyHitValue(4)
       },
     },

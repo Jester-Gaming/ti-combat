@@ -13,6 +13,8 @@ export const raidFormation: Ability<Params> = {
   subcategory: 'ABILITY',
   context: 'SPACE',
   params: {
+    isEnabled: true,
+    uses: Infinity,
     targetPriority: declareParam({
       default: [],
       source: 'nonFighterShips',

@@ -1,26 +1,19 @@
-import type { Ability, DiceContext } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  uses: number
-}
-
-export const moraleBoost: Ability<Params> = {
+export const moraleBoost: Ability = {
   key: 'MORALE_BOOST',
   name: 'Morale Boost',
   category: 'ACTION_CARD',
   params: {
+    isEnabled: true,
     uses: 0,
   },
   headerUI: 'uses',
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (params: Params) => {
-        return params.uses > 0
-      },
-      call: (ctx, params: Params, dice: DiceContext) => {
+      call: (_ctx, _params, dice) => {
         dice.own.modifyHitValue(-1)
-        ctx.api.own.updateAbilityConfig({ uses: params.uses - 1 })
       },
     },
   ],

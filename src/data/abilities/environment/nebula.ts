@@ -1,26 +1,20 @@
-import type { Ability, DiceContext } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const nebula: Ability<Params> = {
+export const nebula: Ability = {
   key: 'NEBULA',
   name: 'Nebula',
   category: 'ENVIRONMENT',
   context: 'SPACE',
   params: {
     isEnabled: false,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
-  condition: { onlyDefender: true },
+  side: 'defender',
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (params: Params) => {
-        return params.isEnabled
-      },
-      call: (_ctx, _params: Params, dice: DiceContext) => {
+      call: (_ctx, _params, dice) => {
         dice.own.modifyHitValue(-1)
       },
     },

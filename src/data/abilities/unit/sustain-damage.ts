@@ -61,6 +61,8 @@ export const sustainDamage: Ability<Params> = {
   name: 'Sustain Damage',
   category: 'GENERAL',
   params: {
+    isEnabled: true,
+    uses: Infinity,
     hitPerSustain: 1,
     spacePriority: declareParam({
       default: [],
@@ -74,7 +76,7 @@ export const sustainDamage: Ability<Params> = {
   invoke: [
     {
       timing: 'BEFORE_ASSIGN_HITS',
-      isCallable: (params: Params, ctx: AbilityReadContext) => {
+      isCallable: (params, ctx) => {
         if (ctx.api.own.getPendingHits() <= 0) return false
 
         const unit = ctx.getUnit()
@@ -104,7 +106,7 @@ export const sustainDamage: Ability<Params> = {
 
         return isHighestPrioritySustainTarget(params, ctx)
       },
-      call: (ctx, params: Params) => {
+      call: (ctx, params) => {
         ctx.api.own.modifyUnit(ctx.getUnit(), {
           isDamaged: true,
           usedSustainThisRound: true,

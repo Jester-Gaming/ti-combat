@@ -1,25 +1,19 @@
-import type { Ability, DiceContext } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const prophecyOfIxth: Ability<Params> = {
+export const prophecyOfIxth: Ability = {
   key: 'PROPHECY_OF_IXTH',
   name: 'Prophecy of Ixth',
   category: 'AGENDA',
   context: 'SPACE',
   params: {
     isEnabled: false,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (params: Params) => {
-        return params.isEnabled
-      },
-      call: (_ctx, _params: Params, dice: DiceContext) => {
+      call: (_ctx, _params, dice) => {
         dice.own.modifyHitValue(-1, 'FIGHTER')
       },
     },

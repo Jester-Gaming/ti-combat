@@ -22,6 +22,8 @@ export const settings: Ability<Params> = {
   name: 'Settings',
   category: 'GENERAL',
   params: {
+    isEnabled: true,
+    uses: Infinity,
     ships: SHIPS,
     nonFighterShips: declareParam({
       default: NON_FIGHTER_SHIPS,

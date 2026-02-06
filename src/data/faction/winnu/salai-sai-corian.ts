@@ -1,16 +1,13 @@
-import type { Ability, DiceContext } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const salaiSaiCorian: Ability<Params> = {
+export const salaiSaiCorian: Ability = {
   key: 'SALAI_SAI_CORIAN',
   name: 'Salai Sai Corian',
   category: 'FACTION',
   subcategory: 'UNIT',
   params: {
     isEnabled: true,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
   readOnly: true,
@@ -18,7 +15,7 @@ export const salaiSaiCorian: Ability<Params> = {
     {
       timing: 'BEFORE_DICE_ROLL',
       context: 'SPACE_COMBAT',
-      call: (ctx, _params: Params, dice: DiceContext) => {
+      call: (ctx, _params, dice) => {
         // Count opponent's non-fighter ships
         let nonFighterCount = 0
         for (const type of ctx.api.opponent.getParticipatingUnitTypes()) {

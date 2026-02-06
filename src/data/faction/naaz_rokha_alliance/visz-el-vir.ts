@@ -1,23 +1,20 @@
-import type { Ability, DiceContext } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const viszElVir: Ability<Params> = {
+export const viszElVir: Ability = {
   key: 'VISZ_EL_VIR',
   name: 'Visz El Vir',
   category: 'FACTION',
   subcategory: 'UNIT',
   params: {
     isEnabled: true,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
   readOnly: true,
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      call: (ctx, _params: Params, dice: DiceContext) => {
+      call: (ctx, _params, dice) => {
         const mechs = ctx.api.own.getUnits('MECH')
         for (const mech of mechs) {
           dice.own.addDiceCount(1, mech)

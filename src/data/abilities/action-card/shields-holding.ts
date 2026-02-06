@@ -1,18 +1,12 @@
-import type {
-  Ability,
-  AbilityReadContext,
-} from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  uses: number
-}
-
-export const shieldsHolding: Ability<Params> = {
+export const shieldsHolding: Ability = {
   key: 'SHIELDS_HOLDING',
   name: 'Shields Holding',
   category: 'ACTION_CARD',
   context: 'SPACE',
   params: {
+    isEnabled: true,
     uses: 0,
   },
   headerUI: 'uses',
@@ -20,14 +14,12 @@ export const shieldsHolding: Ability<Params> = {
     {
       timing: 'BEFORE_ASSIGN_HITS',
       context: ['SPACE_COMBAT', 'AFB'],
-      isCallable: (params: Params, ctx: AbilityReadContext) => {
-        if (params.uses <= 0) return false
+      isCallable: (_params, ctx) => {
         return ctx.api.own.getPendingHits() > 0
       },
-      call: (ctx, params: Params) => {
+      call: ctx => {
         const pending = ctx.api.own.getPendingHits()
         ctx.api.own.reduceHits(Math.min(2, pending))
-        ctx.api.own.updateAbilityConfig({ uses: params.uses - 1 })
       },
     },
   ],

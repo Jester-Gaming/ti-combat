@@ -1,11 +1,6 @@
-import type {
-  Ability,
-  DiceContext,
-  DiceReadContext,
-} from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
 type Params = {
-  isEnabled: boolean
   strategy: 'BEST' | 'WORST'
 }
 
@@ -15,6 +10,7 @@ export const plasmaScoring: Ability<Params> = {
   category: 'TECHNOLOGY',
   params: {
     isEnabled: false,
+    uses: Infinity,
     strategy: 'BEST',
   },
   headerUI: 'isEnabled',
@@ -22,10 +18,10 @@ export const plasmaScoring: Ability<Params> = {
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: ['BOMBARDMENT', 'SPACE_CANNON_OFFENSE', 'SPACE_CANNON_DEFENSE'],
-      isCallable: (params: Params, _ctx, dice: DiceReadContext) => {
-        return params.isEnabled && !dice.own.isEmpty()
+      isCallable: (_params, _ctx, dice) => {
+        return !dice.own.isEmpty()
       },
-      call: (_ctx, params: Params, dice: DiceContext) => {
+      call: (_ctx, params, dice) => {
         dice.own.addDiceCount(1, params.strategy)
       },
     },

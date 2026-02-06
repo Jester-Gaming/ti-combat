@@ -102,6 +102,7 @@ import { cn } from '@/lib/utils'
 - **Utilities**: One utility function per file in `src/utils/` (e.g., `getFactionUnitConfig.ts`)
 - Console methods like info, time and timeEnd are find in production code, everything else — not
 - All abilities test located in src/tests. If test is for a combination of abilities all abilities should be in filename with + between abilites, names sorted alphabetically. I.e. «cavalry+gravleash-maneuvers.test.ts»
+- Don't add explicit type annotations for callback parameters when TypeScript can infer them (e.g. ability `isCallable`/`call` callbacks get types from the `Ability<Params>` generic)
 
 ## Architecture Notes
 

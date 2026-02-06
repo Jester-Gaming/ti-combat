@@ -2,10 +2,6 @@ import type { UnitAbility } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
 const UNIT_ABILITIES: UnitAbility[] = [
   'AFB',
   'BOMBARDMENT',
@@ -14,19 +10,19 @@ const UNIT_ABILITIES: UnitAbility[] = [
   'PLANETARY_SHIELD',
 ]
 
-export const entropicScar: Ability<Params> = {
+export const entropicScar: Ability = {
   key: 'ENTROPIC_SCAR',
   name: 'Entropic Scar',
   category: 'ENVIRONMENT',
   params: {
     isEnabled: false,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
-  condition: { onlyDefender: true },
+  side: 'defender',
   invoke: [
     {
       timing: 'PREPARE',
-      isCallable: (params: Params) => params.isEnabled,
       call: ctx => {
         for (const ability of UNIT_ABILITIES) {
           ctx.api.own.setUnitAbilityCannotBeUsed(ability, 'ENTROPIC_SCAR')

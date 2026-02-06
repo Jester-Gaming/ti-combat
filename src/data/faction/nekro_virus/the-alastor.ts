@@ -1,11 +1,7 @@
 import type { Ability } from '@/combat/abilities/types'
 import type { UnitType } from '@/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const theAlastor: Ability<Params> = {
+export const theAlastor: Ability = {
   key: 'THE_ALASTOR',
   name: 'The Alastor',
   category: 'FACTION',
@@ -13,6 +9,7 @@ export const theAlastor: Ability<Params> = {
   context: 'SPACE',
   params: {
     isEnabled: true,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
   declareParamChange: () => [
@@ -22,7 +19,6 @@ export const theAlastor: Ability<Params> = {
   invoke: [
     {
       timing: 'START_OF_COMBAT',
-      isCallable: (params: Params) => params.isEnabled,
       call: ctx => {
         ctx.api.own.updateAbilityConfig('SETTINGS', {
           ships: (current: UnitType[]) => [...current, 'MECH', 'INFANTRY'],

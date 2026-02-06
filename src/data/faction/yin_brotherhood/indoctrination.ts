@@ -1,7 +1,6 @@
 import type { Ability } from '@/combat/abilities/types'
 
 type Params = {
-  isEnabled: boolean
   deployMech: boolean
 }
 
@@ -13,14 +12,14 @@ export const indoctrination: Ability<Params> = {
   context: 'GROUND',
   params: {
     isEnabled: false,
+    uses: Infinity,
     deployMech: false,
   },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'START_OF_COMBAT',
-      isCallable: (params, ctx) => {
-        if (!params.isEnabled) return false
+      isCallable: (_params, ctx) => {
         return ctx.api.opponent.hasUnit('INFANTRY')
       },
       call: (ctx, params) => {

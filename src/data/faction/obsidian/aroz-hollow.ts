@@ -1,24 +1,18 @@
-import type { Ability, DiceContext } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const arozHollow: Ability<Params> = {
+export const arozHollow: Ability = {
   key: 'AROZ_HOLLOW',
   name: '(Obsidian) Aroz Hollow',
   category: 'COMMANDER',
   params: {
     isEnabled: false,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (params: Params) => {
-        return params.isEnabled
-      },
-      call: (_ctx, _params: Params, dice: DiceContext) => {
+      call: (_ctx, _params, dice) => {
         dice.own.modifyHitValue(-1)
       },
     },

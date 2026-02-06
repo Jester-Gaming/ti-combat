@@ -1,11 +1,6 @@
-import type { Ability, DiceContext } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-  uses: number
-}
-
-export const fighterPrototype: Ability<Params> = {
+export const fighterPrototype: Ability = {
   key: 'FIGHTER_PROTOTYPE',
   name: 'Fighter Prototype',
   category: 'ACTION_CARD',
@@ -19,12 +14,8 @@ export const fighterPrototype: Ability<Params> = {
     {
       timing: 'BEFORE_DICE_ROLL',
       context: 'SPACE_COMBAT',
-      isCallable: (params: Params) => {
-        return params.isEnabled && params.uses > 0
-      },
-      call: (ctx, params: Params, dice: DiceContext) => {
+      call: (_ctx, _params, dice) => {
         dice.own.modifyHitValue(-2, 'FIGHTER')
-        ctx.api.own.updateAbilityConfig({ uses: params.uses - 1 })
       },
     },
   ],

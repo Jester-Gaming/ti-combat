@@ -1,22 +1,18 @@
 import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const solarFlare: Ability<Params> = {
+export const solarFlare: Ability = {
   key: 'SOLAR_FLARE',
   name: 'Solar Flare',
   category: 'ACTION_CARD',
   context: 'SPACE',
   params: {
     isEnabled: false,
+    uses: 1,
   },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'PREPARE',
-      isCallable: (params: Params) => params.isEnabled,
       call: ctx => {
         ctx.api.opponent.setUnitAbilityCannotBeUsed(
           'SPACE_CANNON',

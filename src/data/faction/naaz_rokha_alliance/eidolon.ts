@@ -1,11 +1,7 @@
 import type { Ability } from '@/combat/abilities/types'
 import type { UnitType } from '@/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const eidolon: Ability<Params> = {
+export const eidolon: Ability = {
   key: 'EIDOLON',
   name: 'Eidolon',
   category: 'FACTION',
@@ -13,6 +9,7 @@ export const eidolon: Ability<Params> = {
   context: 'SPACE',
   params: {
     isEnabled: true,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
   readOnly: true,
@@ -20,7 +17,6 @@ export const eidolon: Ability<Params> = {
   invoke: [
     {
       timing: 'START_OF_COMBAT',
-      isCallable: (params: Params) => params.isEnabled,
       call: ctx => {
         ctx.api.own.updateAbilityConfig('SETTINGS', {
           ships: (current: UnitType[]) => [...current, 'MECH'],

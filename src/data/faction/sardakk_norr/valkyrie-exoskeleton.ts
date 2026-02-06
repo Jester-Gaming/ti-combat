@@ -1,11 +1,7 @@
 import type { Ability } from '@/combat/abilities/types'
 import type { Unit } from '@/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const valkyrieExoskeleton: Ability<Params> = {
+export const valkyrieExoskeleton: Ability = {
   key: 'VALKYRIE_EXOSKELETON',
   name: 'Valkyrie Exoskeleton',
   category: 'FACTION',
@@ -13,6 +9,7 @@ export const valkyrieExoskeleton: Ability<Params> = {
   context: 'GROUND',
   params: {
     isEnabled: true,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
   readOnly: true,

@@ -11,6 +11,8 @@ export const unitPriority: Ability<Params> = {
   name: 'Assign Hits Order',
   category: 'GENERAL',
   params: {
+    isEnabled: true,
+    uses: Infinity,
     spaceUnitPriority: declareParam({
       default: [],
       source: 'spaceCombatParticipating',

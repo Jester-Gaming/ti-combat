@@ -1,15 +1,8 @@
-import type {
-  Ability,
-  AbilityReadContext,
-  DiceContext,
-  DiceReadContext,
-} from '@/combat/abilities/types'
+import type { Ability } from '@/combat/abilities/types'
 import type { MetaPhase } from '@/combat/combat-state/types'
 import { UNIT_ABILITY_PHASES } from '@/combat/combat-state/types'
 
 type Params = {
-  isEnabled: boolean
-  uses: number
   phases: MetaPhase[]
 }
 
@@ -49,19 +42,13 @@ export const strikeWingAmbuscade: Ability<Params> = {
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: UNIT_ABILITY_PHASES,
-      isCallable: (
-        params: Params,
-        ctx: AbilityReadContext,
-        dice: DiceReadContext,
-      ) => {
-        if (!params.isEnabled || params.uses <= 0 || dice.own.isEmpty())
-          return false
+      isCallable: (params, ctx, dice) => {
+        if (dice.own.isEmpty()) return false
         const currentPhase = ctx.state.currentPhase.meta
         return params.phases.includes(currentPhase)
       },
-      call: (ctx, params: Params, dice: DiceContext) => {
+      call: (_ctx, _params, dice) => {
         dice.own.addDiceCount(1)
-        ctx.api.own.updateAbilityConfig({ uses: params.uses - 1 })
       },
     },
   ],

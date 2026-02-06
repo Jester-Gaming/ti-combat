@@ -53,11 +53,8 @@ export function isDeclaredParam(
  * Extract plain default values from an ability's `params`.
  * DeclaredParam values are unwrapped to their `.default`.
  */
-export function extractDefaults(
-  ability: Ability,
-): Record<string, unknown> | undefined {
+export function extractDefaults(ability: Ability): Record<string, unknown> {
   const raw = ability.params
-  if (!raw) return undefined
 
   const result: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(raw)) {
@@ -73,7 +70,6 @@ export function extractSyncSources(
   ability: Ability,
 ): SyncSourceConfig[] | undefined {
   const raw = ability.params
-  if (!raw) return undefined
 
   const result: SyncSourceConfig[] = []
   for (const [key, value] of Object.entries(raw)) {

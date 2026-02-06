@@ -3,7 +3,6 @@ import type { Ability } from '@/combat/abilities/types'
 import { parseVariantId } from '@/combat/utils/unit-variant'
 
 type Params = {
-  isEnabled: boolean
   sacrificePriority: string[]
   targetPriority: string[]
 }
@@ -18,6 +17,7 @@ export const impulseCore: Ability<Params> = {
   context: 'SPACE',
   params: {
     isEnabled: false,
+    uses: Infinity,
     sacrificePriority: declareParam({
       default: [],
       source: 'ships',
@@ -35,7 +35,6 @@ export const impulseCore: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT',
       isCallable: (params, ctx) => {
-        if (!params.isEnabled) return false
         const sacrifice = ctx.api.own.findUnitByPriority(
           params.sacrificePriority,
         )
@@ -45,7 +44,7 @@ export const impulseCore: Ability<Params> = {
           undefined
         )
       },
-      call: (ctx, params: Params) => {
+      call: (ctx, params) => {
         const sacrifice = ctx.api.own.findUnitByPriority(
           params.sacrificePriority,
         )

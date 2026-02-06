@@ -1,10 +1,6 @@
 import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const quetzecoatl: Ability<Params> = {
+export const quetzecoatl: Ability = {
   key: 'QUETZECOATL',
   name: 'Quetzecoatl',
   category: 'FACTION',
@@ -12,6 +8,7 @@ export const quetzecoatl: Ability<Params> = {
   context: 'SPACE',
   params: {
     isEnabled: true,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
   readOnly: true,

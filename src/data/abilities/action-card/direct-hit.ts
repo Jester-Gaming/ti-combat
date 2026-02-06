@@ -2,16 +2,13 @@ import type { Unit } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  uses: number
-}
-
-export const directHit: Ability<Params> = {
+export const directHit: Ability = {
   key: 'DIRECT_HIT',
   name: 'Direct Hit',
   category: 'ACTION_CARD',
   context: 'SPACE',
   params: {
+    isEnabled: true,
     uses: 0,
   },
   headerUI: 'uses',
@@ -19,12 +16,11 @@ export const directHit: Ability<Params> = {
     {
       timing: 'AFTER_SUSTAIN_DAMAGE_USE',
       side: 'OPPONENT',
-      isCallable: (params: Params, _ctx, unit: Unit) => {
-        return params.uses > 0 && !unit.DIRECT_HIT_IMMUNE
+      isCallable: (_params, _ctx, unit: Unit) => {
+        return !unit.DIRECT_HIT_IMMUNE
       },
-      call: (ctx, params: Params, unit: Unit) => {
+      call: (ctx, _params, unit: Unit) => {
         ctx.api.opponent.destroyUnit(unit)
-        ctx.api.own.updateAbilityConfig({ uses: params.uses - 1 })
       },
     },
   ],

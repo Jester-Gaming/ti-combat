@@ -4,6 +4,10 @@ export const disablePlanetaryShield: Ability = {
   key: 'DISABLE_PLANETARY_SHIELD',
   name: 'Disable Planetary Shield',
   category: 'GENERAL',
+  params: {
+    isEnabled: true,
+    uses: Infinity,
+  },
   invoke: [
     {
       timing: 'PREPARE',

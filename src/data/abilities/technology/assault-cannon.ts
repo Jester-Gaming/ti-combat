@@ -4,7 +4,6 @@ import { declareParam } from '../../../combat/abilities/declare-param'
 import type { Ability, SideReadApi } from '../../../combat/abilities/types'
 
 type Params = {
-  isEnabled: boolean
   targetPriority: UnitType[]
 }
 
@@ -28,6 +27,7 @@ export const assaultCannon: Ability<Params> = {
   context: 'SPACE',
   params: {
     isEnabled: false,
+    uses: Infinity,
     targetPriority: declareParam({
       default: [],
       source: 'nonFighterShips',
@@ -39,8 +39,6 @@ export const assaultCannon: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT',
       isCallable: (params, ctx) => {
-        if (!params.isEnabled) return false
-
         // Must have at least 3 non-fighter ships
         const nonFighterCount = countNonFighterShips(ctx.api.own)
         if (nonFighterCount < 3) return false
@@ -51,7 +49,7 @@ export const assaultCannon: Ability<Params> = {
         )
         return target !== undefined
       },
-      call: (ctx, params: Params) => {
+      call: (ctx, params) => {
         const target = ctx.api.opponent.findUnitByPriority(
           params.targetPriority,
         )

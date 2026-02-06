@@ -10,6 +10,8 @@ export const alarum: Ability<Params> = {
   category: 'FACTION',
   subcategory: 'UNIT',
   params: {
+    isEnabled: true,
+    uses: Infinity,
     infantryAvailable: 0,
   },
   headerUI: 'infantryAvailable',
@@ -17,8 +19,8 @@ export const alarum: Ability<Params> = {
     {
       timing: 'END_OF_COMBAT_ROUND',
       context: 'GROUND_COMBAT',
-      isCallable: (params: Params) => params.infantryAvailable > 0,
-      call: (ctx, params: Params) => {
+      isCallable: params => params.infantryAvailable > 0,
+      call: (ctx, params) => {
         const count = Math.min(2, params.infantryAvailable)
         ctx.api.own.addUnit({ INFANTRY: count })
         ctx.api.own.updateAbilityConfig({

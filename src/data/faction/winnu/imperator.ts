@@ -1,8 +1,4 @@
-import type {
-  Ability,
-  DiceContext,
-  DiceReadContext,
-} from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
 type Params = {
   supportCount: number
@@ -14,16 +10,18 @@ export const imperator: Ability<Params> = {
   category: 'FACTION',
   subcategory: 'BREAKTHROUGH',
   params: {
+    isEnabled: true,
+    uses: Infinity,
     supportCount: 0,
   },
   headerUI: 'supportCount',
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (params: Params, _ctx, dice: DiceReadContext) => {
+      isCallable: (params, _ctx, dice) => {
         return params.supportCount > 0 && !dice.own.isEmpty()
       },
-      call: (_ctx, params: Params, dice: DiceContext) => {
+      call: (_ctx, params, dice) => {
         dice.own.modifyHitValue(-params.supportCount)
       },
     },

@@ -11,6 +11,7 @@ describe('collectUnitAbilities', () => {
       key: 'TEST_UNIT_ABILITY',
       name: 'Test Unit Ability',
       category: 'FACTION',
+      params: { isEnabled: true, uses: Infinity },
       invoke: [],
     }
 
@@ -85,12 +86,14 @@ describe('collectUnitAbilities', () => {
       key: 'ABILITY_1',
       name: 'Ability 1',
       category: 'FACTION',
+      params: { isEnabled: true, uses: Infinity },
       invoke: [],
     }
     const ability2: Ability = {
       key: 'ABILITY_2',
       name: 'Ability 2',
       category: 'FACTION',
+      params: { isEnabled: true, uses: Infinity },
       invoke: [],
     }
 
@@ -130,6 +133,7 @@ describe('unit ability invocation', () => {
       key: 'TEST_UNIT_ABILITY',
       name: 'Test',
       category: 'FACTION',
+      params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
           timing: 'START_OF_COMBAT_ROUND',
@@ -178,6 +182,7 @@ describe('unit ability invocation', () => {
       key: 'TEST_UNIT_ABILITY',
       name: 'Test',
       category: 'FACTION',
+      params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
           timing: 'START_OF_COMBAT_ROUND',
@@ -232,6 +237,7 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       key: 'DESTROY_ABILITY',
       name: 'Destroy',
       category: 'GENERAL',
+      params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
           timing: 'START_OF_COMBAT_ROUND',
@@ -246,6 +252,7 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       key: 'AFTER_DESTROY_HANDLER',
       name: 'After Destroy',
       category: 'GENERAL',
+      params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
           timing: 'AFTER_DESTROY',
@@ -313,6 +320,7 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       key: 'NOOP_ABILITY',
       name: 'Noop',
       category: 'GENERAL',
+      params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
           timing: 'START_OF_COMBAT_ROUND',
@@ -327,6 +335,7 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       key: 'AFTER_DESTROY_HANDLER',
       name: 'After Destroy',
       category: 'GENERAL',
+      params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
           timing: 'AFTER_DESTROY',
@@ -380,6 +389,7 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       key: 'DESTROY_ABILITY',
       name: 'Destroy',
       category: 'GENERAL',
+      params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
           timing: 'START_OF_COMBAT_ROUND',
@@ -395,6 +405,7 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       key: 'CHAIN_DESTROY',
       name: 'Chain Destroy',
       category: 'GENERAL',
+      params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
           timing: 'AFTER_DESTROY',
@@ -458,6 +469,7 @@ describe('multi-timing runAbilities', () => {
       key: 'START_COMBAT_ABILITY',
       name: 'Start Combat',
       category: 'GENERAL',
+      params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
           timing: 'START_OF_COMBAT',
@@ -472,6 +484,7 @@ describe('multi-timing runAbilities', () => {
       key: 'START_ROUND_ABILITY',
       name: 'Start Round',
       category: 'GENERAL',
+      params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
           timing: 'START_OF_COMBAT_ROUND',
@@ -525,6 +538,7 @@ describe('multi-timing runAbilities', () => {
       key: 'SINGLE_TIMING',
       name: 'Single',
       category: 'GENERAL',
+      params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
           timing: 'START_OF_COMBAT_ROUND',

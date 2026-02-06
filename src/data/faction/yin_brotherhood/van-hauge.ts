@@ -1,11 +1,7 @@
 import type { Ability } from '@/combat/abilities/types'
 import { SHIPS } from '@/constants/units'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const vanHauge: Ability<Params> = {
+export const vanHauge: Ability = {
   key: 'VAN_HAUGE',
   name: 'Van Hauge',
   category: 'FACTION',
@@ -13,6 +9,7 @@ export const vanHauge: Ability<Params> = {
   context: 'SPACE',
   params: {
     isEnabled: true,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
   readOnly: true,

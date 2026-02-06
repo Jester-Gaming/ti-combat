@@ -269,12 +269,12 @@ export interface AbilityCallContext {
 // Uses InternalTimingContextMap for ability perspective (own/opponent)
 type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
   timing: T
-  /** If true, this invoke can be called multiple times per timing phase. Default: false */
-  multi?: boolean
   /** Restrict this invoke to specific meta-phase(s). When set, the invoke only fires if the current meta-phase matches. */
   context?: MetaPhase | MetaPhase[]
   /** Filter invoke by trigger side. 'OWN' = only fires for the side that caused the trigger. 'OPPONENT' = only fires for the other side. Omit for no filtering. */
   side?: 'OWN' | 'OPPONENT'
+  /** When true, this invoke is always called and does not decrement the ability's uses count. */
+  always?: boolean
 } & (InternalTimingContextMap[T] extends void
   ? {
       // Void timings (PREPARE, START_OF_COMBAT, etc.)
@@ -385,12 +385,10 @@ type UIConfig<Params = Record<string, unknown>> =
   | UIConfigItem<Params>[]
   | ((ctx: AbilityReadContext, params: Params) => UIConfigItem<Params>[])
 
-/** Conditions for when an ability is available */
-export interface AbilityCondition {
-  /** Ability is only available to the attacker */
-  onlyAttacker?: boolean
-  /** Ability is only available to the defender */
-  onlyDefender?: boolean
+/** Base params present on every ability. Managed by the tracker — abilities don't check these themselves. */
+export interface AbilityBaseParams {
+  isEnabled: boolean
+  uses: number
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -399,15 +397,15 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   name: string // Display name for UI
   category: string
   subcategory?: string
-  params?: Params
-  headerUI?: string & keyof Params // Param key to render in header (checkbox for boolean, number input for number)
+  params: AbilityBaseParams & Params
+  headerUI?: 'isEnabled' | 'uses' | (string & keyof Params) // Param key to render in header (checkbox for boolean, number input for number)
   readOnly?: boolean // Show UI but prevent user from changing the enable state
-  uiConfig?: UIConfig<Params>
-  /** Conditions restricting which side can use this ability */
-  condition?: AbilityCondition
+  uiConfig?: UIConfig<AbilityBaseParams & Params>
+  /** Restrict ability to a specific side (attacker or defender). When set, the ability is only available to that side. */
+  side?: CombatSide
   /** Restrict ability to a specific combat mode (SPACE or GROUND). When set, the ability is skipped during combat if the mode doesn't match, and dimmed in the UI. */
   context?: CombatMode
   /** Declare param changes (subtypes, group additions) based on ability params */
-  declareParamChange?: (params: Params) => ParamChange[]
-  invoke: AbilityInvoke<Params>[]
+  declareParamChange?: (params: AbilityBaseParams & Params) => ParamChange[]
+  invoke: AbilityInvoke<AbilityBaseParams & Params>[]
 }

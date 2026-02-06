@@ -202,6 +202,27 @@ function resolveSettings(
   return { settings, subtypes }
 }
 
+/** Decrement `uses` in ability config after a successful invocation */
+function decrementUses(
+  draft: CombatStateData,
+  side: CombatSide,
+  abilityKey: string,
+  params: Record<string, unknown>,
+): void {
+  if (
+    'uses' in params &&
+    typeof params.uses === 'number' &&
+    isFinite(params.uses)
+  ) {
+    const config = draft.abilities[side][abilityKey]
+    if (config) {
+      config.uses = params.uses - 1
+    } else {
+      draft.abilities[side][abilityKey] = { uses: params.uses - 1 }
+    }
+  }
+}
+
 function isDiceTiming(timing: AbilityTiming | AbilityTiming[]): boolean {
   const timings = Array.isArray(timing) ? timing : [timing]
   return timings.some(
@@ -680,7 +701,7 @@ export class AbilitiesParams {
     for (const { ability, invoke, params, source } of invokes) {
       // Check if already invoked
       if (source.type === 'config') {
-        if (!invoke.multi && sideTracker.configAbilities.has(invoke)) {
+        if (sideTracker.configAbilities.has(invoke)) {
           continue
         }
       } else if (source.type === 'destroyed') {
@@ -726,6 +747,16 @@ export class AbilitiesParams {
           ? { unitType: source.unitType, unitIndex: source.unitIndex }
           : undefined
       const readCtx = buildReadContext(side, state, unitSource)
+
+      // Global isEnabled / uses gate — abilities don't need to check these themselves
+      if ('isEnabled' in params && !params.isEnabled) continue
+      if (
+        !invoke.always &&
+        'uses' in params &&
+        typeof params.uses === 'number' &&
+        params.uses <= 0
+      )
+        continue
 
       let canCall: boolean
       if (diceTiming && internalContext) {
@@ -807,6 +838,7 @@ export class AbilitiesParams {
               triggerCallback,
             )
             inv.call(callCtx, params, diceCallCtx)
+            if (!invoke.always) decrementUses(draft, side, ability.key, params)
           })
           draftRef = null
           resultContext = {
@@ -830,6 +862,7 @@ export class AbilitiesParams {
               : internalContext
             const result = inv.call(callCtx, params, callContext)
             if (result !== undefined) resultContext = result
+            if (!invoke.always) decrementUses(draft, side, ability.key, params)
           })
           draftRef = null
         }

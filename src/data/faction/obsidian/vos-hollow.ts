@@ -5,7 +5,6 @@ import { SHIPS } from '@/constants/units'
 import type { UnitType } from '@/types'
 
 type Params = {
-  isEnabled: boolean
   targetPriority: string[]
 }
 
@@ -26,6 +25,7 @@ export const vosHollow: Ability<Params> = {
   context: 'SPACE',
   params: {
     isEnabled: false,
+    uses: 1,
     targetPriority: declareParam({
       default: [],
       source: 'ships',
@@ -37,7 +37,6 @@ export const vosHollow: Ability<Params> = {
     {
       timing: 'AFTER_DESTROY',
       isCallable: (params, ctx, units) => {
-        if (!params.isEnabled) return false
         const ownDestroyedShips = findDestroyedShipTypes(units.own)
         for (const variantId of params.targetPriority) {
           const { type } = parseVariantId(variantId)
@@ -52,7 +51,6 @@ export const vosHollow: Ability<Params> = {
           const { type } = parseVariantId(variantId)
           if (ownDestroyedShips.has(type) && ctx.api.opponent.hasUnit(type)) {
             ctx.api.opponent.destroyUnit(type)
-            ctx.api.own.updateAbilityConfig({ isEnabled: false })
             return
           }
         }

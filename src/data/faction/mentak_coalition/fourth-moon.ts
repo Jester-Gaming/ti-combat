@@ -1,10 +1,6 @@
 import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const fourthMoon: Ability<Params> = {
+export const fourthMoon: Ability = {
   key: 'FOURTH_MOON',
   name: 'Fourth Moon',
   category: 'FACTION',
@@ -12,6 +8,7 @@ export const fourthMoon: Ability<Params> = {
   context: 'SPACE',
   params: {
     isEnabled: true,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
   readOnly: true,

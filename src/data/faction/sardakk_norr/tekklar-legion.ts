@@ -1,30 +1,20 @@
-import type {
-  Ability,
-  AbilityCallContext,
-  DiceContext,
-} from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const tekklarLegion: Ability<Params> = {
+export const tekklarLegion: Ability = {
   key: 'TEKKLAR_LEGION',
   name: "(N'orr) Tekklar Legion",
   category: 'PROMISSORY',
   context: 'GROUND',
   params: {
     isEnabled: false,
+    uses: 1,
   },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
       context: 'GROUND_COMBAT',
-      isCallable: (params: Params) => {
-        return params.isEnabled
-      },
-      call: (ctx: AbilityCallContext, _params: Params, dice: DiceContext) => {
+      call: (ctx, _params, dice) => {
         dice.own.modifyHitValue(-1)
         if (ctx.api.opponent.getFaction() === 'SARDAKK_NORR') {
           dice.opponent.modifyHitValue(1)

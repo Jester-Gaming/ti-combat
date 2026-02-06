@@ -1,22 +1,18 @@
 import type { Ability } from '@/combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const brotherMilor: Ability<Params> = {
+export const brotherMilor: Ability = {
   key: 'BROTHER_MILOR',
   name: '(Yin) Brother Milor',
   category: 'AGENT',
   params: {
     isEnabled: false,
+    uses: 1,
   },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'AFTER_DESTROY',
-      isCallable: (params, _ctx, units) => {
-        if (!params.isEnabled) return false
+      isCallable: (_params, _ctx, units) => {
         return units.own.length > 0
       },
       call: ctx => {
@@ -25,7 +21,6 @@ export const brotherMilor: Ability<Params> = {
         } else {
           ctx.api.own.addUnit({ INFANTRY: 2 })
         }
-        ctx.api.own.updateAbilityConfig({ isEnabled: false })
       },
     },
   ],

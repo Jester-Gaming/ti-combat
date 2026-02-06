@@ -29,7 +29,7 @@ interface Ability<Params extends Record<string, unknown>> {
   headerUI?: string & keyof Params // Param key shown in ability header
   readOnly?: boolean // Lock UI (user cannot toggle)
   uiConfig?: UIConfig<Params> // Controls for params in UI
-  condition?: AbilityCondition // Side restriction
+  side?: CombatSide // Restrict to attacker or defender
   context?: CombatMode // Restrict to SPACE or GROUND combat
   declareParamChange?: (params: Params) => ParamChange[]
   invoke: AbilityInvoke<Params>[] // Array of timing handlers
@@ -50,15 +50,11 @@ context: 'GROUND' // Only fires during ground combat
 
 Note: This is the **ability-level** `context` (combat mode). Don't confuse with the **invoke-level** `context` (meta-phase), which restricts individual invokes to specific phases like `'AFB'` or `'BOMBARDMENT'`.
 
-**`condition`** — restricts which side can use the ability:
+**`side`** — restricts which side can use the ability:
 
 ```typescript
-condition: {
-  onlyAttacker: true
-}
-condition: {
-  onlyDefender: true
-}
+side: 'attacker' // Only available to the attacker
+side: 'defender' // Only available to the defender
 ```
 
 ## Parameters
@@ -99,7 +95,6 @@ The `invoke` array defines when and how the ability fires. Each entry targets on
 invoke: [
   {
     timing: AbilityTiming,         // When to fire
-    multi?: boolean,               // Allow multiple calls per phase (default: false)
     context?: MetaPhase | MetaPhase[],  // Restrict to specific meta-phases
     side?: 'OWN' | 'OPPONENT',    // Filter by trigger side (see Trigger System)
     isCallable?: (...) => boolean, // Guard (optional, default: always callable)
@@ -107,8 +102,6 @@ invoke: [
   }
 ]
 ```
-
-**`multi: true`** — ability can fire repeatedly until `isCallable` returns false. Used by Sustain Damage (sustain multiple units).
 
 **`side: 'OWN' | 'OPPONENT'`** — filters the invoke by which side caused the trigger. Only meaningful for triggered timings (e.g., `AFTER_SUSTAIN_DAMAGE_USE`). `'OWN'` means the invoke fires only for the side that triggered the event. `'OPPONENT'` means it fires only for the other side. Omit for no filtering (fires for both sides).
 
@@ -462,9 +455,8 @@ Abilities are resolved in alternating fashion — attacker goes first, then defe
 
 For a given timing, the tracker ensures:
 
-- Config abilities fire at most once (unless `multi: true`)
+- Config abilities fire at most once per timing phase
 - Unit abilities fire once per unit instance
-- `multi: true` abilities re-fire on each pass until `isCallable` returns false
 
 If an ability destroys units (and the timing is not AFTER_DESTROY), the system automatically runs `AFTER_DESTROY` for any destroyed units.
 
@@ -509,7 +501,7 @@ invoke: [
 5. Implement `call` with the correct signature for the timing
 6. Add `headerUI` — every ability must be visible in the UI. For always-on abilities with no user controls, use `params: { isEnabled: true }`, `headerUI: 'isEnabled'`, and `readOnly: true`
 7. Add `uiConfig` if ability has configurable params beyond the header
-8. Add `condition` if ability is side-restricted
+8. Add `side` if ability is side-restricted
 9. Register in the category's `index.ts` (or faction's `index.ts`)
 10. Write tests (see `docs/testing.md`)
 11. Mark ability as `[x]` in `docs/abilities-list.md`

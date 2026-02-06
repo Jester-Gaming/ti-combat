@@ -1,15 +1,9 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 
-import type {
-  Ability,
-  AbilityReadContext,
-  DiceContext,
-  DiceReadContext,
-} from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 import type { UnitType } from '../../../types'
 
 type Params = {
-  isEnabled: boolean
   shipPriority: UnitType[]
 }
 
@@ -21,6 +15,7 @@ export const gravleashManeuvers: Ability<Params> = {
   context: 'SPACE',
   params: {
     isEnabled: false,
+    uses: Infinity,
     shipPriority: declareParam({
       default: [],
       source: 'ships',
@@ -43,14 +38,10 @@ export const gravleashManeuvers: Ability<Params> = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (
-        params: Params,
-        _ctx: AbilityReadContext,
-        dice: DiceReadContext,
-      ) => {
-        return params.isEnabled && !dice.own.isEmpty()
+      isCallable: (_params, _ctx, dice) => {
+        return !dice.own.isEmpty()
       },
-      call: (ctx, params: Params, dice: DiceContext) => {
+      call: (ctx, params, dice) => {
         const shipTypeCount = Object.keys(ctx.api.own.getUnits()).length
         const target = ctx.api.own.findUnitByPriority(params.shipPriority)
 

@@ -84,9 +84,7 @@ export function getAvailableAbilities(
   factionKey: FactionKey,
 ): Ability[] {
   const baseAbilities = allAbilities.filter(ability => {
-    if (!ability.condition) return true
-    if (ability.condition.onlyAttacker && side !== 'attacker') return false
-    if (ability.condition.onlyDefender && side !== 'defender') return false
+    if (ability.side && ability.side !== side) return false
     return true
   })
 

@@ -2,13 +2,9 @@ import { declareParam } from '@/combat/abilities/declare-param'
 import { makeVariantId, parseVariantId } from '@/combat/utils/unit-variant'
 import type { UnitType } from '@/types'
 
-import type {
-  Ability,
-  AbilityReadContext,
-} from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
 type Params = {
-  isEnabled: boolean
   unitType: UnitType
 }
 
@@ -19,6 +15,7 @@ export const evelynDelouis: Ability<Params> = {
   context: 'GROUND',
   params: {
     isEnabled: false,
+    uses: 2,
     unitType: declareParam<UnitType>({
       default: 'INFANTRY',
       source: 'groundForces',
@@ -28,7 +25,7 @@ export const evelynDelouis: Ability<Params> = {
     { key: 'subtypes', value: { name: 'Evelyn', unitType: params.unitType } },
   ],
   headerUI: 'isEnabled',
-  uiConfig: (ctx: AbilityReadContext) => {
+  uiConfig: ctx => {
     return [
       {
         key: 'unitType' as const,
@@ -46,25 +43,24 @@ export const evelynDelouis: Ability<Params> = {
   invoke: [
     {
       timing: 'START_OF_COMBAT_ROUND',
-      isCallable: (params: Params, ctx: AbilityReadContext) => {
+      isCallable: (params, ctx) => {
         const { type } = parseVariantId(params.unitType)
-        return params.isEnabled && ctx.api.own.hasUnit(type)
+        return ctx.api.own.hasUnit(type)
       },
-      call: (ctx, params: Params) => {
+      call: (ctx, params) => {
         ctx.api.own.addSubtype(params.unitType, 'Evelyn')
-        ctx.api.own.updateAbilityConfig({ isEnabled: false })
       },
     },
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (_params: Params, ctx: AbilityReadContext) => {
+      isCallable: (_params, ctx) => {
         const allUnits = ctx.api.own.getUnits()
         for (const units of Object.values(allUnits)) {
           if (units?.some(u => u.subtypes?.includes('Evelyn'))) return true
         }
         return false
       },
-      call: (ctx, params: Params, dice) => {
+      call: (ctx, params, dice) => {
         const variantId = makeVariantId(params.unitType, ['Evelyn'])
         const unit = ctx.api.own.findUnitByPriority([variantId])
         if (!unit) return

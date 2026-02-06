@@ -1,16 +1,13 @@
 import type { Ability } from '../../../combat/abilities/types'
 
-type Params = {
-  isEnabled: boolean
-}
-
-export const arcSecundus: Ability<Params> = {
+export const arcSecundus: Ability = {
   key: 'ARC_SECUNDUS',
   name: 'Arc Secundus',
   category: 'FACTION',
   subcategory: 'UNIT',
   params: {
     isEnabled: true,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
   readOnly: true,

@@ -8,7 +8,6 @@ export { getAvailableAbilities } from './get-available-abilities'
 export type {
   Ability,
   AbilityCallContext,
-  AbilityCondition,
   AbilityInvoke,
   AbilityReadContext,
   AbilityTiming,

@@ -2,14 +2,10 @@ import { declareParam } from '@/combat/abilities/declare-param'
 import type { UnitType } from '@/types'
 import { getEffectiveStats } from '@/utils/get-simulation-units'
 
-import type {
-  Ability,
-  AbilityReadContext,
-} from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 import { nomad } from './index'
 
 type Params = {
-  isEnabled: boolean
   memoria2: boolean
   unitType: UnitType
 }
@@ -21,6 +17,7 @@ export const cavalry: Ability<Params> = {
   context: 'SPACE',
   params: {
     isEnabled: false,
+    uses: 1,
     memoria2: false,
     unitType: declareParam<UnitType>({
       default: 'DESTROYER',
@@ -31,7 +28,7 @@ export const cavalry: Ability<Params> = {
   declareParamChange: params => [
     { key: 'subtypes', value: { name: 'Cavalry', unitType: params.unitType } },
   ],
-  uiConfig: (ctx: AbilityReadContext) => {
+  uiConfig: ctx => {
     return [
       {
         key: 'memoria2' as const,
@@ -55,10 +52,10 @@ export const cavalry: Ability<Params> = {
   invoke: [
     {
       timing: 'START_OF_COMBAT',
-      isCallable: (params: Params, ctx: AbilityReadContext) => {
-        return params.isEnabled && ctx.api.own.hasUnit(params.unitType)
+      isCallable: (params, ctx) => {
+        return ctx.api.own.hasUnit(params.unitType)
       },
-      call: (ctx, params: Params) => {
+      call: (ctx, params) => {
         const flagship = nomad.units.FLAGSHIP!
         const stats = getEffectiveStats(
           flagship.BASE,

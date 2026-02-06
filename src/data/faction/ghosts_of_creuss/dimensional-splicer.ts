@@ -4,7 +4,6 @@ import { parseVariantId, unitMatchesVariant } from '@/combat/utils/unit-variant'
 import type { UnitType } from '@/types'
 
 type Params = {
-  isEnabled: boolean
   targetPriority: UnitType[]
 }
 
@@ -16,6 +15,7 @@ export const dimensionalSplicer: Ability<Params> = {
   context: 'SPACE',
   params: {
     isEnabled: false,
+    uses: Infinity,
     targetPriority: declareParam({
       default: [],
       source: 'ships',
@@ -27,13 +27,12 @@ export const dimensionalSplicer: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT',
       isCallable: (params, ctx) => {
-        if (!params.isEnabled) return false
         return (
           ctx.api.opponent.findUnitByPriority(params.targetPriority) !==
           undefined
         )
       },
-      call: (ctx, params: Params) => {
+      call: (ctx, params) => {
         for (const variantId of params.targetPriority) {
           const { type } = parseVariantId(variantId)
           const units = ctx.api.opponent.getUnits(type)

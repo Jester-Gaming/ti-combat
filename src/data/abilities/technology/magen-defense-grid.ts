@@ -7,7 +7,6 @@ import type { UnitType } from '@/types'
 const STRUCTURE_SET = new Set(STRUCTURES)
 
 type Params = {
-  isEnabled: boolean
   targetPriority: UnitType[]
 }
 
@@ -16,9 +15,10 @@ export const magenDefenseGrid: Ability<Params> = {
   name: 'Magen Defense Grid',
   category: 'TECHNOLOGY',
   context: 'GROUND',
-  condition: { onlyDefender: true },
+  side: 'defender',
   params: {
     isEnabled: false,
+    uses: Infinity,
     targetPriority: declareParam({
       default: [],
       source: 'groundForces',
@@ -30,7 +30,6 @@ export const magenDefenseGrid: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT',
       isCallable: (params, ctx) => {
-        if (!params.isEnabled) return false
         const hasStructure = ctx.api.own.countUnits(STRUCTURE_SET) > 0
         if (!hasStructure) return false
         return (
@@ -38,7 +37,7 @@ export const magenDefenseGrid: Ability<Params> = {
           undefined
         )
       },
-      call: (ctx, params: Params) => {
+      call: (ctx, params) => {
         for (const variantId of params.targetPriority) {
           const { type } = parseVariantId(variantId)
           const units = ctx.api.opponent.getUnits(type)
