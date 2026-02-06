@@ -226,7 +226,7 @@
 
 ## Agenda
 
-- [ ] **Articles of War** - All mechs lose their printed abilities except for Sustain Damage.
+- [x] **Articles of War** - All mechs lose their printed abilities except for Sustain Damage.
 - [x] **Conventions of War** - Players cannot use Bombardment against units that are on cultural planets.
 - [x] **Prophecy of Ixth** - The elected player gains this card. The owner of this card applies +1 to the result of their fighter's combat rolls. When the owner of this card uses Production, they discard this card unless they produce 2 or more fighters.
 - [x] **Publicize Weapon Schematics** - If any player owns a war sun technology, all players may ignore all prerequisites on war sun technologies. All war suns lose Sustain Damage.
