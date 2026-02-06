@@ -59,7 +59,7 @@
 
 ### Obsidian
 
-- [ ] **Vos Hollow** (Agent) — When a player's ship is destroyed during any combat: You may exhaust this card; if you do, that player's opponent must destroy 1 of their ships of the same type in the active system.
+- [x] **Vos Hollow** (Agent) — When a player's ship is destroyed during any combat: You may exhaust this card; if you do, that player's opponent must destroy 1 of their ships of the same type in the active system.
 - [x] **Aroz Hollow** (Commander) — Apply +1 to the result of each of your units' combat rolls in The Fracture.
 - [x] **Assail** (Plot) — Apply +1 to the results of each of your combat and unit ability rolls against the puppeted player.
 
