@@ -3,6 +3,7 @@ import type { Faction } from '@/types'
 
 import { brotherMilor } from './brother-milor'
 import { devotion } from './devotion'
+import { greyfireMutagen } from './greyfire-mutagen'
 import { impulseCore } from './impulse-core'
 import { indoctrination } from './indoctrination'
 import { vanHauge } from './van-hauge'
@@ -13,6 +14,7 @@ export const yin_brotherhood: Faction = {
     faction: [devotion, indoctrination],
     technology: [impulseCore],
     agent: [brotherMilor],
+    promissory: [greyfireMutagen],
   },
   units: {
     FLAGSHIP: {
