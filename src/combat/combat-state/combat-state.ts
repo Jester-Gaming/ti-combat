@@ -190,6 +190,22 @@ export class CombatState {
     return instance
   }
 
+  /** Swap attacker and defender sides (for UI) */
+  swap(): void {
+    this.data = {
+      ...this.data,
+      attacker: this.data.defender,
+      defender: this.data.attacker,
+      abilities: {
+        attacker: this.data.abilities.defender,
+        defender: this.data.abilities.attacker,
+      },
+    }
+    this._attacker = new CombatSideState(this, 'attacker')
+    this._defender = new CombatSideState(this, 'defender')
+    this._params = AbilitiesParams.fromConfig(this)
+  }
+
   /** Set combat mode (for UI) */
   setCombatMode(mode: CombatMode): void {
     this.data = {

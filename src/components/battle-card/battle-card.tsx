@@ -1,3 +1,4 @@
+import { LoopIcon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { Fragment } from 'react'
@@ -28,6 +29,7 @@ interface BattleCardProps {
   combatMode: CombatMode
   onCombatModeChange: (mode: CombatMode) => void
   onFactionChange: (side: CombatSide, faction: FactionKey) => void
+  onSwap: () => void
   onUnitCountChange: (side: CombatSide, unit: UnitType, count: number) => void
   onUpgradeToggle: (side: CombatSide, unit: UnitType) => void
   className?: string
@@ -44,6 +46,7 @@ export function BattleCard({
   combatMode,
   onCombatModeChange,
   onFactionChange,
+  onSwap,
   onUnitCountChange,
   onUpgradeToggle,
   className,
@@ -68,6 +71,14 @@ export function BattleCard({
             onValueChange={faction => onFactionChange('attacker', faction)}
           />
         </div>
+        <button
+          type="button"
+          className={styles.swapButton}
+          onClick={onSwap}
+          title="Swap attacker and defender"
+        >
+          <LoopIcon />
+        </button>
         <div
           className={styles.factionSelector}
           style={{ '--select-color': 'var(--defender)' } as CSSProperties}

@@ -101,6 +101,11 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     return { attackerWin, draw, defenderWin }
   }, [combatState])
 
+  const handleSwap = () => {
+    cs.swap()
+    forceRender()
+  }
+
   const handleFactionChange = (side: CombatSide, faction: FactionKey) => {
     cs.side(side).setFaction(faction)
     forceRender()
@@ -175,6 +180,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           combatMode={cs.combatMode}
           onCombatModeChange={handleCombatModeChange}
           onFactionChange={handleFactionChange}
+          onSwap={handleSwap}
           onUnitCountChange={handleUnitCountChange}
           onUpgradeToggle={handleUpgradeToggle}
         />
