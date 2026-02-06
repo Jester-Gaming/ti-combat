@@ -55,7 +55,7 @@
 ### Firmament
 
 - [x] **Heaven's Eye** (Flagship) — If the active system contains units that belong to a player who has a control token on 1 of your plots, apply +1 to this ship's move value and repair it at the end of every combat round.
-- [ ] **Myru Vos** (Agent) - When a player moves ships: You may exhaust this card; if you do, Space Cannon cannot be used against those ships. If they are not transporting units, they can also move through other players' ships.
+- [x] **Myru Vos** (Agent) - When a player moves ships: You may exhaust this card; if you do, Space Cannon cannot be used against those ships. If they are not transporting units, they can also move through other players' ships.
 
 ### Obsidian
 

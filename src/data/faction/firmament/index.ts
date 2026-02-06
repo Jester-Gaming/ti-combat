@@ -2,9 +2,13 @@ import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 import { heavensEye } from './heavens-eye'
+import { myruVos } from './myru-vos'
 
 export const firmament: Faction = {
   name: 'Firmament',
+  abilities: {
+    agent: [myruVos],
+  },
   units: {
     FLAGSHIP: {
       BASE: {
