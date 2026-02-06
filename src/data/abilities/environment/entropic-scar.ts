@@ -18,15 +18,14 @@ export const entropicScar: Ability = {
     isEnabled: false,
     uses: Infinity,
   },
+  sync: true,
   headerUI: 'isEnabled',
-  side: 'defender',
   invoke: [
     {
       timing: 'PREPARE',
       call: ctx => {
         for (const ability of UNIT_ABILITIES) {
           ctx.api.own.setUnitAbilityCannotBeUsed(ability, 'ENTROPIC_SCAR')
-          ctx.api.opponent.setUnitAbilityCannotBeUsed(ability, 'ENTROPIC_SCAR')
         }
       },
     },

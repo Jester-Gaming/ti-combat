@@ -9,6 +9,9 @@ describe('ENTROPIC_SCAR + SUSTAIN_DAMAGE', () => {
       attacker: {
         faction: 'ARBOREC',
         units: { DREADNOUGHT: 1 },
+        abilities: {
+          ENTROPIC_SCAR: true,
+        },
       },
       defender: {
         faction: 'ARBOREC',

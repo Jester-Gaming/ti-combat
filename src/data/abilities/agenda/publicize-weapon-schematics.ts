@@ -9,18 +9,13 @@ export const publicizeWeaponSchematics: Ability = {
     isEnabled: false,
     uses: Infinity,
   },
-  side: 'defender',
+  sync: true,
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'PREPARE',
       call: ctx => {
         ctx.api.own.setUnitAbilityLost(
-          'SUSTAIN_DAMAGE',
-          'PUBLICIZE_WEAPON_SCHEMATICS',
-          'WAR_SUN',
-        )
-        ctx.api.opponent.setUnitAbilityLost(
           'SUSTAIN_DAMAGE',
           'PUBLICIZE_WEAPON_SCHEMATICS',
           'WAR_SUN',

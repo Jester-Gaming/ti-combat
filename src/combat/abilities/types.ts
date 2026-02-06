@@ -405,6 +405,8 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   side?: CombatSide
   /** Restrict ability to a specific combat mode (SPACE or GROUND). When set, the ability is skipped during combat if the mode doesn't match, and dimmed in the UI. */
   context?: CombatMode
+  /** When true, both sides share identical config. Changing params on one side mirrors to the other. */
+  sync?: boolean
   /** Declare param changes (subtypes, group additions) based on ability params */
   declareParamChange?: (params: AbilityBaseParams & Params) => ParamChange[]
   invoke: AbilityInvoke<AbilityBaseParams & Params>[]

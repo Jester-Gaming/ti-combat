@@ -9,13 +9,13 @@ export const conventionsOfWar: Ability = {
     isEnabled: false,
     uses: Infinity,
   },
-  side: 'defender',
+  sync: true,
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'PREPARE',
       call: ctx => {
-        ctx.api.opponent.setUnitAbilityCannotBeUsed(
+        ctx.api.own.setUnitAbilityCannotBeUsed(
           'BOMBARDMENT',
           'CONVENTIONS_OF_WAR',
         )

@@ -14,6 +14,7 @@ describe('PUBLICIZE_WEAPON_SCHEMATICS + SUSTAIN_DAMAGE', () => {
             hitPerSustain: 1,
             spacePriority: ['DREADNOUGHT', 'WAR_SUN'],
           },
+          PUBLICIZE_WEAPON_SCHEMATICS: true,
         },
       },
       defender: {

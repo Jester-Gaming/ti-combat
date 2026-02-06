@@ -31,6 +31,7 @@ interface Ability<Params extends Record<string, unknown>> {
   uiConfig?: UIConfig<Params> // Controls for params in UI
   side?: CombatSide // Restrict to attacker or defender
   context?: CombatMode // Restrict to SPACE or GROUND combat
+  sync?: boolean // Both sides share identical config
   declareParamChange?: (params: Params) => ParamChange[]
   invoke: AbilityInvoke<Params>[] // Array of timing handlers
 }
@@ -56,6 +57,8 @@ Note: This is the **ability-level** `context` (combat mode). Don't confuse with 
 side: 'attacker' // Only available to the attacker
 side: 'defender' // Only available to the defender
 ```
+
+**`sync: true`** — both sides share identical config. When the user changes params on one side, the other side is automatically updated to match. Useful for environment effects and other abilities where both players share the same setting.
 
 ## Parameters
 

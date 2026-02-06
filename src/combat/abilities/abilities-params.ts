@@ -533,6 +533,15 @@ export class AbilitiesParams {
     }
 
     const ability = this._abilities[side].find(a => a.key === abilityKey)
+
+    if (ability?.sync) {
+      const otherSide = getOpponentSide(side)
+      this.config[otherSide] = {
+        ...this.config[otherSide],
+        [abilityKey]: params,
+      }
+    }
+
     if (ability?.declareParamChange) {
       this.reconcile()
     }
