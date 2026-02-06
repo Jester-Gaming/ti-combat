@@ -1,6 +1,8 @@
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
+import { quietus } from './quietus-flagship'
+
 export const crimson_rebellion: Faction = {
   name: 'Crimson Rebellion',
   units: {
@@ -16,7 +18,7 @@ export const crimson_rebellion: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [sustainDamage, quietus],
       },
     },
     MECH: {

@@ -697,7 +697,7 @@ export class AbilitiesParams {
             invokes.push({
               ability,
               invoke,
-              params: extractDefaults(ability) ?? {},
+              params: getAbilityMergedParams(ability, state.abilities[side]),
               source: { type: 'destroyed', unitType, destroyedIndex: i },
             })
           }
