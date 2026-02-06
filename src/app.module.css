@@ -129,7 +129,13 @@
 }
 
 .mainContent {
-  @apply relative z-10 flex min-h-screen flex-col gap-6 px-4 py-6;
+  @apply relative z-10 flex min-h-screen flex-col gap-4 px-2 py-4;
+}
+
+@media (width >= 640px) {
+  .mainContent {
+    @apply gap-6 px-4 py-6;
+  }
 }
 
 .header {
@@ -137,9 +143,15 @@
 }
 
 .title {
-  @apply text-lg tracking-wide;
+  @apply text-sm tracking-wide;
   font-family: var(--font-heading);
   color: hsl(var(--muted-foreground));
+}
+
+@media (width >= 640px) {
+  .title {
+    @apply text-lg;
+  }
 }
 
 .themeButton {

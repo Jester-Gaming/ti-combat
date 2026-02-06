@@ -1,11 +1,15 @@
 @reference "tailwindcss";
 
 .trigger {
-  @apply w-full text-sm tracking-wide transition-all;
+  @apply w-full min-w-0 text-sm tracking-wide transition-all;
   font-family: var(--font-heading);
   color: hsl(var(--foreground));
   background: hsl(var(--input));
   border: 1px solid hsl(var(--border));
+}
+
+.trigger > span:first-child {
+  @apply min-w-0 overflow-hidden text-ellipsis whitespace-nowrap;
 }
 
 .trigger:focus {

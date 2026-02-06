@@ -42,6 +42,7 @@
 
 .container.clickable {
   cursor: pointer;
+  user-select: none;
 }
 
 .container.clickable:hover .title {
@@ -61,7 +62,7 @@
 }
 
 .headerLabel {
-  @apply flex flex-1 cursor-pointer items-center gap-1.5 rounded p-0 text-left transition-colors;
+  @apply flex flex-1 cursor-pointer items-center gap-1.5 rounded p-0 text-left transition-colors select-none;
   background: transparent;
   border: none;
 }
@@ -121,7 +122,7 @@
 }
 
 .configItemLabel {
-  @apply flex cursor-pointer items-center justify-between gap-2;
+  @apply flex cursor-pointer items-center justify-between gap-2 select-none;
 }
 
 .configItemGroup {

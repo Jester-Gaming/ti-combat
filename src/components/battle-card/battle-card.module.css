@@ -1,15 +1,44 @@
 @reference "tailwindcss";
 
 .battleCard {
-  @apply min-w-0 rounded-lg p-6;
+  @apply min-w-0 rounded-lg p-3;
+}
+
+@media (width >= 640px) {
+  .battleCard {
+    @apply p-6;
+  }
 }
 
 .factionSelectors {
-  @apply mb-6 grid grid-cols-[1fr_auto_1fr] items-end gap-4;
+  @apply mb-4 grid items-end gap-2;
+  grid-template-columns: auto 1fr auto 1fr auto;
+}
+
+@media (width >= 640px) {
+  .factionSelectors {
+    @apply mb-6 gap-4;
+  }
+}
+
+@media (width >= 1024px) {
+  .factionSelectors {
+    grid-template-columns: 1fr auto 1fr;
+  }
 }
 
 .factionSelector {
-  /* Container for faction selector */
+  min-width: 0;
+}
+
+.factionAction {
+  @apply flex items-end;
+}
+
+@media (width >= 1024px) {
+  .factionAction {
+    display: none;
+  }
 }
 
 .swapButton {

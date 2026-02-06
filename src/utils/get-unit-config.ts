@@ -1,4 +1,8 @@
-import { UNIT_DISPLAY_NAMES, UNIT_TYPES } from '@/constants/units'
+import {
+  UNIT_DISPLAY_NAMES,
+  UNIT_SHORT_NAMES,
+  UNIT_TYPES,
+} from '@/constants/units'
 import { type FactionKey, type UnitType } from '@/types'
 
 import { getFactionUnitConfig } from './get-faction-unit-config'
@@ -30,6 +34,7 @@ export function getUnitVariantDisplayName(
 
 export interface UnitConfig {
   name: string
+  shortName: string
   hasUpgrade: boolean
 }
 
@@ -52,6 +57,7 @@ export function getUnitConfig(
 
     result[unitType] = {
       name: UNIT_DISPLAY_NAMES[unitType],
+      shortName: UNIT_SHORT_NAMES[unitType],
       hasUpgrade,
     }
   }

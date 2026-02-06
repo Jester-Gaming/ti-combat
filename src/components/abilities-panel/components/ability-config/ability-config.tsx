@@ -108,6 +108,7 @@ export function AbilityConfig({
           e.stopPropagation()
           handleNumberChange(headerParamKey, Number(e.target.value))
         }}
+        onFocus={e => e.target.select()}
         onClick={e => e.stopPropagation()}
       />
     ) : null
@@ -196,6 +197,7 @@ export function AbilityConfig({
                     onChange={e =>
                       handleNumberChange(key, Number(e.target.value))
                     }
+                    onFocus={e => e.target.select()}
                   />
                 </label>
               )

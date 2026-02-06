@@ -5,6 +5,7 @@ import styles from './unit-row-dual.module.css'
 
 interface UnitRowDualProps {
   name: string
+  shortName: string
   attackerHasUpgrade: boolean
   defenderHasUpgrade: boolean
   attacker: { count: number; upgraded: boolean }
@@ -17,6 +18,7 @@ interface UnitRowDualProps {
 
 export function UnitRowDual({
   name,
+  shortName,
   attackerHasUpgrade,
   defenderHasUpgrade,
   attacker,
@@ -39,7 +41,10 @@ export function UnitRowDual({
           onUpgradeToggle={onAttackerUpgradeToggle}
         />
       </div>
-      <span className={styles.unitName}>{name}</span>
+      <span className={styles.unitName}>
+        <span className={styles.fullName}>{name}</span>
+        <span className={styles.shortName}>{shortName}</span>
+      </span>
       <div
         className={clsx(unitControlStyles.side, unitControlStyles.sideDefender)}
       >

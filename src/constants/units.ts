@@ -48,3 +48,17 @@ export const UNIT_DISPLAY_NAMES: Record<UnitType, string> = {
   PDS: 'PDS',
   SPACE_DOCK: 'Space Dock',
 }
+
+export const UNIT_SHORT_NAMES: Record<UnitType, string> = {
+  FLAGSHIP: 'Fl',
+  WAR_SUN: 'WS',
+  DREADNOUGHT: 'Dn',
+  CRUISER: 'Cr',
+  CARRIER: 'Ca',
+  DESTROYER: 'De',
+  FIGHTER: 'Fi',
+  MECH: 'Me',
+  INFANTRY: 'In',
+  PDS: 'PD',
+  SPACE_DOCK: 'SD',
+}

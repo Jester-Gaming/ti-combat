@@ -63,8 +63,14 @@
 }
 
 .percentage {
-  @apply text-lg font-bold tabular-nums;
+  @apply text-base font-bold tabular-nums;
   font-family: var(--font-heading);
+}
+
+@media (width >= 640px) {
+  .percentage {
+    @apply text-lg;
+  }
 }
 
 .label {

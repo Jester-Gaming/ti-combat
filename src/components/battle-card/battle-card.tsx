@@ -1,6 +1,6 @@
 import { LoopIcon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
-import type { CSSProperties } from 'react'
+import type { CSSProperties, ReactNode } from 'react'
 import { Fragment } from 'react'
 
 import type { CombatMode } from '@/combat/combat-state/types'
@@ -32,6 +32,8 @@ interface BattleCardProps {
   onSwap: () => void
   onUnitCountChange: (side: CombatSide, unit: UnitType, count: number) => void
   onUpgradeToggle: (side: CombatSide, unit: UnitType) => void
+  attackerActions?: ReactNode
+  defenderActions?: ReactNode
   className?: string
 }
 
@@ -49,12 +51,17 @@ export function BattleCard({
   onSwap,
   onUnitCountChange,
   onUpgradeToggle,
+  attackerActions,
+  defenderActions,
   className,
 }: BattleCardProps) {
   return (
     <GlassCard as="main" className={clsx(styles.battleCard, className)}>
       {/* Faction selectors */}
       <div className={styles.factionSelectors}>
+        {attackerActions && (
+          <div className={styles.factionAction}>{attackerActions}</div>
+        )}
         <div
           className={styles.factionSelector}
           style={{ '--select-color': 'var(--attacker)' } as CSSProperties}
@@ -95,6 +102,9 @@ export function BattleCard({
             onValueChange={faction => onFactionChange('defender', faction)}
           />
         </div>
+        {defenderActions && (
+          <div className={styles.factionAction}>{defenderActions}</div>
+        )}
       </div>
 
       {/* Divider */}
@@ -126,6 +136,7 @@ export function BattleCard({
             )}
             <UnitRowDual
               name={attackerConfig[unitKey].name}
+              shortName={attackerConfig[unitKey].shortName}
               attackerHasUpgrade={attackerConfig[unitKey].hasUpgrade}
               defenderHasUpgrade={defenderConfig[unitKey].hasUpgrade}
               attacker={attackerSelections[unitKey]}

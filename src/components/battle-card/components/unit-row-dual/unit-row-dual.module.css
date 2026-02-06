@@ -1,7 +1,13 @@
 @reference "tailwindcss";
 
 .row {
-  @apply relative flex items-center justify-between gap-4 rounded px-2 py-2 transition-all;
+  @apply relative flex items-center justify-between gap-1 rounded px-1 py-1.5 transition-all;
+}
+
+@media (width >= 640px) {
+  .row {
+    @apply gap-4 px-2 py-2;
+  }
 }
 
 .row::before {
@@ -38,7 +44,31 @@
 }
 
 .unitName {
-  @apply min-w-28 text-center text-sm font-medium tracking-wide uppercase;
+  @apply min-w-0 shrink-0 text-center text-sm font-medium tracking-wide uppercase;
   font-family: var(--font-heading);
   color: hsl(var(--muted-foreground));
+}
+
+@media (width >= 640px) {
+  .unitName {
+    @apply min-w-28;
+  }
+}
+
+.fullName {
+  display: inline;
+}
+
+.shortName {
+  display: none;
+}
+
+@media (width <= 399px) {
+  .fullName {
+    display: none;
+  }
+
+  .shortName {
+    display: inline;
+  }
 }

@@ -16,7 +16,7 @@
 }
 
 .button {
-  @apply flex h-7 w-7 items-center justify-center rounded text-sm font-medium transition-all;
+  @apply flex h-6 w-6 items-center justify-center rounded text-sm font-medium transition-all;
   position: relative;
   color: hsl(var(--foreground));
   background: hsl(var(--secondary));
@@ -67,7 +67,7 @@
 }
 
 .upgradeButton {
-  @apply flex h-7 w-7 items-center justify-center rounded text-xs transition-all;
+  @apply flex h-6 w-6 items-center justify-center rounded text-xs transition-all;
   position: relative;
   color: hsl(var(--foreground));
   background: hsl(var(--secondary));
@@ -102,7 +102,7 @@
 }
 
 .upgradePlaceholder {
-  @apply h-7 w-7;
+  @apply h-6 w-6;
 }
 
 .buttonIcon {
@@ -118,13 +118,12 @@
 }
 
 .countInput {
-  @apply h-7 w-10 rounded px-1 text-center text-sm tabular-nums;
+  @apply h-6 w-8 rounded px-1 text-center text-sm tabular-nums;
   font-family: var(--font-heading);
   color: hsl(var(--foreground));
   background: hsl(var(--input));
   border: 1px solid hsl(var(--border));
   transition: all 0.15s ease;
-  appearance: textfield;
   appearance: textfield;
 }
 
@@ -151,4 +150,22 @@
 .sideDefender .countInput:focus {
   border-color: hsl(32deg 95% 55% / 50%);
   box-shadow: 0 0 0 2px hsl(32deg 95% 55% / 15%);
+}
+
+@media (width >= 640px) {
+  .button {
+    @apply h-7 w-7;
+  }
+
+  .upgradeButton {
+    @apply h-7 w-7;
+  }
+
+  .upgradePlaceholder {
+    @apply h-7 w-7;
+  }
+
+  .countInput {
+    @apply h-7 w-10;
+  }
 }

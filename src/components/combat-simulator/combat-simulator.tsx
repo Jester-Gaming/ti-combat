@@ -1,6 +1,7 @@
+import { GearIcon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
-import { useMemo, useReducer, useRef } from 'react'
+import { useMemo, useReducer, useRef, useState } from 'react'
 
 import { CombatEngine, CombatState, flattenTree } from '@/combat'
 import { getAvailableAbilities } from '@/combat/abilities'
@@ -9,6 +10,12 @@ import { AbilitiesPanel } from '@/components/abilities-panel'
 import { BattleCard } from '@/components/battle-card'
 import { GlassCard } from '@/components/ui/glass-card'
 import { GlowText } from '@/components/ui/glow-text'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import type { CombatSide, FactionKey, UnitType } from '@/types'
 import { getUnitConfig } from '@/utils/get-unit-config'
 
@@ -22,6 +29,8 @@ interface CombatSimulatorProps {
 export function CombatSimulator({ className }: CombatSimulatorProps) {
   const csRef = useRef(new CombatState())
   const [, forceRender] = useReducer((x: number) => x + 1, 0)
+  const [attackerSheetOpen, setAttackerSheetOpen] = useState(false)
+  const [defenderSheetOpen, setDefenderSheetOpen] = useState(false)
 
   const cs = csRef.current
 
@@ -183,8 +192,84 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           onSwap={handleSwap}
           onUnitCountChange={handleUnitCountChange}
           onUpgradeToggle={handleUpgradeToggle}
+          attackerActions={
+            <button
+              type="button"
+              className={clsx(styles.gearButton, styles.gearButtonAttacker)}
+              onClick={() => setAttackerSheetOpen(true)}
+              title="Attacker abilities"
+            >
+              <GearIcon className={styles.gearButtonIcon} />
+            </button>
+          }
+          defenderActions={
+            <button
+              type="button"
+              className={clsx(styles.gearButton, styles.gearButtonDefender)}
+              onClick={() => setDefenderSheetOpen(true)}
+              title="Defender abilities"
+            >
+              <GearIcon className={styles.gearButtonIcon} />
+            </button>
+          }
         />
       </div>
+
+      {/* Attacker abilities sheet (mobile) */}
+      <Sheet open={attackerSheetOpen} onOpenChange={setAttackerSheetOpen}>
+        <SheetContent side="left" className={styles.sheetAttacker}>
+          <SheetTitle className="sr-only">Attacker Abilities</SheetTitle>
+          <div className={styles.sheetHeader}>
+            <GlowText
+              as="h2"
+              className={styles.sidePanelTitle}
+              style={{ '--glow-color': 'var(--attacker)' } as CSSProperties}
+            >
+              Attacker Abilities
+            </GlowText>
+          </div>
+          <SheetDescription className="sr-only">
+            Configure attacker abilities
+          </SheetDescription>
+          <AbilitiesPanel
+            abilities={attackerAbilities}
+            readContext={attackerReadContext}
+            combatMode={cs.combatMode}
+            params={cs.data.abilities.attacker}
+            onParamsChange={(abilityName, params) =>
+              handleAbilityParamsChange('attacker', abilityName, params)
+            }
+          />
+        </SheetContent>
+      </Sheet>
+
+      {/* Defender abilities sheet (mobile) */}
+      <Sheet open={defenderSheetOpen} onOpenChange={setDefenderSheetOpen}>
+        <SheetContent side="right" className={styles.sheetDefender}>
+          <SheetTitle className="sr-only">Defender Abilities</SheetTitle>
+          <div className={styles.sheetHeader}>
+            <GlowText
+              as="h2"
+              className={styles.sidePanelTitle}
+              style={{ '--glow-color': 'var(--defender)' } as CSSProperties}
+            >
+              Defender Abilities
+            </GlowText>
+          </div>
+          <SheetDescription className="sr-only">
+            Configure defender abilities
+          </SheetDescription>
+          <AbilitiesPanel
+            abilities={defenderAbilities}
+            readContext={defenderReadContext}
+            combatMode={cs.combatMode}
+            params={cs.data.abilities.defender}
+            onParamsChange={(abilityName, params) =>
+              handleAbilityParamsChange('defender', abilityName, params)
+            }
+          />
+        </SheetContent>
+      </Sheet>
 
       {/* Right panel: Defender abilities */}
       <GlassCard
