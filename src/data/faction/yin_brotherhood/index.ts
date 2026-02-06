@@ -1,6 +1,7 @@
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
+import { brotherMilor } from './brother-milor'
 import { devotion } from './devotion'
 import { impulseCore } from './impulse-core'
 
@@ -9,6 +10,7 @@ export const yin_brotherhood: Faction = {
   abilities: {
     faction: [devotion],
     technology: [impulseCore],
+    agent: [brotherMilor],
   },
   units: {
     FLAGSHIP: {
