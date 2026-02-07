@@ -17,11 +17,18 @@ function binomialCoeff(n: number, k: number): number {
   return result
 }
 
+const diceDistCache = new Map<string, DiceRollOutcome[]>()
+
 export function getDiceDistribution(group: DiceGroup): DiceRollOutcome[] {
   const [hitValue, diceCount] = group
+  const cacheKey = `${hitValue}:${diceCount}`
+  const cached = diceDistCache.get(cacheKey)
+  if (cached) return cached
 
   if (diceCount === 0) {
-    return [{ hits: 0, probability: 1 }]
+    const result = [{ hits: 0, probability: 1 }]
+    diceDistCache.set(cacheKey, result)
+    return result
   }
 
   // d10: hit on hitValue or higher (1-10 scale)
@@ -38,5 +45,6 @@ export function getDiceDistribution(group: DiceGroup): DiceRollOutcome[] {
     distribution.push({ hits, probability })
   }
 
+  diceDistCache.set(cacheKey, distribution)
   return distribution
 }
