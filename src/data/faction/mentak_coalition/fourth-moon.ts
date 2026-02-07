@@ -4,7 +4,7 @@ export const fourthMoon: Ability = {
   key: 'FOURTH_MOON',
   name: 'Fourth Moon',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'FLAGSHIP',
   context: 'SPACE',
   params: {
     isEnabled: true,

@@ -8,7 +8,7 @@ export const alarum: Ability<Params> = {
   key: 'ALARUM',
   name: '(Ral Nel) Alarum',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'FLAGSHIP',
   params: {
     isEnabled: true,
     uses: Infinity,

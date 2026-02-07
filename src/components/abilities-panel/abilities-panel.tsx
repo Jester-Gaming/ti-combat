@@ -34,6 +34,7 @@ const SUBCATEGORY_ORDER = [
   'TECHNOLOGY',
   'HERO',
   'BREAKTHROUGH',
+  'FLAGSHIP',
   'UNIT',
 ]
 

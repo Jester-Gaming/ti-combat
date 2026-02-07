@@ -4,7 +4,7 @@ export const arcSecundus: Ability = {
   key: 'ARC_SECUNDUS',
   name: 'Arc Secundus',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'FLAGSHIP',
   params: {
     isEnabled: true,
     uses: Infinity,

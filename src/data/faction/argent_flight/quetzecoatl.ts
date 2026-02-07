@@ -4,7 +4,7 @@ export const quetzecoatl: Ability = {
   key: 'QUETZECOATL',
   name: 'Quetzecoatl',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'FLAGSHIP',
   context: 'SPACE',
   params: {
     isEnabled: true,

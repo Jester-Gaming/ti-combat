@@ -5,7 +5,7 @@ export const vanHauge: Ability = {
   key: 'VAN_HAUGE',
   name: 'Van Hauge',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'FLAGSHIP',
   context: 'SPACE',
   params: {
     isEnabled: true,

@@ -5,7 +5,7 @@ export const matriarch: Ability = {
   key: 'MATRIARCH',
   name: 'Matriarch',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'FLAGSHIP',
   context: 'GROUND',
   params: {
     isEnabled: true,

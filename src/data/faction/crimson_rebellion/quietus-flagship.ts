@@ -14,7 +14,7 @@ export const quietus: Ability = {
   key: 'QUIETUS',
   name: 'Quietus',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'FLAGSHIP',
   params: {
     isEnabled: false,
     uses: Infinity,

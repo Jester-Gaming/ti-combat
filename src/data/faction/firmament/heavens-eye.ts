@@ -4,7 +4,7 @@ export const heavensEye: Ability = {
   key: 'HEAVENS_EYE',
   name: "(Firmament) Heaven's Eye",
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'FLAGSHIP',
   params: {
     isEnabled: false,
     uses: Infinity,

@@ -4,7 +4,7 @@ export const salaiSaiCorian: Ability = {
   key: 'SALAI_SAI_CORIAN',
   name: 'Salai Sai Corian',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'FLAGSHIP',
   params: {
     isEnabled: true,
     uses: Infinity,

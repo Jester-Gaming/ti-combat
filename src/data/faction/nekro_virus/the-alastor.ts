@@ -5,7 +5,7 @@ export const theAlastor: Ability = {
   key: 'THE_ALASTOR',
   name: 'The Alastor',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'FLAGSHIP',
   context: 'SPACE',
   params: {
     isEnabled: true,

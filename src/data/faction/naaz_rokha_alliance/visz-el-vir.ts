@@ -4,7 +4,7 @@ export const viszElVir: Ability = {
   key: 'VISZ_EL_VIR',
   name: 'Visz El Vir',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'FLAGSHIP',
   params: {
     isEnabled: true,
     uses: Infinity,

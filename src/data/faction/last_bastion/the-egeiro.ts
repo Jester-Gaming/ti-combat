@@ -8,7 +8,7 @@ export const theEgeiro: Ability<Params> = {
   key: 'THE_EGEIRO',
   name: '(Bastion) The Egeiro',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'FLAGSHIP',
   context: 'SPACE',
   params: {
     isEnabled: true,

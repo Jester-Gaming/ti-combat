@@ -4,7 +4,7 @@ export const sardakkFlagshipAbility: Ability = {
   key: 'SARDAKK_FLAGSHIP',
   name: "C'morran N'orr",
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'FLAGSHIP',
   params: {
     isEnabled: true,
     uses: Infinity,

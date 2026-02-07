@@ -4,7 +4,7 @@ export const arviconRex: Ability = {
   key: 'ARVICON_REX',
   name: '(Mahact) Arvicon Rex',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'FLAGSHIP',
   params: {
     isEnabled: false,
     uses: Infinity,
