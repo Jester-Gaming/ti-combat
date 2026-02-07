@@ -1,5 +1,5 @@
 import factions from '@/data/faction'
-import type { CombatSide, DiceGroup, FactionKey, UnitType } from '@/types'
+import type { CombatSide, DiceGroup, FactionKey, Unit, UnitType } from '@/types'
 import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 
 import {
@@ -29,7 +29,6 @@ import {
   getLastMicroPhase,
   getNextMetaPhase,
   getNextMicroPhase,
-  getPhaseKey,
   isLastMicroPhase,
 } from './phase-utils'
 import type {
@@ -417,8 +416,7 @@ export class CombatState {
   }
 
   getHash(): string {
-    const phaseHash = getPhaseKey(this.currentPhase)
-    return `${phaseHash}|${getSideHash(this.data.attacker)}|${getSideHash(this.data.defender)}|${getAbilitiesHash(this.abilities)}`
+    return `${getSideHash(this.data.attacker)}|${getSideHash(this.data.defender)}|${getAbilitiesHash(this.abilities)}`
   }
 
   /**
@@ -773,6 +771,13 @@ function getAbilitiesHash(abilities: AbilitiesConfig): string {
   return `a{${a}}d{${d}}`
 }
 
+function getUnitStateKey(u: Unit): string {
+  let key = ''
+  if (u.isDamaged) key += 'd'
+  if (u.subtypes?.length) key += ':' + u.subtypes.toSorted().join('+')
+  return key
+}
+
 function getSideHash(side: SideStateData): string {
   const parts: string[] = []
   const sortedTypes = Object.keys(side.units).sort()
@@ -781,8 +786,21 @@ function getSideHash(side: SideStateData): string {
     const units = side.units[type as keyof typeof side.units]
     if (!units || units.length === 0) continue
 
-    const unitStates = units.map(u => JSON.stringify(u)).join(',')
-    parts.push(`${type}:[${unitStates}]`)
+    // Group by mutable state (isDamaged, subtypes)
+    const groups = new Map<string, number>()
+    for (const u of units) {
+      const stateKey = getUnitStateKey(u)
+      groups.set(stateKey, (groups.get(stateKey) ?? 0) + 1)
+    }
+
+    // Encode as TYPE:count or TYPE:count,countSTATE,...
+    const groupParts = [...groups.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([stateKey, count]) =>
+        stateKey ? `${count}${stateKey}` : String(count),
+      )
+      .join(',')
+    parts.push(`${type}:${groupParts}`)
   }
 
   // Include hitPools in hash

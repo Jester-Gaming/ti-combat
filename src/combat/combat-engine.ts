@@ -1,4 +1,5 @@
 import { CombatState } from './combat-state/combat-state'
+import { getPhaseKey } from './combat-state/phase-utils'
 import type { ProbabilityNode } from './types'
 
 interface EngineOptions {
@@ -70,13 +71,15 @@ export class CombatEngine {
         return
       }
 
-      // Cache key includes round for proper AFB handling and flatten-tree compatibility
+      // Cache key includes phase for correctness (states at different phases must not collide)
+      // and round-1 flag for AFB handling and flatten-tree compatibility
       const { meta, micro } = node.state.currentPhase
       const isEarlyPhase =
         node.round === 1 &&
         (micro === 'START' || micro === 'ASSIGN_HITS' || meta === 'AFB')
       const roundKey = isEarlyPhase ? 'EARLY' : 'NORMAL'
-      const stateKey = `${roundKey}|${node.state.getHash()}`
+      const phaseKey = getPhaseKey(node.state.currentPhase)
+      const stateKey = `${phaseKey}|${roundKey}|${node.state.getHash()}`
       const cached = this.subtreeCache.get(stateKey)
 
       if (cached) {
