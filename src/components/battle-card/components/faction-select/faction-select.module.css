@@ -36,6 +36,10 @@
 }
 
 .item {
-  @apply cursor-pointer text-sm tracking-wide transition-colors hover:bg-white/5;
+  @apply cursor-pointer text-sm tracking-wide transition-colors;
   font-family: var(--font-heading);
+}
+
+.item:hover {
+  background: hsl(var(--foreground) / 5%);
 }

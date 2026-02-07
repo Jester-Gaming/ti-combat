@@ -35,33 +35,33 @@
 
 @layer base {
   :root {
-    /* Light theme */
-    --background: 220 20% 97%;
+    /* Light theme — blue-tinted (mirrors dark theme hue 222) */
+    --background: 222 35% 84%;
     --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
+    --card: 222 30% 89%;
     --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
+    --popover: 222 30% 89%;
     --popover-foreground: 222 47% 11%;
-    --primary: 186 80% 40%;
+    --primary: 186 80% 35%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 15% 92%;
+    --secondary: 222 25% 78%;
     --secondary-foreground: 222 47% 11%;
-    --muted: 220 15% 92%;
-    --muted-foreground: 220 10% 45%;
-    --accent: 186 60% 45%;
-    --accent-foreground: 0 0% 100%;
+    --muted: 222 25% 78%;
+    --muted-foreground: 222 15% 35%;
+    --accent: 186 60% 40%;
+    --accent-foreground: 222 47% 11%;
     --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 15% 85%;
-    --input: 220 15% 90%;
-    --ring: 186 80% 40%;
+    --border: 222 25% 70%;
+    --input: 222 25% 78%;
+    --ring: 186 80% 35%;
     --radius: 0.375rem;
 
-    /* Attacker - Cyan */
-    --attacker: 186 80% 40%;
+    /* Attacker - Cyan (darker for light bg) */
+    --attacker: 186 80% 35%;
 
-    /* Defender - Amber/Orange */
-    --defender: 32 90% 45%;
+    /* Defender - Amber/Orange (darker for light bg) */
+    --defender: 32 90% 40%;
   }
 
   .dark {

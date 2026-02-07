@@ -19,7 +19,9 @@ export function ToggleGroup<T extends string>({
   className,
 }: ToggleGroupProps<T>) {
   return (
-    <div className={clsx('inline-flex rounded-lg bg-white/5 p-1', className)}>
+    <div
+      className={clsx('bg-foreground/5 inline-flex rounded-lg p-1', className)}
+    >
       {options.map(option => (
         <button
           key={option.value}
@@ -28,8 +30,8 @@ export function ToggleGroup<T extends string>({
           className={clsx(
             'rounded-md px-4 py-1.5 text-sm font-medium transition-all',
             value === option.value
-              ? 'bg-white/20 text-white shadow-sm'
-              : 'text-white/60 hover:bg-white/10 hover:text-white/80',
+              ? 'bg-foreground/15 text-foreground shadow-sm'
+              : 'text-muted-foreground hover:bg-foreground/8 hover:text-foreground/80',
           )}
         >
           {option.label}

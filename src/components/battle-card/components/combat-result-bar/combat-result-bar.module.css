@@ -23,7 +23,8 @@
 }
 
 .resultBar {
-  @apply flex h-14 overflow-hidden rounded-lg border border-white/10;
+  @apply flex h-14 overflow-hidden rounded-lg;
+  border: 1px solid hsl(var(--border));
 }
 
 .segment {
@@ -31,15 +32,35 @@
 }
 
 .segmentAttacker {
-  @apply bg-gradient-to-b from-[hsla(186,100%,50%,0.3)] to-[hsla(186,100%,40%,0.2)];
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--attacker) / 25%),
+    hsl(var(--attacker) / 15%)
+  );
 
   .percentage {
     color: hsl(var(--attacker));
   }
+
+  .label {
+    color: hsl(var(--attacker));
+  }
+}
+
+:global(.dark) .segmentAttacker {
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--attacker) / 30%),
+    hsl(var(--attacker) / 20%)
+  );
 }
 
 .segmentDraw {
-  @apply bg-gradient-to-b from-white/10 to-white/5;
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--foreground) / 8%),
+    hsl(var(--foreground) / 4%)
+  );
 
   .label {
     color: hsl(var(--muted-foreground));
@@ -51,11 +72,27 @@
 }
 
 .segmentDefender {
-  @apply bg-gradient-to-b from-[hsla(32,95%,55%,0.3)] to-[hsla(32,95%,45%,0.2)];
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--defender) / 25%),
+    hsl(var(--defender) / 15%)
+  );
 
   .percentage {
     color: hsl(var(--defender));
   }
+
+  .label {
+    color: hsl(var(--defender));
+  }
+}
+
+:global(.dark) .segmentDefender {
+  background: linear-gradient(
+    to bottom,
+    hsl(var(--defender) / 30%),
+    hsl(var(--defender) / 20%)
+  );
 }
 
 .segmentContent {

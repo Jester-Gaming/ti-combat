@@ -95,8 +95,8 @@
 
 .headerNumberInput {
   @apply h-4 w-4 shrink-0 rounded border text-center text-[10px];
-  border-color: rgb(255 255 255 / 20%);
-  background-color: rgb(255 255 255 / 5%);
+  border-color: hsl(var(--foreground) / 15%);
+  background-color: hsl(var(--foreground) / 5%);
   color: hsl(var(--foreground));
   padding: 0;
   outline: none;

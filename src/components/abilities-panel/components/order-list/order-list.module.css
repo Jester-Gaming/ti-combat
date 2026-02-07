@@ -30,7 +30,8 @@
 }
 
 .dragHandle {
-  @apply flex h-4 w-4 shrink-0 items-center justify-center text-white/30;
+  @apply flex h-4 w-4 shrink-0 items-center justify-center;
+  color: hsl(var(--foreground) / 25%);
 }
 
 .item:hover .dragHandle {
