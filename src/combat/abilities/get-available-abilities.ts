@@ -107,6 +107,7 @@ export function getAvailableAbilities(
   const factionAbilities = [
     ...(abilities?.faction ?? []),
     ...(abilities?.technology ?? []),
+    ...(abilities?.unit ?? []),
     ...(abilities?.hero ?? []),
     ...(abilities?.breakthrough ?? []),
   ]

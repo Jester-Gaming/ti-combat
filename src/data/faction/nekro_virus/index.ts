@@ -1,5 +1,11 @@
+import type {
+  Ability,
+  AbilityCallContext,
+  ParamChange,
+} from '@/combat/abilities/types'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
-import type { Faction } from '@/types'
+import type { Faction, UnitDefinition, UnitType } from '@/types'
+import { getEffectiveStats } from '@/utils/get-simulation-units'
 
 import { otherFactions } from '../other-factions'
 import { mordred } from './mordred'
@@ -28,10 +34,61 @@ const technologyAbilities = Object.values(otherFactions).flatMap(faction =>
     })),
 )
 
+const EXCLUDED_UNIT_TYPES = new Set(['FLAGSHIP', 'MECH', 'SPACE_DOCK'])
+
+function createFactionUnitAbility(
+  factionKey: string,
+  factionName: string,
+  unitType: UnitType,
+  unitDef: UnitDefinition,
+) {
+  const stats = getEffectiveStats(unitDef.BASE, unitDef.UPGRADED, true)
+  const displayName = stats.NAME ?? unitDef.BASE.NAME ?? unitType
+
+  // Collect declareParamChange from unit abilities (e.g. Hel-Titan adds PDS to groundForces)
+  const paramChanges = (stats.ABILITIES ?? [])
+    .filter(a => a.declareParamChange)
+    .flatMap(a => a.declareParamChange!(a.params))
+
+  return {
+    key: `NEKRO_UNIT_${factionKey}_${unitType}`,
+    name: `(${factionName}) ${displayName}`,
+    category: 'FACTION',
+    subcategory: 'UNIT',
+    params: {
+      isEnabled: false,
+      uses: Infinity,
+    },
+    headerUI: 'isEnabled',
+    ...(paramChanges.length > 0 && {
+      declareParamChange: (): ParamChange[] => paramChanges,
+    }),
+    invoke: [
+      {
+        timing: 'PREPARE' as const,
+        call: (ctx: AbilityCallContext) => {
+          ctx.api.own.modifyUnit(unitType, stats)
+        },
+      },
+    ],
+  } satisfies Ability
+}
+
+const unitAbilities = Object.entries(otherFactions)
+  .filter(([factionKey]) => factionKey !== 'NEUTRAL')
+  .flatMap(([factionKey, faction]) =>
+    (Object.entries(faction.units) as [UnitType, UnitDefinition][])
+      .filter(([unitType]) => !EXCLUDED_UNIT_TYPES.has(unitType))
+      .map(([unitType, unitDef]) =>
+        createFactionUnitAbility(factionKey, faction.name, unitType, unitDef),
+      ),
+  )
+
 export const nekro_virus: Faction = {
   name: 'Nekro Virus',
   abilities: {
     technology: technologyAbilities,
+    unit: unitAbilities,
   },
   units: {
     FLAGSHIP: {

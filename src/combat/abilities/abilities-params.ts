@@ -1168,16 +1168,30 @@ export class AbilitiesParams {
         settings.groundForces = [...GROUND_FORCES]
         settings.subtypes = []
 
-        const changes = this.collectParamChanges(abilities, config[side])
-        for (const change of changes) {
-          if (change.key === 'subtypes') {
-            ;(settings.subtypes as DeclaredSubtype[]).push(
-              change.value as DeclaredSubtype,
-            )
-          } else if (applyGroupAdditions) {
-            const group = settings[change.key] as UnitType[]
-            if (group && !group.includes(change.value as UnitType)) {
-              group.push(change.value as UnitType)
+        // Two passes: first builds groups (groundForces, etc.),
+        // second resolves cross-group deps (e.g. Alastor copies groundForces → ships)
+        for (let pass = 0; pass < 2; pass++) {
+          const changes = this.collectParamChanges(
+            abilities,
+            config[side],
+            settings,
+          )
+          for (const change of changes) {
+            if (change.key === 'subtypes') {
+              const subtypes = settings.subtypes as DeclaredSubtype[]
+              const sub = change.value as DeclaredSubtype
+              if (
+                !subtypes.some(
+                  s => s.name === sub.name && s.unitType === sub.unitType,
+                )
+              ) {
+                subtypes.push(sub)
+              }
+            } else if (applyGroupAdditions) {
+              const group = settings[change.key] as UnitType[]
+              if (group && !group.includes(change.value as UnitType)) {
+                group.push(change.value as UnitType)
+              }
             }
           }
         }
@@ -1275,6 +1289,7 @@ export class AbilitiesParams {
   private collectParamChanges(
     abilities: readonly Ability[],
     params: Record<string, Record<string, unknown>>,
+    settings: Readonly<Record<string, unknown>>,
   ): ParamChange[] {
     const result: ParamChange[] = []
 
@@ -1291,7 +1306,7 @@ export class AbilitiesParams {
         if (!headerValue) continue
       }
 
-      const declared = ability.declareParamChange(abilityParams)
+      const declared = ability.declareParamChange(abilityParams, settings)
       result.push(...declared)
     }
 

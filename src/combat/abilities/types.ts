@@ -164,6 +164,9 @@ export interface SideReadApi {
   findUnitByPriority(priority: string[]): Unit | undefined
   isUnitAbilityLost(ability: UnitAbility, unitType: UnitType): boolean
   isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: UnitType): boolean
+
+  // Ability config reads
+  getAbilityConfig(key: string): Readonly<Record<string, unknown>> | undefined
 }
 
 /** Full read-write API for mutating one side's state (within Immer draft) */
@@ -407,7 +410,11 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   context?: CombatMode
   /** When true, both sides share identical config. Changing params on one side mirrors to the other. */
   sync?: boolean
-  /** Declare param changes (subtypes, group additions) based on ability params */
-  declareParamChange?: (params: AbilityBaseParams & Params) => ParamChange[]
+  /** Declare param changes (subtypes, group additions) based on ability params.
+   *  `settings` contains the current SETTINGS values (ships, groundForces, etc.) during reconciliation. */
+  declareParamChange?: (
+    params: AbilityBaseParams & Params,
+    settings: Readonly<Record<string, unknown>>,
+  ) => ParamChange[]
   invoke: AbilityInvoke<AbilityBaseParams & Params>[]
 }

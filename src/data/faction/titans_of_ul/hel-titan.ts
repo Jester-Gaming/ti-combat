@@ -6,7 +6,7 @@ export const helTitan: Ability = {
   name: 'Hel-Titan',
   category: 'FACTION',
   subcategory: 'UNIT',
-  context: 'GROUND',
+
   params: {
     isEnabled: true,
     uses: Infinity,

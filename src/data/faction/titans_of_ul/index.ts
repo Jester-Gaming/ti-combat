@@ -7,7 +7,6 @@ import { tellurian } from './tellurian'
 export const titans_of_ul: Faction = {
   name: 'Titans of Ul',
   abilities: {
-    faction: [helTitan],
     agent: [tellurian],
   },
   units: {
@@ -71,7 +70,7 @@ export const titans_of_ul: Faction = {
           SPACE_CANNON: [6, 1],
           PRODUCTION: 1,
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [sustainDamage, helTitan],
       },
       UPGRADED: {
         NAME: 'Hel-Titan II',

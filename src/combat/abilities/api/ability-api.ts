@@ -322,6 +322,10 @@ function buildSideReadApi(
     isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: UnitType) {
       return isRestricted(sideState, 'cannotBeUsed', ability, unitType)
     },
+
+    getAbilityConfig(key: string) {
+      return state.abilities[side][key]
+    },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any
 }
@@ -475,10 +479,12 @@ export function buildApi(
             Object.assign(unit, maybeUpdates)
           }
         } else {
-          // modifyUnit(unitType, updates) — first of type
-          const unit = units[0]
-          if (unit) {
+          // modifyUnit(unitType, updates) — all of type + update template
+          for (const unit of units) {
             Object.assign(unit, indexOrUpdates)
+          }
+          if (sideState.unitStats?.[unitType]) {
+            Object.assign(sideState.unitStats[unitType]!, indexOrUpdates)
           }
         }
       } else {
