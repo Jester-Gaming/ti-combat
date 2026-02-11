@@ -5,7 +5,7 @@ export const eidolon: Ability = {
   key: 'EIDOLON',
   name: 'Eidolon',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'MECH',
   context: 'SPACE',
   params: {
     isEnabled: true,

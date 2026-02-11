@@ -179,8 +179,10 @@ function adjustTrackerForDestroyedUnits(
       // Units were destroyed — clear tracked indices for this type
       // so shifted units aren't incorrectly skipped.
       // isCallable guards prevent genuine double-invocation.
+      // Key format: timing:unitType:abilityKey
+      const typeSegment = `:${type}:`
       for (const [key, indices] of sideTracker.unitAbilities) {
-        if (key.endsWith(`:${type}`)) {
+        if (key.includes(typeSegment)) {
           indices.clear()
         }
       }
@@ -727,8 +729,8 @@ export class AbilitiesParams {
           continue // Unit destroyed
         }
 
-        // Check if this unit instance already invoked
-        const key = `${invoke.timing}:${source.unitType}`
+        // Check if this unit instance already invoked this ability
+        const key = `${invoke.timing}:${source.unitType}:${ability.key}`
         const invokedIndices = sideTracker.unitAbilities.get(key)
         if (invokedIndices?.has(source.unitIndex)) {
           continue
@@ -897,7 +899,7 @@ export class AbilitiesParams {
           invokedIndices.add(source.destroyedIndex)
           sideTracker.destroyedAbilities.set(key, invokedIndices)
         } else {
-          const key = `${invoke.timing}:${source.unitType}`
+          const key = `${invoke.timing}:${source.unitType}:${ability.key}`
           const invokedIndices = sideTracker.unitAbilities.get(key) ?? new Set()
           invokedIndices.add(source.unitIndex)
           sideTracker.unitAbilities.set(key, invokedIndices)

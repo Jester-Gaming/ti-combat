@@ -12,9 +12,13 @@ import type { FactionKey } from '@/types'
 
 import styles from './faction-select.module.css'
 
-const FACTION_ENTRIES = Object.entries(factions) as Array<
-  [string, { name: string }]
->
+const FACTION_ENTRIES = (
+  Object.entries(factions) as Array<[string, { name: string }]>
+).sort((a, b) => {
+  if (a[0] === 'NEUTRAL') return 1
+  if (b[0] === 'NEUTRAL') return -1
+  return a[1].name.localeCompare(b[1].name)
+})
 
 interface FactionSelectProps {
   value: FactionKey

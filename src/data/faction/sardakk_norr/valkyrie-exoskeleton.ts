@@ -5,7 +5,7 @@ export const valkyrieExoskeleton: Ability = {
   key: 'VALKYRIE_EXOSKELETON',
   name: 'Valkyrie Exoskeleton',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'MECH',
   context: 'GROUND',
   params: {
     isEnabled: true,

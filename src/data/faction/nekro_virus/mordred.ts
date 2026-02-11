@@ -4,7 +4,7 @@ export const mordred: Ability = {
   key: 'MORDRED',
   name: '(Nekro) Mordred',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'MECH',
   params: {
     isEnabled: false,
     uses: Infinity,

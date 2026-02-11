@@ -2,7 +2,7 @@ import type { Ability } from '../../../combat/abilities/types'
 
 export const arviconRex: Ability = {
   key: 'ARVICON_REX',
-  name: '(Mahact) Arvicon Rex',
+  name: 'Arvicon Rex',
   category: 'FACTION',
   subcategory: 'FLAGSHIP',
   params: {

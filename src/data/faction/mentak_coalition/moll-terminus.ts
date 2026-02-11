@@ -4,7 +4,7 @@ export const mollTerminus: Ability = {
   key: 'MOLL_TERMINUS',
   name: 'Moll Terminus',
   category: 'FACTION',
-  subcategory: 'UNIT',
+  subcategory: 'MECH',
   params: {
     isEnabled: true,
     uses: Infinity,

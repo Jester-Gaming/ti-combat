@@ -6,7 +6,7 @@ type Params = {
 
 export const theEgeiro: Ability<Params> = {
   key: 'THE_EGEIRO',
-  name: '(Bastion) The Egeiro',
+  name: 'The Egeiro',
   category: 'FACTION',
   subcategory: 'FLAGSHIP',
   context: 'SPACE',
@@ -22,8 +22,8 @@ export const theEgeiro: Ability<Params> = {
       isCallable: (params, _ctx, dice) => {
         return params.nonHomeSystems > 0 && !dice.own.isEmpty()
       },
-      call: (_ctx, params, dice) => {
-        dice.own.modifyHitValue(-params.nonHomeSystems, 'FLAGSHIP')
+      call: (ctx, params, dice) => {
+        dice.own.modifyHitValue(-params.nonHomeSystems, ctx.getUnit())
       },
     },
   ],

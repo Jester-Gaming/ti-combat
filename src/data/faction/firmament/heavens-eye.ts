@@ -2,7 +2,7 @@ import type { Ability } from '../../../combat/abilities/types'
 
 export const heavensEye: Ability = {
   key: 'HEAVENS_EYE',
-  name: "(Firmament) Heaven's Eye",
+  name: "Heaven's Eye",
   category: 'FACTION',
   subcategory: 'FLAGSHIP',
   params: {

@@ -23,8 +23,15 @@ export const salaiSaiCorian: Ability = {
           nonFighterCount += ctx.api.opponent.getUnits(type).length
         }
 
-        // Flagship has COMBAT: [7, 1] as base — adjust to non-fighter count
-        dice.own.addDiceCount(nonFighterCount - 1, ctx.getUnit())
+        // Set dice count to number of non-fighter ships
+        const currentDice = dice.own.get(ctx.getUnitType())?.[
+          ctx.getUnitIndex()
+        ]
+        const currentCount = currentDice?.[1] ?? 0
+        const delta = nonFighterCount - currentCount
+        if (delta !== 0) {
+          dice.own.addDiceCount(delta, ctx.getUnit())
+        }
       },
     },
   ],

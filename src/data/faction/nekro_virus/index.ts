@@ -1,8 +1,23 @@
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
+import { otherFactions } from '../other-factions'
 import { mordred } from './mordred'
 import { theAlastor } from './the-alastor'
+
+const flagshipAbilities = Object.values(otherFactions).flatMap(faction =>
+  (faction.units.FLAGSHIP?.BASE?.ABILITIES ?? [])
+    .filter(a => a.subcategory === 'FLAGSHIP')
+    .map(ability => ({
+      ...ability,
+      name: `(${faction.name}) ${ability.name}`,
+      readOnly: false,
+      params: {
+        ...ability.params,
+        isEnabled: ability.headerUI === 'isEnabled' ? false : true,
+      },
+    })),
+)
 
 export const nekro_virus: Faction = {
   name: 'Nekro Virus',
@@ -19,7 +34,7 @@ export const nekro_virus: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [theAlastor, sustainDamage],
+        ABILITIES: [theAlastor, sustainDamage, ...flagshipAbilities],
       },
     },
     MECH: {

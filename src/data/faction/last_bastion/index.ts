@@ -5,9 +5,6 @@ import { theEgeiro } from './the-egeiro'
 
 export const last_bastion: Faction = {
   name: 'Last Bastion',
-  abilities: {
-    faction: [theEgeiro],
-  },
   units: {
     FLAGSHIP: {
       BASE: {
@@ -22,7 +19,7 @@ export const last_bastion: Faction = {
           SUSTAIN_DAMAGE: true,
           PRODUCTION: 1,
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [sustainDamage, theEgeiro],
       },
     },
     MECH: {
