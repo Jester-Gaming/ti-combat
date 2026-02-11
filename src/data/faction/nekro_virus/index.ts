@@ -19,8 +19,20 @@ const flagshipAbilities = Object.values(otherFactions).flatMap(faction =>
     })),
 )
 
+const technologyAbilities = Object.values(otherFactions).flatMap(faction =>
+  (faction.abilities?.technology ?? [])
+    .filter(a => a.subcategory === 'TECHNOLOGY')
+    .map(ability => ({
+      ...ability,
+      name: `(${faction.name}) ${ability.name}`,
+    })),
+)
+
 export const nekro_virus: Faction = {
   name: 'Nekro Virus',
+  abilities: {
+    technology: technologyAbilities,
+  },
   units: {
     FLAGSHIP: {
       BASE: {
