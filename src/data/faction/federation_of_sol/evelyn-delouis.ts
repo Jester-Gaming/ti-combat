@@ -1,3 +1,4 @@
+import federationOfSolIcon from '@/assets/faction/federation_of_sol.svg?raw'
 import { declareParam } from '@/combat/abilities/declare-param'
 import { makeVariantId, parseVariantId } from '@/combat/utils/unit-variant'
 import type { UnitType } from '@/types'
@@ -10,7 +11,8 @@ type Params = {
 
 export const evelynDelouis: Ability<Params> = {
   key: 'EVELYN_DELOUIS',
-  name: '(Sol) Evelyn DeLouis',
+  name: 'Evelyn DeLouis',
+  icon: federationOfSolIcon,
   category: 'AGENT',
   context: 'GROUND',
   params: {

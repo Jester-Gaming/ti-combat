@@ -1,3 +1,4 @@
+import nomadIcon from '@/assets/faction/nomad.svg?raw'
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { UnitType } from '@/types'
 import { getEffectiveStats } from '@/utils/get-simulation-units'
@@ -12,7 +13,8 @@ type Params = {
 
 export const cavalry: Ability<Params> = {
   key: 'CAVALRY',
-  name: '(Nomad) Cavalry',
+  name: 'Cavalry',
+  icon: nomadIcon,
   category: 'PROMISSORY',
   context: 'SPACE',
   params: {

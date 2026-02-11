@@ -1,8 +1,10 @@
+import yssarilTribesIcon from '@/assets/faction/yssaril_tribes.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 export const yssaril_tribes: Faction = {
   name: 'Yssaril Tribes',
+  icon: yssarilTribesIcon,
   units: {
     FLAGSHIP: {
       BASE: {

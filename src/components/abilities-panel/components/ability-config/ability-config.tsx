@@ -131,6 +131,12 @@ export function AbilityConfig({
           ) : (
             <span className={styles.collapseIndent} />
           )}
+          {ability.icon && (
+            <span
+              className={styles.icon}
+              dangerouslySetInnerHTML={{ __html: ability.icon }}
+            />
+          )}
           <span className={styles.title}>{ability.name}</span>
           {headerControl}
         </>
@@ -147,6 +153,12 @@ export function AbilityConfig({
             </span>
           ) : (
             <span className={styles.collapseIndent} />
+          )}
+          {ability.icon && (
+            <span
+              className={styles.icon}
+              dangerouslySetInnerHTML={{ __html: ability.icon }}
+            />
           )}
           <span className={styles.title}>{ability.name}</span>
         </button>

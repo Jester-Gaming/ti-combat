@@ -17,6 +17,7 @@ interface FactionAbilities {
 // Faction data structure
 export interface Faction {
   name: string
+  icon?: string
   units: Partial<Record<UnitType, UnitDefinition>>
   abilities?: FactionAbilities
 }

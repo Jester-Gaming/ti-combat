@@ -1,8 +1,10 @@
+import deepwroughtScholarateIcon from '@/assets/faction/deepwrought_scholarate.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 export const deepwrought_scholarate: Faction = {
   name: 'Deepwrought Scholarate',
+  icon: deepwroughtScholarateIcon,
   units: {
     FLAGSHIP: {
       BASE: {

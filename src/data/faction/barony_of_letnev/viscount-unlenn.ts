@@ -1,3 +1,4 @@
+import baronyOfLetnevIcon from '@/assets/faction/barony_of_letnev.svg?raw'
 import { declareParam } from '@/combat/abilities/declare-param'
 import { makeVariantId, parseVariantId } from '@/combat/utils/unit-variant'
 import type { UnitType } from '@/types'
@@ -10,7 +11,8 @@ type Params = {
 
 export const viscountUnlenn: Ability<Params> = {
   key: 'VISCOUNT_UNLENN',
-  name: '(Letnev) Viscount Unlenn',
+  name: 'Viscount Unlenn',
+  icon: baronyOfLetnevIcon,
   category: 'AGENT',
   context: 'SPACE',
   params: {

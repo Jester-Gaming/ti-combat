@@ -1,3 +1,4 @@
+import yinBrotherhoodIcon from '@/assets/faction/yin_brotherhood.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -10,6 +11,7 @@ import { vanHauge } from './van-hauge'
 
 export const yin_brotherhood: Faction = {
   name: 'Yin Brotherhood',
+  icon: yinBrotherhoodIcon,
   abilities: {
     faction: [devotion, indoctrination],
     technology: [impulseCore],

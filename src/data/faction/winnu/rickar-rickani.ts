@@ -1,8 +1,11 @@
+import winnuIcon from '@/assets/faction/winnu.svg?raw'
+
 import type { Ability } from '../../../combat/abilities/types'
 
 export const rickarRickani: Ability = {
   key: 'RICKAR_RICKANI',
-  name: '(Winnu) Rickar Rickani',
+  name: 'Rickar Rickani',
+  icon: winnuIcon,
   category: 'COMMANDER',
   params: {
     isEnabled: false,

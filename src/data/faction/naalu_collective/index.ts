@@ -1,3 +1,4 @@
+import naaluCollectiveIcon from '@/assets/faction/naalu_collective.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -5,6 +6,7 @@ import { matriarch } from './matriarch'
 
 export const naalu_collective: Faction = {
   name: 'Naalu Collective',
+  icon: naaluCollectiveIcon,
   units: {
     FLAGSHIP: {
       BASE: {

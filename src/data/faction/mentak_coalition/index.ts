@@ -1,3 +1,4 @@
+import mentakCoalitionIcon from '@/assets/faction/mentak_coalition.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -6,6 +7,7 @@ import { mollTerminus } from './moll-terminus'
 
 export const mentak_coalition: Faction = {
   name: 'Mentak Coalition',
+  icon: mentakCoalitionIcon,
   units: {
     FLAGSHIP: {
       BASE: {

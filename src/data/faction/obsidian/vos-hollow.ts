@@ -1,3 +1,4 @@
+import obsidianIcon from '@/assets/faction/obsidian.svg?raw'
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability, DestroyedUnit } from '@/combat/abilities/types'
 import { parseVariantId } from '@/combat/utils/unit-variant'
@@ -20,7 +21,8 @@ function findDestroyedShipTypes(destroyed: DestroyedUnit[]): Set<UnitType> {
 
 export const vosHollow: Ability<Params> = {
   key: 'VOS_HOLLOW',
-  name: '(Obsidian) Vos Hollow',
+  name: 'Vos Hollow',
+  icon: obsidianIcon,
   category: 'AGENT',
   context: 'SPACE',
   params: {

@@ -1,3 +1,4 @@
+import naazRokhaAllianceIcon from '@/assets/faction/naaz_rokha_alliance.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -7,6 +8,7 @@ import { viszElVir } from './visz-el-vir'
 
 export const naaz_rokha_alliance: Faction = {
   name: 'Naaz-Rokha Alliance',
+  icon: naazRokhaAllianceIcon,
   abilities: {
     technology: [supercharge],
   },

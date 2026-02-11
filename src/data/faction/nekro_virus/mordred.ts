@@ -2,7 +2,7 @@ import type { Ability } from '../../../combat/abilities/types'
 
 export const mordred: Ability = {
   key: 'MORDRED',
-  name: '(Nekro) Mordred',
+  name: 'Mordred',
   category: 'FACTION',
   subcategory: 'MECH',
   params: {

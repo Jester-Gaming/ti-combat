@@ -8,17 +8,23 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import factions from '@/data/faction'
-import type { FactionKey } from '@/types'
+import type { Faction, FactionKey } from '@/types'
 
 import styles from './faction-select.module.css'
 
 const FACTION_ENTRIES = (
-  Object.entries(factions) as Array<[string, { name: string }]>
+  Object.entries(factions) as Array<[string, Faction]>
 ).sort((a, b) => {
   if (a[0] === 'NEUTRAL') return 1
   if (b[0] === 'NEUTRAL') return -1
   return a[1].name.localeCompare(b[1].name)
 })
+
+function FactionIcon({ icon }: { icon: string }) {
+  return (
+    <span className={styles.icon} dangerouslySetInnerHTML={{ __html: icon }} />
+  )
+}
 
 interface FactionSelectProps {
   value: FactionKey
@@ -39,7 +45,14 @@ export function FactionSelect({
       <SelectContent className={styles.content}>
         {FACTION_ENTRIES.map(([key, faction]) => (
           <SelectItem key={key} value={key} className={styles.item}>
-            {faction.name}
+            <span className={styles.itemContent}>
+              {faction.icon ? (
+                <FactionIcon icon={faction.icon} />
+              ) : (
+                <span className={styles.iconIndent} />
+              )}
+              {faction.name}
+            </span>
           </SelectItem>
         ))}
       </SelectContent>

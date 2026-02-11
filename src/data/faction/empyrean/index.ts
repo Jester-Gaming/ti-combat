@@ -1,8 +1,10 @@
+import empyreanIcon from '@/assets/faction/empyrean.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 export const empyrean: Faction = {
   name: 'Empyrean',
+  icon: empyreanIcon,
   units: {
     FLAGSHIP: {
       BASE: {

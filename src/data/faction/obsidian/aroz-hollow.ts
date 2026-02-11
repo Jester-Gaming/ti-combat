@@ -1,8 +1,11 @@
+import obsidianIcon from '@/assets/faction/obsidian.svg?raw'
+
 import type { Ability } from '../../../combat/abilities/types'
 
 export const arozHollow: Ability = {
   key: 'AROZ_HOLLOW',
-  name: '(Obsidian) Aroz Hollow',
+  name: 'Aroz Hollow',
+  icon: obsidianIcon,
   category: 'COMMANDER',
   params: {
     isEnabled: false,

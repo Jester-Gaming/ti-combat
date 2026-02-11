@@ -1,8 +1,10 @@
+import vuilraithCabalIcon from '@/assets/faction/vuilraith_cabal.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 export const vuilraith_cabal: Faction = {
   name: "Vuil'raith Cabal",
+  icon: vuilraithCabalIcon,
   units: {
     FLAGSHIP: {
       BASE: {

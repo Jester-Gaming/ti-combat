@@ -1,3 +1,4 @@
+import obsidianIcon from '@/assets/faction/obsidian.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -7,6 +8,7 @@ import { vosHollow } from './vos-hollow'
 
 export const obsidian: Faction = {
   name: 'Obsidian',
+  icon: obsidianIcon,
   abilities: {
     faction: [assail],
     agent: [vosHollow],

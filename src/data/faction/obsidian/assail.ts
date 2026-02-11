@@ -2,7 +2,7 @@ import type { Ability } from '../../../combat/abilities/types'
 
 export const assail: Ability = {
   key: 'ASSAIL',
-  name: '(Obsidian) Assail',
+  name: 'Assail',
   category: 'FACTION',
   subcategory: 'ABILITY',
   params: {

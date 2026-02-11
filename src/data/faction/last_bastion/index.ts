@@ -1,3 +1,4 @@
+import lastBastionIcon from '@/assets/faction/last_bastion.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -5,6 +6,7 @@ import { theEgeiro } from './the-egeiro'
 
 export const last_bastion: Faction = {
   name: 'Last Bastion',
+  icon: lastBastionIcon,
   units: {
     FLAGSHIP: {
       BASE: {

@@ -1,3 +1,4 @@
+import titansOfUlIcon from '@/assets/faction/titans_of_ul.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -6,6 +7,7 @@ import { tellurian } from './tellurian'
 
 export const titans_of_ul: Faction = {
   name: 'Titans of Ul',
+  icon: titansOfUlIcon,
   abilities: {
     agent: [tellurian],
   },

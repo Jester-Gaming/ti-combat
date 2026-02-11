@@ -1,3 +1,4 @@
+import argentFlightIcon from '@/assets/faction/argent_flight.svg?raw'
 import type { Ability } from '@/combat/abilities/types'
 import type { MetaPhase } from '@/combat/combat-state/types'
 import { UNIT_ABILITY_PHASES } from '@/combat/combat-state/types'
@@ -8,7 +9,8 @@ type Params = {
 
 export const trrakanAunZulok: Ability<Params> = {
   key: 'TRRAKAN_AUN_ZULOK',
-  name: '(Argent) Trrakan Aun Zulok',
+  name: 'Trrakan Aun Zulok',
+  icon: argentFlightIcon,
   category: 'COMMANDER',
   headerUI: 'isEnabled',
   params: {

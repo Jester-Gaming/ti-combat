@@ -1,8 +1,10 @@
+import titansOfUlIcon from '@/assets/faction/titans_of_ul.svg?raw'
 import type { Ability } from '@/combat/abilities/types'
 
 export const tellurian: Ability = {
   key: 'TELLURIAN',
-  name: '(Titan) Tellurian',
+  name: 'Tellurian',
+  icon: titansOfUlIcon,
   category: 'AGENT',
   headerUI: 'isEnabled',
   params: {

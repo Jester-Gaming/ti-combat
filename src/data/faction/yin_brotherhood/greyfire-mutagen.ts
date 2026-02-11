@@ -1,3 +1,4 @@
+import yinBrotherhoodIcon from '@/assets/faction/yin_brotherhood.svg?raw'
 import type { Ability } from '@/combat/abilities/types'
 import { GROUND_FORCES } from '@/constants/units'
 
@@ -5,7 +6,8 @@ const GROUND_FORCES_SET = new Set(GROUND_FORCES)
 
 export const greyfireMutagen: Ability = {
   key: 'GREYFIRE_MUTAGEN',
-  name: '(Yin) Greyfire Mutagen',
+  name: 'Greyfire Mutagen',
+  icon: yinBrotherhoodIcon,
   category: 'PROMISSORY',
   context: 'GROUND',
   params: { isEnabled: false, uses: 1 },

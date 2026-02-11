@@ -1,3 +1,4 @@
+import firmamentIcon from '@/assets/faction/firmament.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -6,6 +7,7 @@ import { myruVos } from './myru-vos'
 
 export const firmament: Faction = {
   name: 'Firmament',
+  icon: firmamentIcon,
   abilities: {
     agent: [myruVos],
   },

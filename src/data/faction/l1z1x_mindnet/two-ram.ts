@@ -1,8 +1,11 @@
+import l1z1xMindnetIcon from '@/assets/faction/l1z1x_mindnet.svg?raw'
+
 import type { Ability } from '../../../combat/abilities/types'
 
 export const twoRam: Ability = {
   key: 'TWO_RAM',
-  name: '(L1z1x) 2RAM',
+  name: '2RAM',
+  icon: l1z1xMindnetIcon,
   category: 'COMMANDER',
   context: 'GROUND',
   side: 'attacker',

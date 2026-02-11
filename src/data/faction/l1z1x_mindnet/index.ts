@@ -1,3 +1,4 @@
+import l1z1xMindnetIcon from '@/assets/faction/l1z1x_mindnet.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -5,6 +6,7 @@ import { twoRam } from './two-ram'
 
 export const l1z1x_mindnet: Faction = {
   name: 'L1Z1X Mindnet',
+  icon: l1z1xMindnetIcon,
   abilities: {
     faction: [],
     commander: [twoRam],

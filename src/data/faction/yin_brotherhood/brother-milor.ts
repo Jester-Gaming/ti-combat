@@ -1,8 +1,10 @@
+import yinBrotherhoodIcon from '@/assets/faction/yin_brotherhood.svg?raw'
 import type { Ability } from '@/combat/abilities/types'
 
 export const brotherMilor: Ability = {
   key: 'BROTHER_MILOR',
-  name: '(Yin) Brother Milor',
+  name: 'Brother Milor',
+  icon: yinBrotherhoodIcon,
   category: 'AGENT',
   params: {
     isEnabled: false,

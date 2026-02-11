@@ -1,3 +1,4 @@
+import nekroVirusIcon from '@/assets/faction/nekro_virus.svg?raw'
 import type {
   Ability,
   AbilityCallContext,
@@ -16,7 +17,8 @@ const flagshipAbilities = Object.values(otherFactions).flatMap(faction =>
     .filter(a => a.subcategory === 'FLAGSHIP')
     .map(ability => ({
       ...ability,
-      name: `(${faction.name}) ${ability.name}`,
+      name: ability.name,
+      icon: faction.icon,
       readOnly: false,
       params: {
         ...ability.params,
@@ -30,7 +32,8 @@ const technologyAbilities = Object.values(otherFactions).flatMap(faction =>
     .filter(a => a.subcategory === 'TECHNOLOGY')
     .map(ability => ({
       ...ability,
-      name: `(${faction.name}) ${ability.name}`,
+      name: ability.name,
+      icon: faction.icon,
     })),
 )
 
@@ -38,7 +41,7 @@ const EXCLUDED_UNIT_TYPES = new Set(['FLAGSHIP', 'MECH', 'SPACE_DOCK'])
 
 function createFactionUnitAbility(
   factionKey: string,
-  factionName: string,
+  faction: Faction,
   unitType: UnitType,
   unitDef: UnitDefinition,
 ) {
@@ -52,7 +55,8 @@ function createFactionUnitAbility(
 
   return {
     key: `NEKRO_UNIT_${factionKey}_${unitType}`,
-    name: `(${factionName}) ${displayName}`,
+    name: displayName,
+    icon: faction.icon,
     category: 'FACTION',
     subcategory: 'UNIT',
     params: {
@@ -80,12 +84,13 @@ const unitAbilities = Object.entries(otherFactions)
     (Object.entries(faction.units) as [UnitType, UnitDefinition][])
       .filter(([unitType]) => !EXCLUDED_UNIT_TYPES.has(unitType))
       .map(([unitType, unitDef]) =>
-        createFactionUnitAbility(factionKey, faction.name, unitType, unitDef),
+        createFactionUnitAbility(factionKey, faction, unitType, unitDef),
       ),
   )
 
 export const nekro_virus: Faction = {
   name: 'Nekro Virus',
+  icon: nekroVirusIcon,
   abilities: {
     technology: technologyAbilities,
     unit: unitAbilities,

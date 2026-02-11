@@ -1,3 +1,4 @@
+import mahactGeneSorcerersIcon from '@/assets/faction/mahact_gene_sorcerers.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -5,6 +6,7 @@ import { arviconRex } from './arvicon-rex'
 
 export const mahact_gene_sorcerers: Faction = {
   name: 'Mahact Gene-Sorcerers',
+  icon: mahactGeneSorcerersIcon,
   units: {
     FLAGSHIP: {
       BASE: {

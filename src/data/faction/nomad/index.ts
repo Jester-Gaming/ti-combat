@@ -1,3 +1,4 @@
+import nomadIcon from '@/assets/faction/nomad.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -5,6 +6,7 @@ import { cavalry } from './cavalry'
 
 export const nomad: Faction = {
   name: 'Nomad',
+  icon: nomadIcon,
   abilities: {
     faction: [],
     promissory: [cavalry],

@@ -1,9 +1,11 @@
+import embersOfMuaatIcon from '@/assets/faction/embers_of_muaat.svg?raw'
 import { disablePlanetaryShield } from '@/data/abilities/unit/disable-planetary-shield'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 export const embers_of_muaat: Faction = {
   name: 'Embers of Muaat',
+  icon: embersOfMuaatIcon,
   units: {
     FLAGSHIP: {
       BASE: {

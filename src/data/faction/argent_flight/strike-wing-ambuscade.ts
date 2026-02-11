@@ -1,3 +1,4 @@
+import argentFlightIcon from '@/assets/faction/argent_flight.svg?raw'
 import type { Ability } from '@/combat/abilities/types'
 import type { MetaPhase } from '@/combat/combat-state/types'
 import { UNIT_ABILITY_PHASES } from '@/combat/combat-state/types'
@@ -8,7 +9,8 @@ type Params = {
 
 export const strikeWingAmbuscade: Ability<Params> = {
   key: 'STRIKE_WING_AMBUSCADE',
-  name: '(Argent) Strike Wing Ambuscade',
+  name: 'Strike Wing Ambuscade',
+  icon: argentFlightIcon,
   category: 'PROMISSORY',
   headerUI: 'isEnabled',
   params: {

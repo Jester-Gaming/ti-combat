@@ -1,8 +1,10 @@
+import emiratesOfHacanIcon from '@/assets/faction/emirates_of_hacan.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 export const emirates_of_hacan: Faction = {
   name: 'Emirates of Hacan',
+  icon: emiratesOfHacanIcon,
   units: {
     FLAGSHIP: {
       BASE: {

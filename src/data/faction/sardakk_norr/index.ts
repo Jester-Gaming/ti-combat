@@ -1,3 +1,4 @@
+import sardakkNorrIcon from '@/assets/faction/sardakk_norr.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import { sardakkFlagshipAbility } from '@/data/faction/sardakk_norr/flagship-ability'
 import { tekklarLegion } from '@/data/faction/sardakk_norr/tekklar-legion'
@@ -7,6 +8,7 @@ import type { Faction } from '@/types'
 
 export const sardakk_norr: Faction = {
   name: "Sardakk N'orr",
+  icon: sardakkNorrIcon,
   units: {
     FLAGSHIP: {
       BASE: {

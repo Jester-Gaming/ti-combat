@@ -1,3 +1,4 @@
+import federationOfSolIcon from '@/assets/faction/federation_of_sol.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -6,6 +7,7 @@ import { evelynDelouis } from './evelyn-delouis'
 
 export const federation_of_sol: Faction = {
   name: 'Federation of Sol',
+  icon: federationOfSolIcon,
   abilities: {
     agent: [evelynDelouis],
     commander: [claireGibson],

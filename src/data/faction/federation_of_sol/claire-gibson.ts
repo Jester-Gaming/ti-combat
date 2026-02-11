@@ -1,8 +1,11 @@
+import federationOfSolIcon from '@/assets/faction/federation_of_sol.svg?raw'
+
 import type { Ability } from '../../../combat/abilities/types'
 
 export const claireGibson: Ability = {
   key: 'CLAIRE_GIBSON',
-  name: '(Sol) Claire Gibson',
+  name: 'Claire Gibson',
+  icon: federationOfSolIcon,
   category: 'COMMANDER',
   context: 'GROUND',
   side: 'defender',

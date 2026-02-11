@@ -1,8 +1,10 @@
+import arborecIcon from '@/assets/faction/arborec.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 export const arborec: Faction = {
   name: 'Arborec',
+  icon: arborecIcon,
   units: {
     FLAGSHIP: {
       BASE: {

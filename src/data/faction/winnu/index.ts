@@ -1,3 +1,4 @@
+import winnuIcon from '@/assets/faction/winnu.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -7,6 +8,7 @@ import { salaiSaiCorian } from './salai-sai-corian'
 
 export const winnu: Faction = {
   name: 'Winnu',
+  icon: winnuIcon,
   abilities: {
     commander: [rickarRickani],
     breakthrough: [imperator],

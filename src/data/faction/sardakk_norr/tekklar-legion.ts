@@ -1,8 +1,11 @@
+import sardakkNorrIcon from '@/assets/faction/sardakk_norr.svg?raw'
+
 import type { Ability } from '../../../combat/abilities/types'
 
 export const tekklarLegion: Ability = {
   key: 'TEKKLAR_LEGION',
-  name: "(N'orr) Tekklar Legion",
+  name: 'Tekklar Legion',
+  icon: sardakkNorrIcon,
   category: 'PROMISSORY',
   context: 'GROUND',
   params: {

@@ -1,3 +1,4 @@
+import baronyOfLetnevIcon from '@/assets/faction/barony_of_letnev.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -9,6 +10,7 @@ import { viscountUnlenn } from './viscount-unlenn'
 
 export const barony_of_letnev: Faction = {
   name: 'Barony of Letnev',
+  icon: baronyOfLetnevIcon,
   abilities: {
     technology: [l4Disruptors, nonEuclideanShielding],
     agent: [viscountUnlenn],

@@ -1,3 +1,4 @@
+import ralNelIcon from '@/assets/faction/ral_nel.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -5,6 +6,7 @@ import { alarum } from './alarum'
 
 export const ral_nel: Faction = {
   name: 'Ral Nel Consortium',
+  icon: ralNelIcon,
   units: {
     FLAGSHIP: {
       BASE: {

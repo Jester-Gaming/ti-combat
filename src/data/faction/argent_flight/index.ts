@@ -1,3 +1,4 @@
+import argentFlightIcon from '@/assets/faction/argent_flight.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -8,6 +9,7 @@ import { trrakanAunZulok } from './trrakan-aun-zulok'
 
 export const argent_flight: Faction = {
   name: 'Argent Flight',
+  icon: argentFlightIcon,
   abilities: {
     faction: [raidFormation],
     promissory: [strikeWingAmbuscade],

@@ -1,3 +1,4 @@
+import ghostsOfCreussIcon from '@/assets/faction/ghosts_of_creuss.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -5,6 +6,7 @@ import { dimensionalSplicer } from './dimensional-splicer'
 
 export const ghosts_of_creuss: Faction = {
   name: 'Ghosts of Creuss',
+  icon: ghostsOfCreussIcon,
   abilities: {
     technology: [dimensionalSplicer],
   },

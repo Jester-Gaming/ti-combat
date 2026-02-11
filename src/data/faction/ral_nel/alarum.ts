@@ -6,7 +6,7 @@ type Params = {
 
 export const alarum: Ability<Params> = {
   key: 'ALARUM',
-  name: '(Ral Nel) Alarum',
+  name: 'Alarum',
   category: 'FACTION',
   subcategory: 'MECH',
   params: {
