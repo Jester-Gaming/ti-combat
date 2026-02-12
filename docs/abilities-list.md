@@ -111,7 +111,7 @@
 
 ### Nekro Virus
 
-- [ ] **Technological Singularity** (Faction Ability) — Once per combat, after 1 of your opponent's units is destroyed, you may gain 1 technology that is owned by that player.
+- [x] **Technological Singularity** (Faction Ability) — Once per combat, after 1 of your opponent's units is destroyed, you may gain 1 technology that is owned by that player.
 - [x] **The Alastor** (Flagship) — At the start of a space combat, choose any number of your ground forces in this system to participate in that combat as if they were ships.
 - [x] **Mordred** (Mech) — During combat against an opponent who has an "X" or "Y" token on 1 or more of their technologies, apply +2 to the result of each of this unit's combat rolls.
 

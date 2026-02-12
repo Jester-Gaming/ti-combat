@@ -147,6 +147,10 @@
 .configItemText {
   @apply text-[12px];
   color: hsl(var(--muted-foreground));
+  white-space: nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .numberInput {

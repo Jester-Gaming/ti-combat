@@ -19,5 +19,11 @@ export const nonEuclideanShielding: Ability = {
         })
       },
     },
+    {
+      timing: 'CLEANUP',
+      call: ctx => {
+        ctx.api.own.updateAbilityConfig('SUSTAIN_DAMAGE', { hitPerSustain: 1 })
+      },
+    },
   ],
 }

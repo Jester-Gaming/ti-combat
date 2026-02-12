@@ -91,6 +91,7 @@ export type DiceContext = OwnOpponentContext<DiceApi>
 // Single source of truth - map timing to context type (external API uses sided format)
 // void = no context, other type = required context
 export interface TimingContextMap {
+  CLEANUP: void
   PREPARE: void
   START_OF_COMBAT: void
   START_OF_COMBAT_ROUND: void
@@ -411,6 +412,16 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   context?: CombatMode
   /** When true, both sides share identical config. Changing params on one side mirrors to the other. */
   sync?: boolean
+  /** Abilities sharing the same exclusiveGroup are mutually exclusive — enabling one disables others in the group. */
+  exclusiveGroup?: string
+  /** Called when a user changes a param. Can modify other params in response.
+   *  Receives the params with the new value already applied, the changed key, and value.
+   *  Return modified params or void to keep unchanged. */
+  onParamSet?: (
+    currentParams: AbilityBaseParams & Params,
+    key: string,
+    value: unknown,
+  ) => (AbilityBaseParams & Params) | void
   /** Declare param changes (subtypes, group additions) based on ability params.
    *  `settings` contains the current SETTINGS values (ships, groundForces, etc.) during reconciliation. */
   declareParamChange?: (

@@ -529,18 +529,48 @@ export class AbilitiesParams {
     abilityKey: string,
     params: Record<string, unknown>,
   ): void {
-    this.config[side] = {
-      ...this.config[side],
-      [abilityKey]: params,
+    const ability = this._abilities[side].find(a => a.key === abilityKey)
+
+    let finalParams = params
+    if (ability?.onParamSet) {
+      const oldParams = this.config[side][abilityKey]
+      if (oldParams) {
+        for (const key of Object.keys(params)) {
+          if (params[key] !== oldParams[key]) {
+            finalParams =
+              ability.onParamSet(finalParams, key, params[key]) ?? finalParams
+          }
+        }
+      }
     }
 
-    const ability = this._abilities[side].find(a => a.key === abilityKey)
+    const newSideConfig = {
+      ...this.config[side],
+      [abilityKey]: finalParams,
+    }
+
+    // Mutual exclusion: disable other abilities in the same exclusive group
+    if (ability?.exclusiveGroup && finalParams.isEnabled) {
+      for (const other of this._abilities[side]) {
+        if (other.key === abilityKey) continue
+        if (other.exclusiveGroup !== ability.exclusiveGroup) continue
+        const otherParams = newSideConfig[other.key]
+        if (otherParams) {
+          newSideConfig[other.key] = {
+            ...otherParams,
+            isEnabled: false,
+          }
+        }
+      }
+    }
+
+    this.config[side] = newSideConfig
 
     if (ability?.sync) {
       const otherSide = getOpponentSide(side)
       this.config[otherSide] = {
         ...this.config[otherSide],
-        [abilityKey]: params,
+        [abilityKey]: finalParams,
       }
     }
 
@@ -760,7 +790,7 @@ export class AbilitiesParams {
       const readCtx = buildReadContext(side, state, unitSource)
 
       // Global isEnabled / uses gate — abilities don't need to check these themselves
-      if ('isEnabled' in params && !params.isEnabled) continue
+      if (!invoke.always && 'isEnabled' in params && !params.isEnabled) continue
       if (
         !invoke.always &&
         'uses' in params &&
