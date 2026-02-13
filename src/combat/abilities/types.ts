@@ -98,6 +98,7 @@ export interface TimingContextMap {
   BEFORE_UNIT_ABILITY_ROLL: SidedDiceData
   AFTER_UNIT_ABILITY_ROLL: void
   BEFORE_DICE_ROLL: SidedDiceData
+  AFTER_DICE_ROLL: void
   BEFORE_ASSIGN_HITS: void
   AFTER_ASSIGN_HITS_STEP: void
   WHEN_SUSTAIN_DAMAGE_USE: Unit

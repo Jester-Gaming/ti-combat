@@ -126,6 +126,7 @@ START_OF_COMBAT_ROUND — before each round (including first)
 BEFORE_UNIT_ABILITY_ROLL — before AFB / bombardment / space cannon dice
 AFTER_UNIT_ABILITY_ROLL  — after unit ability dice are rolled (hits assigned to opponent)
 BEFORE_DICE_ROLL      — before combat dice
+AFTER_DICE_ROLL       — after combat dice are rolled (hits pending, before assignment)
 BEFORE_ASSIGN_HITS    — before hit assignment (sustain damage fires here)
 AFTER_ASSIGN_HITS_STEP — after hits are assigned and destroyed units processed
 WHEN_SUSTAIN_DAMAGE_USE  — triggered immediately when a sustain damage use occurs (before AFTER)
@@ -140,7 +141,7 @@ AFTER_ROUND           — after round cleanup
 
 ### Function Signatures by Timing
 
-**Void timings** (PREPARE, START_OF_COMBAT, START_OF_COMBAT_ROUND, AFTER_UNIT_ABILITY_ROLL, BEFORE_ASSIGN_HITS, AFTER_ASSIGN_HITS_STEP, END_OF_COMBAT_ROUND, END_OF_COMBAT, CLEANUP_ROUND, AFTER_ROUND):
+**Void timings** (PREPARE, START_OF_COMBAT, START_OF_COMBAT_ROUND, AFTER_UNIT_ABILITY_ROLL, AFTER_DICE_ROLL, BEFORE_ASSIGN_HITS, AFTER_ASSIGN_HITS_STEP, END_OF_COMBAT_ROUND, END_OF_COMBAT, CLEANUP_ROUND, AFTER_ROUND):
 
 > Note: `WHEN_SUSTAIN_DAMAGE_USE` and `AFTER_SUSTAIN_DAMAGE_USE` have `Unit` context type but are **triggered timings** — they fire automatically when sustain damage is used via `ctx.trigger()`. Their context is the sustaining unit. They use the same void-style signature (context is not passed to the invoke). `WHEN_` fires before `AFTER_`.
 

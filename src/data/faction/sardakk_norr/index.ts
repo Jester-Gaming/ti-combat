@@ -4,6 +4,7 @@ import { sardakkFlagshipAbility } from '@/data/faction/sardakk_norr/flagship-abi
 import { tekklarLegion } from '@/data/faction/sardakk_norr/tekklar-legion'
 import { unrelenting } from '@/data/faction/sardakk_norr/unrelenting'
 import { valkyrieExoskeleton } from '@/data/faction/sardakk_norr/valkyrie-exoskeleton'
+import { valkyrieParticleWeave } from '@/data/faction/sardakk_norr/valkyrie-particle-weave'
 import type { Faction } from '@/types'
 
 export const sardakk_norr: Faction = {
@@ -62,6 +63,7 @@ export const sardakk_norr: Faction = {
   },
   abilities: {
     faction: [unrelenting],
+    technology: [valkyrieParticleWeave],
     promissory: [tekklarLegion],
   },
 }

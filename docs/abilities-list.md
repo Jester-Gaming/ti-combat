@@ -133,7 +133,7 @@
 - [x] **Unrelenting** (Faction Ability) — Apply +1 to the result of each of your unit's combat rolls.
 - [x] **Tekklar Legion** (Promissory Note) — At the start of an invasion combat: Apply +1 to the result of each of your unit's combat rolls during this combat. If your opponent is the N'orr player, apply -1 to the result of each of their unit's combat rolls during this combat. Then, return this card to the N'orr player.
 - [ ] **Exotrireme II** (Faction Technology) — This unit cannot be destroyed by "Direct Hit" action cards. After a round of space combat, you may destroy this unit to destroy up to 2 ships in this system.
-- [ ] **Valkyrie Particle Weave** (Faction Technology) — After making combat rolls during a round of ground combat, if your opponent produced 1 or more hits, you produce 1 additional hit.
+- [x] **Valkyrie Particle Weave** (Faction Technology) — After making combat rolls during a round of ground combat, if your opponent produced 1 or more hits, you produce 1 additional hit.
 - [x] **C'morran N'orr** (Flagship) — Apply +1 to the result of each of your other ship's combat rolls in this system.
 - [x] **Valkyrie Exoskeleton** (Mech) — After this unit uses its Sustain Damage ability during ground combat, it produces 1 hit against your opponent's ground forces on this planet.
 - [ ] **G'hom Sek'kus** (Commander) — You can commit up to 1 ground force from each planet in the active system and each planet in adjacent systems that do not contain 1 of your command tokens.

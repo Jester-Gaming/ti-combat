@@ -497,7 +497,13 @@ export function buildApi(
     reduceHits(amount: number) {
       const sideState = draft[side]
       if (sideState.hitPools.length === 0 || amount <= 0) return
-      sideState.hitPools[0].hits -= amount
+      let remaining = amount
+      for (const pool of sideState.hitPools) {
+        const reduce = Math.min(remaining, pool.hits)
+        pool.hits -= reduce
+        remaining -= reduce
+        if (remaining <= 0) break
+      }
     },
 
     addHits(hits: number, validTargets: UnitType[]) {

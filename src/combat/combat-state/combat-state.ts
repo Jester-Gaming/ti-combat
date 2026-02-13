@@ -482,7 +482,7 @@ export class CombatState {
     modifiedDice: SidedDiceData,
     validTargets: { attacker: UnitType[]; defender: UnitType[] },
     prependLog?: LogEntry[],
-    runAfterRoll = false,
+    afterRollTiming?: AbilityTiming,
   ): StateWithProbability[] {
     const attackerDist = getCombinedDiceDistribution(
       flattenDicePool(modifiedDice.attacker),
@@ -511,10 +511,10 @@ export class CombatState {
           data: [{ attacker: attOutcome.hits, defender: defOutcome.hits }],
         })
 
-        if (runAfterRoll) {
+        if (afterRollTiming) {
           const afterRollLogger = Logger.create().child(metaPhase)
           const { state: afterRoll, log: afterRollLog } = this.runAbilities(
-            'AFTER_UNIT_ABILITY_ROLL',
+            afterRollTiming,
             undefined,
             resultData,
             afterRollLogger,
@@ -647,7 +647,7 @@ export class CombatState {
         defender: this.getValidTargetsForPhase('defender', afterWhen),
       },
       prependLog,
-      true,
+      'AFTER_UNIT_ABILITY_ROLL',
     )
   }
 
@@ -722,6 +722,7 @@ export class CombatState {
         defender: this.getValidTargetsForPhase('defender', afterWhen),
       },
       prependLog,
+      'AFTER_DICE_ROLL',
     )
   }
 
