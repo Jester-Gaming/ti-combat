@@ -3,6 +3,7 @@ import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 import { arcSecundus } from './arc-secundus'
+import { dunlainReaper } from './dunlain-reaper'
 import { gravleashManeuvers } from './gravleash-maneuvers'
 import { l4Disruptors } from './l4-disruptors'
 import { nonEuclideanShielding } from './non-euclidean-shielding'
@@ -12,6 +13,7 @@ export const barony_of_letnev: Faction = {
   name: 'Barony of Letnev',
   icon: baronyOfLetnevIcon,
   abilities: {
+    faction: [dunlainReaper],
     technology: [l4Disruptors, nonEuclideanShielding],
     agent: [viscountUnlenn],
     breakthrough: [gravleashManeuvers],
