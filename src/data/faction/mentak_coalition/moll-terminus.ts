@@ -5,6 +5,7 @@ export const mollTerminus: Ability = {
   name: 'Moll Terminus',
   category: 'FACTION',
   subcategory: 'MECH',
+  context: 'GROUND',
   params: {
     isEnabled: true,
     uses: Infinity,
@@ -22,12 +23,38 @@ export const mollTerminus: Ability = {
       },
     },
     {
-      timing: 'AFTER_DESTROY',
+      timing: 'BEFORE_ASSIGN_HITS',
+      context: 'BOMBARDMENT',
+      always: true,
       call: ctx => {
         ctx.api.opponent.removeUnitAbilityCannotBeUsed(
           'SUSTAIN_DAMAGE',
           'MOLL_TERMINUS',
         )
+      },
+    },
+    {
+      timing: 'AFTER_ASSIGN_HITS_STEP',
+      context: 'BOMBARDMENT',
+      always: true,
+      call: ctx => {
+        if (ctx.api.own.hasUnit('MECH')) {
+          ctx.api.opponent.setUnitAbilityCannotBeUsed(
+            'SUSTAIN_DAMAGE',
+            'MOLL_TERMINUS',
+          )
+        }
+      },
+    },
+    {
+      timing: 'AFTER_DESTROY',
+      call: ctx => {
+        if (!ctx.api.own.hasUnit('MECH')) {
+          ctx.api.opponent.removeUnitAbilityCannotBeUsed(
+            'SUSTAIN_DAMAGE',
+            'MOLL_TERMINUS',
+          )
+        }
       },
     },
   ],
