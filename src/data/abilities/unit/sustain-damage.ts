@@ -7,7 +7,6 @@ import {
 } from '@/combat/utils/unit-variant'
 
 type Params = {
-  hitPerSustain: number
   spacePriority: string[]
   groundPriority: string[]
 }
@@ -63,7 +62,6 @@ export const sustainDamage: Ability<Params> = {
   params: {
     isEnabled: true,
     uses: Infinity,
-    hitPerSustain: 1,
     spacePriority: declareParam({
       default: [],
       source: 'nonFighterShips',
@@ -106,12 +104,12 @@ export const sustainDamage: Ability<Params> = {
 
         return isHighestPrioritySustainTarget(params, ctx)
       },
-      call: (ctx, params) => {
+      call: ctx => {
         ctx.api.own.modifyUnit(ctx.getUnit(), {
           isDamaged: true,
           usedSustainThisRound: true,
         })
-        ctx.api.own.reduceHits(params.hitPerSustain ?? 1)
+        ctx.api.own.reduceHits(1)
         ctx.log(ctx.getUnitType())
         ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', ctx.getUnit())
         ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', ctx.getUnit())

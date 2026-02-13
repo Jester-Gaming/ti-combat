@@ -12,17 +12,10 @@ export const nonEuclideanShielding: Ability = {
   headerUI: 'isEnabled',
   invoke: [
     {
-      timing: 'PREPARE',
+      timing: 'WHEN_SUSTAIN_DAMAGE_USE',
+      side: 'OWN',
       call: ctx => {
-        ctx.api.own.updateAbilityConfig('SUSTAIN_DAMAGE', {
-          hitPerSustain: 2,
-        })
-      },
-    },
-    {
-      timing: 'CLEANUP',
-      call: ctx => {
-        ctx.api.own.updateAbilityConfig('SUSTAIN_DAMAGE', { hitPerSustain: 1 })
+        ctx.api.own.reduceHits(1)
       },
     },
   ],
