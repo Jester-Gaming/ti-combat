@@ -2,6 +2,8 @@ import empyreanIcon from '@/assets/faction/empyrean.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
+import { dynamoFlagship } from './dynamo-flagship'
+
 export const empyrean: Faction = {
   name: 'Empyrean',
   icon: empyreanIcon,
@@ -18,7 +20,7 @@ export const empyrean: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [sustainDamage, dynamoFlagship],
       },
     },
     MECH: {

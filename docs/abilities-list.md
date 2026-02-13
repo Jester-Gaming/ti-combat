@@ -45,7 +45,7 @@
 
 ### Empyrean
 
-- [ ] **Dynamo** (Flagship) — After any player's unit in this system or an adjacent system uses Sustain Damage, you may spend 2 influence to repair that unit.
+- [x] **Dynamo** (Flagship) — After any player's unit in this system or an adjacent system uses Sustain Damage, you may spend 2 influence to repair that unit.
 
 ### Federation of Sol
 
