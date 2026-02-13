@@ -728,9 +728,16 @@ export class CombatState {
   private processAssignHits(): StateWithProbability[] {
     const { state: afterAssign, log } = this.assignHits()
 
-    return this.transitionPhaseWithData(
+    const { state: afterStep, log: stepLog } = this.runAbilities(
+      'AFTER_ASSIGN_HITS_STEP',
+      undefined,
       afterAssign.data,
-      log.length > 0 ? log : undefined,
+    )
+
+    const allLog = [...log, ...stepLog]
+    return this.transitionPhaseWithData(
+      afterStep,
+      allLog.length > 0 ? allLog : undefined,
     )
   }
 
@@ -740,8 +747,14 @@ export class CombatState {
       : (['END_OF_COMBAT_ROUND'] as const)
     const { state: newData, log } = this.runAbilities([...timings])
 
-    return this.transitionPhaseWithData(
+    const { state: cleanedData } = this.runAbilities(
+      'CLEANUP_ROUND',
+      undefined,
       newData,
+    )
+
+    return this.transitionPhaseWithData(
+      cleanedData,
       log.length > 0 ? log : undefined,
     )
   }

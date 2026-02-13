@@ -99,12 +99,14 @@ export interface TimingContextMap {
   AFTER_UNIT_ABILITY_ROLL: void
   BEFORE_DICE_ROLL: SidedDiceData
   BEFORE_ASSIGN_HITS: void
+  AFTER_ASSIGN_HITS_STEP: void
   WHEN_SUSTAIN_DAMAGE_USE: Unit
   AFTER_SUSTAIN_DAMAGE_USE: Unit
   WHEN_DESTROY: SidedContext<DestroyedUnit[]>
   AFTER_DESTROY: SidedContext<DestroyedUnit[]>
   END_OF_COMBAT_ROUND: void
   END_OF_COMBAT: void
+  CLEANUP_ROUND: void
   AFTER_ROUND: void
 }
 

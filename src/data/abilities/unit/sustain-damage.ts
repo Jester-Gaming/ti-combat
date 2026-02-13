@@ -115,6 +115,15 @@ export const sustainDamage: Ability<Params> = {
         ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', ctx.getUnit())
       },
     },
+    {
+      timing: 'CLEANUP_ROUND',
+      isCallable: (_params, ctx) => ctx.getUnit().usedSustainThisRound === true,
+      call: ctx => {
+        ctx.api.own.modifyUnit(ctx.getUnit(), {
+          usedSustainThisRound: false,
+        })
+      },
+    },
   ],
   uiConfig: ctx => {
     const isGround = ctx.state.combatMode === 'GROUND'
