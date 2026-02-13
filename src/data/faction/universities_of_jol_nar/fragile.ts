@@ -1,6 +1,14 @@
+import type { UnitType } from '@/types'
+
 import type { Ability } from '../../../combat/abilities/types'
 
-export const fragile: Ability = {
+type Params = {
+  isEnabled: boolean
+  uses: number
+  excludeUnits: UnitType[]
+}
+
+export const fragile: Ability<Params> = {
   key: 'FRAGILE',
   name: 'Fragile',
   category: 'FACTION',
@@ -8,14 +16,22 @@ export const fragile: Ability = {
   params: {
     isEnabled: true,
     uses: Infinity,
+    excludeUnits: [],
   },
   headerUI: 'isEnabled',
   readOnly: true,
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      call: (_ctx, _params, dice) => {
-        dice.own.modifyHitValue(1)
+      call: (_ctx, params, dice) => {
+        if (params.excludeUnits.length === 0) {
+          dice.own.modifyHitValue(1)
+        } else {
+          dice.own.modifyHitValue(
+            1,
+            unit => !params.excludeUnits.includes(unit),
+          )
+        }
       },
     },
   ],

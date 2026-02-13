@@ -3,6 +3,7 @@ import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 import { fragile } from './fragile'
+import { shieldPaling } from './shield-paling'
 
 export const universities_of_jol_nar: Faction = {
   name: 'Universities of Jol-Nar',
@@ -36,7 +37,7 @@ export const universities_of_jol_nar: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [shieldPaling, sustainDamage],
       },
     },
   },

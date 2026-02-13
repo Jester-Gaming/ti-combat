@@ -149,7 +149,7 @@
 - [x] **Fragile** (Faction Ability) — Apply -1 to the result of each of your unit's combat rolls.
 - [ ] **J.N.S. Hylarim** (Flagship) — When making a combat roll for this ship, each result of 9 or 10, before applying modifiers, produces 2 additional hits.
 - [ ] **Agnlan Oln** (Commander) — After you roll dice for a unit ability: You may reroll any of those dice.
-- [ ] **Shield Paling** (Mech) — Your infantry on this planet are not affected by your Fragile faction ability.
+- [x] **Shield Paling** (Mech) — Your infantry on this planet are not affected by your Fragile faction ability.
 
 ### Vuil'raith Cabal
 
