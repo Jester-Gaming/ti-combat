@@ -161,8 +161,8 @@
 
 ### Xxcha Kingdom
 
-- [ ] **Loncara Ssodu** (Flagship) — Space Cannon 5 (x3). You may use this unit's Space Cannon against ships that are in adjacent systems.
-- [ ] **Indomitus** (Mech) — Space Cannon 8. You may use this unit's Space Cannon against ships that are in adjacent systems.
+- [x] **Loncara Ssodu** (Flagship) — Space Cannon 5 (x3). You may use this unit's Space Cannon against ships that are in adjacent systems.
+- [x] **Indomitus** (Mech) — Space Cannon 8. You may use this unit's Space Cannon against ships that are in adjacent systems.
 
 ### Yin Brotherhood
 

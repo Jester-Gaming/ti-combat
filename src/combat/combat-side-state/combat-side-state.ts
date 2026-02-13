@@ -141,6 +141,7 @@ export class CombatSideState {
   collectDice(
     source: HitSource,
     participatingUnits: ReadonlySet<UnitType>,
+    allowedUnitTypes?: ReadonlySet<UnitType>,
   ): DicePool {
     const result: DicePool = {}
 
@@ -149,6 +150,7 @@ export class CombatSideState {
 
     for (const [type, units] of Object.entries(this.data.units)) {
       if (!units || units.length === 0) continue
+      if (allowedUnitTypes && !allowedUnitTypes.has(type as UnitType)) continue
       if (!skipParticipatingFilter && !participatingUnits.has(type as UnitType))
         continue
 

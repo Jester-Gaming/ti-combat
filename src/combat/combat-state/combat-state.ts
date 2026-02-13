@@ -1,3 +1,4 @@
+import { GROUND_FORCES, STRUCTURES } from '@/constants/units'
 import factions from '@/data/faction'
 import type { CombatSide, DiceGroup, FactionKey, Unit, UnitType } from '@/types'
 import { buildUnitStatsMap } from '@/utils/get-simulation-units'
@@ -50,6 +51,7 @@ export interface StateWithProbability {
 interface UnitAbilityPhaseConfig {
   firing: CombatSide[]
   hitSource: HitSource
+  allowedUnitTypes?: ReadonlySet<UnitType>
 }
 
 /** Flatten a DicePool into DiceGroup[] for probability calculation */
@@ -220,9 +222,17 @@ export class CombatState {
   }
 
   /** Collect dice for a side and source */
-  collectDice(side: CombatSide, source: HitSource): DicePool {
+  collectDice(
+    side: CombatSide,
+    source: HitSource,
+    allowedUnitTypes?: ReadonlySet<UnitType>,
+  ): DicePool {
     const participatingUnits = this.getParticipatingUnits(side)
-    return this.side(side).collectDice(source, participatingUnits)
+    return this.side(side).collectDice(
+      source,
+      participatingUnits,
+      allowedUnitTypes,
+    )
   }
 
   /** Get participating units from SETTINGS ability */
@@ -453,6 +463,7 @@ export class CombatState {
         return this.advanceUnitAbilityPhase({
           firing: ['defender'],
           hitSource: 'SPACE_CANNON',
+          allowedUnitTypes: new Set([...GROUND_FORCES, ...STRUCTURES]),
         })
 
       case 'COMPLETE':
@@ -609,14 +620,14 @@ export class CombatState {
   private processUnitAbilityDiceRoll(
     config: UnitAbilityPhaseConfig,
   ): StateWithProbability[] {
-    const { firing, hitSource } = config
+    const { firing, hitSource, allowedUnitTypes } = config
 
     // Collect dice based on firing configuration
     const attackerDice = firing.includes('attacker')
-      ? this.collectDice('attacker', hitSource)
+      ? this.collectDice('attacker', hitSource, allowedUnitTypes)
       : {}
     const defenderDice = firing.includes('defender')
-      ? this.collectDice('defender', hitSource)
+      ? this.collectDice('defender', hitSource, allowedUnitTypes)
       : {}
 
     const sidedDiceData: SidedDiceData = {
