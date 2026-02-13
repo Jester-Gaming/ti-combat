@@ -6,6 +6,7 @@ import styles from './unit-row-dual.module.css'
 interface UnitRowDualProps {
   name: string
   shortName: string
+  limit: number
   attackerHasUpgrade: boolean
   defenderHasUpgrade: boolean
   attacker: { count: number; upgraded: boolean }
@@ -19,6 +20,7 @@ interface UnitRowDualProps {
 export function UnitRowDual({
   name,
   shortName,
+  limit,
   attackerHasUpgrade,
   defenderHasUpgrade,
   attacker,
@@ -37,6 +39,7 @@ export function UnitRowDual({
           count={attacker.count}
           upgraded={attacker.upgraded}
           hasUpgrade={attackerHasUpgrade}
+          limit={limit}
           onCountChange={onAttackerCountChange}
           onUpgradeToggle={onAttackerUpgradeToggle}
         />
@@ -52,6 +55,7 @@ export function UnitRowDual({
           count={defender.count}
           upgraded={defender.upgraded}
           hasUpgrade={defenderHasUpgrade}
+          limit={limit}
           onCountChange={onDefenderCountChange}
           onUpgradeToggle={onDefenderUpgradeToggle}
         />

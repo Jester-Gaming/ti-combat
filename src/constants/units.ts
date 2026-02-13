@@ -35,6 +35,20 @@ export const UNIT_PRICE: Record<UnitType, number> = {
   SPACE_DOCK: 0,
 }
 
+export const UNIT_LIMITS: Record<UnitType, number> = {
+  FLAGSHIP: 1,
+  WAR_SUN: 2,
+  DREADNOUGHT: 5,
+  CARRIER: 4,
+  CRUISER: 8,
+  DESTROYER: 8,
+  FIGHTER: 99,
+  MECH: 4,
+  INFANTRY: 99,
+  PDS: 6,
+  SPACE_DOCK: 3,
+}
+
 export const UNIT_DISPLAY_NAMES: Record<UnitType, string> = {
   FLAGSHIP: 'Flagship',
   WAR_SUN: 'War Sun',

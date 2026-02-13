@@ -13,6 +13,7 @@ export interface UnitAbilitySource {
 }
 
 import { getSettingsValidTargets } from '@/combat/combat-side-state/utils/get-settings-valid-targets'
+import { UNIT_LIMITS } from '@/constants/units'
 
 import { getOpponentSide } from '../../combat-side-state/combat-side-state'
 import type {
@@ -450,11 +451,20 @@ export function buildApi(
       for (const [type, count] of Object.entries(unitsToAdd)) {
         const unitType = type as UnitType
         if (!count || count <= 0) continue
+        const existing = sideState.units[unitType]?.length ?? 0
+        const limit = UNIT_LIMITS[unitType]
+        if (existing + count > limit) {
+          console.warn(
+            `Unit limit exceeded: ${unitType} has a maximum of ${limit}`,
+          )
+        }
+        const allowed = Math.min(count, limit - existing)
+        if (allowed <= 0) continue
         if (!sideState.units[unitType]) {
           sideState.units[unitType] = []
         }
         const template = sideState.unitStats?.[unitType]
-        for (let i = 0; i < count; i++) {
+        for (let i = 0; i < allowed; i++) {
           sideState.units[unitType]!.push({ ...template })
         }
       }

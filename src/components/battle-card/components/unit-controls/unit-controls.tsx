@@ -7,6 +7,7 @@ interface UnitControlsProps {
   count: number
   upgraded: boolean
   hasUpgrade: boolean
+  limit: number
   onCountChange: (count: number) => void
   onUpgradeToggle: () => void
 }
@@ -15,16 +16,19 @@ export function UnitControls({
   count,
   upgraded,
   hasUpgrade,
+  limit,
   onCountChange,
   onUpgradeToggle,
 }: UnitControlsProps) {
+  const atLimit = count >= limit
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.valueAsNumber
     if (isNaN(value)) {
       onCountChange(0)
       return
     }
-    onCountChange(Math.max(0, Math.trunc(value)))
+    onCountChange(Math.min(limit, Math.max(0, Math.trunc(value))))
   }
 
   return (
@@ -59,14 +63,16 @@ export function UnitControls({
       <input
         type="number"
         min={0}
+        max={limit}
         step={1}
         value={count}
         onChange={handleInputChange}
         className={styles.countInput}
       />
       <button
-        className={styles.button}
+        className={clsx(styles.button, atLimit && styles.buttonDisabled)}
         onClick={() => onCountChange(count + 1)}
+        disabled={atLimit}
         tabIndex={-1}
       >
         <PlusIcon className={styles.buttonIcon} />

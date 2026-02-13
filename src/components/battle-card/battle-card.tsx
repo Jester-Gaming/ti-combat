@@ -6,7 +6,7 @@ import { Fragment } from 'react'
 import type { CombatMode } from '@/combat/combat-state/types'
 import { GlassCard } from '@/components/ui/glass-card'
 import { GlowText } from '@/components/ui/glow-text'
-import { UNIT_TYPES } from '@/constants/units'
+import { UNIT_LIMITS, UNIT_TYPES } from '@/constants/units'
 import type { CombatSide, FactionKey, UnitSelection, UnitType } from '@/types'
 import type { UnitConfig } from '@/utils/get-unit-config'
 
@@ -137,6 +137,7 @@ export function BattleCard({
             <UnitRowDual
               name={attackerConfig[unitKey].name}
               shortName={attackerConfig[unitKey].shortName}
+              limit={UNIT_LIMITS[unitKey]}
               attackerHasUpgrade={attackerConfig[unitKey].hasUpgrade}
               defenderHasUpgrade={defenderConfig[unitKey].hasUpgrade}
               attacker={attackerSelections[unitKey]}

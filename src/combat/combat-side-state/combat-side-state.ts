@@ -1,4 +1,4 @@
-import { UNIT_TYPES } from '@/constants/units'
+import { UNIT_LIMITS, UNIT_TYPES } from '@/constants/units'
 import type {
   CombatSide,
   FactionKey,
@@ -267,6 +267,11 @@ export class CombatSideState {
   }
 
   setUnitCount(unitType: UnitType, count: number): void {
+    const limit = UNIT_LIMITS[unitType]
+    if (count > limit) {
+      console.warn(`Unit limit exceeded: ${unitType} has a maximum of ${limit}`)
+      count = limit
+    }
     this.updateSelection(unitType, { count })
   }
 
