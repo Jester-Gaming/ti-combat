@@ -107,7 +107,7 @@
 - [x] **Visz El Vir** (Flagship) — Your mechs in this system roll 1 additional die during combat.
 - [x] **Eidolon** (Mech) — Combat: 6 (x2). If this unit is in the space area of the active system at the start of a space combat, flip this card.
 - [x] **Z-Grav Eidolon** (Mech flipped) — Combat: 8 (x2). If this unit is in the space area of the active system, it is also a ship.
-- [ ] **Eidolon Maximum** (Mech upgraded) — Combat: 4 (x4). This unit is both a ship and a ground force. It cannot be assigned hits from unit abilities. Repair it at the start of every combat round.
+- [x] **Eidolon Maximum** (Mech upgraded) — Combat: 4 (x4). This unit is both a ship and a ground force. It cannot be assigned hits from unit abilities. Repair it at the start of every combat round.
 
 ### Nekro Virus
 

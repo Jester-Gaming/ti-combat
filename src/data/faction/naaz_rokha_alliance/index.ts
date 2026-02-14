@@ -3,6 +3,7 @@ import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 import { eidolon } from './eidolon'
+import { eidolonMaximum } from './eidolon-maximum'
 import { supercharge } from './supercharge'
 import { viszElVir } from './visz-el-vir'
 
@@ -11,6 +12,7 @@ export const naaz_rokha_alliance: Faction = {
   icon: naazRokhaAllianceIcon,
   abilities: {
     technology: [supercharge],
+    breakthrough: [eidolonMaximum],
   },
   units: {
     FLAGSHIP: {
