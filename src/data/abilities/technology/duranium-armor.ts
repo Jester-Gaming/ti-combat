@@ -55,6 +55,7 @@ export const duraniumArmor: Ability<Params> = {
   invoke: [
     {
       timing: 'AFTER_ASSIGN_HITS_STEP',
+      context: ['SPACE_COMBAT', 'GROUND_COMBAT'],
       isCallable: (params, ctx) => findRepairTarget(params, ctx) !== undefined,
       call: (ctx, params) => {
         const target = findRepairTarget(params, ctx)

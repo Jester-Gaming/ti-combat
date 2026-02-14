@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select'
 
 import { CheckboxList } from '../checkbox-list'
+import { NumberList } from '../number-list'
 import { OrderList } from '../order-list'
 import { PriorityList } from '../priority-list'
 import styles from './ability-config.module.css'
@@ -62,6 +63,13 @@ export function AbilityConfig({
 
   function handleSelectChange(key: string, value: string): void {
     onParamsChange({ ...params, [key]: value })
+  }
+
+  function handleRecordNumberChange(
+    key: string,
+    record: Record<string, number>,
+  ): void {
+    onParamsChange({ ...params, [key]: record })
   }
 
   function toggleCollapsed(): void {
@@ -267,6 +275,27 @@ export function AbilityConfig({
                     items={config.items}
                     value={value}
                     onChange={items => handleListChange(key, items)}
+                  />
+                </div>
+              )
+            }
+
+            if (config.type === 'number-list') {
+              const value = (params[key] ?? defaultValue ?? {}) as Record<
+                string,
+                number
+              >
+              return (
+                <div key={key} className={styles.configItemGroup}>
+                  {showLabels && (
+                    <span className={styles.configItemText}>
+                      {config.label}
+                    </span>
+                  )}
+                  <NumberList
+                    items={config.items}
+                    value={value}
+                    onChange={record => handleRecordNumberChange(key, record)}
                   />
                 </div>
               )

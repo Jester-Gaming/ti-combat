@@ -380,6 +380,17 @@ interface UIConfigSelect<
   }[]
 }
 
+interface UIConfigNumberList<
+  TParams = Record<string, unknown>,
+> extends UIConfigItemBase<TParams> {
+  type: 'number-list'
+  items: {
+    label: string
+    value: string
+    max?: number
+  }[]
+}
+
 type UIConfigItem<TParams = Record<string, unknown>> =
   | UIConfigCheckbox<TParams>
   | UIConfigOrderList<TParams>
@@ -387,6 +398,7 @@ type UIConfigItem<TParams = Record<string, unknown>> =
   | UIConfigPriorityList<TParams>
   | UIConfigNumber<TParams>
   | UIConfigSelect<TParams>
+  | UIConfigNumberList<TParams>
 
 type UIConfig<Params = Record<string, unknown>> =
   | UIConfigItem<Params>[]
