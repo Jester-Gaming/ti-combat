@@ -213,7 +213,7 @@ describe('flattenTree', () => {
     expect(outcomes).toHaveLength(2)
 
     const findOutcome = (fighters: number) =>
-      outcomes.find(o => o.attacker['FIGHTER'] === fighters)
+      outcomes.find(o => o.attacker['FIGHTER']?.length === fighters)
 
     // outcomeA: 2 fighters survive, expected 25%
     expect(findOutcome(2)?.probability).toBeCloseTo(0.25)

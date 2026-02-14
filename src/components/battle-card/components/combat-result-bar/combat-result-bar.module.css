@@ -153,6 +153,143 @@
   animation: spin 0.7s linear infinite;
 }
 
+/* Detailed button */
+.detailedButton {
+  @apply mt-2 w-full rounded-md py-1.5 text-xs font-semibold tracking-wider uppercase transition-colors;
+  font-family: var(--font-heading);
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+}
+
+.detailedButton:hover {
+  color: hsl(var(--foreground));
+  background: hsl(var(--accent) / 10%);
+  border-color: hsl(var(--accent) / 30%);
+}
+
+:global(.dark) .detailedButton {
+  background: hsl(222deg 47% 9% / 85%);
+  border-color: hsl(210deg 40% 96% / 10%);
+}
+
+:global(.dark) .detailedButton:hover {
+  background: hsl(222deg 47% 12% / 90%);
+  border-color: hsl(var(--accent) / 30%);
+}
+
+/* Detailed panel */
+.detailedPanel {
+  @apply mt-2 overflow-hidden rounded-lg;
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+}
+
+:global(.dark) .detailedPanel {
+  background: hsl(222deg 47% 9% / 85%);
+  border-color: hsl(210deg 40% 96% / 10%);
+  backdrop-filter: blur(12px);
+}
+
+.detailedTable {
+  @apply w-full;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.detailedHeader {
+  @apply text-[10px] font-semibold tracking-widest uppercase;
+  font-family: var(--font-heading);
+  color: hsl(var(--muted-foreground));
+}
+
+.detailedHeader th {
+  @apply px-3 py-1.5 font-semibold;
+  border-bottom: 1px solid hsl(var(--border) / 50%);
+}
+
+.detailedHeaderSide {
+  @apply text-left;
+}
+
+.detailedHeaderSide:last-child {
+  @apply text-right;
+}
+
+.detailedHeaderProb {
+  @apply text-center;
+  width: 60px;
+}
+
+.detailedList {
+  @apply max-h-64 overflow-y-auto;
+}
+
+.outcomeRow {
+  @apply text-xs;
+  font-family: var(--font-heading);
+}
+
+.outcomeRow td {
+  @apply px-3 py-1.5;
+  border-bottom: 1px solid hsl(var(--border) / 20%);
+}
+
+.outcomeRow:last-child td {
+  border-bottom: none;
+}
+
+.outcomeRowAttacker {
+  background: hsl(var(--attacker) / 5%);
+}
+
+.outcomeRowDefender {
+  background: hsl(var(--defender) / 5%);
+}
+
+.outcomeRowDraw {
+  background: hsl(var(--foreground) / 2%);
+}
+
+:global(.dark) .outcomeRowAttacker {
+  background: hsl(var(--attacker) / 8%);
+}
+
+:global(.dark) .outcomeRowDefender {
+  background: hsl(var(--defender) / 8%);
+}
+
+:global(.dark) .outcomeRowDraw {
+  background: hsl(var(--foreground) / 3%);
+}
+
+.outcomeSide {
+  color: hsl(var(--foreground));
+}
+
+.outcomeSideRight {
+  @apply text-right;
+}
+
+.outcomeProb {
+  @apply text-right font-bold tabular-nums;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+}
+
+.unitEntry {
+  @apply whitespace-nowrap;
+}
+
+.unitSeparator {
+  color: hsl(var(--muted-foreground) / 50%);
+}
+
+.noSurvivors {
+  color: hsl(var(--muted-foreground) / 40%);
+}
+
 @keyframes shimmer {
   0% {
     background-position: 200% 0;

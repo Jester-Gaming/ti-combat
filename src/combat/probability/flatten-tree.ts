@@ -1,4 +1,4 @@
-import type { CombatSide, UnitType } from '@/types'
+import type { CombatSide, Unit, UnitType } from '@/types'
 
 import type { CombatOutcome, ProbabilityNode, SurvivorSide } from '../types'
 
@@ -187,7 +187,16 @@ function generateOutcomeKey(
   const formatSide = (side: SurvivorSide): string =>
     Object.entries(side)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([type, count]) => `${type}:${count}`)
+      .map(([type, units]) => {
+        if (!units || units.length === 0) return ''
+        const damaged = units.filter(u => u.isDamaged).length
+        const subtypeKey = units
+          .flatMap(u => u.subtypes ?? [])
+          .sort()
+          .join('+')
+        return `${type}:${units.length}${damaged ? `d${damaged}` : ''}${subtypeKey ? `s${subtypeKey}` : ''}`
+      })
+      .filter(Boolean)
       .join(',')
 
   return `${formatSide(attacker)}|${formatSide(defender)}`
@@ -197,7 +206,7 @@ function generateOutcomeKey(
  * Extract survivors from units, filtering by participating units.
  */
 function extractSurvivors(
-  units: Partial<Record<string, unknown[]>>,
+  units: Partial<Record<string, Unit[]>>,
   participatingUnits: ReadonlySet<UnitType>,
 ): SurvivorSide {
   const survivors: SurvivorSide = {}
@@ -205,7 +214,10 @@ function extractSurvivors(
     if (!participatingUnits.has(unitType as UnitType)) continue
     const unitList = units[unitType]
     if (unitList && unitList.length > 0) {
-      survivors[unitType] = unitList.length
+      survivors[unitType] = unitList.map(u => ({
+        ...(u.isDamaged ? { isDamaged: true } : {}),
+        ...(u.subtypes?.length ? { subtypes: u.subtypes } : {}),
+      }))
     }
   }
   return survivors
@@ -230,5 +242,8 @@ function determineWinner(
  * Count total survivors across all unit types.
  */
 function countSurvivors(survivors: SurvivorSide): number {
-  return Object.values(survivors).reduce((sum, count) => sum + count, 0)
+  return Object.values(survivors).reduce(
+    (sum, units) => sum + (units?.length ?? 0),
+    0,
+  )
 }

@@ -88,6 +88,18 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
 
   const { outcomes, isComputing } = useSimulation(simulationInput)
 
+  const unitPriority = useMemo(() => {
+    const key =
+      cs.combatMode === 'GROUND' ? 'groundUnitPriority' : 'spaceUnitPriority'
+    const a = cs.data.abilities.attacker['UNIT_PRIORITY']
+    const d = cs.data.abilities.defender['UNIT_PRIORITY']
+    return {
+      attacker: (a?.[key] as string[] | undefined) ?? [],
+      defender: (d?.[key] as string[] | undefined) ?? [],
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cs.data])
+
   const combatResult = useMemo(() => {
     if (!outcomes) return null
     let attackerWin = 0
@@ -185,6 +197,8 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           attackerConfig={attackerConfig}
           defenderConfig={defenderConfig}
           combatResult={combatResult}
+          outcomes={outcomes}
+          unitPriority={unitPriority}
           isComputing={isComputing}
           combatMode={cs.combatMode}
           onCombatModeChange={handleCombatModeChange}

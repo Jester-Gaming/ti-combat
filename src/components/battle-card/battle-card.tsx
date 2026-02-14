@@ -4,6 +4,7 @@ import type { CSSProperties, ReactNode } from 'react'
 import { Fragment } from 'react'
 
 import type { CombatMode } from '@/combat/combat-state/types'
+import type { CombatOutcome } from '@/combat/types'
 import { GlassCard } from '@/components/ui/glass-card'
 import { GlowText } from '@/components/ui/glow-text'
 import { UNIT_LIMITS, UNIT_TYPES } from '@/constants/units'
@@ -26,6 +27,8 @@ interface BattleCardProps {
   attackerConfig: Record<UnitType, UnitConfig>
   defenderConfig: Record<UnitType, UnitConfig>
   combatResult: CombatResult | null
+  outcomes: CombatOutcome[] | null
+  unitPriority: { attacker: string[]; defender: string[] }
   isComputing?: boolean
   combatMode: CombatMode
   onCombatModeChange: (mode: CombatMode) => void
@@ -46,6 +49,8 @@ export function BattleCard({
   attackerConfig,
   defenderConfig,
   combatResult,
+  outcomes,
+  unitPriority,
   isComputing,
   combatMode,
   onCombatModeChange,
@@ -188,7 +193,12 @@ export function BattleCard({
           </div>
           <div className={styles.combatModeLine} />
         </div>
-        <CombatResultBar result={combatResult} isComputing={isComputing} />
+        <CombatResultBar
+          result={combatResult}
+          outcomes={outcomes}
+          unitPriority={unitPriority}
+          isComputing={isComputing}
+        />
       </div>
     </GlassCard>
   )

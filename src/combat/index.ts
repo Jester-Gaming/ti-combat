@@ -4,6 +4,7 @@ export type {
   LogEntry,
   ProbabilityNode,
   SurvivorSide,
+  SurvivorUnit,
 } from './types'
 
 // State

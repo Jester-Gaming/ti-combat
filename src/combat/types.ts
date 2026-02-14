@@ -13,10 +13,14 @@ export interface ProbabilityNode {
   log: LogEntry[]
 }
 
-/** Survivor counts for one side */
-export interface SurvivorSide {
-  [unitType: string]: number
+/** State of a single surviving unit */
+export interface SurvivorUnit {
+  isDamaged?: boolean
+  subtypes?: string[]
 }
+
+/** Surviving units for one side, grouped by unit type */
+export type SurvivorSide = Partial<Record<string, SurvivorUnit[]>>
 
 /** Final combat outcome with full survivor info */
 export interface CombatOutcome {

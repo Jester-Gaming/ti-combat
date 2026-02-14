@@ -65,14 +65,14 @@ export const UNIT_DISPLAY_NAMES: Record<UnitType, string> = {
 
 export const UNIT_SHORT_NAMES: Record<UnitType, string> = {
   FLAGSHIP: 'Fl',
-  WAR_SUN: 'WS',
-  DREADNOUGHT: 'Dn',
+  WAR_SUN: 'W',
+  DREADNOUGHT: 'D',
   CRUISER: 'Cr',
   CARRIER: 'Ca',
   DESTROYER: 'De',
-  FIGHTER: 'Fi',
-  MECH: 'Me',
-  INFANTRY: 'In',
-  PDS: 'PD',
+  FIGHTER: 'F',
+  MECH: 'M',
+  INFANTRY: 'I',
+  PDS: 'PDS',
   SPACE_DOCK: 'SD',
 }
