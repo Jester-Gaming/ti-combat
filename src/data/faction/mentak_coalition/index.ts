@@ -4,10 +4,14 @@ import type { Faction } from '@/types'
 
 import { fourthMoon } from './fourth-moon'
 import { mollTerminus } from './moll-terminus'
+import { sleeperCell } from './sleeper-cell'
 
 export const mentak_coalition: Faction = {
   name: 'Mentak Coalition',
   icon: mentakCoalitionIcon,
+  abilities: {
+    hero: [sleeperCell],
+  },
   units: {
     FLAGSHIP: {
       BASE: {

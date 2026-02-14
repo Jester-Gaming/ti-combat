@@ -32,9 +32,10 @@ const CATEGORY_ORDER = [
 const SUBCATEGORY_ORDER = [
   'ABILITY',
   'TECHNOLOGY',
-  'HERO',
-  'BREAKTHROUGH',
   'FLAGSHIP',
+  'HERO',
+  'MECH',
+  'BREAKTHROUGH',
   'UNIT',
 ]
 

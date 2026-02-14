@@ -93,7 +93,7 @@
 
 - [ ] **Ambush** (Faction Ability) — At the start of a space combat, you may roll 1 die for each of up to 2 of your cruisers or destroyers in the system. For each result equal to or greater than that ship's combat value produce 1 hit; your opponent must assign it to 1 of their ships.
 - [x] **Fourth Moon** (Flagship) — Other players' ships in this system cannot use Sustain Damage.
-- [ ] **Sleeper Cell** (Hero) — At the start of a space combat that you are participating in: You may purge this card; if you do, for each other player's ship that is destroyed during this combat, place 1 ship of that type from your reinforcements in the active system.
+- [x] **Sleeper Cell** (Hero) — At the start of a space combat that you are participating in: You may purge this card; if you do, for each other player's ship that is destroyed during this combat, place 1 ship of that type from your reinforcements in the active system.
 - [x] **Moll Terminus** (Mech) — Other players' ground forces on this planet cannot use Sustain Damage.
 - [ ] **Salvage Operations** (Faction Technology) — After you win or lose a space combat, gain 1 trade good; if you won the combat, you may also produce 1 ship in that system of any ship type that was destroyed during the combat.
 
