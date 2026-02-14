@@ -3,7 +3,7 @@ import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { useMemo, useReducer, useRef, useState } from 'react'
 
-import { CombatEngine, CombatState, flattenTree } from '@/combat'
+import { CombatState } from '@/combat'
 import { getAvailableAbilities } from '@/combat/abilities'
 import type { CombatMode } from '@/combat/combat-state/types'
 import { AbilitiesPanel } from '@/components/abilities-panel'
@@ -16,10 +16,10 @@ import {
   SheetDescription,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { useSimulation } from '@/hooks/use-simulation'
 import type { CombatSide, FactionKey, UnitType } from '@/types'
 import { getUnitConfig } from '@/utils/get-unit-config'
 
-import { type CombatResult } from '../battle-card/components/combat-result-bar'
 import styles from './combat-simulator.module.css'
 
 interface CombatSimulatorProps {
@@ -65,50 +65,49 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     [cs.data],
   )
 
-  // Create CombatState for simulation
-  const combatState = useMemo(() => {
-    return CombatState.forSimulation(
-      cs.data.attacker,
-      cs.data.defender,
-      cs.combatMode,
-      cs.data.abilities,
-    )
+  const simulationInput = useMemo(
+    () => {
+      const aSel = cs.attacker.unitSelections
+      const dSel = cs.defender.unitSelections
+      const hasUnits =
+        Object.values(aSel).some(s => s.count > 0) ||
+        Object.values(dSel).some(s => s.count > 0)
+      if (!hasUnits) return null
+      return {
+        attackerFaction: cs.attacker.faction,
+        defenderFaction: cs.defender.faction,
+        attackerSelections: aSel,
+        defenderSelections: dSel,
+        combatMode: cs.combatMode,
+        abilities: cs.data.abilities,
+      }
+    },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cs.data])
+    [cs.data],
+  )
 
-  const combatResult = useMemo((): CombatResult | null => {
-    if (!combatState) return null
+  const { outcomes, isComputing } = useSimulation(simulationInput)
 
-    const engine = new CombatEngine()
-    console.time('Simulate')
-    const tree = engine.simulate(combatState)
-    console.timeEnd('Simulate')
-    console.info('Simulate tree', tree)
-    console.time('Flatten')
-    const outcomes = flattenTree(tree)
-    console.timeEnd('Flatten')
-    console.info('Outcomes list', outcomes)
-
+  const combatResult = useMemo(() => {
+    if (!outcomes) return null
     let attackerWin = 0
     let draw = 0
     let defenderWin = 0
-
-    for (const outcome of outcomes) {
-      switch (outcome.winner) {
+    for (const o of outcomes) {
+      switch (o.winner) {
         case 'attacker':
-          attackerWin += outcome.probability
+          attackerWin += o.probability
           break
         case 'defender':
-          defenderWin += outcome.probability
+          defenderWin += o.probability
           break
         case 'draw':
-          draw += outcome.probability
+          draw += o.probability
           break
       }
     }
-
     return { attackerWin, draw, defenderWin }
-  }, [combatState])
+  }, [outcomes])
 
   const handleSwap = () => {
     cs.swap()
@@ -186,6 +185,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           attackerConfig={attackerConfig}
           defenderConfig={defenderConfig}
           combatResult={combatResult}
+          isComputing={isComputing}
           combatMode={cs.combatMode}
           onCombatModeChange={handleCombatModeChange}
           onFactionChange={handleFactionChange}

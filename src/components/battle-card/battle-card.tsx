@@ -26,6 +26,7 @@ interface BattleCardProps {
   attackerConfig: Record<UnitType, UnitConfig>
   defenderConfig: Record<UnitType, UnitConfig>
   combatResult: CombatResult | null
+  isComputing?: boolean
   combatMode: CombatMode
   onCombatModeChange: (mode: CombatMode) => void
   onFactionChange: (side: CombatSide, faction: FactionKey) => void
@@ -45,6 +46,7 @@ export function BattleCard({
   attackerConfig,
   defenderConfig,
   combatResult,
+  isComputing,
   combatMode,
   onCombatModeChange,
   onFactionChange,
@@ -186,7 +188,7 @@ export function BattleCard({
           </div>
           <div className={styles.combatModeLine} />
         </div>
-        <CombatResultBar result={combatResult} />
+        <CombatResultBar result={combatResult} isComputing={isComputing} />
       </div>
     </GlassCard>
   )

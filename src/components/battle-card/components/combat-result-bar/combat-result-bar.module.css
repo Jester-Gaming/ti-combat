@@ -114,3 +114,56 @@
   @apply text-[10px] tracking-widest uppercase opacity-70;
   font-family: var(--font-heading);
 }
+
+/* Loading: existing results → dim + shimmer overlay */
+.loading {
+  @apply relative;
+  opacity: 60%;
+}
+
+.loading::after {
+  @apply absolute inset-0 rounded-lg;
+  content: '';
+  background: linear-gradient(
+    90deg,
+    transparent 25%,
+    hsl(var(--foreground) / 6%) 50%,
+    transparent 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Loading: no results yet → skeleton with spinner */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    hsl(var(--muted) / 30%) 25%,
+    hsl(var(--muted) / 50%) 50%,
+    hsl(var(--muted) / 30%) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.loader {
+  @apply block h-5 w-5 rounded-full;
+  border: 2px solid hsl(var(--muted-foreground) / 25%);
+  border-top-color: hsl(var(--primary));
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

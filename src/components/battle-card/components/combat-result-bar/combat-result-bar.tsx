@@ -10,15 +10,16 @@ export interface CombatResult {
 
 interface CombatResultBarProps {
   result: CombatResult | null
+  isComputing?: boolean
 }
 
-export function CombatResultBar({ result }: CombatResultBarProps) {
+export function CombatResultBar({ result, isComputing }: CombatResultBarProps) {
   const segments = result && buildSegments(result)
 
   return (
     <div className={styles.wrapper}>
       {segments ? (
-        <div className={styles.resultBar}>
+        <div className={clsx(styles.resultBar, isComputing && styles.loading)}>
           {segments.map(({ key, percent, label, segmentClass }) => (
             <div
               key={key}
@@ -34,6 +35,10 @@ export function CombatResultBar({ result }: CombatResultBarProps) {
               )}
             </div>
           ))}
+        </div>
+      ) : isComputing ? (
+        <div className={clsx(styles.emptyState, styles.skeleton)}>
+          <span className={styles.loader} />
         </div>
       ) : (
         <div className={styles.emptyState}>
