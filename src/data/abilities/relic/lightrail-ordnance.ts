@@ -11,14 +11,12 @@ export const lightrailOrdnance: Ability = {
   headerUI: 'isEnabled',
   invoke: [
     {
-      timing: 'BEFORE_UNIT_ABILITY_ROLL',
-      context: ['SPACE_CANNON_OFFENSE', 'SPACE_CANNON_DEFENSE'],
+      timing: 'PREPARE',
       isCallable: (_params, ctx) => ctx.api.own.hasUnit('SPACE_DOCK'),
-      call: (ctx, _params, dice) => {
-        const spaceDocks = ctx.api.own.getUnits('SPACE_DOCK')
-        for (const dock of spaceDocks) {
-          dice.own.addDiceGroup('SPACE_DOCK', dock, [5, 2])
-        }
+      call: ctx => {
+        ctx.api.own.modifyUnit('SPACE_DOCK', {
+          UNIT_ABILITIES: { SPACE_CANNON: [5, 2] },
+        })
       },
     },
   ],

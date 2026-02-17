@@ -100,10 +100,20 @@ describe('Two-tier phase system', () => {
     })
 
     describe('GROUND mode flow', () => {
-      it('transitions BOMBARDMENT -> SPACE_CANNON_DEFENSE', () => {
+      it('transitions BOMBARDMENT -> COMMIT_UNITS', () => {
         const current: PhaseIdentifier = {
           meta: 'BOMBARDMENT',
           micro: 'ASSIGN_HITS', // Last micro-phase for unit abilities
+        }
+        const result = getNextMetaPhase(current, 'GROUND')
+        expect(result.phase.meta).toBe('COMMIT_UNITS')
+        expect(result.phase.micro).toBe('END') // Single pass-through micro-phase
+      })
+
+      it('transitions COMMIT_UNITS -> SPACE_CANNON_DEFENSE', () => {
+        const current: PhaseIdentifier = {
+          meta: 'COMMIT_UNITS',
+          micro: 'END',
         }
         const result = getNextMetaPhase(current, 'GROUND')
         expect(result.phase.meta).toBe('SPACE_CANNON_DEFENSE')

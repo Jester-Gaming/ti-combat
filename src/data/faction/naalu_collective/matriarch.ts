@@ -15,7 +15,7 @@ export const matriarch: Ability = {
   declareParamChange: () => [{ key: 'groundForces', value: 'FIGHTER' }],
   invoke: [
     {
-      timing: 'START_OF_COMBAT',
+      timing: 'COMMIT_UNITS',
       isCallable: (_params, ctx) => ctx.api.own.hasUnit('FLAGSHIP'),
       call: ctx => {
         ctx.api.own.updateAbilityConfig('SETTINGS', {

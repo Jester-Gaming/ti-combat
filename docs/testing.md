@@ -11,6 +11,7 @@
 - Single ability: `ability-name.test.ts` (kebab-case of the ability key)
 - Multiple abilities: names joined with `+`, sorted alphabetically. Example: `bunker+plasma-scoring.test.ts`
 - All test files go in `src/tests/`
+- Never include `ABILITY_ORDER` in test filenames, even if the test configures it to control resolution order
 
 ## Imports
 

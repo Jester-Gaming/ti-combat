@@ -14,7 +14,7 @@ export const mollTerminus: Ability = {
   readOnly: true,
   invoke: [
     {
-      timing: 'PREPARE',
+      timing: 'COMMIT_UNITS',
       call: ctx => {
         ctx.api.opponent.setUnitAbilityCannotBeUsed(
           'SUSTAIN_DAMAGE',
@@ -23,31 +23,7 @@ export const mollTerminus: Ability = {
       },
     },
     {
-      timing: 'BEFORE_ASSIGN_HITS',
-      context: 'BOMBARDMENT',
-      always: true,
-      call: ctx => {
-        ctx.api.opponent.removeUnitAbilityCannotBeUsed(
-          'SUSTAIN_DAMAGE',
-          'MOLL_TERMINUS',
-        )
-      },
-    },
-    {
-      timing: 'AFTER_ASSIGN_HITS_STEP',
-      context: 'BOMBARDMENT',
-      always: true,
-      call: ctx => {
-        if (ctx.api.own.hasUnit('MECH')) {
-          ctx.api.opponent.setUnitAbilityCannotBeUsed(
-            'SUSTAIN_DAMAGE',
-            'MOLL_TERMINUS',
-          )
-        }
-      },
-    },
-    {
-      timing: 'AFTER_DESTROY',
+      timing: 'DESTROY',
       call: ctx => {
         if (!ctx.api.own.hasUnit('MECH')) {
           ctx.api.opponent.removeUnitAbilityCannotBeUsed(

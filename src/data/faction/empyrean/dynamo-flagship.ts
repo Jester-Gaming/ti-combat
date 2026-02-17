@@ -26,7 +26,7 @@ export const dynamoFlagship: Ability = {
       },
     },
     {
-      timing: 'AFTER_DESTROY',
+      timing: 'DESTROY',
       always: true,
       isCallable: params => params.isEnabled !== false,
       call: ctx => {

@@ -30,6 +30,8 @@ import {
   unitMatchesVariant,
 } from '../../utils/unit-variant'
 import type {
+  Ability,
+  AbilityTiming,
   DeclaredSubtype,
   SideApi,
   SideReadApi,
@@ -60,9 +62,11 @@ function findUnitInSide(
 function findUnitByPriorityInSide(
   sideState: SideStateData,
   priority: string[],
+  participatingTypes?: ReadonlySet<UnitType>,
 ): Unit | undefined {
   for (const variantId of priority) {
     const { type } = parseVariantId(variantId)
+    if (participatingTypes && !participatingTypes.has(type)) continue
     const units = sideState.units[type]
     if (!units) continue
 
@@ -313,7 +317,10 @@ function buildSideReadApi(
     },
 
     findUnitByPriority(priority: string[]) {
-      return findUnitByPriorityInSide(sideState, priority)
+      const participating = new Set(
+        getParticipatingUnitTypesForSide(state, side),
+      )
+      return findUnitByPriorityInSide(sideState, priority, participating)
     },
 
     isUnitAbilityLost(ability: UnitAbility, unitType: UnitType) {
@@ -647,6 +654,7 @@ export function buildReadContext(
   side: CombatSide,
   state: Readonly<CombatStateData>,
   unitSource?: UnitAbilitySource,
+  abilities?: readonly Ability[],
 ) {
   return {
     state,
@@ -671,6 +679,34 @@ export function buildReadContext(
         throw new Error('getUnitIndex() can only be called from unit abilities')
       }
       return unitSource.unitIndex
+    },
+    getAbilitiesForTiming(
+      timing: AbilityTiming | AbilityTiming[],
+    ): { key: string; name: string }[] {
+      if (!abilities) return []
+      const timings = Array.isArray(timing) ? timing : [timing]
+      const sideConfig = state.abilities[side]
+      const results: { key: string; name: string }[] = []
+      for (const ability of abilities) {
+        if (ability.key === 'ABILITY_ORDER') continue
+        if (ability.context && ability.context !== state.combatMode) continue
+        const config = sideConfig[ability.key] ?? ability.params
+        if ('isEnabled' in config && !config.isEnabled) continue
+        if (
+          'uses' in config &&
+          typeof config.uses === 'number' &&
+          isFinite(config.uses as number) &&
+          (config.uses as number) <= 0
+        )
+          continue
+        const hasMatchingInvoke = ability.invoke.some(inv =>
+          timings.includes(inv.timing),
+        )
+        if (hasMatchingInvoke) {
+          results.push({ key: ability.key, name: ability.name })
+        }
+      }
+      return results
     },
   }
 }
@@ -712,6 +748,9 @@ export function buildCallContext(
         throw new Error('getUnitIndex() can only be called from unit abilities')
       }
       return unitSource.unitIndex
+    },
+    getAbilitiesForTiming() {
+      return []
     },
   }
 }

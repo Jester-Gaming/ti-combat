@@ -3,6 +3,7 @@ import { isDraft, produce } from 'immer'
 import { GROUND_FORCES, SHIPS, UNIT_PRICE } from '@/constants/units'
 import type { CombatSide, FactionKey, UnitType } from '@/types'
 
+import { TIMING_GROUPS } from '../../data/abilities/general/ability-order'
 import { getOpponentSide } from '../combat-side-state/combat-side-state'
 import { getDestroyedUnits } from '../combat-side-state/utils/get-destroyed-units'
 import { CombatState } from '../combat-state/combat-state'
@@ -438,7 +439,15 @@ export class AbilitiesParams {
       combatState.data.defender.faction,
     )
 
-    instance.reconcile({ applyGroupAdditions: false, preserveUserParams: true })
+    // Phase 1: Enrich consumers from full SETTINGS (with group additions).
+    // Consumer params (e.g. AC targetPriority) sync from enriched groups,
+    // so they include all possible targets (e.g. Infantry via Alastor).
+    instance.reconcile({ applyGroupAdditions: true, preserveUserParams: true })
+
+    // Phase 2: Reset SETTINGS to base (no group additions), don't touch
+    // consumers. Abilities must update SETTINGS at runtime to affect
+    // participation — findUnitByPriority filters by participation.
+    instance.reconcile({ applyGroupAdditions: false, settingsOnly: true })
 
     return instance
   }
@@ -530,6 +539,8 @@ export class AbilitiesParams {
     params: Record<string, unknown>,
   ): void {
     const ability = this._abilities[side].find(a => a.key === abilityKey)
+    const oldIsEnabled = this.config[side][abilityKey]?.isEnabled
+    const oldUses = this.config[side][abilityKey]?.uses
 
     let finalParams = params
     if (ability?.onParamSet) {
@@ -576,6 +587,11 @@ export class AbilitiesParams {
 
     if (ability?.declareParamChange) {
       this.reconcile()
+    } else if (
+      finalParams.isEnabled !== oldIsEnabled ||
+      finalParams.uses !== oldUses
+    ) {
+      this.reconcile({ resetBaseGroups: false })
     }
   }
 
@@ -624,8 +640,8 @@ export class AbilitiesParams {
       defender: this._combatState.defender.countUnits(),
     }
 
-    // Snapshot SETTINGS before abilities run to detect changes
-    const settingsBefore = {
+    // Track SETTINGS references to detect runtime changes
+    let lastSettings = {
       attacker: state.abilities.attacker['SETTINGS'],
       defender: state.abilities.defender['SETTINGS'],
     }
@@ -649,6 +665,27 @@ export class AbilitiesParams {
         }
         consecutiveSkips = 0
 
+        // When an ability changes SETTINGS base groups (e.g. Alastor
+        // adding Infantry to ships), re-sync SETTINGS computed params
+        // (spaceCombatParticipating, nonFighterShips, etc.) so
+        // participation checks see the update. Consumer params are NOT
+        // re-synced — they were pre-enriched at init.
+        const newSettings = {
+          attacker: currentState.abilities.attacker['SETTINGS'],
+          defender: currentState.abilities.defender['SETTINGS'],
+        }
+        if (
+          newSettings.attacker !== lastSettings.attacker ||
+          newSettings.defender !== lastSettings.defender
+        ) {
+          this.reconcile({ resetBaseGroups: false, settingsOnly: true })
+          currentState = this._combatState.data
+          lastSettings = {
+            attacker: currentState.abilities.attacker['SETTINGS'],
+            defender: currentState.abilities.defender['SETTINGS'],
+          }
+        }
+
         // Stop resolving abilities if a side that had units was eliminated
         if (
           (initialUnits.attacker > 0 &&
@@ -663,19 +700,6 @@ export class AbilitiesParams {
       }
 
       currentSide = getOpponentSide(currentSide)
-    }
-
-    // Reconcile consumer ability params when SETTINGS changed during this timing
-    const settingsAfter = {
-      attacker: currentState.abilities.attacker['SETTINGS'],
-      defender: currentState.abilities.defender['SETTINGS'],
-    }
-    if (
-      settingsAfter.attacker !== settingsBefore.attacker ||
-      settingsAfter.defender !== settingsBefore.defender
-    ) {
-      this.reconcile({ resetBaseGroups: false })
-      currentState = this._combatState.data
     }
 
     return {
@@ -698,10 +722,11 @@ export class AbilitiesParams {
   ): AbilityResult | null {
     const invokes = this.getInvokesForTiming(timing, side, state, triggerSide)
 
-    // Collect WHEN_DESTROY / AFTER_DESTROY invokes from destroyed units in context
+    // Collect DESTROY / WHEN_DESTROY / AFTER_DESTROY invokes from destroyed units in context
     const timings = Array.isArray(timing) ? timing : [timing]
     if (
-      (timings.includes('AFTER_DESTROY' as T) ||
+      (timings.includes('DESTROY' as T) ||
+        timings.includes('AFTER_DESTROY' as T) ||
         timings.includes('WHEN_DESTROY' as T)) &&
       context !== undefined &&
       isSidedContext(context)
@@ -715,6 +740,7 @@ export class AbilitiesParams {
           if (ability.context && ability.context !== state.combatMode) continue
           for (const invoke of ability.invoke) {
             if (
+              invoke.timing !== 'DESTROY' &&
               invoke.timing !== 'AFTER_DESTROY' &&
               invoke.timing !== 'WHEN_DESTROY'
             )
@@ -947,11 +973,14 @@ export class AbilitiesParams {
           resultState = triggerResult.state
         }
 
-        // Trigger WHEN_DESTROY then AFTER_DESTROY if units were destroyed by the ability (or trigger processing)
-        // Skip if already resolving WHEN_DESTROY or AFTER_DESTROY to prevent recursion
+        // Trigger DESTROY then WHEN_DESTROY then AFTER_DESTROY if units were destroyed by the ability (or trigger processing)
+        // Skip if already resolving DESTROY/WHEN_DESTROY/AFTER_DESTROY to prevent recursion
         const timingArray = Array.isArray(timing) ? timing : [timing]
         if (
-          !timingArray.some(t => t === 'AFTER_DESTROY' || t === 'WHEN_DESTROY')
+          !timingArray.some(
+            t =>
+              t === 'DESTROY' || t === 'AFTER_DESTROY' || t === 'WHEN_DESTROY',
+          )
         ) {
           let destroyedAttacker = getDestroyedUnits(
             state.attacker.units,
@@ -989,10 +1018,20 @@ export class AbilitiesParams {
               defender: destroyedDefender,
             }
 
-            // First run WHEN_DESTROY (may destroy additional units)
+            // First run DESTROY (cleanup, no cascading)
+            const destroyResult = this.runAbilities(
+              'DESTROY',
+              resultState,
+              destroyedContext,
+              undefined,
+              childLogger,
+            )
+            const stateAfterDestroy = destroyResult.state
+
+            // Then run WHEN_DESTROY (may destroy additional units)
             const whenDestroy = this.runAbilities(
               'WHEN_DESTROY',
-              resultState,
+              stateAfterDestroy,
               destroyedContext,
               undefined,
               childLogger,
@@ -1001,11 +1040,11 @@ export class AbilitiesParams {
 
             // Compute additional destroyed units from WHEN_DESTROY effects
             const additionalAttacker = getDestroyedUnits(
-              resultState.attacker.units,
+              stateAfterDestroy.attacker.units,
               stateAfterWhen.attacker.units,
             )
             const additionalDefender = getDestroyedUnits(
-              resultState.defender.units,
+              stateAfterDestroy.defender.units,
               stateAfterWhen.defender.units,
             )
 
@@ -1098,11 +1137,12 @@ export class AbilitiesParams {
 
       for (const invoke of ability.invoke) {
         if (!timings.includes(invoke.timing as T)) continue
-        // Unit abilities with WHEN_DESTROY/AFTER_DESTROY only fire when that
+        // Unit abilities with DESTROY/WHEN_DESTROY/AFTER_DESTROY only fire when that
         // specific unit is destroyed — handled via destroyed context, not here
         if (
           source.type === 'unit' &&
-          (invoke.timing === 'WHEN_DESTROY' ||
+          (invoke.timing === 'DESTROY' ||
+            invoke.timing === 'WHEN_DESTROY' ||
             invoke.timing === 'AFTER_DESTROY')
         )
           continue
@@ -1129,6 +1169,27 @@ export class AbilitiesParams {
     for (const ability of availableAbilities) {
       if (unitAbilityKeys.has(ability.key)) continue
       collectInvokes(ability, { type: 'config' })
+    }
+
+    // 3. Apply ABILITY_ORDER sorting for matching timing groups (config abilities only)
+    const timingSet = new Set(timings)
+    for (const group of TIMING_GROUPS) {
+      if (!group.timings.some(t => timingSet.has(t as T))) continue
+      const orderConfig = sideConfig['ABILITY_ORDER']
+      if (!orderConfig) break
+      const order = orderConfig[group.paramKey] as string[] | undefined
+      if (!order || order.length === 0) break
+
+      const orderIndex = new Map(order.map((key, i) => [key, i]))
+      // Build a total order: ordered items first (by position), unordered after
+      let nextSlot = order.length
+      const sortKey = new Map<TimingInvokeEntry, number>()
+      for (const entry of results) {
+        const oi = orderIndex.get(entry.ability.key)
+        sortKey.set(entry, oi !== undefined ? oi : nextSlot++)
+      }
+      results.sort((a, b) => sortKey.get(a)! - sortKey.get(b)!)
+      break // Only one group can match
     }
 
     return results
@@ -1174,12 +1235,14 @@ export class AbilitiesParams {
       resetBaseGroups?: boolean
       applyGroupAdditions?: boolean
       preserveUserParams?: boolean
+      settingsOnly?: boolean
     } = {},
   ): void {
     const {
       resetBaseGroups = true,
       applyGroupAdditions = true,
       preserveUserParams = false,
+      settingsOnly = false,
     } = options
 
     const config: AbilitiesConfig = {
@@ -1228,6 +1291,28 @@ export class AbilitiesParams {
       }
     }
 
+    if (settingsOnly) {
+      // Only reconcile SETTINGS computed params, skip consumers
+      for (const side of ['attacker', 'defender'] as const) {
+        const sideAbilities = this._abilities[side]
+        const { settings, subtypes } = resolveSettings(
+          sideAbilities,
+          config[side],
+        )
+        this.reconcileSyncSources(
+          side,
+          sideAbilities.filter(a => a.key === 'SETTINGS'),
+          config[side],
+          settings,
+          settings,
+          subtypes,
+          subtypes,
+        )
+      }
+      this._combatState.data = { ...this._combatState.data, abilities: config }
+      return
+    }
+
     this.ensureConsumerDefaults(config)
     this.reconcileSyncAll(config)
 
@@ -1243,6 +1328,8 @@ export class AbilitiesParams {
         }
       }
     }
+
+    this.reconcileAbilityOrder(config)
 
     this._combatState.data = { ...this._combatState.data, abilities: config }
   }
@@ -1282,6 +1369,7 @@ export class AbilitiesParams {
         config[side],
       )
       this.reconcileSyncSources(
+        side,
         sideAbilities.filter(a => a.key === 'SETTINGS'),
         config[side],
         settings,
@@ -1304,6 +1392,7 @@ export class AbilitiesParams {
         config[oppSide],
       )
       this.reconcileSyncSources(
+        side,
         sideAbilities.filter(a => a.key !== 'SETTINGS'),
         config[side],
         ownSettings,
@@ -1311,6 +1400,56 @@ export class AbilitiesParams {
         ownSubtypes,
         oppSubtypes,
       )
+    }
+  }
+
+  /**
+   * Reconcile ABILITY_ORDER params: keep only keys for abilities that are
+   * enabled and have matching invokes, preserving user-chosen order.
+   */
+  private reconcileAbilityOrder(config: AbilitiesConfig): void {
+    for (const side of ['attacker', 'defender'] as const) {
+      const abilities = this._abilities[side]
+      const sideConfig = config[side]
+
+      if (!sideConfig['ABILITY_ORDER']) {
+        sideConfig['ABILITY_ORDER'] = { isEnabled: true, uses: Infinity }
+      } else if (Object.isFrozen(sideConfig['ABILITY_ORDER'])) {
+        sideConfig['ABILITY_ORDER'] = { ...sideConfig['ABILITY_ORDER'] }
+      }
+      const orderConfig = sideConfig['ABILITY_ORDER']
+
+      for (const group of TIMING_GROUPS) {
+        const timingSet = new Set(group.timings)
+        const validKeys: string[] = []
+
+        for (const ability of abilities) {
+          if (ability.key === 'ABILITY_ORDER') continue
+          if (ability.context && ability.context !== this.state.combatMode)
+            continue
+          const abilityConfig = sideConfig[ability.key] ?? ability.params
+          if ('isEnabled' in abilityConfig && !abilityConfig.isEnabled) continue
+          if (
+            'uses' in abilityConfig &&
+            typeof abilityConfig.uses === 'number' &&
+            isFinite(abilityConfig.uses) &&
+            abilityConfig.uses <= 0
+          )
+            continue
+          const hasMatchingInvoke = ability.invoke.some(inv =>
+            timingSet.has(inv.timing),
+          )
+          if (hasMatchingInvoke) {
+            validKeys.push(ability.key)
+          }
+        }
+
+        const currentOrder = (orderConfig[group.paramKey] as string[]) ?? []
+        orderConfig[group.paramKey] = reconcileArrayParam(
+          currentOrder,
+          validKeys,
+        )
+      }
     }
   }
 
@@ -1344,6 +1483,7 @@ export class AbilitiesParams {
   }
 
   private reconcileSyncSources(
+    _side: CombatSide,
     abilities: readonly Ability[],
     params: Record<string, Record<string, unknown>>,
     ownSettings: Record<string, unknown>,

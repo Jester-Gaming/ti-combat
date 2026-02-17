@@ -93,6 +93,7 @@ export type DiceContext = OwnOpponentContext<DiceApi>
 export interface TimingContextMap {
   CLEANUP: void
   PREPARE: void
+  COMMIT_UNITS: void
   START_OF_COMBAT: void
   START_OF_COMBAT_ROUND: void
   BEFORE_UNIT_ABILITY_ROLL: SidedDiceData
@@ -103,6 +104,7 @@ export interface TimingContextMap {
   AFTER_ASSIGN_HITS_STEP: void
   WHEN_SUSTAIN_DAMAGE_USE: Unit
   AFTER_SUSTAIN_DAMAGE_USE: Unit
+  DESTROY: SidedContext<DestroyedUnit[]>
   WHEN_DESTROY: SidedContext<DestroyedUnit[]>
   AFTER_DESTROY: SidedContext<DestroyedUnit[]>
   END_OF_COMBAT_ROUND: void
@@ -241,6 +243,10 @@ export interface AbilityReadContext {
   getUnitType(): UnitType
   /** Get the unit index this ability is attached to. Throws if called from a non-unit ability. */
   getUnitIndex(): number
+  /** Get enabled config abilities matching the given timing(s) for the current side. */
+  getAbilitiesForTiming(
+    timing: AbilityTiming | AbilityTiming[],
+  ): { key: string; name: string }[]
 }
 
 /** Stored trigger event emitted via ctx.trigger() */
@@ -270,6 +276,10 @@ export interface AbilityCallContext {
   getUnitType(): UnitType
   /** Get the unit index this ability is attached to. Throws if called from a non-unit ability. */
   getUnitIndex(): number
+  /** Get enabled config abilities matching the given timing(s) for the current side. */
+  getAbilitiesForTiming(
+    timing: AbilityTiming | AbilityTiming[],
+  ): { key: string; name: string }[]
 }
 
 // Auto-generate invoke type for each timing

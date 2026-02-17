@@ -23,7 +23,7 @@ export const fourthMoon: Ability = {
       },
     },
     {
-      timing: 'AFTER_DESTROY',
+      timing: 'DESTROY',
       call: ctx => {
         ctx.api.opponent.removeUnitAbilityCannotBeUsed(
           'SUSTAIN_DAMAGE',

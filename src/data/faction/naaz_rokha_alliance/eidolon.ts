@@ -3,7 +3,7 @@ import type { UnitType } from '@/types'
 
 export const eidolon: Ability = {
   key: 'EIDOLON',
-  name: 'Eidolon',
+  name: 'Z-Grav Eidolon',
   category: 'FACTION',
   subcategory: 'MECH',
   context: 'SPACE',

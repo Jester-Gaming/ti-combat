@@ -4,7 +4,7 @@ import { NON_FIGHTER_SHIPS, SHIPS, UNIT_LIMITS } from '@/constants/units'
 import type { UnitType } from '@/types'
 
 type Params = {
-  isActivated: boolean
+  isActive: boolean
   fleetPool: number
   shipPriority: string[]
 }
@@ -33,7 +33,7 @@ export const sleeperCell: Ability<Params> = {
   params: {
     isEnabled: false,
     uses: Infinity,
-    isActivated: false,
+    isActive: false,
     fleetPool: 8,
     shipPriority: declareParam({
       default: [],
@@ -47,14 +47,13 @@ export const sleeperCell: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT',
       call: ctx => {
-        ctx.api.own.updateAbilityConfig({ isActivated: true })
+        ctx.api.own.updateAbilityConfig({ isActive: true })
       },
     },
     {
-      timing: 'AFTER_DESTROY',
-      always: true,
+      timing: 'DESTROY',
       isCallable: (params, _ctx, units) => {
-        if (!params.isActivated) return false
+        if (!params.isActive) return false
         return units.opponent.some(u => SHIPS_SET.has(u.type))
       },
       call: (ctx, params, units) => {

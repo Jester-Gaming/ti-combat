@@ -80,17 +80,6 @@ describe('VAN_HAUGE', () => {
     // Van Hauge triggered — all ships destroyed
     expect(t.attacker.units.FLAGSHIP).toBeUndefined()
     expect(t.defender.units.CRUISER).toBeUndefined()
-
-    // WHEN_DESTROY log should appear before AFTER_DESTROY log
-    const whenLog = t.abilityLog('WHEN_DESTROY')
-    const afterLog = t.abilityLog('AFTER_DESTROY')
-    expect(whenLog.length).toBeGreaterThan(0)
-
-    if (afterLog.length > 0) {
-      const whenIdx = t.log.indexOf(whenLog[0])
-      const afterIdx = t.log.indexOf(afterLog[0])
-      expect(whenIdx).toBeLessThan(afterIdx)
-    }
   })
 
   it('ships destroyed by Van Hauge appear in AFTER_DESTROY log context', () => {

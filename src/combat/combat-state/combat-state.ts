@@ -218,7 +218,12 @@ export class CombatState {
 
   /** Build a read context for ability UI panels */
   getReadContext(side: CombatSide): AbilityReadContext {
-    return buildReadContext(side, this.data)
+    return buildReadContext(
+      side,
+      this.data,
+      undefined,
+      this._params.getAbilities(side),
+    )
   }
 
   /** Collect dice for a side and source */
@@ -338,21 +343,29 @@ export class CombatState {
       }
     }
 
-    // Run WHEN_DESTROY first (may destroy additional units, e.g. Van Hauge)
-    const { state: afterWhenDestroy } = this.runAbilities(
-      'WHEN_DESTROY',
+    // Run DESTROY first (cleanup, no cascading)
+    const { state: afterCleanup } = this.runAbilities(
+      'DESTROY',
       destroyedContext,
       resultData,
       logger,
     )
 
+    // Run WHEN_DESTROY (may destroy additional units, e.g. Van Hauge)
+    const { state: afterWhenDestroy } = this.runAbilities(
+      'WHEN_DESTROY',
+      destroyedContext,
+      afterCleanup,
+      logger,
+    )
+
     // Compute additional destroyed units from WHEN_DESTROY effects
     const additionalAttacker = getDestroyedUnits(
-      resultData.attacker.units,
+      afterCleanup.attacker.units,
       afterWhenDestroy.attacker.units,
     )
     const additionalDefender = getDestroyedUnits(
-      resultData.defender.units,
+      afterCleanup.defender.units,
       afterWhenDestroy.defender.units,
     )
 
@@ -402,7 +415,8 @@ export class CombatState {
         meta !== 'SPACE_CANNON_OFFENSE' &&
         meta !== 'SPACE_CANNON_DEFENSE' &&
         meta !== 'BOMBARDMENT' &&
-        meta !== 'AFB'
+        meta !== 'AFB' &&
+        meta !== 'COMMIT_UNITS'
       ) {
         return true
       }
@@ -458,6 +472,14 @@ export class CombatState {
           firing: ['attacker'],
           hitSource: 'BOMBARDMENT',
         })
+
+      case 'COMMIT_UNITS': {
+        const { state: newData, log } = this.runAbilities('COMMIT_UNITS')
+        return this.transitionPhaseWithData(
+          newData,
+          log.length > 0 ? log : undefined,
+        )
+      }
 
       case 'SPACE_CANNON_DEFENSE':
         return this.advanceUnitAbilityPhase({

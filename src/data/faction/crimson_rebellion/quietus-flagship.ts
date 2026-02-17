@@ -22,7 +22,7 @@ export const quietus: Ability = {
   headerUI: 'isEnabled',
   invoke: [
     {
-      timing: 'AFTER_DESTROY',
+      timing: 'DESTROY',
       call: ctx => {
         for (const ability of UNIT_ABILITIES) {
           ctx.api.opponent.removeUnitAbilityCannotBeUsed(ability, 'QUIETUS')

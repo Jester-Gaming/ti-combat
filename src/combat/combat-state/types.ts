@@ -50,6 +50,7 @@ export type MetaPhase =
   | 'AFB'
   | 'SPACE_COMBAT'
   | 'BOMBARDMENT'
+  | 'COMMIT_UNITS'
   | 'SPACE_CANNON_DEFENSE'
   | 'GROUND_COMBAT'
   | 'COMPLETE'

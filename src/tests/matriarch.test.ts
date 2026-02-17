@@ -55,6 +55,23 @@ describe('MATRIARCH', () => {
     expect(t.attacker.units.FIGHTER).toHaveLength(1)
   })
 
+  it('fighters are valid targets for space cannon defense', () => {
+    const t = combatTest({
+      mode: 'GROUND',
+      attacker: {
+        faction: 'NAALU_COLLECTIVE',
+        units: { FLAGSHIP: 1, FIGHTER: 1, INFANTRY: 1 },
+      },
+      defender: { faction: 'ARBOREC', units: { PDS: 2, INFANTRY: 1 } },
+    })
+
+    t.advanceTo('GROUND_COMBAT', 'START', { attacker: 2 })
+
+    // Both infantry and fighter destroyed by SCD hits
+    expect(t.attacker.units.INFANTRY).toBeUndefined()
+    expect(t.attacker.units.FIGHTER).toBeUndefined()
+  })
+
   it('does not affect ground combat without flagship', () => {
     const t = combatTest({
       mode: 'GROUND',
