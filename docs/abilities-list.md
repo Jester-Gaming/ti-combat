@@ -33,7 +33,7 @@
 ### Crimson Rebellion
 
 - [x] **Quietus** (Flagship) — While this unit is in a system that contains an active breach, other players' units in systems with active breaches lose all of their unit abilities.
-- [ ] **Fragment Reality** (Hero) — When you produce ships: You may place any of those ships onto this card. At the start of a space combat, you may purge this card to place all ships from this card into the active system.
+- [x] **Fragment Reality** (Hero) — When you produce ships: You may place any of those ships onto this card. At the start of a space combat, you may purge this card to place all ships from this card into the active system.
 
 ### Deepwrought Scholarate
 

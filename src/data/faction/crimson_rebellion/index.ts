@@ -2,11 +2,15 @@ import crimsonRebellionIcon from '@/assets/faction/crimson_rebellion.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
+import { fragmentReality } from './fragment-reality'
 import { quietus } from './quietus-flagship'
 
 export const crimson_rebellion: Faction = {
   name: 'Crimson Rebellion',
   icon: crimsonRebellionIcon,
+  abilities: {
+    hero: [fragmentReality],
+  },
   units: {
     FLAGSHIP: {
       BASE: {
