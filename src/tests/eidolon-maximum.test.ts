@@ -108,6 +108,26 @@ describe('EIDOLON_MAXIMUM', () => {
     expect(t.abilityLog('EIDOLON')).toHaveLength(0)
   })
 
+  it('mech is immune to space cannon offense hits', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'NAAZ_ROKHA_ALLIANCE',
+        units: { CRUISER: 1, MECH: 1 },
+        abilities: { EIDOLON_MAXIMUM: true },
+      },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 1, PDS: 2 } },
+    })
+
+    // Advance past SCO — attacker receives 2 hits
+    t.advanceTo('AFB', undefined, { attacker: 2 })
+
+    // Mech should survive SCO — only Cruiser can be hit
+    expect(t.attacker.units.MECH).toHaveLength(1)
+    expect(t.attacker.units.CRUISER).toBeUndefined()
+  })
+
+
   it('mech is immune to bombardment hits', () => {
     const t = combatTest({
       mode: 'GROUND',

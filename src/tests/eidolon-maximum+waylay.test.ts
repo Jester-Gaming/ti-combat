@@ -8,7 +8,7 @@ describe('EIDOLON_MAXIMUM + WAYLAY', () => {
       mode: 'SPACE',
       attacker: {
         faction: 'NAAZ_ROKHA_ALLIANCE',
-        units: { CRUISER: 1, MECH: 1, FIGHTER: 1 },
+        units: { CRUISER: 1, MECH: 1 },
         abilities: { EIDOLON_MAXIMUM: true },
       },
       defender: {
@@ -19,7 +19,7 @@ describe('EIDOLON_MAXIMUM + WAYLAY', () => {
     })
 
     // Advance past AFB where Waylay makes AFB target all ships
-    t.advanceTo('SPACE_COMBAT', undefined, { attacker: 2 })
+    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL', { attacker: 3 })
 
     // Fighter and Cruiser can be hit, but Mech should survive
     expect(t.attacker.units.MECH).toHaveLength(1)

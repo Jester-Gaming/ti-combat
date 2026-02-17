@@ -37,22 +37,39 @@ export const eidolonMaximum: Ability = {
       },
     },
     {
-      // Restore MECH to groundForces after unit ability phases
-      // (bombardment/SCD) are done, before ground combat participation
-      timing: 'START_OF_COMBAT',
+      // Eidolon Maximum is immune to SCO/AFB — if an ability (e.g. Waylay)
+      // expands targets to include MECH, remove it. Uses isCallable to
+      // defer until after the expanding ability fires (alternating resolution).
+      timing: 'BEFORE_UNIT_ABILITY_ROLL',
+      context: ['AFB', 'SPACE_CANNON_OFFENSE'],
+      isCallable: (_params, ctx) => {
+        const settings = ctx.api.own.getAbilityConfig('SETTINGS')
+        const afb =
+          (settings?.validTargetsAntiFighterBarrage as UnitType[]) ?? []
+        const sco =
+          (settings?.validTargetsSpaceCannonOffense as UnitType[]) ?? []
+        return afb.includes('MECH') || sco.includes('MECH')
+      },
       call: ctx => {
         ctx.api.own.updateAbilityConfig('SETTINGS', {
-          groundForces: (current: UnitType[]) =>
-            current.includes('MECH') ? current : [...current, 'MECH'],
+          validTargetsAntiFighterBarrage: (current: UnitType[]) =>
+            current.filter(u => u !== 'MECH'),
+          validTargetsSpaceCannonOffense: (current: UnitType[]) =>
+            current.filter(u => u !== 'MECH'),
         })
       },
     },
     {
       timing: 'START_OF_COMBAT_ROUND',
-      isCallable: (_params, ctx) => {
-        return ctx.api.own.getUnits('MECH').some(m => m.isDamaged)
-      },
       call: ctx => {
+        // Restore MECH to groundForces for ground combat participation
+        // (bombardment/SCD are done by this point)
+        ctx.api.own.updateAbilityConfig('SETTINGS', {
+          groundForces: (current: UnitType[]) =>
+            current.includes('MECH') ? current : [...current, 'MECH'],
+        })
+
+        // Repair damaged mechs at start of each round
         const mechs = ctx.api.own.getUnits('MECH')
         for (const mech of mechs) {
           if (mech.isDamaged) {
