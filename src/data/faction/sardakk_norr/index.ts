@@ -1,6 +1,7 @@
 import sardakkNorrIcon from '@/assets/faction/sardakk_norr.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import { sardakkFlagshipAbility } from '@/data/faction/sardakk_norr/flagship-ability'
+import { ghomSekkus } from '@/data/faction/sardakk_norr/ghom-sekkus'
 import { tekklarLegion } from '@/data/faction/sardakk_norr/tekklar-legion'
 import { unrelenting } from '@/data/faction/sardakk_norr/unrelenting'
 import { valkyrieExoskeleton } from '@/data/faction/sardakk_norr/valkyrie-exoskeleton'
@@ -65,5 +66,6 @@ export const sardakk_norr: Faction = {
     faction: [unrelenting],
     technology: [valkyrieParticleWeave],
     promissory: [tekklarLegion],
+    commander: [ghomSekkus],
   },
 }

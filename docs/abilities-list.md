@@ -136,7 +136,7 @@
 - [x] **Valkyrie Particle Weave** (Faction Technology) — After making combat rolls during a round of ground combat, if your opponent produced 1 or more hits, you produce 1 additional hit.
 - [x] **C'morran N'orr** (Flagship) — Apply +1 to the result of each of your other ship's combat rolls in this system.
 - [x] **Valkyrie Exoskeleton** (Mech) — After this unit uses its Sustain Damage ability during ground combat, it produces 1 hit against your opponent's ground forces on this planet.
-- [ ] **G'hom Sek'kus** (Commander) — You can commit up to 1 ground force from each planet in the active system and each planet in adjacent systems that do not contain 1 of your command tokens.
+- [x] **G'hom Sek'kus** (Commander) — You can commit up to 1 ground force from each planet in the active system and each planet in adjacent systems that do not contain 1 of your command tokens.
 
 ### Titans of Ul
 
