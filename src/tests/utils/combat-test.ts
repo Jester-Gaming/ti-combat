@@ -1,4 +1,11 @@
-import type { CombatSide, FactionKey, Unit, UnitType } from '@/types'
+import type {
+  CombatSide,
+  FactionKey,
+  Unit,
+  UnitState,
+  UnitStats,
+  UnitType,
+} from '@/types'
 import { getFactionUnitConfig } from '@/utils/get-faction-unit-config'
 import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 
@@ -16,6 +23,7 @@ import type {
   SideStateData,
 } from '../../combat/combat-state/types'
 import type { LogEntry } from '../../combat/types'
+import { reconstructAllUnits } from '../../combat/utils/compact-units'
 
 // ============================================================================
 // CONFIG TYPES
@@ -44,46 +52,48 @@ export type HitsSpec = number | { attacker?: number; defender?: number }
 // UNIT CREATION HELPERS
 // ============================================================================
 
-/** Create Unit[] from a faction's unit definitions */
-function createUnitsFromConfig(
-  faction: FactionKey,
-  unitType: UnitType,
-  count: number,
-  upgraded: boolean,
-): Unit[] {
-  const factionConfig = getFactionUnitConfig(faction)
-  const def = factionConfig[unitType]
-  if (!def?.BASE) return []
-
-  let stats: Unit = { ...def.BASE }
-  if (upgraded && def.UPGRADED) {
-    stats = { ...stats, ...def.UPGRADED }
-  }
-
-  return Array.from({ length: count }, () => ({ ...stats }))
-}
-
-/** Build SideStateData from a SideConfig */
+/** Build SideStateData from a SideConfig (compact format) */
 function buildSideState(config: SideConfig): SideStateData {
   const upgradedSet = new Set(config.upgrades ?? [])
-  const units: Partial<Record<UnitType, Unit[]>> = {}
+  const units: Record<string, number> = {}
+  const unitState: Record<string, UnitState[]> = {}
+  const unitStats: Record<string, UnitStats> = {}
+
+  const factionConfig = getFactionUnitConfig(config.faction)
 
   for (const [type, count] of Object.entries(config.units)) {
     const unitType = type as UnitType
     if (!count || count <= 0) continue
+
+    const def = factionConfig[unitType]
+    if (!def?.BASE) continue
+
     const upgraded = upgradedSet.has(unitType)
-    units[unitType] = createUnitsFromConfig(
-      config.faction,
-      unitType,
-      count,
-      upgraded,
-    )
+    let stats: UnitStats = { ...def.BASE }
+    if (upgraded && def.UPGRADED) {
+      stats = {
+        ...stats,
+        ...def.UPGRADED,
+        UNIT_ABILITIES: {
+          ...stats.UNIT_ABILITIES,
+          ...def.UPGRADED.UNIT_ABILITIES,
+        },
+      }
+    }
+
+    units[unitType] = count
+    unitState[unitType] = []
+    unitStats[unitType] = stats
   }
 
   return {
     faction: config.faction,
     units,
-    unitStats: buildUnitStatsMap(config.faction, upgradedSet),
+    unitState,
+    unitStats: {
+      ...buildUnitStatsMap(config.faction, upgradedSet),
+      ...unitStats,
+    },
     hitPools: [],
   }
 }
@@ -116,6 +126,20 @@ function buildAbilitiesConfig(
 }
 
 // ============================================================================
+// SIDE VIEW (reconstructs units for test assertions)
+// ============================================================================
+
+type SideView = Omit<SideStateData, 'units' | 'unitState' | 'unitStats'> & {
+  units: Partial<Record<UnitType, Unit[]>>
+}
+
+function buildSideView(data: SideStateData): SideView {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { unitState, unitStats, units, ...rest } = data
+  return { ...rest, units: reconstructAllUnits(data) }
+}
+
+// ============================================================================
 // COMBAT TEST CLASS
 // ============================================================================
 
@@ -134,12 +158,12 @@ export class CombatTest {
     return this._state
   }
 
-  get attacker(): SideStateData {
-    return this._state.attacker
+  get attacker(): SideView {
+    return buildSideView(this._state.attacker)
   }
 
-  get defender(): SideStateData {
-    return this._state.defender
+  get defender(): SideView {
+    return buildSideView(this._state.defender)
   }
 
   get log(): LogEntry[] {

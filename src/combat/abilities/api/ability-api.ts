@@ -1,3 +1,5 @@
+import { getSettingsValidTargets } from '@/combat/combat-side-state/utils/get-settings-valid-targets'
+import { UNIT_LIMITS } from '@/constants/units'
 import type {
   CombatSide,
   Unit,
@@ -5,15 +7,7 @@ import type {
   UnitState,
   UnitType,
 } from '@/types'
-
-/** Identifies the unit a unit-ability is attached to */
-export interface UnitAbilitySource {
-  unitType: UnitType
-  unitIndex: number
-}
-
-import { getSettingsValidTargets } from '@/combat/combat-side-state/utils/get-settings-valid-targets'
-import { UNIT_LIMITS } from '@/constants/units'
+import { UNIT_STATE_KEYS } from '@/types'
 
 import { getOpponentSide } from '../../combat-side-state/combat-side-state'
 import type {
@@ -23,6 +17,15 @@ import type {
   SideStateData,
   UnitAbilityRestrictions,
 } from '../../combat-state/types'
+import {
+  clearReconstructCache,
+  ensureUnitState,
+  getUnitLocator,
+  reconstructAllUnits,
+  reconstructUnitsForType,
+  resolveGlobalIndex,
+  totalCountForType,
+} from '../../utils/compact-units'
 import {
   getVariantDisplayName,
   makeVariantId,
@@ -47,8 +50,7 @@ function findUnitInSide(
   unitType: UnitType,
   predicate: Partial<UnitState>,
 ): { unit: Unit; index: number } | undefined {
-  const units = sideState.units[unitType]
-  if (!units) return undefined
+  const units = reconstructUnitsForType(sideState, unitType)
 
   const index = units.findIndex(unit =>
     Object.entries(predicate).every(
@@ -67,13 +69,13 @@ function findUnitByPriorityInSide(
   for (const variantId of priority) {
     const { type } = parseVariantId(variantId)
     if (participatingTypes && !participatingTypes.has(type)) continue
-    const units = sideState.units[type]
-    if (!units) continue
+    const count = sideState.units[variantId]
+    if (!count || count <= 0) continue
 
-    for (let i = 0; i < units.length; i++) {
-      if (unitMatchesVariant(units[i], variantId)) {
-        return units[i]
-      }
+    // Use cached reconstruction so the returned unit has a locator tag
+    const units = reconstructUnitsForType(sideState, type)
+    for (const unit of units) {
+      if (unitMatchesVariant(unit, variantId)) return unit
     }
   }
   return undefined
@@ -84,10 +86,13 @@ function countUnitsInSide(
   filter?: ReadonlySet<UnitType>,
 ): number {
   let total = 0
-  for (const [type, units] of Object.entries(sideState.units)) {
-    if (!units) continue
-    if (filter && !filter.has(type as UnitType)) continue
-    total += units.length
+  for (const [key, count] of Object.entries(sideState.units)) {
+    if (count <= 0) continue
+    if (filter) {
+      const { type } = parseVariantId(key)
+      if (!filter.has(type)) continue
+    }
+    total += count
   }
   return total
 }
@@ -171,9 +176,13 @@ function getParticipatingUnitTypesForSide(
   const mode = combatModeOverride ?? state.combatMode
   if (!settings) {
     const sideState = state[side]
-    return (Object.keys(sideState.units) as UnitType[]).filter(
-      t => (sideState.units[t]?.length ?? 0) > 0,
-    )
+    const types = new Set<UnitType>()
+    for (const key of Object.keys(sideState.units)) {
+      if (sideState.units[key] <= 0) continue
+      const { type } = parseVariantId(key)
+      types.add(type)
+    }
+    return [...types]
   }
   return mode === 'GROUND'
     ? ((settings.groundCombatParticipating as UnitType[]) ?? [])
@@ -187,9 +196,14 @@ function getAllUnitTypesForSide(
 ): UnitType[] {
   const settings = state.abilities[side]['SETTINGS']
   if (!settings) {
-    return (Object.keys(state[side].units) as UnitType[]).filter(
-      t => (state[side].units[t]?.length ?? 0) > 0,
-    )
+    const sideState = state[side]
+    const types = new Set<UnitType>()
+    for (const key of Object.keys(sideState.units)) {
+      if (sideState.units[key] <= 0) continue
+      const { type } = parseVariantId(key)
+      types.add(type)
+    }
+    return [...types]
   }
   const mode = combatModeOverride ?? state.combatMode
   const participating =
@@ -282,14 +296,13 @@ function buildSideReadApi(
 
     getUnits(unitType?: UnitType) {
       if (unitType !== undefined) {
-        return sideState.units[unitType] ?? []
+        return reconstructUnitsForType(sideState, unitType)
       }
-      return sideState.units
+      return reconstructAllUnits(sideState)
     },
 
     hasUnit(unitType: UnitType) {
-      const units = sideState.units[unitType]
-      return !!units && units.length > 0
+      return totalCountForType(sideState.units, unitType) > 0
     },
 
     countUnits(filter?: ReadonlySet<UnitType>) {
@@ -345,7 +358,7 @@ function buildSideReadApi(
     },
 
     getUnitStats(unitType: UnitType) {
-      return sideState.unitStats?.[unitType]
+      return sideState.unitStats[unitType]
     },
 
     isUnitAbilityLost(ability: UnitAbility, unitType: UnitType) {
@@ -391,99 +404,177 @@ export function buildApi(
       index?: number,
     ): void {
       const sideState = draft[side]
+      clearReconstructCache(sideState)
 
       if (Array.isArray(unitTypeOrTypesOrUnit)) {
         // destroyUnit(unitTypes[]) — destroy first of each type
         for (const unitType of unitTypeOrTypesOrUnit) {
-          const units = sideState.units[unitType]
-          if (units && units.length > 0) {
-            units.splice(0, 1)
-            if (units.length === 0) {
-              delete sideState.units[unitType]
+          // Find first variant key with count > 0 for this base type
+          for (const key of Object.keys(sideState.units)) {
+            const { type } = parseVariantId(key)
+            if (type !== unitType) continue
+            if (sideState.units[key] <= 0) continue
+            sideState.units[key]--
+            if (sideState.units[key] <= 0) {
+              delete sideState.units[key]
+              delete sideState.unitState[key]
+            } else {
+              const stateArr = sideState.unitState[key]
+              if (stateArr && stateArr.length > sideState.units[key]) {
+                stateArr.splice(0, 1)
+              }
             }
+            break
           }
         }
         return
       }
 
       if (typeof unitTypeOrTypesOrUnit !== 'string') {
-        // destroyUnit(unit) — by unit reference
-        for (const [type, units] of Object.entries(sideState.units)) {
-          if (!units) continue
-          const idx = units.indexOf(unitTypeOrTypesOrUnit)
-          if (idx !== -1) {
-            units.splice(idx, 1)
-            if (units.length === 0) {
-              delete sideState.units[type as UnitType]
+        // destroyUnit(unit) — by unit reference, use locator
+        const locator = getUnitLocator(unitTypeOrTypesOrUnit)
+        if (locator) {
+          const { key, index: subIndex } = locator
+          if (sideState.units[key] && sideState.units[key] > 0) {
+            sideState.units[key]--
+            if (sideState.units[key] <= 0) {
+              delete sideState.units[key]
+              delete sideState.unitState[key]
+            } else {
+              const stateArr = sideState.unitState[key]
+              if (stateArr && stateArr.length > 0) {
+                stateArr.splice(Math.min(subIndex, stateArr.length - 1), 1)
+                if (stateArr.length > sideState.units[key]) {
+                  stateArr.length = sideState.units[key]
+                }
+              }
             }
-            return
+          }
+        } else {
+          // Fallback: search by unit reference in reconstructed units
+          for (const key of Object.keys(sideState.units)) {
+            const { type } = parseVariantId(key)
+            const units = reconstructUnitsForType(sideState, type)
+            const idx = units.indexOf(unitTypeOrTypesOrUnit)
+            if (idx !== -1) {
+              const loc = getUnitLocator(units[idx])
+              if (loc) {
+                sideState.units[loc.key]--
+                if (sideState.units[loc.key] <= 0) {
+                  delete sideState.units[loc.key]
+                  delete sideState.unitState[loc.key]
+                }
+              }
+              return
+            }
           }
         }
         return
       }
 
+      // destroyUnit(unitType, index?) — by type + optional index
       const unitType = unitTypeOrTypesOrUnit
-      const units = sideState.units[unitType]
-      if (!units) return
+      const globalIdx = index ?? 0
+      const { key, subIndex } = resolveGlobalIndex(
+        sideState,
+        unitType,
+        globalIdx,
+      )
+      if (!sideState.units[key] || sideState.units[key] <= 0) return
 
-      const idx = index ?? 0
-      if (idx < 0 || idx >= units.length) return
-
-      units.splice(idx, 1)
-      if (units.length === 0) {
-        delete sideState.units[unitType]
+      sideState.units[key]--
+      if (sideState.units[key] <= 0) {
+        delete sideState.units[key]
+        delete sideState.unitState[key]
+      } else {
+        const stateArr = sideState.unitState[key]
+        if (stateArr && stateArr.length > 0) {
+          stateArr.splice(Math.min(subIndex, stateArr.length - 1), 1)
+          if (stateArr.length > sideState.units[key]) {
+            stateArr.length = sideState.units[key]
+          }
+        }
       }
     },
 
     removeUnit(unitTypeOrUnit: UnitType | Unit, index?: number): void {
       const sideState = draft[side]
+      clearReconstructCache(sideState)
       if (!sideState._removedUnits) {
         sideState._removedUnits = []
       }
 
       if (typeof unitTypeOrUnit !== 'string') {
         // removeUnit(unit) — by unit reference
-        for (const [type, units] of Object.entries(sideState.units)) {
-          if (!units) continue
-          const idx = units.indexOf(unitTypeOrUnit)
-          if (idx !== -1) {
+        const locator = getUnitLocator(unitTypeOrUnit)
+        if (locator) {
+          const { key, index: subIndex } = locator
+          const { type } = parseVariantId(key)
+          const stats = sideState.unitStats[key]
+          if (stats && sideState.units[key] && sideState.units[key] > 0) {
             sideState._removedUnits.push({
               type: type as UnitType,
-              unit: { ...unitTypeOrUnit },
+              variantKey: key,
+              stats: { ...stats },
             })
-            units.splice(idx, 1)
-            if (units.length === 0) {
-              delete sideState.units[type as UnitType]
+            sideState.units[key]--
+            if (sideState.units[key] <= 0) {
+              delete sideState.units[key]
+              delete sideState.unitState[key]
+            } else {
+              const stateArr = sideState.unitState[key]
+              if (stateArr && stateArr.length > 0) {
+                stateArr.splice(Math.min(subIndex, stateArr.length - 1), 1)
+                if (stateArr.length > sideState.units[key]) {
+                  stateArr.length = sideState.units[key]
+                }
+              }
             }
-            return
           }
         }
         return
       }
 
       const unitType = unitTypeOrUnit
-      const units = sideState.units[unitType]
-      if (!units) return
+      const globalIdx = index ?? 0
+      const { key, subIndex } = resolveGlobalIndex(
+        sideState,
+        unitType,
+        globalIdx,
+      )
+      if (!sideState.units[key] || sideState.units[key] <= 0) return
 
-      const idx = index ?? 0
-      if (idx < 0 || idx >= units.length) return
-
-      sideState._removedUnits.push({
-        type: unitType,
-        unit: { ...units[idx] },
-      })
-      units.splice(idx, 1)
-      if (units.length === 0) {
-        delete sideState.units[unitType]
+      const { type } = parseVariantId(key)
+      const stats = sideState.unitStats[key]
+      if (stats) {
+        sideState._removedUnits.push({
+          type: type as UnitType,
+          variantKey: key,
+          stats: { ...stats },
+        })
+      }
+      sideState.units[key]--
+      if (sideState.units[key] <= 0) {
+        delete sideState.units[key]
+        delete sideState.unitState[key]
+      } else {
+        const stateArr = sideState.unitState[key]
+        if (stateArr && stateArr.length > 0) {
+          stateArr.splice(Math.min(subIndex, stateArr.length - 1), 1)
+          if (stateArr.length > sideState.units[key]) {
+            stateArr.length = sideState.units[key]
+          }
+        }
       }
     },
 
     addUnit(unitsToAdd: Partial<Record<UnitType, number>>) {
       const sideState = draft[side]
+      clearReconstructCache(sideState)
       for (const [type, count] of Object.entries(unitsToAdd)) {
         const unitType = type as UnitType
         if (!count || count <= 0) continue
-        const existing = sideState.units[unitType]?.length ?? 0
+        const existing = totalCountForType(sideState.units, unitType)
         const limit = UNIT_LIMITS[unitType]
         if (existing + count > limit) {
           console.warn(
@@ -492,48 +583,151 @@ export function buildApi(
         }
         const allowed = Math.min(count, limit - existing)
         if (allowed <= 0) continue
-        if (!sideState.units[unitType]) {
-          sideState.units[unitType] = []
+
+        sideState.units[unitType] = (sideState.units[unitType] ?? 0) + allowed
+        if (!sideState.unitState[unitType]) {
+          sideState.unitState[unitType] = []
         }
-        const template = sideState.unitStats?.[unitType]
-        for (let i = 0; i < allowed; i++) {
-          sideState.units[unitType]!.push({ ...template })
+        if (!sideState.unitStats[unitType]) {
+          // Shouldn't happen, but fallback
+          sideState.unitStats[unitType] = {}
         }
       }
     },
 
     modifyUnit(
-      unitTypeOrUnit: UnitType | Unit,
+      unitTypeOrUnit: UnitType | string | Unit,
       indexOrUpdates: number | Partial<Unit>,
       maybeUpdates?: Partial<Unit>,
     ): void {
       const sideState = draft[side]
+      clearReconstructCache(sideState)
 
       if (typeof unitTypeOrUnit === 'string') {
-        const unitType = unitTypeOrUnit
-        const units = sideState.units[unitType]
+        const key = unitTypeOrUnit
 
         if (typeof indexOrUpdates === 'number') {
-          // modifyUnit(unitType, index, updates)
-          if (!units) return
-          const unit = units[indexOrUpdates]
-          if (unit && maybeUpdates) {
-            Object.assign(unit, maybeUpdates)
+          // modifyUnit(unitType|variantKey, index, updates)
+          const updates = maybeUpdates!
+          const { type } = parseVariantId(key)
+          const isVariantKey = key.includes(':')
+
+          let resolvedKey: string
+          let subIndex: number
+
+          if (isVariantKey) {
+            resolvedKey = key
+            subIndex = indexOrUpdates
+          } else {
+            const resolved = resolveGlobalIndex(sideState, type, indexOrUpdates)
+            resolvedKey = resolved.key
+            subIndex = resolved.subIndex
           }
-        } else {
-          // modifyUnit(unitType, updates) — all of type + update template
-          if (units) {
-            for (const unit of units) {
-              Object.assign(unit, indexOrUpdates)
+
+          // Split updates: state keys go to unitState, stats keys go to unitStats
+          const stateUpdates: Partial<UnitState> = {}
+          const statsUpdates: Partial<Unit> = {}
+          let hasStateUpdates = false
+          let hasStatsUpdates = false
+
+          for (const [k, v] of Object.entries(updates)) {
+            if (UNIT_STATE_KEYS.has(k)) {
+              ;(stateUpdates as Record<string, unknown>)[k] = v
+              hasStateUpdates = true
+            } else {
+              ;(statsUpdates as Record<string, unknown>)[k] = v
+              hasStatsUpdates = true
             }
           }
-          if (sideState.unitStats?.[unitType]) {
-            Object.assign(sideState.unitStats[unitType]!, indexOrUpdates)
+
+          if (hasStateUpdates) {
+            const us = ensureUnitState(sideState, resolvedKey, subIndex)
+            Object.assign(us, stateUpdates)
+          }
+
+          if (hasStatsUpdates) {
+            if (sideState.unitStats[resolvedKey]) {
+              Object.assign(sideState.unitStats[resolvedKey], statsUpdates)
+            }
+          }
+        } else {
+          // modifyUnit(unitType|variantKey, updates) — all of type + update template
+          const updates = indexOrUpdates as Partial<Unit>
+          const { type } = parseVariantId(key)
+          const isVariantKey = key.includes(':')
+
+          if (isVariantKey) {
+            // Update just this variant's stats
+            if (sideState.unitStats[key]) {
+              Object.assign(sideState.unitStats[key], updates)
+            }
+            // Update per-unit state for all units of this variant
+            const count = sideState.units[key] ?? 0
+            for (let i = 0; i < count; i++) {
+              const stateUpdates: Partial<UnitState> = {}
+              let hasStateUpdates = false
+              for (const [k, v] of Object.entries(updates)) {
+                if (UNIT_STATE_KEYS.has(k)) {
+                  ;(stateUpdates as Record<string, unknown>)[k] = v
+                  hasStateUpdates = true
+                }
+              }
+              if (hasStateUpdates) {
+                const us = ensureUnitState(sideState, key, i)
+                Object.assign(us, stateUpdates)
+              }
+            }
+          } else {
+            // Update all variant keys of this base type
+            for (const vKey of Object.keys(sideState.units)) {
+              const { type: vType } = parseVariantId(vKey)
+              if (vType !== type) continue
+              if (sideState.unitStats[vKey]) {
+                Object.assign(sideState.unitStats[vKey], updates)
+              }
+              // Update per-unit state for all units of this variant
+              const count = sideState.units[vKey] ?? 0
+              for (let i = 0; i < count; i++) {
+                const stateUpdates: Partial<UnitState> = {}
+                let hasStateUpdates = false
+                for (const [k, v] of Object.entries(updates)) {
+                  if (UNIT_STATE_KEYS.has(k)) {
+                    ;(stateUpdates as Record<string, unknown>)[k] = v
+                    hasStateUpdates = true
+                  }
+                }
+                if (hasStateUpdates) {
+                  const us = ensureUnitState(sideState, vKey, i)
+                  Object.assign(us, stateUpdates)
+                }
+              }
+            }
+            // Also update the base unitStats template
+            if (sideState.unitStats[type]) {
+              Object.assign(sideState.unitStats[type], updates)
+            }
           }
         }
       } else {
         // modifyUnit(unit, updates) — unit ref from findUnit()
         const updates = indexOrUpdates as Partial<Unit>
+        const locator = getUnitLocator(unitTypeOrUnit)
+        if (locator) {
+          // Split state vs stats updates
+          for (const [k, v] of Object.entries(updates)) {
+            if (UNIT_STATE_KEYS.has(k)) {
+              const us = ensureUnitState(sideState, locator.key, locator.index)
+              ;(us as Record<string, unknown>)[k] = v
+            } else {
+              if (sideState.unitStats[locator.key]) {
+                ;(sideState.unitStats[locator.key] as Record<string, unknown>)[
+                  k
+                ] = v
+              }
+            }
+          }
+        }
+        // Also update the reconstructed object so callers see changes
         Object.assign(unitTypeOrUnit, updates)
       }
     },
@@ -616,28 +810,95 @@ export function buildApi(
     },
 
     addSubtype(variantId: string, subtype: string) {
-      const { type } = parseVariantId(variantId)
-      const units = draft[side].units[type]
-      if (!units) return
-      const unit = units.find(u => unitMatchesVariant(u, variantId))
-      if (!unit) return
-      const existing = unit.subtypes ?? []
-      if (!existing.includes(subtype)) {
-        unit.subtypes = [...existing, subtype].sort()
+      const sideState = draft[side]
+      clearReconstructCache(sideState)
+      const { type, subtypes: currentSubtypes } = parseVariantId(variantId)
+
+      // Find a matching key: variantId itself if it has count > 0,
+      // otherwise the base type
+      let sourceKey = variantId
+      if (!sideState.units[sourceKey] || sideState.units[sourceKey] <= 0) {
+        sourceKey = type
+      }
+      if (!sideState.units[sourceKey] || sideState.units[sourceKey] <= 0) return
+
+      // Compute new key with added subtype
+      const newSubtypes = [...currentSubtypes, subtype].sort()
+      const newKey = makeVariantId(type, newSubtypes)
+      if (newKey === sourceKey) return
+
+      // Transfer one unit from source to new key
+      sideState.units[sourceKey]--
+      const sourceState = sideState.unitState[sourceKey]
+      let transferredState: UnitState | undefined
+      if (sourceState && sourceState.length > 0) {
+        transferredState = sourceState.shift()
+      }
+      if (sideState.units[sourceKey] <= 0) {
+        delete sideState.units[sourceKey]
+        delete sideState.unitState[sourceKey]
+      }
+
+      // Add to new key
+      sideState.units[newKey] = (sideState.units[newKey] ?? 0) + 1
+      if (!sideState.unitState[newKey]) {
+        sideState.unitState[newKey] = []
+      }
+      if (transferredState) {
+        sideState.unitState[newKey].push(transferredState)
+      }
+
+      // Copy stats from source (or base type) to new key if not present
+      if (!sideState.unitStats[newKey]) {
+        sideState.unitStats[newKey] = {
+          ...(sideState.unitStats[sourceKey] ?? sideState.unitStats[type]),
+        }
       }
     },
 
     removeSubtype(variantId: string, subtype: string) {
+      const sideState = draft[side]
+      clearReconstructCache(sideState)
       const { type, subtypes: requiredSubtypes } = parseVariantId(variantId)
-      const units = draft[side].units[type]
-      if (!units) return
-      const unit = units.find(u => {
-        if (!u.subtypes?.includes(subtype)) return false
-        return requiredSubtypes.every(s => u.subtypes!.includes(s))
-      })
-      if (!unit) return
-      unit.subtypes = unit.subtypes!.filter(s => s !== subtype)
-      if (unit.subtypes.length === 0) delete unit.subtypes
+
+      // Find a variant key that has the subtype
+      let sourceKey: string | undefined
+      for (const key of Object.keys(sideState.units)) {
+        if (sideState.units[key] <= 0) continue
+        const { type: kType, subtypes: kSubs } = parseVariantId(key)
+        if (kType !== type) continue
+        if (!kSubs.includes(subtype)) continue
+        if (requiredSubtypes.every(s => kSubs.includes(s))) {
+          sourceKey = key
+          break
+        }
+      }
+      if (!sourceKey) return
+
+      const { subtypes: sourceSubs } = parseVariantId(sourceKey)
+      const newSubtypes = sourceSubs.filter(s => s !== subtype)
+      const newKey =
+        newSubtypes.length > 0 ? makeVariantId(type, newSubtypes) : type
+
+      // Transfer one unit
+      sideState.units[sourceKey]--
+      const sourceState = sideState.unitState[sourceKey]
+      let transferredState: UnitState | undefined
+      if (sourceState && sourceState.length > 0) {
+        transferredState = sourceState.shift()
+      }
+      if (sideState.units[sourceKey] <= 0) {
+        delete sideState.units[sourceKey]
+        delete sideState.unitState[sourceKey]
+      }
+
+      sideState.units[newKey] = (sideState.units[newKey] ?? 0) + 1
+      if (!sideState.unitState[newKey]) {
+        sideState.unitState[newKey] = []
+      }
+      if (transferredState) {
+        sideState.unitState[newKey].push(transferredState)
+      }
     },
 
     updateAbilityConfig(
@@ -680,7 +941,7 @@ export function buildApi(
 export function buildReadContext(
   side: CombatSide,
   state: Readonly<CombatStateData>,
-  unitSource?: UnitAbilitySource,
+  unitSource?: { unitType: UnitType; unitIndex: number },
   abilities?: readonly Ability[],
 ) {
   return {
@@ -693,7 +954,9 @@ export function buildReadContext(
       if (!unitSource) {
         throw new Error('getUnit() can only be called from unit abilities')
       }
-      return state[side].units[unitSource.unitType]![unitSource.unitIndex]
+      const sideState = state[side]
+      const units = reconstructUnitsForType(sideState, unitSource.unitType)
+      return units[unitSource.unitIndex]
     },
     getUnitType(): UnitType {
       if (!unitSource) {
@@ -743,7 +1006,7 @@ export function buildCallContext(
   draft: CombatStateData,
   abilityKey: string,
   log?: (...data: unknown[]) => void,
-  unitSource?: UnitAbilitySource,
+  unitSource?: { unitType: UnitType; unitIndex: number },
   triggerCallback?: (event: TriggerEvent) => void,
 ) {
   return {
@@ -762,7 +1025,9 @@ export function buildCallContext(
       if (!unitSource) {
         throw new Error('getUnit() can only be called from unit abilities')
       }
-      return draft[side].units[unitSource.unitType]![unitSource.unitIndex]
+      const sideState = draft[side]
+      const units = reconstructUnitsForType(sideState, unitSource.unitType)
+      return units[unitSource.unitIndex]
     },
     getUnitType(): UnitType {
       if (!unitSource) {

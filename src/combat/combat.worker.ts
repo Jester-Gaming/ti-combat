@@ -1,9 +1,5 @@
-import { UNIT_TYPES } from '@/constants/units'
 import type { FactionKey, UnitSelection, UnitType } from '@/types'
-import {
-  buildUnitStatsMap,
-  getSimulationUnits,
-} from '@/utils/get-simulation-units'
+import { getSimulationUnits } from '@/utils/get-simulation-units'
 
 import { CombatEngine } from './combat-engine'
 import { CombatState } from './combat-state/combat-state'
@@ -28,13 +24,17 @@ function buildSideState(
   faction: FactionKey,
   selections: Record<UnitType, UnitSelection>,
 ): SideStateData {
-  const upgrades = new Set(UNIT_TYPES.filter(t => selections[t].upgraded))
+  const { units, unitState, unitStats } = getSimulationUnits(
+    faction,
+    selections,
+  )
   return {
     faction,
-    units: getSimulationUnits(faction, selections),
+    units,
+    unitState,
+    unitStats,
     hitPools: [],
     unitSelections: selections,
-    unitStats: buildUnitStatsMap(faction, upgrades),
   }
 }
 

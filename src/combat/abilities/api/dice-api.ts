@@ -2,7 +2,17 @@ import { isDraft, original } from 'immer'
 
 import type { DiceGroup, SourcedDiceGroup, Unit, UnitType } from '@/types'
 
+import { getUnitLocator } from '../../utils/compact-units'
 import type { DiceApi, DicePool, DiceReadApi } from '../types'
+
+/** Match unit by UnitLocator tag, falling back to reference equality */
+function unitMatches(a: Unit, b: Unit): boolean {
+  if (a === b) return true
+  const la = getUnitLocator(a)
+  const lb = getUnitLocator(b)
+  if (la && lb) return la.key === lb.key && la.index === lb.index
+  return false
+}
 
 function countPool(pool: DicePool): number {
   let total = 0
@@ -43,20 +53,18 @@ export function buildDiceApi(pool: DicePool): DiceApi {
     isEmpty: () => countPool(data) === 0,
 
     modifyHitValue: (amount: number, filterOrSourceOrUnit?: unknown) => {
-      // Overload: (amount, Unit) — match by reference equality
+      // Overload: (amount, Unit) — match by locator tag (or reference)
       if (
         typeof filterOrSourceOrUnit === 'object' &&
         filterOrSourceOrUnit !== null
       ) {
-        // Unwrap Immer draft so the reference matches the original
-        // stored in SourcedDiceGroup by collectDice
         const targetUnit = isDraft(filterOrSourceOrUnit)
-          ? original(filterOrSourceOrUnit)
-          : filterOrSourceOrUnit
+          ? original(filterOrSourceOrUnit)!
+          : (filterOrSourceOrUnit as Unit)
         for (const [, dice] of Object.entries(data)) {
           if (!dice) continue
           for (let i = 0; i < dice.length; i++) {
-            if (dice[i][2] === targetUnit) {
+            if (unitMatches(dice[i][2], targetUnit)) {
               dice[i] = [
                 Math.max(1, dice[i][0] + amount),
                 dice[i][1],
@@ -92,18 +100,18 @@ export function buildDiceApi(pool: DicePool): DiceApi {
     ) => {
       if (countPool(data) === 0) return
 
-      // Overload: (count, Unit) — match by reference equality
+      // Overload: (count, Unit) — match by locator tag (or reference)
       if (
         typeof strategyOrSourceOrUnit === 'object' &&
         strategyOrSourceOrUnit !== null
       ) {
         const targetUnit = isDraft(strategyOrSourceOrUnit)
-          ? original(strategyOrSourceOrUnit)
-          : strategyOrSourceOrUnit
+          ? original(strategyOrSourceOrUnit)!
+          : (strategyOrSourceOrUnit as Unit)
         for (const [, dice] of Object.entries(data)) {
           if (!dice) continue
           for (let i = 0; i < dice.length; i++) {
-            if (dice[i][2] === targetUnit) {
+            if (unitMatches(dice[i][2], targetUnit)) {
               dice[i] = [dice[i][0], dice[i][1] + count, dice[i][2]]
               return
             }

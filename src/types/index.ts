@@ -15,3 +15,4 @@ export type {
   UnitStats,
 } from './unit'
 export type { UnitType } from './unit'
+export { UNIT_STATE_KEYS } from './unit'

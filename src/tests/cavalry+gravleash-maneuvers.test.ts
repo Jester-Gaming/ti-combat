@@ -23,7 +23,9 @@ describe('CAVALRY + GRAVLEASH_MANEUVERS', () => {
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
 
-    expect(t.attacker.units.CRUISER![0].subtypes).toContain('Cavalry')
+    expect(
+      t.attacker.units.CRUISER!.some(u => u.subtypes?.includes('Cavalry')),
+    ).toBe(true)
 
     const pool = t.dicePool()!
     expect(pool.attacker).toContainDice('CRUISER', [4, 1])

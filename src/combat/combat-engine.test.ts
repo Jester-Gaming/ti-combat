@@ -1,13 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import baseUnits from '@/data/base-units'
-import type {
-  FactionKey,
-  Unit,
-  UnitDefinition,
-  UnitStats,
-  UnitType,
-} from '@/types'
+import type { FactionKey, UnitDefinition, UnitStats, UnitType } from '@/types'
 
 import { CombatEngine } from './combat-engine'
 import { CombatState } from './combat-state/combat-state'
@@ -50,37 +44,30 @@ function getUnitDataStats(
 }
 
 /**
- * Create unit arrays from stats and counts.
+ * Create SideStateData in compact format.
  */
-function createUnits(
-  stats: Record<UnitType, UnitStats>,
+function createSideState(
   counts: Partial<Record<UnitType, number>>,
-): Partial<Record<UnitType, Unit[]>> {
-  const units: Partial<Record<UnitType, Unit[]>> = {}
+  customStats?: Partial<Record<UnitType, UnitStats>>,
+  defaultStats?: Record<UnitType, UnitStats>,
+): SideStateData {
+  const allStats = defaultStats ?? getUnitDataStats()
+  const units: Record<string, number> = {}
+  const unitStats: Record<string, UnitStats> = {}
 
   for (const [type, count] of Object.entries(counts)) {
     if (count && count > 0) {
-      const unitStats = stats[type as UnitType]
-      units[type as UnitType] = Array.from({ length: count }, () => ({
-        COMBAT: unitStats?.COMBAT,
-        UNIT_ABILITIES: unitStats?.UNIT_ABILITIES,
-        ABILITIES: unitStats?.ABILITIES,
-      }))
+      const unitType = type as UnitType
+      units[unitType] = count
+      unitStats[unitType] = customStats?.[unitType] ?? allStats[unitType]
     }
   }
 
-  return units
-}
-
-/**
- * Create a SideStateData from units.
- */
-function createSideState(
-  units: Partial<Record<UnitType, Unit[]>>,
-): SideStateData {
   return {
     faction: TEST_FACTION,
     units,
+    unitState: {},
+    unitStats,
     hitPools: [],
   }
 }
@@ -111,15 +98,15 @@ function summarizeOutcomes(outcomes: CombatOutcome[]): {
 }
 
 describe('CombatEngine', () => {
-  const units = getUnitDataStats()
+  const stats = getUnitDataStats()
 
   describe('simulate', () => {
     it('2 cruisers vs 3 cruisers', () => {
       const engine = new CombatEngine()
 
       const state = CombatState.forSimulation(
-        createSideState(createUnits(units, { CRUISER: 2 })),
-        createSideState(createUnits(units, { CRUISER: 3 })),
+        createSideState({ CRUISER: 2 }, undefined, stats),
+        createSideState({ CRUISER: 3 }, undefined, stats),
         'SPACE',
       )
 
@@ -142,8 +129,8 @@ describe('CombatEngine', () => {
       const engine = new CombatEngine()
 
       const state = CombatState.forSimulation(
-        createSideState(createUnits(units, { CRUISER: 2 })),
-        createSideState(createUnits(units, { DREADNOUGHT: 1, CRUISER: 1 })),
+        createSideState({ CRUISER: 2 }, undefined, stats),
+        createSideState({ DREADNOUGHT: 1, CRUISER: 1 }, undefined, stats),
         'SPACE',
       )
 
@@ -167,8 +154,8 @@ describe('CombatEngine', () => {
       const defenderStats = getUnitDataStats({ DESTROYER: true })
 
       const state = CombatState.forSimulation(
-        createSideState(createUnits(units, { FIGHTER: 2 })),
-        createSideState(createUnits(defenderStats, { DESTROYER: 1 })),
+        createSideState({ FIGHTER: 2 }, undefined, stats),
+        createSideState({ DESTROYER: 1 }, undefined, defenderStats),
         'SPACE',
       )
 
@@ -192,8 +179,8 @@ describe('CombatEngine', () => {
       const combatMode: CombatMode = 'GROUND'
 
       const state = CombatState.forSimulation(
-        createSideState(createUnits(units, { INFANTRY: 1 })),
-        createSideState(createUnits(units, { INFANTRY: 1 })),
+        createSideState({ INFANTRY: 1 }, undefined, stats),
+        createSideState({ INFANTRY: 1 }, undefined, stats),
         combatMode,
       )
 
@@ -218,8 +205,8 @@ describe('CombatEngine', () => {
       const combatMode: CombatMode = 'GROUND'
 
       const state = CombatState.forSimulation(
-        createSideState(createUnits(units, { INFANTRY: 2 })),
-        createSideState(createUnits(units, { INFANTRY: 1 })),
+        createSideState({ INFANTRY: 2 }, undefined, stats),
+        createSideState({ INFANTRY: 1 }, undefined, stats),
         combatMode,
       )
 
@@ -242,22 +229,17 @@ describe('CombatEngine', () => {
       const engine = new CombatEngine()
       const combatMode: CombatMode = 'GROUND'
 
-      // Create custom units with guaranteed bombardment hits
-      // Bombardment [1, 10] = 10 dice hitting on 1+ (100% hit rate per die)
-      const dreadnoughtWithGuaranteedBombardment: Partial<
-        Record<UnitType, Unit[]>
-      > = {
-        DREADNOUGHT: [
-          {
-            COMBAT: [5, 1],
-            UNIT_ABILITIES: { BOMBARDMENT: [1, 10] }, // 10 dice at 1+ (guaranteed 10 hits)
-          },
-        ],
-      }
-
       const state = CombatState.forSimulation(
-        createSideState(dreadnoughtWithGuaranteedBombardment),
-        createSideState(createUnits(units, { INFANTRY: 1 })),
+        createSideState(
+          { DREADNOUGHT: 1 },
+          {
+            DREADNOUGHT: {
+              COMBAT: [5, 1],
+              UNIT_ABILITIES: { BOMBARDMENT: [1, 10] },
+            },
+          },
+        ),
+        createSideState({ INFANTRY: 1 }, undefined, stats),
         combatMode,
       )
 
@@ -272,26 +254,18 @@ describe('CombatEngine', () => {
       const engine = new CombatEngine()
       const combatMode: CombatMode = 'GROUND'
 
-      // Dreadnought with weak bombardment (1 die hitting on 5+ = 60%)
-      const dreadnoughtWithWeakBombardment: Partial<Record<UnitType, Unit[]>> =
-        {
-          DREADNOUGHT: [
-            {
-              COMBAT: [5, 1],
-              UNIT_ABILITIES: { BOMBARDMENT: [5, 1] }, // 1 die at 5+ (60% hit)
-            },
-          ],
-          INFANTRY: [
-            {
-              COMBAT: [8, 1],
-              UNIT_ABILITIES: {},
-            },
-          ],
-        }
-
       const state = CombatState.forSimulation(
-        createSideState(dreadnoughtWithWeakBombardment),
-        createSideState(createUnits(units, { INFANTRY: 5 })),
+        createSideState(
+          { DREADNOUGHT: 1, INFANTRY: 1 },
+          {
+            DREADNOUGHT: {
+              COMBAT: [5, 1],
+              UNIT_ABILITIES: { BOMBARDMENT: [5, 1] },
+            },
+            INFANTRY: { COMBAT: [8, 1], UNIT_ABILITIES: {} },
+          },
+        ),
+        createSideState({ INFANTRY: 5 }, undefined, stats),
         combatMode,
       )
 
@@ -312,26 +286,18 @@ describe('CombatEngine', () => {
       const engine = new CombatEngine()
       const combatMode: CombatMode = 'GROUND'
 
-      // War Sun has BOMBARDMENT: [3, 3] = 3 dice hitting on 3+ (80% each)
-      // Against 1 Infantry, probability of at least 1 hit: 1 - 0.2^3 = 99.2%
-      const warSunUnits: Partial<Record<UnitType, Unit[]>> = {
-        WAR_SUN: [
-          {
-            COMBAT: [3, 3],
-            UNIT_ABILITIES: { BOMBARDMENT: [3, 3] },
-          },
-        ],
-        INFANTRY: [
-          {
-            COMBAT: [8, 1],
-            UNIT_ABILITIES: {},
-          },
-        ],
-      }
-
       const state = CombatState.forSimulation(
-        createSideState(warSunUnits),
-        createSideState(createUnits(units, { INFANTRY: 1 })),
+        createSideState(
+          { WAR_SUN: 1, INFANTRY: 1 },
+          {
+            WAR_SUN: {
+              COMBAT: [3, 3],
+              UNIT_ABILITIES: { BOMBARDMENT: [3, 3] },
+            },
+            INFANTRY: { COMBAT: [8, 1], UNIT_ABILITIES: {} },
+          },
+        ),
+        createSideState({ INFANTRY: 1 }, undefined, stats),
         combatMode,
       )
 
@@ -352,29 +318,18 @@ describe('CombatEngine', () => {
       const engine = new CombatEngine()
       const combatMode: CombatMode = 'GROUND'
 
-      // Simple ground combat with Dreadnought bombardment
-      const attackerUnits: Partial<Record<UnitType, Unit[]>> = {
-        DREADNOUGHT: [
-          {
-            COMBAT: [5, 1],
-            UNIT_ABILITIES: { BOMBARDMENT: [10, 1] }, // Weak bombardment (miss on 1-9)
-          },
-        ],
-        INFANTRY: [
-          {
-            COMBAT: [8, 1],
-            UNIT_ABILITIES: {},
-          },
-          {
-            COMBAT: [8, 1],
-            UNIT_ABILITIES: {},
-          },
-        ],
-      }
-
       const state = CombatState.forSimulation(
-        createSideState(attackerUnits),
-        createSideState(createUnits(units, { INFANTRY: 2 })),
+        createSideState(
+          { DREADNOUGHT: 1, INFANTRY: 2 },
+          {
+            DREADNOUGHT: {
+              COMBAT: [5, 1],
+              UNIT_ABILITIES: { BOMBARDMENT: [10, 1] },
+            },
+            INFANTRY: { COMBAT: [8, 1], UNIT_ABILITIES: {} },
+          },
+        ),
+        createSideState({ INFANTRY: 2 }, undefined, stats),
         combatMode,
       )
 

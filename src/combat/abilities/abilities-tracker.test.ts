@@ -1,9 +1,35 @@
 import { describe, expect, it } from 'vitest'
 
+import type { UnitStats } from '@/types'
+
 import { CombatState } from '../combat-state/combat-state'
-import type { CombatStateData } from '../combat-state/types'
+import type { CombatStateData, SideStateData } from '../combat-state/types'
 import { AbilitiesParams } from './abilities-params'
 import type { Ability, AbilityCallContext, OwnOpponentContext } from './types'
+
+/** Helper to build compact SideStateData from unit specs */
+function buildSide(
+  faction: SideStateData['faction'],
+  unitSpecs: Record<string, { count: number; stats: UnitStats }>,
+): SideStateData {
+  const units: Record<string, number> = {}
+  const unitStats: Record<string, UnitStats> = {}
+  for (const [key, spec] of Object.entries(unitSpecs)) {
+    units[key] = spec.count
+    unitStats[key] = spec.stats
+  }
+  return { faction, units, unitState: {}, unitStats, hitPools: [] }
+}
+
+const emptySide = (
+  faction: SideStateData['faction'] = 'FEDERATION_OF_SOL',
+): SideStateData => ({
+  faction,
+  units: {},
+  unitState: {},
+  unitStats: {},
+  hitPools: [],
+})
 
 describe('collectUnitAbilities', () => {
   it('should collect abilities from units on the field', () => {
@@ -16,25 +42,18 @@ describe('collectUnitAbilities', () => {
     }
 
     const state: CombatStateData = {
-      attacker: {
-        faction: 'SARDAKK_NORR',
-        units: {
-          FLAGSHIP: [
-            { COMBAT: [6, 2], ABILITIES: [mockAbility] },
-            { COMBAT: [6, 2], ABILITIES: [mockAbility] },
-          ],
+      attacker: buildSide('SARDAKK_NORR', {
+        FLAGSHIP: {
+          count: 2,
+          stats: {
+            COMBAT: [6, 2],
+            UNIT_ABILITIES: {},
+            ABILITIES: [mockAbility],
+          },
         },
-        hitPools: [],
-      },
-      defender: {
-        faction: 'FEDERATION_OF_SOL',
-        units: {},
-        hitPools: [],
-      },
-      abilities: {
-        attacker: {},
-        defender: {},
-      },
+      }),
+      defender: emptySide(),
+      abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
@@ -56,22 +75,11 @@ describe('collectUnitAbilities', () => {
 
   it('should return empty array when no units have abilities', () => {
     const state: CombatStateData = {
-      attacker: {
-        faction: 'SARDAKK_NORR',
-        units: {
-          CRUISER: [{ COMBAT: [7, 1] }],
-        },
-        hitPools: [],
-      },
-      defender: {
-        faction: 'FEDERATION_OF_SOL',
-        units: {},
-        hitPools: [],
-      },
-      abilities: {
-        attacker: {},
-        defender: {},
-      },
+      attacker: buildSide('SARDAKK_NORR', {
+        CRUISER: { count: 1, stats: { COMBAT: [7, 1], UNIT_ABILITIES: {} } },
+      }),
+      defender: emptySide(),
+      abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
@@ -98,22 +106,18 @@ describe('collectUnitAbilities', () => {
     }
 
     const state: CombatStateData = {
-      attacker: {
-        faction: 'SARDAKK_NORR',
-        units: {
-          FLAGSHIP: [{ COMBAT: [6, 2], ABILITIES: [ability1, ability2] }],
+      attacker: buildSide('SARDAKK_NORR', {
+        FLAGSHIP: {
+          count: 1,
+          stats: {
+            COMBAT: [6, 2],
+            UNIT_ABILITIES: {},
+            ABILITIES: [ability1, ability2],
+          },
         },
-        hitPools: [],
-      },
-      defender: {
-        faction: 'FEDERATION_OF_SOL',
-        units: {},
-        hitPools: [],
-      },
-      abilities: {
-        attacker: {},
-        defender: {},
-      },
+      }),
+      defender: emptySide(),
+      abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
@@ -145,25 +149,18 @@ describe('unit ability invocation', () => {
     }
 
     const state: CombatStateData = {
-      attacker: {
-        faction: 'SARDAKK_NORR',
-        units: {
-          FLAGSHIP: [
-            { COMBAT: [6, 2], ABILITIES: [mockAbility] },
-            { COMBAT: [6, 2], ABILITIES: [mockAbility] },
-          ],
+      attacker: buildSide('SARDAKK_NORR', {
+        FLAGSHIP: {
+          count: 2,
+          stats: {
+            COMBAT: [6, 2],
+            UNIT_ABILITIES: {},
+            ABILITIES: [mockAbility],
+          },
         },
-        hitPools: [],
-      },
-      defender: {
-        faction: 'FEDERATION_OF_SOL',
-        units: {},
-        hitPools: [],
-      },
-      abilities: {
-        attacker: {},
-        defender: {},
-      },
+      }),
+      defender: emptySide(),
+      abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
@@ -196,25 +193,18 @@ describe('unit ability invocation', () => {
     }
 
     const state: CombatStateData = {
-      attacker: {
-        faction: 'SARDAKK_NORR',
-        units: {
-          FLAGSHIP: [
-            { COMBAT: [6, 2], ABILITIES: [mockAbility] },
-            { COMBAT: [6, 2], ABILITIES: [mockAbility] },
-          ],
+      attacker: buildSide('SARDAKK_NORR', {
+        FLAGSHIP: {
+          count: 2,
+          stats: {
+            COMBAT: [6, 2],
+            UNIT_ABILITIES: {},
+            ABILITIES: [mockAbility],
+          },
         },
-        hitPools: [],
-      },
-      defender: {
-        faction: 'FEDERATION_OF_SOL',
-        units: {},
-        hitPools: [],
-      },
-      abilities: {
-        attacker: {},
-        defender: {},
-      },
+      }),
+      defender: emptySide(),
+      abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
@@ -271,30 +261,27 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
     }
 
     const state: CombatStateData = {
-      attacker: {
-        faction: 'SARDAKK_NORR',
-        units: {
-          CRUISER: [
-            {
-              COMBAT: [7, 1],
-              ABILITIES: [destroyAbility],
-            },
-          ],
+      attacker: buildSide('SARDAKK_NORR', {
+        CRUISER: {
+          count: 1,
+          stats: {
+            COMBAT: [7, 1],
+            UNIT_ABILITIES: {},
+            ABILITIES: [destroyAbility],
+          },
         },
-        hitPools: [],
-      },
-      defender: {
-        faction: 'FEDERATION_OF_SOL',
-        units: {
-          // AFTER_DESTROY on the unit that gets destroyed
-          FIGHTER: [{ COMBAT: [9, 1], ABILITIES: [afterDestroyAbility] }],
+      }),
+      defender: buildSide('FEDERATION_OF_SOL', {
+        FIGHTER: {
+          count: 1,
+          stats: {
+            COMBAT: [9, 1],
+            UNIT_ABILITIES: {},
+            ABILITIES: [afterDestroyAbility],
+          },
         },
-        hitPools: [],
-      },
-      abilities: {
-        attacker: {},
-        defender: {},
-      },
+      }),
+      abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
@@ -347,29 +334,20 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
     }
 
     const state: CombatStateData = {
-      attacker: {
-        faction: 'SARDAKK_NORR',
-        units: {
-          CRUISER: [
-            {
-              COMBAT: [7, 1],
-              ABILITIES: [noopAbility, afterDestroyAbility],
-            },
-          ],
+      attacker: buildSide('SARDAKK_NORR', {
+        CRUISER: {
+          count: 1,
+          stats: {
+            COMBAT: [7, 1],
+            UNIT_ABILITIES: {},
+            ABILITIES: [noopAbility, afterDestroyAbility],
+          },
         },
-        hitPools: [],
-      },
-      defender: {
-        faction: 'FEDERATION_OF_SOL',
-        units: {
-          FIGHTER: [{ COMBAT: [9, 1] }],
-        },
-        hitPools: [],
-      },
-      abilities: {
-        attacker: {},
-        defender: {},
-      },
+      }),
+      defender: buildSide('FEDERATION_OF_SOL', {
+        FIGHTER: { count: 1, stats: { COMBAT: [9, 1], UNIT_ABILITIES: {} } },
+      }),
+      abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
@@ -419,31 +397,28 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
     }
 
     const state: CombatStateData = {
-      attacker: {
-        faction: 'SARDAKK_NORR',
-        units: {
-          FLAGSHIP: [
-            {
-              COMBAT: [6, 2],
-              ABILITIES: [destroyAbility],
-            },
-          ],
+      attacker: buildSide('SARDAKK_NORR', {
+        FLAGSHIP: {
+          count: 1,
+          stats: {
+            COMBAT: [6, 2],
+            UNIT_ABILITIES: {},
+            ABILITIES: [destroyAbility],
+          },
         },
-        hitPools: [],
-      },
-      defender: {
-        faction: 'FEDERATION_OF_SOL',
-        units: {
-          // AFTER_DESTROY on the unit that gets destroyed
-          FIGHTER: [{ COMBAT: [9, 1], ABILITIES: [afterDestroyAbility] }],
-          CRUISER: [{ COMBAT: [7, 1] }],
+      }),
+      defender: buildSide('FEDERATION_OF_SOL', {
+        FIGHTER: {
+          count: 1,
+          stats: {
+            COMBAT: [9, 1],
+            UNIT_ABILITIES: {},
+            ABILITIES: [afterDestroyAbility],
+          },
         },
-        hitPools: [],
-      },
-      abilities: {
-        attacker: {},
-        defender: {},
-      },
+        CRUISER: { count: 1, stats: { COMBAT: [7, 1], UNIT_ABILITIES: {} } },
+      }),
+      abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
@@ -496,27 +471,18 @@ describe('multi-timing runAbilities', () => {
     }
 
     const state: CombatStateData = {
-      attacker: {
-        faction: 'SARDAKK_NORR',
-        units: {
-          CRUISER: [
-            {
-              COMBAT: [7, 1],
-              ABILITIES: [startOfCombatAbility, startOfRoundAbility],
-            },
-          ],
+      attacker: buildSide('SARDAKK_NORR', {
+        CRUISER: {
+          count: 1,
+          stats: {
+            COMBAT: [7, 1],
+            UNIT_ABILITIES: {},
+            ABILITIES: [startOfCombatAbility, startOfRoundAbility],
+          },
         },
-        hitPools: [],
-      },
-      defender: {
-        faction: 'FEDERATION_OF_SOL',
-        units: {},
-        hitPools: [],
-      },
-      abilities: {
-        attacker: {},
-        defender: {},
-      },
+      }),
+      defender: emptySide(),
+      abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
@@ -550,22 +516,14 @@ describe('multi-timing runAbilities', () => {
     }
 
     const state: CombatStateData = {
-      attacker: {
-        faction: 'SARDAKK_NORR',
-        units: {
-          CRUISER: [{ COMBAT: [7, 1], ABILITIES: [ability] }],
+      attacker: buildSide('SARDAKK_NORR', {
+        CRUISER: {
+          count: 1,
+          stats: { COMBAT: [7, 1], UNIT_ABILITIES: {}, ABILITIES: [ability] },
         },
-        hitPools: [],
-      },
-      defender: {
-        faction: 'FEDERATION_OF_SOL',
-        units: {},
-        hitPools: [],
-      },
-      abilities: {
-        attacker: {},
-        defender: {},
-      },
+      }),
+      defender: emptySide(),
+      abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }

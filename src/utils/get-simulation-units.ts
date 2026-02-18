@@ -1,8 +1,8 @@
 import { UNIT_TYPES } from '@/constants/units'
 import type {
   FactionKey,
-  Unit,
   UnitSelection,
+  UnitState,
   UnitStats,
   UnitType,
 } from '@/types'
@@ -10,19 +10,25 @@ import type {
 import { getFactionUnitConfig } from './get-faction-unit-config'
 
 /**
- * Converts faction + unit selections into a unit map for combat simulation.
- * Each unit has both stats (COMBAT, UNIT_ABILITIES) and state (isDamaged).
+ * Converts faction + unit selections into compact unit data for combat simulation.
+ * Returns counts and stats maps keyed by variant key (base type only at creation).
  */
 export function getSimulationUnits(
   faction: FactionKey,
   selections: Record<UnitType, UnitSelection>,
-): Partial<Record<UnitType, Unit[]>> {
+): {
+  units: Record<string, number>
+  unitState: Record<string, UnitState[]>
+  unitStats: Record<string, UnitStats>
+} {
   const factionConfig = getFactionUnitConfig(faction)
-  const units: Partial<Record<UnitType, Unit[]>> = {}
+  const units: Record<string, number> = {}
+  const unitState: Record<string, UnitState[]> = {}
+  const unitStats: Record<string, UnitStats> = {}
 
   for (const unitType of UNIT_TYPES) {
-    const unitState = selections[unitType]
-    if (unitState.count === 0) continue
+    const sel = selections[unitType]
+    if (sel.count === 0) continue
 
     const unitDef = factionConfig[unitType]
     const baseStats = unitDef.BASE
@@ -33,17 +39,16 @@ export function getSimulationUnits(
     const effectiveStats = getEffectiveStats(
       baseStats,
       upgradedStats,
-      unitState.upgraded,
+      sel.upgraded,
     )
     if (!effectiveStats) continue
 
-    // Create unit instances with stats (each needs its own object for mutable state like isDamaged)
-    units[unitType] = Array.from({ length: unitState.count }, () => ({
-      ...effectiveStats,
-    }))
+    units[unitType] = sel.count
+    unitState[unitType] = []
+    unitStats[unitType] = effectiveStats
   }
 
-  return units
+  return { units, unitState, unitStats }
 }
 
 /**
@@ -54,9 +59,9 @@ export function getSimulationUnits(
 export function buildUnitStatsMap(
   faction: FactionKey,
   upgrades?: ReadonlySet<UnitType>,
-): Partial<Record<UnitType, UnitStats>> {
+): Record<string, UnitStats> {
   const factionConfig = getFactionUnitConfig(faction)
-  const result: Partial<Record<UnitType, UnitStats>> = {}
+  const result: Record<string, UnitStats> = {}
 
   for (const unitType of UNIT_TYPES) {
     const unitDef = factionConfig[unitType]

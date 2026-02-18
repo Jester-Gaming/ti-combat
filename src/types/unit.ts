@@ -37,7 +37,14 @@ export interface UnitDefinition {
 export interface UnitState {
   isDamaged?: boolean
   usedSustainThisRound?: boolean
-  subtypes?: string[]
 }
 
-export type Unit = UnitStats & UnitState
+export const UNIT_STATE_KEYS = new Set<string>([
+  'isDamaged',
+  'usedSustainThisRound',
+])
+
+export type Unit = UnitStats &
+  UnitState & {
+    subtypes?: string[]
+  }

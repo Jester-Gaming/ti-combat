@@ -1,8 +1,8 @@
 import type {
   FactionKey,
-  Unit,
   UnitAbility,
   UnitSelection,
+  UnitState,
   UnitStats,
   UnitType,
 } from '@/types'
@@ -106,18 +106,22 @@ export interface UnitAbilityRestrictions {
 /** A unit that was removed (not destroyed) — excluded from AFTER_DESTROY detection */
 export interface RemovedUnit {
   type: UnitType
-  unit: Unit
+  variantKey: string
+  stats: UnitStats
 }
 
 /** State data for one side of combat */
 export interface SideStateData {
   faction: FactionKey
-  units: Partial<Record<UnitType, Unit[]>>
+  /** Variant key → count (e.g. "DESTROYER": 7, "DESTROYER:Cavalry": 1) */
+  units: Record<string, number>
+  /** Variant key → per-unit mutable state (only entries with non-default state) */
+  unitState: Record<string, UnitState[]>
+  /** Variant key → shared stats template */
+  unitStats: Record<string, UnitStats>
   hitPools: HitPool[]
   unitAbilityRestrictions?: UnitAbilityRestrictions
   unitSelections?: Record<UnitType, UnitSelection>
-  /** Original (unmodified) stats templates per unit type, used by addUnit */
-  unitStats?: Partial<Record<UnitType, UnitStats>>
   /** Units removed via removeUnit (not destroyed) — excluded from AFTER_DESTROY detection */
   _removedUnits?: RemovedUnit[]
 }

@@ -1,22 +1,34 @@
-import type { Unit, UnitType } from '@/types'
+import type { UnitType } from '@/types'
 
 import type { DestroyedUnit } from '../../abilities/types'
+import type { SideStateData } from '../../combat-state/types'
+import { reconstructUnit } from '../../utils/compact-units'
+import { parseVariantId } from '../../utils/unit-variant'
 
 export function getDestroyedUnits(
-  before: Partial<Record<UnitType, Unit[]>>,
-  after: Partial<Record<UnitType, Unit[]>>,
+  before: SideStateData,
+  after: SideStateData,
 ): DestroyedUnit[] {
   const destroyed: DestroyedUnit[] = []
 
-  for (const [type, beforeUnits] of Object.entries(before)) {
-    if (!beforeUnits) continue
-    const unitType = type as UnitType
-    const afterUnits = after[unitType]
-    const afterCount = afterUnits?.length ?? 0
-    const destroyedCount = beforeUnits.length - afterCount
+  for (const key of Object.keys(before.units)) {
+    const beforeCount = before.units[key] ?? 0
+    const afterCount = after.units[key] ?? 0
+    const destroyedCount = beforeCount - afterCount
+    if (destroyedCount <= 0) continue
 
+    const { type } = parseVariantId(key)
+    const stats = before.unitStats[key]
+    if (!stats) continue
+
+    const stateArr = before.unitState[key]
+
+    // Destroyed units are taken from the end (truncation convention)
     for (let i = 0; i < destroyedCount; i++) {
-      destroyed.push({ type: unitType, unit: beforeUnits[i] })
+      const stateIndex = afterCount + i
+      const state = stateArr?.[stateIndex]
+      const unit = reconstructUnit(stats, state, key)
+      destroyed.push({ type: type as UnitType, unit })
     }
   }
 

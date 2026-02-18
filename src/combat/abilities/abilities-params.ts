@@ -1,4 +1,4 @@
-import { isDraft, produce } from 'immer'
+import { produce } from 'immer'
 
 import { GROUND_FORCES, SHIPS, UNIT_PRICE } from '@/constants/units'
 import type { CombatSide, FactionKey, UnitType } from '@/types'
@@ -15,6 +15,12 @@ import type {
 } from '../combat-state/types'
 import { Logger } from '../logger'
 import type { LogEntry } from '../types'
+import {
+  getUnitLocator as compactGetUnitLocator,
+  reconstructUnitsForType,
+  toGlobalIndex,
+  totalCountForType,
+} from '../utils/compact-units'
 import { makeVariantId, parseVariantId } from '../utils/unit-variant'
 import { buildCallContext, buildReadContext } from './api/ability-api'
 import { buildDiceApi, buildDiceReadApi } from './api/dice-api'
@@ -104,7 +110,9 @@ function isUnitLocator(value: unknown): value is UnitLocator {
 }
 
 function resolveUnitLocator(state: CombatStateData, locator: UnitLocator) {
-  return state[locator.side].units[locator.unitType]?.[locator.unitIndex]
+  const sideState = state[locator.side]
+  const units = reconstructUnitsForType(sideState, locator.unitType)
+  return units[locator.unitIndex]
 }
 
 // Transform sided -> own/opponent based on current side
@@ -175,19 +183,17 @@ function adjustTrackerForDestroyedUnits(
     const oldUnits = oldState[side].units
     const newUnits = newState[side].units
 
-    for (const [type, oldArr] of Object.entries(oldUnits)) {
-      if (!oldArr) continue
-      const newArr = newUnits[type as UnitType]
-      const newLength = newArr?.length ?? 0
-      if (newLength >= oldArr.length) continue
+    // Compare counts per variant key
+    for (const key of Object.keys(oldUnits)) {
+      const oldCount = oldUnits[key] ?? 0
+      const newCount = newUnits[key] ?? 0
+      if (newCount >= oldCount) continue
 
       // Units were destroyed — clear tracked indices for this type
-      // so shifted units aren't incorrectly skipped.
-      // isCallable guards prevent genuine double-invocation.
-      // Key format: timing:unitType:abilityKey
+      const { type } = parseVariantId(key)
       const typeSegment = `:${type}:`
-      for (const [key, indices] of sideTracker.unitAbilities) {
-        if (key.includes(typeSegment)) {
+      for (const [trackerKey, indices] of sideTracker.unitAbilities) {
+        if (trackerKey.includes(typeSegment)) {
           indices.clear()
         }
       }
@@ -527,23 +533,40 @@ export class AbilitiesParams {
 
     const results: UnitAbilityEntry[] = []
 
-    const unitEntries = Object.entries(sideState.units) as Array<
-      [UnitType, NonNullable<(typeof sideState.units)[UnitType]>]
-    >
+    // Iterate unitStats entries (which contain ABILITIES) and multiply by count.
+    // Global index is computed across all variant keys of a base type,
+    // sorted alphabetically.
+    const keysByType = new Map<UnitType, string[]>()
+    for (const key of Object.keys(sideState.units)) {
+      if (sideState.units[key] <= 0) continue
+      const { type } = parseVariantId(key)
+      const keys = keysByType.get(type)
+      if (keys) keys.push(key)
+      else keysByType.set(type, [key])
+    }
+    // Sort variant keys within each type
+    for (const keys of keysByType.values()) {
+      keys.sort()
+    }
 
-    for (const [unitType, units] of unitEntries) {
-      if (!units) continue
-
-      for (let unitIndex = 0; unitIndex < units.length; unitIndex++) {
-        const unit = units[unitIndex]
-        if (unit.ABILITIES) {
-          for (const ability of unit.ABILITIES) {
+    for (const [unitType, keys] of keysByType) {
+      let globalIndex = 0
+      for (const key of keys) {
+        const count = sideState.units[key]
+        const stats = sideState.unitStats[key]
+        if (!stats?.ABILITIES) {
+          globalIndex += count
+          continue
+        }
+        for (let i = 0; i < count; i++) {
+          for (const ability of stats.ABILITIES) {
             results.push({
               ability,
               unitType,
-              unitIndex,
+              unitIndex: globalIndex,
             })
           }
+          globalIndex++
         }
       }
     }
@@ -841,8 +864,8 @@ export class AbilitiesParams {
         }
       } else {
         // Unit ability - check if unit still exists
-        const currentUnits = state[side].units[source.unitType]
-        if (!currentUnits || currentUnits.length <= source.unitIndex) {
+        const totalCount = totalCountForType(state[side].units, source.unitType)
+        if (totalCount <= source.unitIndex) {
           continue // Unit destroyed
         }
 
@@ -918,30 +941,24 @@ export class AbilitiesParams {
 
         // Collect trigger events emitted during produce
         const triggerEvents: TriggerEvent[] = []
-        // Mutable ref so triggerCallback can access the current draft
-        let draftRef: CombatStateData | null = null
         const triggerCallback = (event: TriggerEvent) => {
           let context = event.context
-          if (isDraft(context) && draftRef) {
-            // Convert draft unit reference to a stable locator
-            // so it can be resolved in the next produce() call
-            for (const checkSide of ['attacker', 'defender'] as const) {
-              for (const [type, units] of Object.entries(
-                draftRef[checkSide].units,
-              )) {
-                if (!units) continue
-                const idx = units.indexOf(context)
-                if (idx !== -1) {
-                  context = {
-                    __unitLocator: true,
-                    side: checkSide,
-                    unitType: type as UnitType,
-                    unitIndex: idx,
-                  } satisfies UnitLocator
-                  break
-                }
-              }
-              if (isUnitLocator(context)) break
+          // If context is a Unit with a locator tag, convert to stable locator
+          if (typeof context === 'object' && context !== null) {
+            const locator = compactGetUnitLocator(context)
+            if (locator) {
+              const { type } = parseVariantId(locator.key)
+              const globalIndex = toGlobalIndex(
+                state[event.side],
+                locator.key,
+                locator.index,
+              )
+              context = {
+                __unitLocator: true,
+                side: event.side,
+                unitType: type as UnitType,
+                unitIndex: globalIndex,
+              } satisfies UnitLocator
             }
           }
           triggerEvents.push({ ...event, context })
@@ -956,7 +973,7 @@ export class AbilitiesParams {
             opponent: buildDiceApi(rawDice.opponent),
           }
           resultState = produce(state, draft => {
-            draftRef = draft
+            // draftRef removed — compact state uses UnitLocator tags
             const callCtx = buildCallContext(
               side,
               draft,
@@ -968,14 +985,14 @@ export class AbilitiesParams {
             inv.call(callCtx, params, diceCallCtx)
             if (!invoke.always) decrementUses(draft, side, ability.key, params)
           })
-          draftRef = null
+          // draftRef removed
           resultContext = {
             own: diceCallCtx.own.getAll(),
             opponent: diceCallCtx.opponent.getAll(),
           }
         } else {
           resultState = produce(state, draft => {
-            draftRef = draft
+            // draftRef removed — compact state uses UnitLocator tags
             const callCtx = buildCallContext(
               side,
               draft,
@@ -992,7 +1009,7 @@ export class AbilitiesParams {
             if (result !== undefined) resultContext = result
             if (!invoke.always) decrementUses(draft, side, ability.key, params)
           })
-          draftRef = null
+          // draftRef removed
         }
 
         // Single structured log entry per ability
@@ -1044,12 +1061,12 @@ export class AbilitiesParams {
           )
         ) {
           let destroyedAttacker = getDestroyedUnits(
-            state.attacker.units,
-            resultState.attacker.units,
+            state.attacker,
+            resultState.attacker,
           )
           let destroyedDefender = getDestroyedUnits(
-            state.defender.units,
-            resultState.defender.units,
+            state.defender,
+            resultState.defender,
           )
 
           // Exclude units that were removed (not destroyed) via removeUnit
@@ -1103,12 +1120,12 @@ export class AbilitiesParams {
             let mergedContext = destroyedContext
             if (stateAfterWhen !== stateAfterDestroy) {
               const additionalAttacker = getDestroyedUnits(
-                stateAfterDestroy.attacker.units,
-                stateAfterWhen.attacker.units,
+                stateAfterDestroy.attacker,
+                stateAfterWhen.attacker,
               )
               const additionalDefender = getDestroyedUnits(
-                stateAfterDestroy.defender.units,
-                stateAfterWhen.defender.units,
+                stateAfterDestroy.defender,
+                stateAfterWhen.defender,
               )
               if (
                 additionalAttacker.length > 0 ||

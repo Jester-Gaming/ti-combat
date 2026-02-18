@@ -1,6 +1,6 @@
 import { GROUND_FORCES, STRUCTURES } from '@/constants/units'
 import factions from '@/data/faction'
-import type { CombatSide, DiceGroup, FactionKey, Unit, UnitType } from '@/types'
+import type { CombatSide, DiceGroup, FactionKey, UnitType } from '@/types'
 import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 
 import {
@@ -130,16 +130,18 @@ export class CombatState {
       attacker: {
         faction: defaultFaction,
         units: {},
+        unitState: {},
+        unitStats: defaultUnitStats,
         hitPools: [],
         unitSelections: createDefaultUnitSelections(),
-        unitStats: defaultUnitStats,
       },
       defender: {
         faction: defaultFaction,
         units: {},
+        unitState: {},
+        unitStats: defaultUnitStats,
         hitPools: [],
         unitSelections: createDefaultUnitSelections(),
-        unitStats: defaultUnitStats,
       },
       abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
@@ -286,19 +288,6 @@ export class CombatState {
     return getSettingsValidTargets(settings, this.currentPhase.meta)
   }
 
-  /** Get unit priority from UNIT_PRIORITY ability if present */
-  private getUnitPriority(side: CombatSide): string[] {
-    const unitPriority = this.data.abilities[side]['UNIT_PRIORITY']
-
-    if (!unitPriority) {
-      throw new Error('No UNIT_PRIORITY in getUnitPriority')
-    }
-
-    const key =
-      this.combatMode === 'GROUND' ? 'groundUnitPriority' : 'spaceUnitPriority'
-    return unitPriority[key] as string[]
-  }
-
   private runAbilities<T extends AbilityTiming>(
     timing: T | T[],
     context?: TimingContextMap[T],
@@ -366,14 +355,8 @@ export class CombatState {
     }
 
     const destroyedContext = {
-      attacker: getDestroyedUnits(
-        afterAbilities.attacker.units,
-        resultData.attacker.units,
-      ),
-      defender: getDestroyedUnits(
-        afterAbilities.defender.units,
-        resultData.defender.units,
-      ),
+      attacker: getDestroyedUnits(afterAbilities.attacker, resultData.attacker),
+      defender: getDestroyedUnits(afterAbilities.defender, resultData.defender),
     }
 
     if (logger) {
@@ -410,12 +393,12 @@ export class CombatState {
     let mergedDestroyedContext = destroyedContext
     if (afterWhenDestroy !== afterCleanup) {
       const additionalAttacker = getDestroyedUnits(
-        afterCleanup.attacker.units,
-        afterWhenDestroy.attacker.units,
+        afterCleanup.attacker,
+        afterWhenDestroy.attacker,
       )
       const additionalDefender = getDestroyedUnits(
-        afterCleanup.defender.units,
-        afterWhenDestroy.defender.units,
+        afterCleanup.defender,
+        afterWhenDestroy.defender,
       )
       if (additionalAttacker.length > 0 || additionalDefender.length > 0) {
         mergedDestroyedContext = {
@@ -935,15 +918,18 @@ function addHitsToDataWithPhase(
 
 /** Count units directly from data without creating CombatSideState */
 function countUnitsFromData(
-  units: Partial<Record<UnitType, Unit[]>>,
+  units: Record<string, number>,
   participatingUnits?: ReadonlySet<UnitType>,
 ): number {
   let total = 0
-  for (const type in units) {
-    if (participatingUnits && !participatingUnits.has(type as UnitType))
-      continue
-    const typeUnits = units[type as keyof typeof units]
-    if (typeUnits) total += typeUnits.length
+  for (const key in units) {
+    const count = units[key]
+    if (count <= 0) continue
+    if (participatingUnits) {
+      const { type } = parseVariantId(key)
+      if (!participatingUnits.has(type)) continue
+    }
+    total += count
   }
   return total
 }
@@ -996,17 +982,17 @@ function assignHitsToSide(
     return participatingUnits.has(type)
   })
 
-  let currentUnits = sideData.units
+  let current = sideData
   for (const pool of sideData.hitPools) {
-    currentUnits = destroyUnitsFromPool(
-      currentUnits,
+    current = destroyUnitsFromPool(
+      current,
       pool.hits,
       pool.validTargets,
       sacrificeOrder,
     )
   }
 
-  return { ...sideData, units: currentUnits, hitPools: [] }
+  return { ...current, hitPools: [] }
 }
 
 const abilitiesSideHashCache = new WeakMap<
@@ -1032,13 +1018,6 @@ function getAbilitiesHash(abilities: AbilitiesConfig): string {
   return `a{${a}}d{${d}}`
 }
 
-function getUnitStateKey(u: Unit): string {
-  let key = ''
-  if (u.isDamaged) key += 'd'
-  if (u.subtypes?.length) key += ':' + u.subtypes.toSorted().join('+')
-  return key
-}
-
 const sideHashCache = new WeakMap<SideStateData, string>()
 
 function getSideHash(side: SideStateData): string {
@@ -1046,27 +1025,31 @@ function getSideHash(side: SideStateData): string {
   if (cached !== undefined) return cached
 
   const parts: string[] = []
-  const sortedTypes = Object.keys(side.units).sort()
+  const sortedKeys = Object.keys(side.units).sort()
 
-  for (const type of sortedTypes) {
-    const units = side.units[type as keyof typeof side.units]
-    if (!units || units.length === 0) continue
+  for (const key of sortedKeys) {
+    const count = side.units[key]
+    if (count <= 0) continue
 
-    // Group by mutable state (isDamaged, subtypes)
-    const groups = new Map<string, number>()
-    for (const u of units) {
-      const stateKey = getUnitStateKey(u)
-      groups.set(stateKey, (groups.get(stateKey) ?? 0) + 1)
+    // Group by mutable state (isDamaged only — subtypes are in the key)
+    const stateArr = side.unitState[key]
+    if (stateArr && stateArr.length > 0) {
+      const groups = new Map<string, number>()
+      // Count units with each unique state signature
+      for (let i = 0; i < count; i++) {
+        const us = stateArr[i]
+        const stateKey = us?.isDamaged ? 'd' : ''
+        groups.set(stateKey, (groups.get(stateKey) ?? 0) + 1)
+      }
+
+      const groupParts = [...groups.entries()]
+        .sort(([a], [b]) => a.localeCompare(b))
+        .map(([stateKey, c]) => (stateKey ? `${c}${stateKey}` : String(c)))
+        .join(',')
+      parts.push(`${key}:${groupParts}`)
+    } else {
+      parts.push(`${key}:${count}`)
     }
-
-    // Encode as TYPE:count or TYPE:count,countSTATE,...
-    const groupParts = [...groups.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([stateKey, count]) =>
-        stateKey ? `${count}${stateKey}` : String(count),
-      )
-      .join(',')
-    parts.push(`${type}:${groupParts}`)
   }
 
   // Include hitPools in hash

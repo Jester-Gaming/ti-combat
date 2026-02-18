@@ -1,6 +1,7 @@
-import type { CombatSide, Unit, UnitType } from '@/types'
+import type { CombatSide, UnitType } from '@/types'
 
 import type { CombatOutcome, ProbabilityNode, SurvivorSide } from '../types'
+import { parseVariantId } from '../utils/unit-variant'
 
 /** Outcome with probability relative to reaching the node */
 interface RelativeOutcome {
@@ -185,11 +186,11 @@ function extractLeafOutcome(
   const defenderParticipating = node.state.getParticipatingUnits('defender')
 
   const attackerSurvivors = extractSurvivors(
-    node.state.attacker.units,
+    node.state.data.attacker,
     attackerParticipating,
   )
   const defenderSurvivors = extractSurvivors(
-    node.state.defender.units,
+    node.state.data.defender,
     defenderParticipating,
   )
 
@@ -252,23 +253,38 @@ function formatSideKey(side: SurvivorSide): string {
 }
 
 /**
- * Extract survivors from units, filtering by participating units.
+ * Extract survivors from compact state, filtering by participating units.
  */
 function extractSurvivors(
-  units: Partial<Record<string, Unit[]>>,
+  sideState: {
+    units: Record<string, number>
+    unitState: Record<string, import('@/types').UnitState[]>
+  },
   participatingUnits: ReadonlySet<UnitType>,
 ): SurvivorSide {
   const survivors: SurvivorSide = {}
-  for (const unitType in units) {
-    if (!participatingUnits.has(unitType as UnitType)) continue
-    const unitList = units[unitType]
-    if (unitList && unitList.length > 0) {
-      survivors[unitType] = unitList.map(u => ({
-        ...(u.isDamaged ? { isDamaged: true } : {}),
-        ...(u.subtypes?.length ? { subtypes: u.subtypes } : {}),
-      }))
+
+  for (const key of Object.keys(sideState.units)) {
+    const count = sideState.units[key]
+    if (count <= 0) continue
+
+    const { type, subtypes } = parseVariantId(key)
+    if (!participatingUnits.has(type)) continue
+
+    if (!survivors[type]) {
+      survivors[type] = []
+    }
+
+    const stateArr = sideState.unitState[key]
+    for (let i = 0; i < count; i++) {
+      const us = stateArr?.[i]
+      survivors[type]!.push({
+        ...(us?.isDamaged ? { isDamaged: true } : {}),
+        ...(subtypes.length > 0 ? { subtypes } : {}),
+      })
     }
   }
+
   return survivors
 }
 

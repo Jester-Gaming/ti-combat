@@ -193,8 +193,12 @@ export interface SideApi extends SideReadApi {
   removeUnit(unitType: UnitType): void
   removeUnit(unitType: UnitType, index: number): void
   addUnit(units: Partial<Record<UnitType, number>>): void
-  modifyUnit(unitType: UnitType, index: number, updates: Partial<Unit>): void
-  modifyUnit(unitType: UnitType, updates: Partial<Unit>): void
+  modifyUnit(
+    unitTypeOrVariantKey: string,
+    index: number,
+    updates: Partial<Unit>,
+  ): void
+  modifyUnit(unitTypeOrVariantKey: string, updates: Partial<Unit>): void
   modifyUnit(unit: Unit, updates: Partial<Unit>): void
 
   // Hit operations
