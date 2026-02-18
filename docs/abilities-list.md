@@ -220,7 +220,7 @@
 - [ ] **Heart of Ixth** - After any die is rolled, you may exhaust this card to add or subtract 1 from its result.
 - [x] **Metali Void Armaments** - During the "Anti-Fighter Barrage" step of space combat, you may resolve Anti-Fighter Barrage 6 (x3) against your opponent's units.
 - [x] **Lightrail Ordnance** - Your space docks gain Space Cannon 5 (x2). You may use your space dock's Space Cannon against ships that are adjacent to their systems.
-- [ ] **Metali Void Shielding** - Each time hits are produced against 1 or more of your non-fighter ships, 1 of those ships may use Sustain Damage as if it had that ability.
+- [x] **Metali Void Shielding** - Each time hits are produced against 1 or more of your non-fighter ships, 1 of those ships may use Sustain Damage as if it had that ability.
 
 ---
 
