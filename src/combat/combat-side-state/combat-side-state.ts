@@ -16,7 +16,7 @@ import {
 import type { DicePool } from '../abilities/types'
 import type { CombatState } from '../combat-state/combat-state'
 import type { HitSource, SideStateData } from '../combat-state/types'
-import { parseVariantId, unitMatchesVariant } from '../utils/unit-variant'
+import { parseVariantId } from '../utils/unit-variant'
 
 export function createDefaultUnitSelections(): Record<UnitType, UnitSelection> {
   return UNIT_TYPES.reduce(
@@ -33,7 +33,7 @@ export function getOpponentSide(side: CombatSide): CombatSide {
   return side === 'attacker' ? 'defender' : 'attacker'
 }
 
-function destroyUnitsFromPool(
+export function destroyUnitsFromPool(
   units: Partial<Record<UnitType, Unit[]>>,
   hits: number,
   validTargets: UnitType[],
@@ -41,40 +41,122 @@ function destroyUnitsFromPool(
 ): Partial<Record<UnitType, Unit[]>> {
   if (hits <= 0) return units
 
-  const targetSet = validTargets.length > 0 ? new Set(validTargets) : null
-  const destroyIndices = new Map<UnitType, Set<number>>()
+  // Fast path: when all sacrifice variants are plain types (no subtypes)
+  // and all targeted units are plain (no subtypes), use count-based slice
+  const fast = tryFastDestroy(units, hits, validTargets, sacrificeOrder)
+  if (fast !== null) return fast
+
+  // Slow path: full variant matching with boolean marks
+  const destroyed = new Map<UnitType, boolean[]>()
   let remaining = hits
 
   for (const variantId of sacrificeOrder) {
     if (remaining <= 0) break
-    const { type } = parseVariantId(variantId)
-    if (targetSet && !targetSet.has(type)) continue
+    const { type, subtypes } = parseVariantId(variantId)
+    if (validTargets.length > 0 && !validTargets.includes(type)) continue
     const typeUnits = units[type]
     if (!typeUnits) continue
 
-    const alreadyMarked = destroyIndices.get(type) ?? new Set<number>()
-    for (let i = 0; i < typeUnits.length && remaining > 0; i++) {
-      if (alreadyMarked.has(i)) continue
-      if (unitMatchesVariant(typeUnits[i], variantId)) {
-        alreadyMarked.add(i)
-        remaining--
-      }
+    let marks = destroyed.get(type)
+    if (!marks) {
+      marks = new Array<boolean>(typeUnits.length).fill(false)
+      destroyed.set(type, marks)
     }
-    destroyIndices.set(type, alreadyMarked)
+
+    const hasSubtypes = subtypes.length > 0
+    for (let i = 0; i < typeUnits.length && remaining > 0; i++) {
+      if (marks[i]) continue
+      const unit = typeUnits[i]
+      // Inline variant matching to avoid extra function call
+      if (!hasSubtypes) {
+        if (unit.subtypes && unit.subtypes.length > 0) continue
+      } else {
+        if (!unit.subtypes || unit.subtypes.length !== subtypes.length) continue
+        if (!subtypes.every(s => unit.subtypes!.includes(s))) continue
+      }
+      marks[i] = true
+      remaining--
+    }
   }
 
-  // Build new units object, removing destroyed units
+  if (remaining === hits) return units // nothing destroyed
+
   const newUnits: Partial<Record<UnitType, Unit[]>> = {}
-
-  for (const [type, typeUnits] of Object.entries(units)) {
+  for (const type in units) {
     const unitType = type as UnitType
-    const indices = destroyIndices.get(unitType)
-    const kept = indices
-      ? typeUnits!.filter((_, i) => !indices.has(i))
-      : typeUnits!
-
+    const typeUnits = units[unitType]!
+    const marks = destroyed.get(unitType)
+    if (!marks) {
+      newUnits[unitType] = typeUnits
+      continue
+    }
+    const kept = typeUnits.filter((_, i) => !marks[i])
     if (kept.length > 0) {
       newUnits[unitType] = kept
+    }
+  }
+
+  return newUnits
+}
+
+/** Fast path for plain units (no subtypes): count-based destruction with slice */
+function tryFastDestroy(
+  units: Partial<Record<UnitType, Unit[]>>,
+  hits: number,
+  validTargets: UnitType[],
+  sacrificeOrder: string[],
+): Partial<Record<UnitType, Unit[]>> | null {
+  // Bail if any sacrifice variant has subtypes
+  for (const variantId of sacrificeOrder) {
+    const { subtypes } = parseVariantId(variantId)
+    if (subtypes.length > 0) return null
+  }
+
+  // Bail if any targeted unit type has units with subtypes
+  for (const variantId of sacrificeOrder) {
+    const { type } = parseVariantId(variantId)
+    const typeUnits = units[type]
+    if (!typeUnits) continue
+    for (const u of typeUnits) {
+      if (u.subtypes && u.subtypes.length > 0) return null
+    }
+  }
+
+  // All plain: use count-based destruction
+  let remaining = hits
+  // Track how many to destroy per type
+  const destroyCounts = new Map<UnitType, number>()
+
+  for (const variantId of sacrificeOrder) {
+    if (remaining <= 0) break
+    const { type } = parseVariantId(variantId)
+    if (validTargets.length > 0 && !validTargets.includes(type)) continue
+    const typeUnits = units[type]
+    if (!typeUnits) continue
+
+    const alreadyDestroyed = destroyCounts.get(type) ?? 0
+    const available = typeUnits.length - alreadyDestroyed
+    if (available <= 0) continue
+
+    const toDestroy = Math.min(available, remaining)
+    destroyCounts.set(type, alreadyDestroyed + toDestroy)
+    remaining -= toDestroy
+  }
+
+  if (destroyCounts.size === 0) return units // nothing destroyed
+
+  const newUnits: Partial<Record<UnitType, Unit[]>> = {}
+  for (const type in units) {
+    const unitType = type as UnitType
+    const typeUnits = units[unitType]!
+    const destroyCount = destroyCounts.get(unitType)
+    if (!destroyCount) {
+      newUnits[unitType] = typeUnits
+      continue
+    }
+    const keepCount = typeUnits.length - destroyCount
+    if (keepCount > 0) {
+      newUnits[unitType] = typeUnits.slice(0, keepCount)
     }
   }
 
@@ -226,7 +308,7 @@ export class CombatSideState {
       return participatingUnits.has(type)
     })
 
-    let currentUnits = { ...this.data.units }
+    let currentUnits = this.data.units
 
     for (const pool of this.data.hitPools) {
       currentUnits = destroyUnitsFromPool(

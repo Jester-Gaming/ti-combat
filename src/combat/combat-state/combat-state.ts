@@ -18,12 +18,14 @@ import type {
 import {
   CombatSideState,
   createDefaultUnitSelections,
+  destroyUnitsFromPool,
 } from '../combat-side-state/combat-side-state'
 import { getDestroyedUnits } from '../combat-side-state/utils/get-destroyed-units'
 import { getSettingsValidTargets } from '../combat-side-state/utils/get-settings-valid-targets'
 import { Logger } from '../logger'
 import type { LogEntry } from '../types'
 import { getCombinedDiceDistribution } from '../utils'
+import { parseVariantId } from '../utils/unit-variant'
 import {
   getFirstMicroPhase,
   getInitialPhaseIdentifier,
@@ -75,12 +77,20 @@ function flattenDicePool(pool: DicePool): DiceGroup[] {
   return result
 }
 
+// Cache for getParticipatingUnits: source array → Set
+const participatingUnitsCache = new WeakMap<UnitType[], ReadonlySet<UnitType>>()
+
 /** Main combat state class */
 export class CombatState {
   data: CombatStateData
+  private _enableLog = false
   private _params!: AbilitiesParams
   private _attacker!: CombatSideState
   private _defender!: CombatSideState
+
+  get disableAbilities() {
+    return false
+  }
 
   get attacker(): CombatSideState {
     return this._attacker
@@ -253,7 +263,13 @@ export class CombatState {
         ? (settings.groundCombatParticipating as UnitType[])
         : (settings.spaceCombatParticipating as UnitType[])
 
-    return new Set(units)
+    // Cache Set on the source array to avoid re-creating identical Sets
+    let cached = participatingUnitsCache.get(units)
+    if (!cached) {
+      cached = new Set(units)
+      participatingUnitsCache.set(units, cached)
+    }
+    return cached
   }
 
   /** Get valid targets for the current phase from SETTINGS ability for a specific side */
@@ -289,6 +305,13 @@ export class CombatState {
     stateData: CombatStateData = this.data,
     logger?: Logger,
   ): RunAbilitiesResult<T> {
+    if (this.disableAbilities) {
+      return {
+        state: stateData,
+        context,
+        log: logger?.entries.concat([]) ?? [],
+      } as RunAbilitiesResult<T>
+    }
     const activeLogger = logger ?? Logger.create().child(this.currentPhase.meta)
     return this._params.runAbilities(
       timing,
@@ -300,8 +323,12 @@ export class CombatState {
   }
 
   assignHits(parentLogger?: Logger): { state: CombatState; log: LogEntry[] } {
-    const logger = parentLogger ?? Logger.create().child(this.currentPhase.meta)
-    const startIndex = logger.entries.length
+    const logger =
+      parentLogger ??
+      (this._enableLog
+        ? Logger.create().child(this.currentPhase.meta)
+        : undefined)
+    const startIndex = logger ? logger.entries.length : 0
 
     const { state: afterAbilities } = this.runAbilities(
       'BEFORE_ASSIGN_HITS',
@@ -310,15 +337,33 @@ export class CombatState {
       logger,
     )
 
-    const tempState = CombatState.fromData(afterAbilities, this._params)
-    const attackerParticipating = tempState.getParticipatingUnits('attacker')
-    const defenderParticipating = tempState.getParticipatingUnits('defender')
-    const attackerPriority = tempState.getUnitPriority('attacker')
-    const defenderPriority = tempState.getUnitPriority('defender')
+    const attackerParticipating = getParticipatingUnitsFromData(
+      afterAbilities,
+      'attacker',
+    )
+    const defenderParticipating = getParticipatingUnitsFromData(
+      afterAbilities,
+      'defender',
+    )
+    const attackerPriority = getUnitPriorityFromData(afterAbilities, 'attacker')
+    const defenderPriority = getUnitPriorityFromData(afterAbilities, 'defender')
 
-    tempState.attacker.assignHits(attackerParticipating, attackerPriority)
-    tempState.defender.assignHits(defenderParticipating, defenderPriority)
-    const resultData = tempState.data
+    const newAttacker = assignHitsToSide(
+      afterAbilities.attacker,
+      attackerParticipating,
+      attackerPriority,
+    )
+    const newDefender = assignHitsToSide(
+      afterAbilities.defender,
+      defenderParticipating,
+      defenderPriority,
+    )
+
+    const resultData: CombatStateData = {
+      ...afterAbilities,
+      attacker: newAttacker,
+      defender: newDefender,
+    }
 
     const destroyedContext = {
       attacker: getDestroyedUnits(
@@ -331,7 +376,9 @@ export class CombatState {
       ),
     }
 
-    logger.child('ASSIGN_HITS').log(destroyedContext)
+    if (logger) {
+      logger.child('ASSIGN_HITS').log(destroyedContext)
+    }
 
     if (
       destroyedContext.attacker.length === 0 &&
@@ -339,7 +386,7 @@ export class CombatState {
     ) {
       return {
         state: CombatState.fromData(resultData, this._params),
-        log: [...logger.entries.slice(startIndex)],
+        log: logger ? [...logger.entries.slice(startIndex)] : [],
       }
     }
 
@@ -388,12 +435,17 @@ export class CombatState {
 
     return {
       state: CombatState.fromData(afterDestroy, this._params),
-      log: [...logger.entries.slice(startIndex)],
+      log: logger ? [...logger.entries.slice(startIndex)] : [],
     }
   }
 
   isFinished(): boolean {
-    const { meta, micro } = this.currentPhase
+    return CombatState.isDataFinished(this.data)
+  }
+
+  /** Check if combat is finished directly from data (no CombatState allocation needed) */
+  static isDataFinished(data: CombatStateData): boolean {
+    const { meta, micro } = data.currentPhase
 
     if (meta === 'COMPLETE') {
       return true
@@ -407,9 +459,9 @@ export class CombatState {
       return false
     }
 
-    // Count total units (all types) and participating units
-    const attackerTotalUnits = this.attacker.countUnits()
-    const defenderTotalUnits = this.defender.countUnits()
+    // Count total units (all types)
+    const attackerTotalUnits = countUnitsFromData(data.attacker.units)
+    const defenderTotalUnits = countUnitsFromData(data.defender.units)
 
     // If either side has NO units at all, combat is finished —
     // unless we're in a unit ability phase where abilities can still inject dice
@@ -427,12 +479,18 @@ export class CombatState {
 
     // During combat phases, check if either side has no participating units
     if (meta === 'SPACE_COMBAT' || meta === 'GROUND_COMBAT') {
-      const attackerParticipating = this.getParticipatingUnits('attacker')
-      const defenderParticipating = this.getParticipatingUnits('defender')
+      const attackerParticipating = getParticipatingUnitsFromData(
+        data,
+        'attacker',
+      )
+      const defenderParticipating = getParticipatingUnitsFromData(
+        data,
+        'defender',
+      )
       const attackerHasParticipating =
-        this.attacker.countUnits(attackerParticipating) > 0
+        countUnitsFromData(data.attacker.units, attackerParticipating) > 0
       const defenderHasParticipating =
-        this.defender.countUnits(defenderParticipating) > 0
+        countUnitsFromData(data.defender.units, defenderParticipating) > 0
 
       if (!attackerHasParticipating || !defenderHasParticipating) {
         return true
@@ -450,7 +508,8 @@ export class CombatState {
    * Advance using the two-tier phase system.
    * Handles meta-phase routing to appropriate processing methods.
    */
-  public advance(round: number): StateWithProbability[] {
+  public advance(round: number, enableLog = false): StateWithProbability[] {
+    this._enableLog = enableLog
     const { meta } = this.currentPhase
 
     switch (meta) {
@@ -480,7 +539,7 @@ export class CombatState {
         const { state: newData, log } = this.runAbilities('COMMIT_UNITS')
         return this.transitionPhaseWithData(
           newData,
-          log.length > 0 ? log : undefined,
+          this._enableLog && log.length > 0 ? log : undefined,
         )
       }
 
@@ -528,6 +587,9 @@ export class CombatState {
     )
     const { meta: metaPhase } = this.currentPhase
 
+    // Pre-compute next phase (DICE_ROLL is never last micro-phase)
+    const { phase: nextPhase } = getNextMicroPhase(this.currentPhase)
+
     const results: StateWithProbability[] = []
 
     for (const attOutcome of attackerDist) {
@@ -535,36 +597,49 @@ export class CombatState {
         const probability = attOutcome.probability * defOutcome.probability
         if (probability === 0) continue
 
-        // Cross-assignment: attacker hits -> defender, defender hits -> attacker
-        const tempCS = CombatState.fromData(stateData, this._params)
-        tempCS.defender.addHits(attOutcome.hits, validTargets.defender)
-        tempCS.attacker.addHits(defOutcome.hits, validTargets.attacker)
-        let resultData = tempCS.data
+        // Build final data with hits + next phase in one spread
+        let finalData = addHitsToDataWithPhase(
+          stateData,
+          attOutcome.hits,
+          defOutcome.hits,
+          validTargets,
+          nextPhase,
+        )
 
-        const log: LogEntry[] = [...(prependLog ?? [])]
-        log.push({
-          path: [metaPhase, 'DICE_ROLL'],
-          data: [{ attacker: attOutcome.hits, defender: defOutcome.hits }],
-        })
+        let log: LogEntry[] | undefined
+        if (this._enableLog) {
+          const diceRollEntry: LogEntry = {
+            path: [metaPhase, 'DICE_ROLL'],
+            data: [{ attacker: attOutcome.hits, defender: defOutcome.hits }],
+          }
 
-        if (afterRollTiming) {
-          const afterRollLogger = Logger.create().child(metaPhase)
-          const { state: afterRoll, log: afterRollLog } = this.runAbilities(
+          if (afterRollTiming) {
+            log = prependLog ? [...prependLog, diceRollEntry] : [diceRollEntry]
+            const afterRollLogger = Logger.create().child(metaPhase)
+            const { state: afterRoll, log: afterRollLog } = this.runAbilities(
+              afterRollTiming,
+              undefined,
+              finalData,
+              afterRollLogger,
+            )
+            finalData = { ...afterRoll, currentPhase: nextPhase }
+            if (afterRollLog.length > 0) log.push(...afterRollLog)
+          } else {
+            log = prependLog ? [...prependLog, diceRollEntry] : [diceRollEntry]
+          }
+        } else if (afterRollTiming) {
+          const { state: afterRoll } = this.runAbilities(
             afterRollTiming,
             undefined,
-            resultData,
-            afterRollLogger,
+            finalData,
           )
-          resultData = afterRoll
-          log.push(...afterRollLog)
+          finalData = { ...afterRoll, currentPhase: nextPhase }
         }
 
-        const nextState = this.transitionPhaseWithData(resultData, log)
-
         results.push({
-          state: nextState[0].state,
+          state: CombatState.fromData(finalData, this._params),
           probability,
-          log: nextState[0].log,
+          log,
         })
       }
     }
@@ -589,14 +664,9 @@ export class CombatState {
     if (isLastMicroPhase(this.currentPhase)) {
       const { phase } = getNextMetaPhase(this.currentPhase, this.combatMode)
 
-      // Check if we should skip to COMPLETE due to one side having no combat units
+      // Check if we should skip to COMPLETE — directly on data, no temp CombatState
       let finalPhase = phase
-      const tempState = CombatState.fromData(
-        { ...data, currentPhase: phase },
-        this._params,
-      )
-
-      if (tempState.isFinished()) {
+      if (CombatState.isDataFinished({ ...data, currentPhase: phase })) {
         finalPhase = {
           meta: 'COMPLETE',
           micro: getLastMicroPhase('COMPLETE'),
@@ -672,13 +742,19 @@ export class CombatState {
     if (!firing.includes('attacker')) modifiedDice.attacker = {}
     if (!firing.includes('defender')) modifiedDice.defender = {}
 
-    const dicePoolLog: LogEntry = {
-      path: [this.currentPhase.meta, 'DICE_POOL'],
-      data: [
-        { attacker: modifiedDice.attacker, defender: modifiedDice.defender },
-      ],
+    let prependLog: LogEntry[] | undefined
+    if (this._enableLog) {
+      const dicePoolLog: LogEntry = {
+        path: [this.currentPhase.meta, 'DICE_POOL'],
+        data: [
+          {
+            attacker: modifiedDice.attacker,
+            defender: modifiedDice.defender,
+          },
+        ],
+      }
+      prependLog = [...abilityLog, dicePoolLog]
     }
-    const prependLog = [...abilityLog, dicePoolLog]
 
     return this.rollDiceOutcomes(
       afterWhen,
@@ -708,6 +784,8 @@ export class CombatState {
         : (['START_OF_COMBAT_ROUND'] as const)
     const { state: newData, log } = this.runAbilities([...timings])
 
+    const resultLog = this._enableLog && log.length > 0 ? log : undefined
+
     // In round 1 of SPACE_COMBAT, transition to AFB meta-phase
     if (round === 1 && this.currentPhase.meta === 'SPACE_COMBAT') {
       const nextState = CombatState.fromData(
@@ -721,15 +799,12 @@ export class CombatState {
         {
           state: nextState,
           probability: 1,
-          log: log.length > 0 ? log : undefined,
+          log: resultLog,
         },
       ]
     }
 
-    return this.transitionPhaseWithData(
-      newData,
-      log.length > 0 ? log : undefined,
-    )
+    return this.transitionPhaseWithData(newData, resultLog)
   }
 
   private processDiceRoll(): StateWithProbability[] {
@@ -747,13 +822,19 @@ export class CombatState {
       log: abilityLog,
     } = this.runAbilities('BEFORE_DICE_ROLL', sidedDiceData)
 
-    const dicePoolLog: LogEntry = {
-      path: [this.currentPhase.meta, 'DICE_POOL'],
-      data: [
-        { attacker: modifiedDice.attacker, defender: modifiedDice.defender },
-      ],
+    let prependLog: LogEntry[] | undefined
+    if (this._enableLog) {
+      const dicePoolLog: LogEntry = {
+        path: [this.currentPhase.meta, 'DICE_POOL'],
+        data: [
+          {
+            attacker: modifiedDice.attacker,
+            defender: modifiedDice.defender,
+          },
+        ],
+      }
+      prependLog = [...abilityLog, dicePoolLog]
     }
-    const prependLog = [...abilityLog, dicePoolLog]
 
     return this.rollDiceOutcomes(
       afterWhen,
@@ -776,6 +857,10 @@ export class CombatState {
       afterAssign.data,
     )
 
+    if (!this._enableLog) {
+      return this.transitionPhaseWithData(afterStep)
+    }
+
     const allLog = [...log, ...stepLog]
     return this.transitionPhaseWithData(
       afterStep,
@@ -797,7 +882,7 @@ export class CombatState {
 
     return this.transitionPhaseWithData(
       cleanedData,
-      log.length > 0 ? log : undefined,
+      this._enableLog && log.length > 0 ? log : undefined,
     )
   }
 
@@ -812,6 +897,116 @@ export class CombatState {
 
     return !attackerHasParticipating || !defenderHasParticipating
   }
+}
+
+/** Add hits and set next phase in a single operation (avoids double spread) */
+function addHitsToDataWithPhase(
+  data: CombatStateData,
+  attackerHits: number,
+  defenderHits: number,
+  validTargets: { attacker: UnitType[]; defender: UnitType[] },
+  nextPhase: PhaseIdentifier,
+): CombatStateData {
+  const newData: CombatStateData = {
+    ...data,
+    currentPhase: nextPhase,
+  }
+  // Attacker's dice hit defender, defender's dice hit attacker
+  if (attackerHits > 0) {
+    newData.defender = {
+      ...data.defender,
+      hitPools: [
+        ...data.defender.hitPools,
+        { hits: attackerHits, validTargets: validTargets.defender },
+      ],
+    }
+  }
+  if (defenderHits > 0) {
+    newData.attacker = {
+      ...newData.attacker,
+      hitPools: [
+        ...data.attacker.hitPools,
+        { hits: defenderHits, validTargets: validTargets.attacker },
+      ],
+    }
+  }
+  return newData
+}
+
+/** Count units directly from data without creating CombatSideState */
+function countUnitsFromData(
+  units: Partial<Record<UnitType, Unit[]>>,
+  participatingUnits?: ReadonlySet<UnitType>,
+): number {
+  let total = 0
+  for (const type in units) {
+    if (participatingUnits && !participatingUnits.has(type as UnitType))
+      continue
+    const typeUnits = units[type as keyof typeof units]
+    if (typeUnits) total += typeUnits.length
+  }
+  return total
+}
+
+/** Get participating units directly from data */
+function getParticipatingUnitsFromData(
+  data: CombatStateData,
+  side: CombatSide,
+): ReadonlySet<UnitType> {
+  const settings = data.abilities[side]['SETTINGS']
+  if (!settings) throw new Error('No SETTINGS in getParticipatingUnitsFromData')
+
+  const units =
+    data.combatMode === 'GROUND'
+      ? (settings.groundCombatParticipating as UnitType[])
+      : (settings.spaceCombatParticipating as UnitType[])
+
+  let cached = participatingUnitsCache.get(units)
+  if (!cached) {
+    cached = new Set(units)
+    participatingUnitsCache.set(units, cached)
+  }
+  return cached
+}
+
+/** Get unit priority directly from data */
+function getUnitPriorityFromData(
+  data: CombatStateData,
+  side: CombatSide,
+): string[] {
+  const unitPriority = data.abilities[side]['UNIT_PRIORITY']
+  if (!unitPriority)
+    throw new Error('No UNIT_PRIORITY in getUnitPriorityFromData')
+
+  const key =
+    data.combatMode === 'GROUND' ? 'groundUnitPriority' : 'spaceUnitPriority'
+  return unitPriority[key] as string[]
+}
+
+/** Assign hits to a side directly on data, returning new SideStateData */
+function assignHitsToSide(
+  sideData: SideStateData,
+  participatingUnits: ReadonlySet<UnitType>,
+  unitPriority: string[],
+): SideStateData {
+  if (sideData.hitPools.length === 0) return sideData
+
+  const sacrificeOrder = unitPriority.filter(id => {
+    const { type } = parseVariantId(id)
+    return participatingUnits.has(type)
+  })
+
+  let currentUnits = sideData.units
+  for (const pool of sideData.hitPools) {
+    currentUnits = destroyUnitsFromPool(
+      currentUnits,
+      pool.hits,
+      pool.validTargets,
+      sacrificeOrder,
+    )
+  }
+
+  return { ...sideData, units: currentUnits, hitPools: [] }
 }
 
 const abilitiesSideHashCache = new WeakMap<

@@ -3,9 +3,10 @@ import type { ProbabilityNode } from './types'
 
 interface EngineOptions {
   maxRounds?: number
+  enableLog?: boolean
 }
 
-const DEFAULT_MAX_ROUNDS = 100
+const DEFAULT_MAX_ROUNDS = 1000
 
 function getNextRound(currentRound: number, state: CombatState): number {
   return state.currentPhase.micro === 'START' ? currentRound + 1 : currentRound
@@ -13,12 +14,14 @@ function getNextRound(currentRound: number, state: CombatState): number {
 
 export class CombatEngine {
   private maxRounds: number
+  private enableLog: boolean
   private subtreeCache: Map<string, ProbabilityNode[]>
   private outcomes: number = 0
   private nextNodeId: number = 0
 
   constructor(options: EngineOptions = {}) {
     this.maxRounds = options.maxRounds ?? DEFAULT_MAX_ROUNDS
+    this.enableLog = options.enableLog ?? false
     this.subtreeCache = new Map()
   }
 
@@ -28,12 +31,12 @@ export class CombatEngine {
     this.subtreeCache.clear()
 
     const root: ProbabilityNode = {
-      id: String(this.nextNodeId++),
+      id: this.nextNodeId++,
       state: initialState,
       probability: 1,
       round: 0,
       children: [],
-      log: [],
+      ...(this.enableLog ? { log: [] } : {}),
     }
 
     if (initialState.isFinished()) {
@@ -41,6 +44,7 @@ export class CombatEngine {
     }
 
     this.expandNode(root)
+    console.log(this.subtreeCache)
     return root
   }
 
@@ -48,6 +52,10 @@ export class CombatEngine {
     let cacheKey: string | null = null
 
     while (true) {
+      if (node.round > this.maxRounds) {
+        console.warn(`Exceed ${this.maxRounds} rounds`)
+      }
+
       if (node.state.isFinished() || node.round > this.maxRounds) {
         this.outcomes++
         return
@@ -65,25 +73,25 @@ export class CombatEngine {
         cacheKey = key
       }
 
-      const outcomes = node.state.advance(node.round)
+      const outcomes = node.state.advance(node.round, this.enableLog)
 
       if (outcomes.length === 1 && outcomes[0].probability === 1) {
         const outcome = outcomes[0]
         node.state = outcome.state
         node.round = getNextRound(node.round, outcome.state)
-        if (outcome.log) {
-          node.log = [...node.log, ...outcome.log]
+        if (this.enableLog && outcome.log) {
+          node.log = [...(node.log ?? []), ...outcome.log]
         }
         continue
       }
 
       node.children = outcomes.map(outcome => ({
-        id: String(this.nextNodeId++),
+        id: this.nextNodeId++,
         state: outcome.state,
         probability: outcome.probability,
         round: getNextRound(node.round, outcome.state),
         children: [],
-        log: outcome.log ?? [],
+        ...(this.enableLog ? { log: outcome.log ?? [] } : {}),
       }))
 
       if (cacheKey) {

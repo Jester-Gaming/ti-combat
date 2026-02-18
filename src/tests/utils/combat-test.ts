@@ -162,7 +162,7 @@ export class CombatTest {
       if (curMeta === 'COMPLETE') break
 
       const cs = CombatState.fromData(this._state)
-      const outcomes = cs.advance(this._round)
+      const outcomes = cs.advance(this._round, true)
 
       const best = pickOutcomeByHits(outcomes, hits)
       this._state = best.state.data
@@ -193,7 +193,7 @@ export class CombatTest {
       if (passedEnd) break
 
       const cs = CombatState.fromData(this._state)
-      const outcomes = cs.advance(this._round)
+      const outcomes = cs.advance(this._round, true)
 
       const best = pickOutcomeByHits(outcomes, hits)
       this._state = best.state.data
@@ -214,7 +214,7 @@ export class CombatTest {
 
   step(round?: number): StateWithProbability[] {
     const cs = CombatState.fromData(this._state)
-    return cs.advance(round ?? this._round)
+    return cs.advance(round ?? this._round, true)
   }
 
   // --- Log query methods ---

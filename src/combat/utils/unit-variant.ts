@@ -18,18 +18,31 @@ export function makeVariantId(
   return `${type}:${sorted.join(',')}`
 }
 
+const EMPTY_SUBTYPES: string[] = []
+const parseCache = new Map<
+  UnitVariantId,
+  { type: UnitType; subtypes: string[] }
+>()
+
 export function parseVariantId(id: UnitVariantId): {
   type: UnitType
   subtypes: string[]
 } {
+  const cached = parseCache.get(id)
+  if (cached) return cached
+
   const colonIndex = id.indexOf(':')
+  let result: { type: UnitType; subtypes: string[] }
   if (colonIndex === -1) {
-    return { type: id as UnitType, subtypes: [] }
+    result = { type: id as UnitType, subtypes: EMPTY_SUBTYPES }
+  } else {
+    result = {
+      type: id.slice(0, colonIndex) as UnitType,
+      subtypes: id.slice(colonIndex + 1).split(','),
+    }
   }
-  return {
-    type: id.slice(0, colonIndex) as UnitType,
-    subtypes: id.slice(colonIndex + 1).split(','),
-  }
+  parseCache.set(id, result)
+  return result
 }
 
 export function getUnitVariantId(type: UnitType, unit: Unit): UnitVariantId {

@@ -10,6 +10,11 @@ interface RelativeOutcome {
   probability: number
 }
 
+type OutcomeRecord = Record<string, RelativeOutcome>
+
+/** Sentinel for cycle detection — distinguishable from undefined (not yet cached) */
+const EMPTY_OUTCOMES: OutcomeRecord = Object.freeze({})
+
 /**
  * Flattens a probability tree (DAG with cycles) into combat outcomes.
  *
@@ -27,25 +32,32 @@ interface RelativeOutcome {
  * - Complex cycles: Multiple paths with cycles at different depths
  */
 export function flattenTree(root: ProbabilityNode): CombatOutcome[] {
-  // Cache: nodeId -> Map<outcomeKey, RelativeOutcome>
+  // Cache: nodeId -> outcomes (array indexed by numeric id)
   // Stores already-computed outcomes with relative probabilities
-  const cache = new Map<string, Map<string, RelativeOutcome>>()
+  const cache: (OutcomeRecord | undefined)[] = []
 
   // Track nodes currently being processed (for cycle detection)
-  const processing = new Set<string>()
+  const processing: boolean[] = []
+
+  // Cache merge results by children-array reference. When the engine
+  // cache hits, multiple branch nodes share the exact same children
+  // array object. Their merge results are identical (same children
+  // with same probabilities), so we can skip re-merging ~99% of
+  // branch nodes. Only valid when cycleProb === 0.
+  const childrenMergeCache = new Map<ProbabilityNode[], OutcomeRecord>()
 
   /**
    * Process a node and return its outcomes with relative probabilities.
-   * Returns empty Map if this node is a cycle (caller will redistribute).
+   * Returns EMPTY_OUTCOMES if this node is a cycle (caller will redistribute).
    */
-  function processNode(node: ProbabilityNode): Map<string, RelativeOutcome> {
+  function processNode(node: ProbabilityNode): OutcomeRecord {
     // CYCLE DETECTION: If we're already processing this node, it's a cycle
-    if (processing.has(node.id)) {
-      return new Map()
+    if (processing[node.id]) {
+      return EMPTY_OUTCOMES
     }
 
     // CACHE HIT: Return cached outcomes (DAG optimization)
-    const cached = cache.get(node.id)
+    const cached = cache[node.id]
     if (cached !== undefined) {
       return cached
     }
@@ -54,21 +66,32 @@ export function flattenTree(root: ProbabilityNode): CombatOutcome[] {
     if (node.children.length === 0) {
       const outcome = extractLeafOutcome(node)
       const key = generateOutcomeKey(outcome.attacker, outcome.defender)
-      const result = new Map<string, RelativeOutcome>([
-        [key, { ...outcome, probability: 1 }],
-      ])
-      cache.set(node.id, result)
+      const result: OutcomeRecord = {
+        [key]: { ...outcome, probability: 1 },
+      }
+      cache[node.id] = result
       return result
     }
 
     // BRANCH NODE: Process children and merge outcomes
-    processing.add(node.id)
+    processing[node.id] = true
 
     // Calculate total cycle probability among immediate children
     let cycleProb = 0
     for (const child of node.children) {
-      if (processing.has(child.id)) {
+      if (processing[child.id]) {
         cycleProb += child.probability
+      }
+    }
+
+    // When no cycles, check if we've already merged this exact
+    // children array (shared via engine subtree cache)
+    if (cycleProb === 0) {
+      const cachedMerge = childrenMergeCache.get(node.children)
+      if (cachedMerge) {
+        processing[node.id] = false
+        cache[node.id] = cachedMerge
+        return cachedMerge
       }
     }
 
@@ -77,15 +100,14 @@ export function flattenTree(root: ProbabilityNode): CombatOutcome[] {
     const scaleFactor = cycleProb < 1 ? 1 / (1 - cycleProb) : 1
 
     // Collect and merge outcomes from children
-    const merged = new Map<string, RelativeOutcome>()
+    const merged: OutcomeRecord = {}
 
     for (const child of node.children) {
       // Process child if:
       // - It's not a cycle, OR
       // - It's the only child (even if it cycles)
       // This matches the original algorithm's logic
-      const shouldProcess =
-        !processing.has(child.id) || node.children.length === 1
+      const shouldProcess = !processing[child.id] || node.children.length === 1
 
       if (!shouldProcess) {
         continue
@@ -93,32 +115,38 @@ export function flattenTree(root: ProbabilityNode): CombatOutcome[] {
 
       const childOutcomes = processNode(child)
 
-      // Merge child outcomes into our map
-      for (const [key, outcome] of childOutcomes) {
+      // Merge child outcomes into our record
+      for (const key in childOutcomes) {
+        const outcome = childOutcomes[key]
         // Scale by child probability and cycle adjustment
         const adjustedProb =
           outcome.probability * child.probability * scaleFactor
 
-        const existing = merged.get(key)
+        const existing = merged[key]
         if (existing) {
           // Merge with existing outcome
           existing.probability += adjustedProb
         } else {
           // Add new outcome
-          merged.set(key, {
+          merged[key] = {
             attacker: outcome.attacker,
             defender: outcome.defender,
             winner: outcome.winner,
             probability: adjustedProb,
-          })
+          }
         }
       }
     }
 
-    processing.delete(node.id)
+    processing[node.id] = false
+
+    // Cache by children-array reference when no cycles
+    if (cycleProb === 0) {
+      childrenMergeCache.set(node.children, merged)
+    }
 
     // Cache the merged outcomes
-    cache.set(node.id, merged)
+    cache[node.id] = merged
     return merged
   }
 
@@ -127,7 +155,8 @@ export function flattenTree(root: ProbabilityNode): CombatOutcome[] {
 
   // Convert to final array format (apply root probability)
   const results: CombatOutcome[] = []
-  for (const outcome of relativeOutcomes.values()) {
+  for (const key in relativeOutcomes) {
+    const outcome = relativeOutcomes[key]
     const finalProb = outcome.probability * root.probability
     results.push({
       attacker: outcome.attacker,
@@ -184,22 +213,42 @@ function generateOutcomeKey(
   attacker: SurvivorSide,
   defender: SurvivorSide,
 ): string {
-  const formatSide = (side: SurvivorSide): string =>
-    Object.entries(side)
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([type, units]) => {
-        if (!units || units.length === 0) return ''
-        const damaged = units.filter(u => u.isDamaged).length
-        const subtypeKey = units
-          .flatMap(u => u.subtypes ?? [])
-          .sort()
-          .join('+')
-        return `${type}:${units.length}${damaged ? `d${damaged}` : ''}${subtypeKey ? `s${subtypeKey}` : ''}`
-      })
-      .filter(Boolean)
-      .join(',')
+  return `${formatSideKey(attacker)}|${formatSideKey(defender)}`
+}
 
-  return `${formatSide(attacker)}|${formatSide(defender)}`
+function formatSideKey(side: SurvivorSide): string {
+  const keys = Object.keys(side)
+  if (keys.length === 0) return ''
+  if (keys.length > 1) keys.sort()
+
+  let result = ''
+  for (const type of keys) {
+    const units = side[type]
+    if (!units || units.length === 0) continue
+
+    if (result) result += ','
+    result += type + ':' + units.length
+
+    // Count damaged units without allocating a filtered array
+    let damaged = 0
+    let hasSubtypes = false
+    for (const u of units) {
+      if (u.isDamaged) damaged++
+      if (u.subtypes?.length) hasSubtypes = true
+    }
+    if (damaged) result += 'd' + damaged
+    if (hasSubtypes) {
+      const allSubtypes: string[] = []
+      for (const u of units) {
+        if (u.subtypes) {
+          for (const s of u.subtypes) allSubtypes.push(s)
+        }
+      }
+      allSubtypes.sort()
+      result += 's' + allSubtypes.join('+')
+    }
+  }
+  return result
 }
 
 /**
