@@ -1,4 +1,9 @@
-import { GROUND_FORCES, NON_FIGHTER_SHIPS, SHIPS } from '@/constants/units'
+import {
+  GROUND_FORCES,
+  NON_FIGHTER_SHIPS,
+  SHIPS,
+  STRUCTURES,
+} from '@/constants/units'
 import type { UnitType } from '@/types'
 
 import { declareParam } from '../../../combat/abilities/declare-param'
@@ -8,6 +13,7 @@ type Params = {
   nonFighterShips: UnitType[]
   ships: UnitType[]
   groundForces: UnitType[]
+  structures: UnitType[]
   spaceCombatParticipating: UnitType[]
   groundCombatParticipating: UnitType[]
   validTargetsSpaceCannonOffense: UnitType[]
@@ -31,6 +37,7 @@ export const settings: Ability<Params> = {
       compute: (ships: UnitType[]) => ships.filter(u => u !== 'FIGHTER'),
     }),
     groundForces: GROUND_FORCES,
+    structures: STRUCTURES,
     spaceCombatParticipating: declareParam({
       default: [],
       source: 'ships',

@@ -180,7 +180,27 @@ function getParticipatingUnitTypesForSide(
     : ((settings.spaceCombatParticipating as UnitType[]) ?? [])
 }
 
-function getParticipatingVariantsForSide(
+function getAllUnitTypesForSide(
+  state: Readonly<CombatStateData>,
+  side: CombatSide,
+  combatModeOverride?: CombatMode,
+): UnitType[] {
+  const settings = state.abilities[side]['SETTINGS']
+  if (!settings) {
+    return (Object.keys(state[side].units) as UnitType[]).filter(
+      t => (state[side].units[t]?.length ?? 0) > 0,
+    )
+  }
+  const mode = combatModeOverride ?? state.combatMode
+  const participating =
+    mode === 'GROUND'
+      ? ((settings.groundCombatParticipating as UnitType[]) ?? [])
+      : ((settings.spaceCombatParticipating as UnitType[]) ?? [])
+  const structures = (settings.structures as UnitType[]) ?? []
+  return [...new Set([...participating, ...structures])]
+}
+
+function getUnitVariantsForSide(
   state: Readonly<CombatStateData>,
   side: CombatSide,
   filter?: {
@@ -188,13 +208,12 @@ function getParticipatingVariantsForSide(
     exclude?: UnitType[]
     excludeSubtypes?: string[]
     combatMode?: CombatMode
+    includeNonParticipating?: boolean
   },
 ): string[] {
-  let baseTypes = getParticipatingUnitTypesForSide(
-    state,
-    side,
-    filter?.combatMode,
-  )
+  let baseTypes = filter?.includeNonParticipating
+    ? getAllUnitTypesForSide(state, side, filter?.combatMode)
+    : getParticipatingUnitTypesForSide(state, side, filter?.combatMode)
   if (filter?.include) {
     const includeSet = new Set(filter.include)
     baseTypes = baseTypes.filter(t => includeSet.has(t))
@@ -291,22 +310,24 @@ function buildSideReadApi(
       return getParticipatingUnitTypesForSide(state, side, options?.combatMode)
     },
 
-    getParticipatingVariants(filter?: {
+    getUnitVariants(filter?: {
       include?: UnitType[]
       exclude?: UnitType[]
       excludeSubtypes?: string[]
       combatMode?: CombatMode
+      includeNonParticipating?: boolean
     }) {
-      return getParticipatingVariantsForSide(state, side, filter)
+      return getUnitVariantsForSide(state, side, filter)
     },
 
-    getParticipatingVariantsOptions(filter?: {
+    getUnitVariantsOptions(filter?: {
       include?: UnitType[]
       exclude?: UnitType[]
       excludeSubtypes?: string[]
       combatMode?: CombatMode
+      includeNonParticipating?: boolean
     }) {
-      return getParticipatingVariantsForSide(state, side, filter).map(id => ({
+      return getUnitVariantsForSide(state, side, filter).map(id => ({
         label: getVariantDisplayName(id),
         value: id,
       }))
@@ -321,6 +342,10 @@ function buildSideReadApi(
         getParticipatingUnitTypesForSide(state, side),
       )
       return findUnitByPriorityInSide(sideState, priority, participating)
+    },
+
+    getUnitStats(unitType: UnitType) {
+      return sideState.unitStats?.[unitType]
     },
 
     isUnitAbilityLost(ability: UnitAbility, unitType: UnitType) {
@@ -487,18 +512,20 @@ export function buildApi(
       if (typeof unitTypeOrUnit === 'string') {
         const unitType = unitTypeOrUnit
         const units = sideState.units[unitType]
-        if (!units) return
 
         if (typeof indexOrUpdates === 'number') {
           // modifyUnit(unitType, index, updates)
+          if (!units) return
           const unit = units[indexOrUpdates]
           if (unit && maybeUpdates) {
             Object.assign(unit, maybeUpdates)
           }
         } else {
           // modifyUnit(unitType, updates) — all of type + update template
-          for (const unit of units) {
-            Object.assign(unit, indexOrUpdates)
+          if (units) {
+            for (const unit of units) {
+              Object.assign(unit, indexOrUpdates)
+            }
           }
           if (sideState.unitStats?.[unitType]) {
             Object.assign(sideState.unitStats[unitType]!, indexOrUpdates)

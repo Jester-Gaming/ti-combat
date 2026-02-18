@@ -75,7 +75,7 @@ export const duraniumArmor: Ability<Params> = {
         key,
         label: 'Repair Priority',
         type: 'order-list' as const,
-        items: ctx.api.own.getParticipatingVariantsOptions({
+        items: ctx.api.own.getUnitVariantsOptions({
           exclude: ['FIGHTER'],
         }),
       },

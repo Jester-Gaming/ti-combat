@@ -29,7 +29,7 @@ export const gravleashManeuvers: Ability<Params> = {
         key: 'shipPriority' as const,
         label: 'Ship Priority',
         type: 'order-list' as const,
-        items: ctx.api.own.getParticipatingVariantsOptions({
+        items: ctx.api.own.getUnitVariantsOptions({
           combatMode: 'SPACE',
         }),
       },

@@ -34,7 +34,7 @@ export const unitPriority: Ability<Params> = {
         key,
         label: 'Unit Priority',
         type: 'order-list' as const,
-        items: ctx.api.own.getParticipatingVariantsOptions(),
+        items: ctx.api.own.getUnitVariantsOptions(),
       },
     ]
   },

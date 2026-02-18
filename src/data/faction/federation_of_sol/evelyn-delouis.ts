@@ -34,7 +34,7 @@ export const evelynDelouis: Ability<Params> = {
         label: 'Unit Type',
         type: 'select' as const,
         items: ctx.api.own
-          .getParticipatingVariantsOptions({
+          .getUnitVariantsOptions({
             excludeSubtypes: ['Evelyn'],
             combatMode: 'GROUND',
           })

@@ -3,6 +3,7 @@ import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 import { alarum } from './alarum'
+import { linkshipI, linkshipII } from './linkship'
 
 export const ral_nel: Faction = {
   name: 'Ral Nel Consortium',
@@ -48,6 +49,7 @@ export const ral_nel: Faction = {
         UNIT_ABILITIES: {
           AFB: [9, 2],
         },
+        ABILITIES: [linkshipI],
       },
       UPGRADED: {
         NAME: 'Linkship II',
@@ -58,6 +60,7 @@ export const ral_nel: Faction = {
         UNIT_ABILITIES: {
           AFB: [6, 3],
         },
+        ABILITIES: [linkshipII],
       },
     },
   },

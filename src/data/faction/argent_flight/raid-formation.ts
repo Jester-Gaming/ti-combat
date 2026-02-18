@@ -27,7 +27,7 @@ export const raidFormation: Ability<Params> = {
         key: 'targetPriority' as const,
         label: 'Target Priority',
         type: 'order-list' as const,
-        items: ctx.api.opponent.getParticipatingVariantsOptions({
+        items: ctx.api.opponent.getUnitVariantsOptions({
           combatMode: 'SPACE',
           exclude: ['FIGHTER'],
         }),

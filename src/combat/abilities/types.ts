@@ -6,6 +6,7 @@ import type {
   Unit,
   UnitAbility,
   UnitState,
+  UnitStats,
   UnitType,
 } from '@/types'
 
@@ -145,21 +146,24 @@ export interface SideReadApi {
   /** Get participating base unit types from SETTINGS, filtered to units present on this side.
    *  Pass `combatMode` to override the current combat mode (e.g., for abilities with a fixed context). */
   getParticipatingUnitTypes(options?: { combatMode?: CombatMode }): UnitType[]
-  /** Get participating unit types + variant IDs from declared subtypes.
+  /** Get unit types + variant IDs from declared subtypes.
+   *  By default returns only participating units. Pass `includeNonParticipating: true` to include all unit types on this side.
    *  Pass `combatMode` in filter to override the current combat mode.
    *  `include`/`exclude` filter base unit types; `excludeSubtypes` removes variants that contain a given subtype name. */
-  getParticipatingVariants(filter?: {
+  getUnitVariants(filter?: {
     include?: UnitType[]
     exclude?: UnitType[]
     excludeSubtypes?: string[]
     combatMode?: CombatMode
+    includeNonParticipating?: boolean
   }): string[]
-  /** Same as getParticipatingVariants but returns { label, value } items for UI config. */
-  getParticipatingVariantsOptions(filter?: {
+  /** Same as getUnitVariants but returns { label, value } items for UI config. */
+  getUnitVariantsOptions(filter?: {
     include?: UnitType[]
     exclude?: UnitType[]
     excludeSubtypes?: string[]
     combatMode?: CombatMode
+    includeNonParticipating?: boolean
   }): { label: string; value: string }[]
   findUnit(
     unitType: UnitType,
@@ -168,6 +172,8 @@ export interface SideReadApi {
   /** Find the first unit matching a priority list of variant IDs.
    *  A plain UnitType matches only units with no subtypes. */
   findUnitByPriority(priority: string[]): Unit | undefined
+  /** Get the unit stats template for a given type. Returns post-PREPARE values even if no units of this type are in the battle. */
+  getUnitStats(unitType: UnitType): Readonly<UnitStats> | undefined
   isUnitAbilityLost(ability: UnitAbility, unitType: UnitType): boolean
   isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: UnitType): boolean
 

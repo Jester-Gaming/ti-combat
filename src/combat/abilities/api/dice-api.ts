@@ -156,7 +156,8 @@ export function buildDiceApi(pool: DicePool): DiceApi {
 
     addDiceGroup: (source: string, unit: Unit, diceGroup: DiceGroup) => {
       const existing = data[source] ?? []
-      data[source] = [...existing, [diceGroup[0], diceGroup[1], unit]]
+      const resolvedUnit = isDraft(unit) ? original(unit)! : unit
+      data[source] = [...existing, [diceGroup[0], diceGroup[1], resolvedUnit]]
     },
   } as DiceApi
 

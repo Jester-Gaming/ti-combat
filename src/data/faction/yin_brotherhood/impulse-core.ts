@@ -67,7 +67,7 @@ export const impulseCore: Ability<Params> = {
         key: 'sacrificePriority' as const,
         label: 'Sacrifice Priority',
         type: 'priority-list' as const,
-        items: ctx.api.own.getParticipatingVariantsOptions({
+        items: ctx.api.own.getUnitVariantsOptions({
           include: ['CRUISER', 'DESTROYER'],
           combatMode: 'SPACE',
         }),
@@ -76,7 +76,7 @@ export const impulseCore: Ability<Params> = {
         key: 'targetPriority' as const,
         label: 'Target Priority',
         type: 'priority-list' as const,
-        items: ctx.api.opponent.getParticipatingVariantsOptions({
+        items: ctx.api.opponent.getUnitVariantsOptions({
           exclude: ['FIGHTER'],
           combatMode: 'SPACE',
         }),

@@ -136,7 +136,7 @@ export const sustainDamage: Ability<Params> = {
         key,
         label: 'Sustain Priority',
         type: 'priority-list' as const,
-        items: ctx.api.own.getParticipatingVariantsOptions({
+        items: ctx.api.own.getUnitVariantsOptions({
           exclude: ['FIGHTER'],
         }),
       },

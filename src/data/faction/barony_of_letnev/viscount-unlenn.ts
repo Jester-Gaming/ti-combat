@@ -34,7 +34,7 @@ export const viscountUnlenn: Ability<Params> = {
         label: 'Unit Type',
         type: 'select' as const,
         items: ctx.api.own
-          .getParticipatingVariantsOptions({
+          .getUnitVariantsOptions({
             exclude: ['FIGHTER'],
             excludeSubtypes: ['Viscount'],
             combatMode: 'SPACE',

@@ -12,7 +12,6 @@ export const lightrailOrdnance: Ability = {
   invoke: [
     {
       timing: 'PREPARE',
-      isCallable: (_params, ctx) => ctx.api.own.hasUnit('SPACE_DOCK'),
       call: ctx => {
         ctx.api.own.modifyUnit('SPACE_DOCK', {
           UNIT_ABILITIES: { SPACE_CANNON: [5, 2] },

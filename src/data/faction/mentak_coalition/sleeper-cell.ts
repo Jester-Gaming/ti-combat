@@ -113,7 +113,7 @@ export const sleeperCell: Ability<Params> = {
       key: 'shipPriority' as const,
       label: 'Ship Keep Priority',
       type: 'order-list' as const,
-      items: ctx.api.own.getParticipatingVariantsOptions({
+      items: ctx.api.own.getUnitVariantsOptions({
         exclude: ['FIGHTER'],
         combatMode: 'SPACE',
       }),
