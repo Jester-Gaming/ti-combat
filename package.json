@@ -13,8 +13,8 @@
     "preview": "vite preview",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest",
-    "test:run": "vitest run",
+    "test": "vitest --no-isolate --pool=threads",
+    "test:run": "vitest run --no-isolate --pool=threads",
     "test:coverage": "vitest run --coverage",
     "prepare": "husky"
   },
