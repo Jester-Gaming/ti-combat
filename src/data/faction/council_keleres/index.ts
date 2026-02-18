@@ -2,9 +2,14 @@ import councilKeleresIcon from '@/assets/faction/council_keleres.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
+import { custodiaVigilia } from './custodia-vigilia'
+
 export const council_keleres: Faction = {
   name: 'Council Keleres',
   icon: councilKeleresIcon,
+  abilities: {
+    faction: [custodiaVigilia],
+  },
   units: {
     FLAGSHIP: {
       BASE: {

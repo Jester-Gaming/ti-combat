@@ -664,6 +664,11 @@ export class CombatState {
       log: abilityLog,
     } = this.runAbilities('BEFORE_UNIT_ABILITY_ROLL', sidedDiceData)
 
+    // Clear dice for sides not in firing config
+    // (abilities may inject dice for non-firing sides, e.g. attacker during SCD)
+    if (!firing.includes('attacker')) modifiedDice.attacker = {}
+    if (!firing.includes('defender')) modifiedDice.defender = {}
+
     const dicePoolLog: LogEntry = {
       path: [this.currentPhase.meta, 'DICE_POOL'],
       data: [

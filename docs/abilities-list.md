@@ -28,7 +28,7 @@
 ### Council Keleres
 
 - [ ] **Overwing Zeta** (Keleres Hero) — At the start of a round of space combat in a system that contains a planet you control: Place your flagship and up to a total of 2 cruisers or destroyers from your reinforcements in the active system. Then, purge this card.
-- [ ] **Custodia Vigilia** (Legendary Ability) — While you control Mecatol Rex, it gains Space Cannon 5 and Production 3.
+- [x] **Custodia Vigilia** (Legendary Ability) — While you control Mecatol Rex, it gains Space Cannon 5 and Production 3.
 
 ### Crimson Rebellion
 
