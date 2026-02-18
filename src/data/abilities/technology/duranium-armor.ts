@@ -1,3 +1,5 @@
+import type { Unit, UnitType } from '@/types'
+
 import { declareParam } from '../../../combat/abilities/declare-param'
 import type {
   Ability,
@@ -54,6 +56,13 @@ export const duraniumArmor: Ability<Params> = {
   headerUI: 'isEnabled',
   invoke: [
     {
+      timing: 'WHEN_SUSTAIN_DAMAGE_USE',
+      side: 'OWN',
+      call: (ctx, _params, unit: Unit) => {
+        ctx.api.own.modifyUnit(unit, { usedSustainThisRound: true })
+      },
+    },
+    {
       timing: 'AFTER_ASSIGN_HITS_STEP',
       context: ['SPACE_COMBAT', 'GROUND_COMBAT'],
       isCallable: (params, ctx) => findRepairTarget(params, ctx) !== undefined,
@@ -61,6 +70,26 @@ export const duraniumArmor: Ability<Params> = {
         const target = findRepairTarget(params, ctx)
         if (!target) return
         ctx.api.own.modifyUnit(target, { isDamaged: false })
+      },
+    },
+    {
+      timing: 'CLEANUP_ROUND',
+      isCallable: (_params, ctx) => {
+        for (const units of Object.values(ctx.api.own.getUnits())) {
+          if (units!.some(u => u.usedSustainThisRound)) return true
+        }
+        return false
+      },
+      call: ctx => {
+        for (const [type, units] of Object.entries(ctx.api.own.getUnits())) {
+          for (const unit of units!) {
+            if (unit.usedSustainThisRound) {
+              ctx.api.own.modifyUnit(type as UnitType, units!.indexOf(unit), {
+                usedSustainThisRound: false,
+              })
+            }
+          }
+        }
       },
     },
   ],

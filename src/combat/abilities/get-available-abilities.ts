@@ -69,10 +69,15 @@ function collectUnitAbilities(faction: Faction): Ability[] {
   return abilities
 }
 
+const unitDefAbilityKeysCache = new Map<FactionKey, Set<string>>()
+const unitDefAbilitiesCache = new Map<FactionKey, Ability[]>()
+
 /** Get keys of all abilities defined on faction units (regardless of unit state) */
 export function getUnitDefinitionAbilityKeys(
   factionKey: FactionKey,
-): Set<string> {
+): ReadonlySet<string> {
+  const cached = unitDefAbilityKeysCache.get(factionKey)
+  if (cached) return cached
   const faction = factions[factionKey]
   if (!faction) return new Set()
   const keys = new Set<string>()
@@ -85,7 +90,31 @@ export function getUnitDefinitionAbilityKeys(
       keys.add(ability.key)
     }
   }
+  unitDefAbilityKeysCache.set(factionKey, keys)
   return keys
+}
+
+/** Get all unique ability objects from faction unit definitions */
+export function getUnitDefinitionAbilities(factionKey: FactionKey): Ability[] {
+  const cached = unitDefAbilitiesCache.get(factionKey)
+  if (cached) return cached
+  const faction = factions[factionKey]
+  if (!faction) return []
+  const seen = new Set<string>()
+  const abilities: Ability[] = []
+  for (const unitDef of Object.values(faction.units)) {
+    if (!unitDef) continue
+    for (const ability of [
+      ...(unitDef.BASE.ABILITIES ?? []),
+      ...(unitDef.UPGRADED?.ABILITIES ?? []),
+    ]) {
+      if (seen.has(ability.key)) continue
+      seen.add(ability.key)
+      abilities.push(ability)
+    }
+  }
+  unitDefAbilitiesCache.set(factionKey, abilities)
+  return abilities
 }
 
 export function getAvailableAbilities(

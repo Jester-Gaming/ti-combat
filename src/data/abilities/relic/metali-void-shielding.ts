@@ -1,5 +1,3 @@
-import type { UnitType } from '@/types'
-
 import type {
   Ability,
   AbilityReadContext,
@@ -62,50 +60,11 @@ export const metaliVoidShielding: Ability = {
         const target = findVoidShieldTarget(ctx)
         if (!target) return
 
-        ctx.api.own.modifyUnit(target.unit, {
-          isDamaged: true,
-          usedSustainThisRound: true,
-        })
+        ctx.api.own.modifyUnit(target.unit, { isDamaged: true })
         ctx.api.own.reduceHits(1)
         ctx.log(target.unitType)
         ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', target.unit)
         ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', target.unit)
-      },
-    },
-    {
-      timing: 'CLEANUP_ROUND',
-      always: true,
-      isCallable: (_params, ctx) => {
-        for (const [type, units] of Object.entries(ctx.api.own.getUnits())) {
-          const unitType = type as UnitType
-          if (
-            units!.some(
-              u =>
-                u.usedSustainThisRound &&
-                (!u.UNIT_ABILITIES?.SUSTAIN_DAMAGE ||
-                  ctx.api.own.isUnitAbilityLost('SUSTAIN_DAMAGE', unitType)),
-            )
-          ) {
-            return true
-          }
-        }
-        return false
-      },
-      call: ctx => {
-        for (const [type, units] of Object.entries(ctx.api.own.getUnits())) {
-          const unitType = type as UnitType
-          for (const unit of units!) {
-            if (
-              unit.usedSustainThisRound &&
-              (!unit.UNIT_ABILITIES?.SUSTAIN_DAMAGE ||
-                ctx.api.own.isUnitAbilityLost('SUSTAIN_DAMAGE', unitType))
-            ) {
-              ctx.api.own.modifyUnit(unit, {
-                usedSustainThisRound: false,
-              })
-            }
-          }
-        }
       },
     },
   ],

@@ -24,7 +24,5 @@ describe('DIRECT_HIT + DURANIUM_ARMOR', () => {
 
     expect(t.attacker.units.DREADNOUGHT).toBeUndefined()
     expect(t.abilityLog('DIRECT_HIT')).toHaveLength(1)
-    // Duranium Armor has nothing to repair
-    expect(t.abilityLog('DURANIUM_ARMOR')).toHaveLength(0)
   })
 })

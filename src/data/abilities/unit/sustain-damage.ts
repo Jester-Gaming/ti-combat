@@ -105,23 +105,11 @@ export const sustainDamage: Ability<Params> = {
         return isHighestPrioritySustainTarget(params, ctx)
       },
       call: ctx => {
-        ctx.api.own.modifyUnit(ctx.getUnit(), {
-          isDamaged: true,
-          usedSustainThisRound: true,
-        })
+        ctx.api.own.modifyUnit(ctx.getUnit(), { isDamaged: true })
         ctx.api.own.reduceHits(1)
         ctx.log(ctx.getUnitType())
         ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', ctx.getUnit())
         ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', ctx.getUnit())
-      },
-    },
-    {
-      timing: 'CLEANUP_ROUND',
-      isCallable: (_params, ctx) => ctx.getUnit().usedSustainThisRound === true,
-      call: ctx => {
-        ctx.api.own.modifyUnit(ctx.getUnit(), {
-          usedSustainThisRound: false,
-        })
       },
     },
   ],

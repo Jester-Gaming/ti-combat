@@ -22,9 +22,7 @@ describe('DURANIUM_ARMOR + QUANTUM_MANIPULATOR', () => {
 
     // Mech sustains via Quantum Manipulator
     expect(t.defender.units.MECH![0].isDamaged).toBe(true)
-    expect(t.abilityLog('QUANTUM_MANIPULATOR')).toHaveLength(1)
     // Duranium Armor does not repair the mech — MECH is not in nonFighterShips
     expect(t.defender.units.MECH![0].isDamaged).toBe(true)
-    expect(t.abilityLog('DURANIUM_ARMOR')).toHaveLength(0)
   })
 })

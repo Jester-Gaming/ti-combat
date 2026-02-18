@@ -359,20 +359,23 @@ export class CombatState {
       logger,
     )
 
-    // Compute additional destroyed units from WHEN_DESTROY effects
-    const additionalAttacker = getDestroyedUnits(
-      afterCleanup.attacker.units,
-      afterWhenDestroy.attacker.units,
-    )
-    const additionalDefender = getDestroyedUnits(
-      afterCleanup.defender.units,
-      afterWhenDestroy.defender.units,
-    )
-
-    // Merge all destroyed units for AFTER_DESTROY
-    const mergedDestroyedContext = {
-      attacker: [...destroyedContext.attacker, ...additionalAttacker],
-      defender: [...destroyedContext.defender, ...additionalDefender],
+    // Skip diff when WHEN_DESTROY didn't change state (no ability fired)
+    let mergedDestroyedContext = destroyedContext
+    if (afterWhenDestroy !== afterCleanup) {
+      const additionalAttacker = getDestroyedUnits(
+        afterCleanup.attacker.units,
+        afterWhenDestroy.attacker.units,
+      )
+      const additionalDefender = getDestroyedUnits(
+        afterCleanup.defender.units,
+        afterWhenDestroy.defender.units,
+      )
+      if (additionalAttacker.length > 0 || additionalDefender.length > 0) {
+        mergedDestroyedContext = {
+          attacker: [...destroyedContext.attacker, ...additionalAttacker],
+          defender: [...destroyedContext.defender, ...additionalDefender],
+        }
+      }
     }
 
     // Then run AFTER_DESTROY with all destroyed units
@@ -811,11 +814,22 @@ export class CombatState {
   }
 }
 
+const abilitiesSideHashCache = new WeakMap<
+  Record<string, Record<string, unknown>>,
+  string
+>()
+
 function getAbilitiesHash(abilities: AbilitiesConfig): string {
   const hashSide = (side: AbilitiesConfig[keyof AbilitiesConfig]) => {
+    const cached = abilitiesSideHashCache.get(side)
+    if (cached !== undefined) return cached
     const keys = Object.keys(side).sort()
-    if (keys.length === 0) return ''
-    return keys.map(k => `${k}:${JSON.stringify(side[k])}`).join(',')
+    const result =
+      keys.length === 0
+        ? ''
+        : keys.map(k => `${k}:${JSON.stringify(side[k])}`).join(',')
+    abilitiesSideHashCache.set(side, result)
+    return result
   }
   const a = hashSide(abilities.attacker)
   const d = hashSide(abilities.defender)
@@ -830,7 +844,12 @@ function getUnitStateKey(u: Unit): string {
   return key
 }
 
+const sideHashCache = new WeakMap<SideStateData, string>()
+
 function getSideHash(side: SideStateData): string {
+  const cached = sideHashCache.get(side)
+  if (cached !== undefined) return cached
+
   const parts: string[] = []
   const sortedTypes = Object.keys(side.units).sort()
 
@@ -882,5 +901,7 @@ function getSideHash(side: SideStateData): string {
     }
   }
 
-  return parts.join(',')
+  const result = parts.join(',')
+  sideHashCache.set(side, result)
+  return result
 }

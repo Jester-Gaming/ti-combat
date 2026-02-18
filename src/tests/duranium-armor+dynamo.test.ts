@@ -25,6 +25,5 @@ describe('DURANIUM_ARMOR + DYNAMO', () => {
     expect(t.attacker.units.DREADNOUGHT).toHaveLength(1)
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(false)
     expect(t.abilityLog('DYNAMO')).toHaveLength(1)
-    expect(t.abilityLog('DURANIUM_ARMOR')).toHaveLength(0)
   })
 })

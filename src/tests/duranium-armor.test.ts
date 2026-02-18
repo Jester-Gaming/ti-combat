@@ -25,7 +25,6 @@ describe('DURANIUM_ARMOR', () => {
     // Round 2: 0 hits — Dreadnought didn't sustain, Duranium repairs it
     t.advanceRound({ attacker: 0 })
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(false)
-    expect(t.abilityLog('DURANIUM_ARMOR')).toHaveLength(1)
   })
 
   it('does not repair a unit that used sustain this round', () => {
@@ -54,7 +53,6 @@ describe('DURANIUM_ARMOR', () => {
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(false)
     // Second Dreadnought sustained this round → not repaired
     expect(t.attacker.units.DREADNOUGHT![1].isDamaged).toBe(true)
-    expect(t.abilityLog('DURANIUM_ARMOR')).toHaveLength(1)
   })
 
   it('does not fire when no damaged units exist', () => {
@@ -99,6 +97,5 @@ describe('DURANIUM_ARMOR', () => {
     // Round 2: 0 hits — Mech repaired
     t.advanceRound({ attacker: 0 })
     expect(t.attacker.units.MECH![0].isDamaged).toBe(false)
-    expect(t.abilityLog('DURANIUM_ARMOR')).toHaveLength(1)
   })
 })

@@ -11,6 +11,7 @@ import type {
   AbilitiesConfig,
   CombatStateData,
   RemovedUnit,
+  SideStateData,
 } from '../combat-state/types'
 import { Logger } from '../logger'
 import type { LogEntry } from '../types'
@@ -20,6 +21,7 @@ import { buildDiceApi, buildDiceReadApi } from './api/dice-api'
 import { extractDefaults, extractSyncSources } from './declare-param'
 import {
   getAvailableAbilities,
+  getUnitDefinitionAbilities,
   getUnitDefinitionAbilityKeys,
 } from './get-available-abilities'
 import type {
@@ -139,6 +141,8 @@ interface UnitAbilityEntry {
   unitType: UnitType
   unitIndex: number
 }
+
+const unitAbilitiesCache = new WeakMap<SideStateData, UnitAbilityEntry[]>()
 
 interface TimingInvokeEntry {
   ability: Ability
@@ -375,6 +379,8 @@ export interface RunAbilitiesOptions {
 export class AbilitiesParams {
   private _combatState: CombatState
   private _abilities: Record<CombatSide, Ability[]>
+  private _activeTimings!: Set<AbilityTiming>
+  private _timingIndex!: Record<CombatSide, Map<AbilityTiming, Ability[]>>
 
   private static loadAbilities(
     attackerFaction: FactionKey,
@@ -384,6 +390,46 @@ export class AbilitiesParams {
       attacker: getAvailableAbilities('attacker', attackerFaction),
       defender: getAvailableAbilities('defender', defenderFaction),
     }
+  }
+
+  /** Build set of all timings that have at least one registered invoke */
+  private buildActiveTimings(): void {
+    const timings = new Set<AbilityTiming>()
+    const timingIndex: Record<CombatSide, Map<AbilityTiming, Ability[]>> = {
+      attacker: new Map(),
+      defender: new Map(),
+    }
+
+    for (const side of ['attacker', 'defender'] as const) {
+      const sideIndex = timingIndex[side]
+      for (const ability of this._abilities[side]) {
+        for (const invoke of ability.invoke) {
+          timings.add(invoke.timing)
+          const list = sideIndex.get(invoke.timing)
+          if (list) {
+            list.push(ability)
+          } else {
+            sideIndex.set(invoke.timing, [ability])
+          }
+        }
+      }
+    }
+
+    // Include timings from unit definition abilities (both factions)
+    const factionKeys = [
+      this._combatState.data.attacker.faction,
+      this._combatState.data.defender.faction,
+    ]
+    for (const factionKey of factionKeys) {
+      for (const ability of getUnitDefinitionAbilities(factionKey)) {
+        for (const invoke of ability.invoke) {
+          timings.add(invoke.timing)
+        }
+      }
+    }
+
+    this._activeTimings = timings
+    this._timingIndex = timingIndex
   }
 
   private get state(): CombatStateData {
@@ -416,6 +462,7 @@ export class AbilitiesParams {
       combatState.data.attacker.faction,
       combatState.data.defender.faction,
     )
+    this.buildActiveTimings()
 
     this.initializeDefaults()
     this.reconcile()
@@ -438,6 +485,7 @@ export class AbilitiesParams {
       combatState.data.attacker.faction,
       combatState.data.defender.faction,
     )
+    instance.buildActiveTimings()
 
     // Phase 1: Enrich consumers from full SETTINGS (with group additions).
     // Consumer params (e.g. AC targetPriority) sync from enriched groups,
@@ -464,6 +512,7 @@ export class AbilitiesParams {
       combatState.data.attacker.faction,
       combatState.data.defender.faction,
     )
+    instance.buildActiveTimings()
     return instance
   }
 
@@ -472,9 +521,12 @@ export class AbilitiesParams {
     state: CombatStateData,
     side: CombatSide,
   ): UnitAbilityEntry[] {
+    const sideState = state[side]
+    const cached = unitAbilitiesCache.get(sideState)
+    if (cached) return cached
+
     const results: UnitAbilityEntry[] = []
 
-    const sideState = state[side]
     const unitEntries = Object.entries(sideState.units) as Array<
       [UnitType, NonNullable<(typeof sideState.units)[UnitType]>]
     >
@@ -496,6 +548,7 @@ export class AbilitiesParams {
       }
     }
 
+    unitAbilitiesCache.set(sideState, results)
     return results
   }
 
@@ -513,6 +566,7 @@ export class AbilitiesParams {
    */
   reconcileFaction(side: CombatSide, faction: FactionKey): void {
     this._abilities[side] = getAvailableAbilities(side, faction)
+    this.buildActiveTimings()
 
     // Rebuild side config: keep existing params for surviving abilities,
     // initialize defaults for new ones
@@ -610,6 +664,13 @@ export class AbilitiesParams {
     options?: RunAbilitiesOptions,
     logger?: Logger,
   ): RunAbilitiesResult<T> {
+    // Short-circuit: if none of the requested timings have any registered
+    // abilities, skip tracker creation and the entire resolution loop.
+    const timingsArr = Array.isArray(timing) ? timing : [timing]
+    if (!timingsArr.some(t => this._activeTimings.has(t))) {
+      return { state, context: context as TimingContextMap[T], log: [] }
+    }
+
     const activeLogger = logger ?? Logger.create()
     const startIndex = activeLogger.entries.length
 
@@ -1038,20 +1099,26 @@ export class AbilitiesParams {
             )
             const stateAfterWhen = whenDestroy.state
 
-            // Compute additional destroyed units from WHEN_DESTROY effects
-            const additionalAttacker = getDestroyedUnits(
-              stateAfterDestroy.attacker.units,
-              stateAfterWhen.attacker.units,
-            )
-            const additionalDefender = getDestroyedUnits(
-              stateAfterDestroy.defender.units,
-              stateAfterWhen.defender.units,
-            )
-
-            // Merge all destroyed units for AFTER_DESTROY
-            const mergedContext = {
-              attacker: [...destroyedAttacker, ...additionalAttacker],
-              defender: [...destroyedDefender, ...additionalDefender],
+            // Skip diff when WHEN_DESTROY didn't change state (no ability fired)
+            let mergedContext = destroyedContext
+            if (stateAfterWhen !== stateAfterDestroy) {
+              const additionalAttacker = getDestroyedUnits(
+                stateAfterDestroy.attacker.units,
+                stateAfterWhen.attacker.units,
+              )
+              const additionalDefender = getDestroyedUnits(
+                stateAfterDestroy.defender.units,
+                stateAfterWhen.defender.units,
+              )
+              if (
+                additionalAttacker.length > 0 ||
+                additionalDefender.length > 0
+              ) {
+                mergedContext = {
+                  attacker: [...destroyedAttacker, ...additionalAttacker],
+                  defender: [...destroyedDefender, ...additionalDefender],
+                }
+              }
             }
 
             resultState = stateAfterWhen
@@ -1126,9 +1193,10 @@ export class AbilitiesParams {
     const unitAbilities = AbilitiesParams.collectUnitAbilities(state, side)
     // Use faction definition keys (not just living units) so destroyed-unit abilities
     // are never collected as config abilities
-    const unitAbilityKeys = getUnitDefinitionAbilityKeys(state[side].faction)
+    const factionUnitKeys = getUnitDefinitionAbilityKeys(state[side].faction)
+    const liveUnitKeys = new Set<string>()
     for (const ua of unitAbilities) {
-      unitAbilityKeys.add(ua.ability.key)
+      liveUnitKeys.add(ua.ability.key)
     }
 
     const collectInvokes = (ability: Ability, source: AbilitySource): void => {
@@ -1164,10 +1232,19 @@ export class AbilitiesParams {
       collectInvokes(ability, { type: 'unit', unitType, unitIndex })
     }
 
-    // 2. Collect regular abilities from config (skip unit abilities — handled per-unit above)
-    const availableAbilities = this.getAbilities(side)
-    for (const ability of availableAbilities) {
-      if (unitAbilityKeys.has(ability.key)) continue
+    // 2. Collect regular abilities from config via timing index
+    //    (skip unit abilities — handled per-unit above)
+    const candidateAbilities = new Set<Ability>()
+    const sideIndex = this._timingIndex[side]
+    for (const t of timings) {
+      const indexed = sideIndex.get(t as AbilityTiming)
+      if (indexed) {
+        for (const a of indexed) candidateAbilities.add(a)
+      }
+    }
+    for (const ability of candidateAbilities) {
+      if (factionUnitKeys.has(ability.key) || liveUnitKeys.has(ability.key))
+        continue
       collectInvokes(ability, { type: 'config' })
     }
 
