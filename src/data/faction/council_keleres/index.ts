@@ -3,12 +3,14 @@ import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 import { custodiaVigilia } from './custodia-vigilia'
+import { overwingZeta } from './overwing-zeta'
 
 export const council_keleres: Faction = {
   name: 'Council Keleres',
   icon: councilKeleresIcon,
   abilities: {
     faction: [custodiaVigilia],
+    hero: [overwingZeta],
   },
   units: {
     FLAGSHIP: {
