@@ -3,6 +3,7 @@ import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 import { cavalry } from './cavalry'
+import { quantumManipulator } from './quantum-manipulator'
 
 export const nomad: Faction = {
   name: 'Nomad',
@@ -50,7 +51,7 @@ export const nomad: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [quantumManipulator, sustainDamage],
       },
     },
   },
