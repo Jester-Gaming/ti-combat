@@ -1,5 +1,6 @@
 import { declareParam } from '@/combat/abilities/declare-param'
-import type { Ability, DestroyedUnit } from '@/combat/abilities/types'
+import type { Ability } from '@/combat/abilities/types'
+import { parseVariantId } from '@/combat/utils/unit-variant'
 import { NON_FIGHTER_SHIPS, SHIPS, UNIT_LIMITS } from '@/constants/units'
 import type { UnitType } from '@/types'
 
@@ -13,12 +14,13 @@ const SHIPS_SET = new Set<UnitType>(SHIPS)
 const NON_FIGHTER_SET = new Set<UnitType>(NON_FIGHTER_SHIPS)
 
 function collectDestroyedShips(
-  destroyed: DestroyedUnit[],
+  destroyed: Record<string, number>,
 ): Partial<Record<UnitType, number>> {
   const counts: Partial<Record<UnitType, number>> = {}
-  for (const { type } of destroyed) {
+  for (const key in destroyed) {
+    const { type } = parseVariantId(key)
     if (SHIPS_SET.has(type)) {
-      counts[type] = (counts[type] ?? 0) + 1
+      counts[type] = (counts[type] ?? 0) + destroyed[key]
     }
   }
   return counts
@@ -54,7 +56,13 @@ export const sleeperCell: Ability<Params> = {
       timing: 'DESTROY',
       isCallable: (params, _ctx, units) => {
         if (!params.isActive) return false
-        return units.opponent.some(u => SHIPS_SET.has(u.type))
+        for (const key in units.opponent) {
+          if (units.opponent[key] > 0) {
+            const { type } = parseVariantId(key)
+            if (SHIPS_SET.has(type)) return true
+          }
+        }
+        return false
       },
       call: (ctx, params, units) => {
         const destroyed = collectDestroyedShips(units.opponent)

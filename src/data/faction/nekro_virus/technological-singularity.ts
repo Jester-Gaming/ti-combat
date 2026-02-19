@@ -200,7 +200,10 @@ export const technologicalSingularity: Ability<Params> = {
       context: ['SPACE_COMBAT', 'GROUND_COMBAT'],
       isCallable: (params, _ctx, units) => {
         if (params.opponentDestroyed) return false
-        return (units.opponent?.length ?? 0) > 0
+        for (const key in units.opponent) {
+          if (units.opponent[key] > 0) return true
+        }
+        return false
       },
       call: (ctx, params) => {
         ctx.api.own.updateAbilityConfig({ opponentDestroyed: true })

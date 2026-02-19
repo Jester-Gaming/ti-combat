@@ -1,6 +1,6 @@
 import obsidianIcon from '@/assets/faction/obsidian.svg?raw'
 import { declareParam } from '@/combat/abilities/declare-param'
-import type { Ability, DestroyedUnit } from '@/combat/abilities/types'
+import type { Ability } from '@/combat/abilities/types'
 import { parseVariantId } from '@/combat/utils/unit-variant'
 import { SHIPS } from '@/constants/units'
 import type { UnitType } from '@/types'
@@ -11,10 +11,15 @@ type Params = {
 
 const SHIPS_SET = new Set<UnitType>(SHIPS)
 
-function findDestroyedShipTypes(destroyed: DestroyedUnit[]): Set<UnitType> {
+function findDestroyedShipTypes(
+  destroyed: Record<string, number>,
+): Set<UnitType> {
   const types = new Set<UnitType>()
-  for (const { type } of destroyed) {
-    if (SHIPS_SET.has(type)) types.add(type)
+  for (const key in destroyed) {
+    if (destroyed[key] > 0) {
+      const { type } = parseVariantId(key)
+      if (SHIPS_SET.has(type)) types.add(type)
+    }
   }
   return types
 }

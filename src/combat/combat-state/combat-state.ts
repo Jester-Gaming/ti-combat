@@ -43,6 +43,9 @@ import type {
   SideStateData,
 } from './types'
 
+/** Shared empty array to avoid allocating new [] on every disabled-abilities call */
+const EMPTY_LOG: LogEntry[] = []
+
 /** A state with its probability and log entries */
 export interface StateWithProbability {
   state: CombatState
@@ -85,23 +88,23 @@ export class CombatState {
   data: CombatStateData
   private _enableLog = false
   private _params!: AbilitiesParams
-  private _attacker!: CombatSideState
-  private _defender!: CombatSideState
+  private _attacker: CombatSideState | undefined
+  private _defender: CombatSideState | undefined
 
   get disableAbilities() {
     return false
   }
 
   get attacker(): CombatSideState {
-    return this._attacker
+    return (this._attacker ??= new CombatSideState(this, 'attacker'))
   }
 
   get defender(): CombatSideState {
-    return this._defender
+    return (this._defender ??= new CombatSideState(this, 'defender'))
   }
 
   side(side: CombatSide): CombatSideState {
-    return side === 'attacker' ? this._attacker : this._defender
+    return side === 'attacker' ? this.attacker : this.defender
   }
 
   get abilities(): AbilitiesConfig {
@@ -197,8 +200,7 @@ export class CombatState {
   ): CombatState {
     const instance = Object.create(CombatState.prototype) as CombatState
     instance.data = data
-    instance._attacker = new CombatSideState(instance, 'attacker')
-    instance._defender = new CombatSideState(instance, 'defender')
+    // CombatSideState instances created lazily via getters
     instance._params = params ?? AbilitiesParams.wrap(instance)
     return instance
   }
@@ -298,7 +300,7 @@ export class CombatState {
       return {
         state: stateData,
         context,
-        log: logger?.entries.concat([]) ?? [],
+        log: EMPTY_LOG,
       } as RunAbilitiesResult<T>
     }
     const activeLogger = logger ?? Logger.create().child(this.currentPhase.meta)
@@ -354,9 +356,20 @@ export class CombatState {
       defender: newDefender,
     }
 
+    // Skip getDestroyedUnits when units refs haven't changed (no units destroyed)
+    const attackerChanged =
+      afterAbilities.attacker.units !== resultData.attacker.units
+    const defenderChanged =
+      afterAbilities.defender.units !== resultData.defender.units
+
+    const EMPTY_DESTROYED: Record<string, number> = {}
     const destroyedContext = {
-      attacker: getDestroyedUnits(afterAbilities.attacker, resultData.attacker),
-      defender: getDestroyedUnits(afterAbilities.defender, resultData.defender),
+      attacker: attackerChanged
+        ? getDestroyedUnits(afterAbilities.attacker, resultData.attacker)
+        : EMPTY_DESTROYED,
+      defender: defenderChanged
+        ? getDestroyedUnits(afterAbilities.defender, resultData.defender)
+        : EMPTY_DESTROYED,
     }
 
     if (logger) {
@@ -364,8 +377,8 @@ export class CombatState {
     }
 
     if (
-      destroyedContext.attacker.length === 0 &&
-      destroyedContext.defender.length === 0
+      destroyedContext.attacker === EMPTY_DESTROYED &&
+      destroyedContext.defender === EMPTY_DESTROYED
     ) {
       return {
         state: CombatState.fromData(resultData, this._params),
@@ -400,10 +413,19 @@ export class CombatState {
         afterCleanup.defender,
         afterWhenDestroy.defender,
       )
-      if (additionalAttacker.length > 0 || additionalDefender.length > 0) {
+      if (
+        Object.keys(additionalAttacker).length > 0 ||
+        Object.keys(additionalDefender).length > 0
+      ) {
         mergedDestroyedContext = {
-          attacker: [...destroyedContext.attacker, ...additionalAttacker],
-          defender: [...destroyedContext.defender, ...additionalDefender],
+          attacker: mergeDestroyed(
+            destroyedContext.attacker,
+            additionalAttacker,
+          ),
+          defender: mergeDestroyed(
+            destroyedContext.defender,
+            additionalDefender,
+          ),
         }
       }
     }
@@ -427,8 +449,11 @@ export class CombatState {
   }
 
   /** Check if combat is finished directly from data (no CombatState allocation needed) */
-  static isDataFinished(data: CombatStateData): boolean {
-    const { meta, micro } = data.currentPhase
+  static isDataFinished(
+    data: CombatStateData,
+    phaseOverride?: PhaseIdentifier,
+  ): boolean {
+    const { meta, micro } = phaseOverride ?? data.currentPhase
 
     if (meta === 'COMPLETE') {
       return true
@@ -442,13 +467,12 @@ export class CombatState {
       return false
     }
 
-    // Count total units (all types)
-    const attackerTotalUnits = countUnitsFromData(data.attacker.units)
-    const defenderTotalUnits = countUnitsFromData(data.defender.units)
-
-    // If either side has NO units at all, combat is finished —
+    // Check if either side has NO units at all — combat is finished
     // unless we're in a unit ability phase where abilities can still inject dice
-    if (attackerTotalUnits === 0 || defenderTotalUnits === 0) {
+    if (
+      !hasAnyUnits(data.attacker.units) ||
+      !hasAnyUnits(data.defender.units)
+    ) {
       if (
         meta !== 'SPACE_CANNON_OFFENSE' &&
         meta !== 'SPACE_CANNON_DEFENSE' &&
@@ -470,12 +494,11 @@ export class CombatState {
         data,
         'defender',
       )
-      const attackerHasParticipating =
-        countUnitsFromData(data.attacker.units, attackerParticipating) > 0
-      const defenderHasParticipating =
-        countUnitsFromData(data.defender.units, defenderParticipating) > 0
 
-      if (!attackerHasParticipating || !defenderHasParticipating) {
+      if (
+        !hasParticipatingUnits(data.attacker.units, attackerParticipating) ||
+        !hasParticipatingUnits(data.defender.units, defenderParticipating)
+      ) {
         return true
       }
     }
@@ -568,6 +591,7 @@ export class CombatState {
     const defenderDist = getCombinedDiceDistribution(
       flattenDicePool(modifiedDice.defender),
     )
+
     const { meta: metaPhase } = this.currentPhase
 
     // Pre-compute next phase (DICE_ROLL is never last micro-phase)
@@ -647,9 +671,11 @@ export class CombatState {
     if (isLastMicroPhase(this.currentPhase)) {
       const { phase } = getNextMetaPhase(this.currentPhase, this.combatMode)
 
-      // Check if we should skip to COMPLETE — directly on data, no temp CombatState
+      // Check if we should skip to COMPLETE — uses phase override to avoid temp object
+      // knownFinished allows callers to skip the redundant isDataFinished check
       let finalPhase = phase
-      if (CombatState.isDataFinished({ ...data, currentPhase: phase })) {
+      const shouldComplete = CombatState.isDataFinished(data, phase)
+      if (shouldComplete) {
         finalPhase = {
           meta: 'COMPLETE',
           micro: getLastMicroPhase('COMPLETE'),
@@ -852,10 +878,7 @@ export class CombatState {
   }
 
   private processEndOfRound(): StateWithProbability[] {
-    const timings = this.isLastRound()
-      ? (['END_OF_COMBAT_ROUND', 'END_OF_COMBAT'] as const)
-      : (['END_OF_COMBAT_ROUND'] as const)
-    const { state: newData, log } = this.runAbilities([...timings])
+    const { state: newData, log } = this.runAbilities(['END_OF_COMBAT_ROUND'])
 
     const { state: cleanedData } = this.runAbilities(
       'CLEANUP_ROUND',
@@ -868,21 +891,22 @@ export class CombatState {
       this._enableLog && log.length > 0 ? log : undefined,
     )
   }
-
-  /** Check if this is the last round (one side has 0 participating units) */
-  private isLastRound(): boolean {
-    const attackerParticipating = this.getParticipatingUnits('attacker')
-    const defenderParticipating = this.getParticipatingUnits('defender')
-    const attackerHasParticipating =
-      this.attacker.countUnits(attackerParticipating) > 0
-    const defenderHasParticipating =
-      this.defender.countUnits(defenderParticipating) > 0
-
-    return !attackerHasParticipating || !defenderHasParticipating
-  }
 }
 
-/** Add hits and set next phase in a single operation (avoids double spread) */
+/** Merge two destroyed-unit records by summing counts */
+function mergeDestroyed(
+  a: Record<string, number>,
+  b: Record<string, number>,
+): Record<string, number> {
+  if (Object.keys(b).length === 0) return a
+  const result = { ...a }
+  for (const key in b) {
+    result[key] = (result[key] ?? 0) + b[key]
+  }
+  return result
+}
+
+/** Add hits and set next phase — constructs result directly to minimize spreads */
 function addHitsToDataWithPhase(
   data: CombatStateData,
   attackerHits: number,
@@ -890,48 +914,58 @@ function addHitsToDataWithPhase(
   validTargets: { attacker: UnitType[]; defender: UnitType[] },
   nextPhase: PhaseIdentifier,
 ): CombatStateData {
-  const newData: CombatStateData = {
-    ...data,
+  return {
+    // Defender's dice hit attacker
+    attacker:
+      defenderHits > 0
+        ? {
+            ...data.attacker,
+            hitPools: [
+              ...data.attacker.hitPools,
+              {
+                hits: defenderHits,
+                validTargets: validTargets.attacker,
+              },
+            ],
+          }
+        : data.attacker,
+    // Attacker's dice hit defender
+    defender:
+      attackerHits > 0
+        ? {
+            ...data.defender,
+            hitPools: [
+              ...data.defender.hitPools,
+              {
+                hits: attackerHits,
+                validTargets: validTargets.defender,
+              },
+            ],
+          }
+        : data.defender,
+    abilities: data.abilities,
+    combatMode: data.combatMode,
     currentPhase: nextPhase,
   }
-  // Attacker's dice hit defender, defender's dice hit attacker
-  if (attackerHits > 0) {
-    newData.defender = {
-      ...data.defender,
-      hitPools: [
-        ...data.defender.hitPools,
-        { hits: attackerHits, validTargets: validTargets.defender },
-      ],
-    }
-  }
-  if (defenderHits > 0) {
-    newData.attacker = {
-      ...newData.attacker,
-      hitPools: [
-        ...data.attacker.hitPools,
-        { hits: defenderHits, validTargets: validTargets.attacker },
-      ],
-    }
-  }
-  return newData
 }
 
-/** Count units directly from data without creating CombatSideState */
-function countUnitsFromData(
+/** Check if units record has any units at all (no type filtering) */
+function hasAnyUnits(units: Record<string, number>): boolean {
+  for (const _ in units) return true
+  return false
+}
+
+/** Check if units record has any units of participating types (early exit) */
+function hasParticipatingUnits(
   units: Record<string, number>,
-  participatingUnits?: ReadonlySet<UnitType>,
-): number {
-  let total = 0
+  participatingUnits: ReadonlySet<UnitType>,
+): boolean {
   for (const key in units) {
-    const count = units[key]
-    if (count <= 0) continue
-    if (participatingUnits) {
-      const { type } = parseVariantId(key)
-      if (!participatingUnits.has(type)) continue
-    }
-    total += count
+    if (units[key] <= 0) continue
+    const { type } = parseVariantId(key)
+    if (participatingUnits.has(type)) return true
   }
-  return total
+  return false
 }
 
 /** Get participating units directly from data */
@@ -969,6 +1003,35 @@ function getUnitPriorityFromData(
   return unitPriority[key] as string[]
 }
 
+// Cache for filtered sacrifice order: unitPriority array → (participatingSet → filtered order)
+const sacrificeOrderCache = new WeakMap<
+  string[],
+  Map<ReadonlySet<UnitType>, string[]>
+>()
+
+function getFilteredSacrificeOrder(
+  unitPriority: string[],
+  participatingUnits: ReadonlySet<UnitType>,
+): string[] {
+  let map = sacrificeOrderCache.get(unitPriority)
+  if (map) {
+    const cached = map.get(participatingUnits)
+    if (cached) return cached
+  }
+
+  const result = unitPriority.filter(id => {
+    const { type } = parseVariantId(id)
+    return participatingUnits.has(type)
+  })
+
+  if (!map) {
+    map = new Map()
+    sacrificeOrderCache.set(unitPriority, map)
+  }
+  map.set(participatingUnits, result)
+  return result
+}
+
 /** Assign hits to a side directly on data, returning new SideStateData */
 function assignHitsToSide(
   sideData: SideStateData,
@@ -977,10 +1040,10 @@ function assignHitsToSide(
 ): SideStateData {
   if (sideData.hitPools.length === 0) return sideData
 
-  const sacrificeOrder = unitPriority.filter(id => {
-    const { type } = parseVariantId(id)
-    return participatingUnits.has(type)
-  })
+  const sacrificeOrder = getFilteredSacrificeOrder(
+    unitPriority,
+    participatingUnits,
+  )
 
   let current = sideData
   for (const pool of sideData.hitPools) {
@@ -1024,40 +1087,45 @@ function getSideHash(side: SideStateData): string {
   const cached = sideHashCache.get(side)
   if (cached !== undefined) return cached
 
-  const parts: string[] = []
-  const sortedKeys = Object.keys(side.units).sort()
+  // Build hash via string concatenation — avoids intermediate arrays
+  let result = ''
+  const keys = Object.keys(side.units)
+  if (keys.length > 1) keys.sort()
 
-  for (const key of sortedKeys) {
+  for (const key of keys) {
     const count = side.units[key]
     if (count <= 0) continue
 
-    // Group by mutable state (isDamaged only — subtypes are in the key)
+    if (result) result += ','
+
+    // Count damaged units directly — avoids Map allocation
     const stateArr = side.unitState[key]
     if (stateArr && stateArr.length > 0) {
-      const groups = new Map<string, number>()
-      // Count units with each unique state signature
+      let damaged = 0
       for (let i = 0; i < count; i++) {
-        const us = stateArr[i]
-        const stateKey = us?.isDamaged ? 'd' : ''
-        groups.set(stateKey, (groups.get(stateKey) ?? 0) + 1)
+        if (stateArr[i]?.isDamaged) damaged++
       }
-
-      const groupParts = [...groups.entries()]
-        .sort(([a], [b]) => a.localeCompare(b))
-        .map(([stateKey, c]) => (stateKey ? `${c}${stateKey}` : String(c)))
-        .join(',')
-      parts.push(`${key}:${groupParts}`)
+      const undamaged = count - damaged
+      if (damaged === 0) {
+        result += key + ':' + count
+      } else if (undamaged === 0) {
+        result += key + ':' + damaged + 'd'
+      } else {
+        // '' sorts before 'd', so undamaged first
+        result += key + ':' + undamaged + ',' + damaged + 'd'
+      }
     } else {
-      parts.push(`${key}:${count}`)
+      result += key + ':' + count
     }
   }
 
   // Include hitPools in hash
   if (side.hitPools.length > 0) {
-    const poolsHash = side.hitPools
-      .map(p => `${p.hits}:${[...p.validTargets].sort().join('+')}`)
-      .join(';')
-    parts.push(`pools:[${poolsHash}]`)
+    for (const p of side.hitPools) {
+      if (result) result += ','
+      const targets = [...p.validTargets].sort().join('+')
+      result += 'pools:[' + p.hits + ':' + targets + ']'
+    }
   }
 
   // Include unit ability restrictions in hash
@@ -1066,20 +1134,20 @@ function getSideHash(side: SideStateData): string {
     for (const layer of ['lost', 'cannotBeUsed'] as const) {
       const layerData = r[layer]
       if (!layerData) continue
-      const keys = Object.keys(layerData).sort()
-      for (const key of keys) {
-        const entries = layerData[key as keyof typeof layerData]
+      const rKeys = Object.keys(layerData).sort()
+      for (const rKey of rKeys) {
+        const entries = layerData[rKey as keyof typeof layerData]
         if (!entries || entries.length === 0) continue
         const entriesHash = entries
           .map(e => `${e.reason}${e.unitType ? `:${e.unitType}` : ''}`)
           .sort()
           .join(';')
-        parts.push(`${layer}.${key}:[${entriesHash}]`)
+        if (result) result += ','
+        result += layer + '.' + rKey + ':[' + entriesHash + ']'
       }
     }
   }
 
-  const result = parts.join(',')
   sideHashCache.set(side, result)
   return result
 }

@@ -15,7 +15,10 @@ export const brotherMilor: Ability = {
     {
       timing: 'AFTER_DESTROY',
       isCallable: (_params, _ctx, units) => {
-        return units.own.length > 0
+        for (const key in units.own) {
+          if (units.own[key] > 0) return true
+        }
+        return false
       },
       call: ctx => {
         if (ctx.state.combatMode === 'SPACE') {

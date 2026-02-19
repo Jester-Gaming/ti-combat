@@ -296,8 +296,7 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
     // AFTER_DESTROY should have been called (from the destroyed fighter's ability)
     expect(afterDestroyCalls).toHaveLength(1)
     // Fighter was destroyed (from fighter's perspective: own side lost it)
-    expect(afterDestroyCalls[0].own).toHaveLength(1)
-    expect(afterDestroyCalls[0].own[0]).toMatchObject({ type: 'FIGHTER' })
+    expect(afterDestroyCalls[0].own).toEqual({ FIGHTER: 1 })
   })
 
   it('should NOT trigger AFTER_DESTROY when no units are destroyed', () => {

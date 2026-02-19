@@ -36,11 +36,6 @@ export interface DeclaredSubtype {
   unitType: UnitType
 }
 
-export interface DestroyedUnit {
-  type: UnitType
-  unit: Unit
-}
-
 // Sided context (external API - attacker/defender perspective)
 export interface SidedContext<T> {
   attacker: T
@@ -105,9 +100,9 @@ export interface TimingContextMap {
   AFTER_ASSIGN_HITS_STEP: void
   WHEN_SUSTAIN_DAMAGE_USE: Unit
   AFTER_SUSTAIN_DAMAGE_USE: Unit
-  DESTROY: SidedContext<DestroyedUnit[]>
-  WHEN_DESTROY: SidedContext<DestroyedUnit[]>
-  AFTER_DESTROY: SidedContext<DestroyedUnit[]>
+  DESTROY: SidedContext<Record<string, number>>
+  WHEN_DESTROY: SidedContext<Record<string, number>>
+  AFTER_DESTROY: SidedContext<Record<string, number>>
   END_OF_COMBAT_ROUND: void
   END_OF_COMBAT: void
   CLEANUP_ROUND: void

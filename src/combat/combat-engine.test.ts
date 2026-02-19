@@ -6,7 +6,6 @@ import type { FactionKey, UnitDefinition, UnitStats, UnitType } from '@/types'
 import { CombatEngine } from './combat-engine'
 import { CombatState } from './combat-state/combat-state'
 import type { CombatMode, SideStateData } from './combat-state/types'
-import { flattenTree } from './probability/flatten-tree'
 import type { CombatOutcome } from './types'
 
 const TEST_FACTION: FactionKey = 'ARBOREC'
@@ -110,9 +109,7 @@ describe('CombatEngine', () => {
         'SPACE',
       )
 
-      const result = engine.simulate(state)
-
-      const outcomes = flattenTree(result)
+      const outcomes = engine.simulate(state)
       const summary = summarizeOutcomes(outcomes)
 
       // Verify probabilities sum to 1
@@ -134,9 +131,7 @@ describe('CombatEngine', () => {
         'SPACE',
       )
 
-      const result = engine.simulate(state)
-
-      const outcomes = flattenTree(result)
+      const outcomes = engine.simulate(state)
       const summary = summarizeOutcomes(outcomes)
 
       // Verify probabilities sum to 1
@@ -159,9 +154,7 @@ describe('CombatEngine', () => {
         'SPACE',
       )
 
-      const result = engine.simulate(state)
-
-      const outcomes = flattenTree(result)
+      const outcomes = engine.simulate(state)
       const summary = summarizeOutcomes(outcomes)
 
       // Verify probabilities sum to 1
@@ -184,9 +177,7 @@ describe('CombatEngine', () => {
         combatMode,
       )
 
-      const result = engine.simulate(state)
-
-      const outcomes = flattenTree(result)
+      const outcomes = engine.simulate(state)
       const summary = summarizeOutcomes(outcomes)
 
       // Verify probabilities sum to 1
@@ -210,9 +201,7 @@ describe('CombatEngine', () => {
         combatMode,
       )
 
-      const result = engine.simulate(state)
-
-      const outcomes = flattenTree(result)
+      const outcomes = engine.simulate(state)
       const summary = summarizeOutcomes(outcomes)
 
       // Verify probabilities sum to 1
@@ -243,8 +232,7 @@ describe('CombatEngine', () => {
         combatMode,
       )
 
-      const result = engine.simulate(state)
-      const outcomes = flattenTree(result)
+      const outcomes = engine.simulate(state)
       const summary = summarizeOutcomes(outcomes)
 
       expect(summary.draw).toBe(1.0)
@@ -269,8 +257,7 @@ describe('CombatEngine', () => {
         combatMode,
       )
 
-      const result = engine.simulate(state)
-      const outcomes = flattenTree(result)
+      const outcomes = engine.simulate(state)
       const summary = summarizeOutcomes(outcomes)
 
       // Verify probabilities sum to 1
@@ -301,8 +288,7 @@ describe('CombatEngine', () => {
         combatMode,
       )
 
-      const result = engine.simulate(state)
-      const outcomes = flattenTree(result)
+      const outcomes = engine.simulate(state)
       const summary = summarizeOutcomes(outcomes)
 
       // Verify probabilities sum to 1
@@ -336,10 +322,8 @@ describe('CombatEngine', () => {
       // Verify initial phase is BOMBARDMENT
       expect(state.currentPhase?.meta).toBe('BOMBARDMENT')
 
-      const result = engine.simulate(state)
-      const outcomes = flattenTree(result)
+      const outcomes = engine.simulate(state)
 
-      // flattenTree returns CombatOutcome which has winner/attacker/defender/probability
       // We verify the combat completed properly by checking we have valid outcomes
       expect(outcomes.length).toBeGreaterThan(0)
 

@@ -35,7 +35,6 @@ import type {
   AbilityInvoke,
   AbilityTiming,
   DeclaredSubtype,
-  DestroyedUnit,
   DiceContext,
   DicePool,
   DiceReadContext,
@@ -53,28 +52,39 @@ type SideConfig = Record<string, Record<string, unknown>>
 // ── Ability execution engine (module-private helpers) ────────────────────
 
 /**
- * Filter out units that were removed (via removeUnit) from the destroyed list.
- * Each removed unit cancels one matching destroyed entry by type.
+ * Subtract removed units (via removeUnit) from the destroyed record.
+ * Each removed unit cancels one matching destroyed count by variant key.
  */
 function excludeRemovedUnits(
-  destroyed: DestroyedUnit[],
+  destroyed: Record<string, number>,
   removed: RemovedUnit[] | undefined,
-): DestroyedUnit[] {
+): Record<string, number> {
   if (!removed || removed.length === 0) return destroyed
 
-  const remainingRemoved = new Map<UnitType, number>()
+  const toSubtract = new Map<string, number>()
   for (const r of removed) {
-    remainingRemoved.set(r.type, (remainingRemoved.get(r.type) ?? 0) + 1)
+    toSubtract.set(r.variantKey, (toSubtract.get(r.variantKey) ?? 0) + 1)
   }
 
-  return destroyed.filter(d => {
-    const count = remainingRemoved.get(d.type)
-    if (count && count > 0) {
-      remainingRemoved.set(d.type, count - 1)
-      return false
-    }
-    return true
-  })
+  const result: Record<string, number> = {}
+  for (const key in destroyed) {
+    const remaining = destroyed[key] - (toSubtract.get(key) ?? 0)
+    if (remaining > 0) result[key] = remaining
+  }
+  return result
+}
+
+/** Merge two destroyed-unit records by summing counts */
+function mergeDestroyed(
+  a: Record<string, number>,
+  b: Record<string, number>,
+): Record<string, number> {
+  if (Object.keys(b).length === 0) return a
+  const result = { ...a }
+  for (const key in b) {
+    result[key] = (result[key] ?? 0) + b[key]
+  }
+  return result
 }
 
 /** Source of an ability - either from config, a living unit, or a destroyed unit */
@@ -815,12 +825,21 @@ export class AbilitiesParams {
       context !== undefined &&
       isSidedContext(context)
     ) {
-      const destroyedUnits = (context as SidedContext<DestroyedUnit[]>)[side]
+      const destroyedCounts = (context as SidedContext<Record<string, number>>)[
+        side
+      ]
       const { meta } = state.currentPhase
-      for (let i = 0; i < destroyedUnits.length; i++) {
-        const { type: unitType, unit } = destroyedUnits[i]
-        if (!unit.ABILITIES) continue
-        for (const ability of unit.ABILITIES) {
+      let globalIndex = 0
+      for (const key in destroyedCounts) {
+        const count = destroyedCounts[key]
+        if (count <= 0) continue
+        const { type: unitType } = parseVariantId(key)
+        const stats = state[side].unitStats[key]
+        if (!stats?.ABILITIES) {
+          globalIndex += count
+          continue
+        }
+        for (const ability of stats.ABILITIES) {
           if (ability.context && ability.context !== state.combatMode) continue
           for (const invoke of ability.invoke) {
             if (
@@ -836,14 +855,21 @@ export class AbilitiesParams {
                 : [invoke.context]
               if (!allowed.includes(meta)) continue
             }
-            invokes.push({
-              ability,
-              invoke,
-              params: getAbilityMergedParams(ability, state.abilities[side]),
-              source: { type: 'destroyed', unitType, destroyedIndex: i },
-            })
+            for (let i = 0; i < count; i++) {
+              invokes.push({
+                ability,
+                invoke,
+                params: getAbilityMergedParams(ability, state.abilities[side]),
+                source: {
+                  type: 'destroyed',
+                  unitType,
+                  destroyedIndex: globalIndex + i,
+                },
+              })
+            }
           }
         }
+        globalIndex += count
       }
     }
 
@@ -1090,7 +1116,9 @@ export class AbilitiesParams {
             })
           }
 
-          if (destroyedAttacker.length > 0 || destroyedDefender.length > 0) {
+          const hasDestroyedAttacker = Object.keys(destroyedAttacker).length > 0
+          const hasDestroyedDefender = Object.keys(destroyedDefender).length > 0
+          if (hasDestroyedAttacker || hasDestroyedDefender) {
             const destroyedContext = {
               attacker: destroyedAttacker,
               defender: destroyedDefender,
@@ -1128,12 +1156,18 @@ export class AbilitiesParams {
                 stateAfterWhen.defender,
               )
               if (
-                additionalAttacker.length > 0 ||
-                additionalDefender.length > 0
+                Object.keys(additionalAttacker).length > 0 ||
+                Object.keys(additionalDefender).length > 0
               ) {
                 mergedContext = {
-                  attacker: [...destroyedAttacker, ...additionalAttacker],
-                  defender: [...destroyedDefender, ...additionalDefender],
+                  attacker: mergeDestroyed(
+                    destroyedAttacker,
+                    additionalAttacker,
+                  ),
+                  defender: mergeDestroyed(
+                    destroyedDefender,
+                    additionalDefender,
+                  ),
                 }
               }
             }

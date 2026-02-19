@@ -1,1 +1,6 @@
-export { flattenTree } from './flatten-tree'
+export {
+  extractLeafOutcome,
+  generateOutcomeKey,
+  type OutcomeRecord,
+  type RelativeOutcome,
+} from './flatten-tree'
