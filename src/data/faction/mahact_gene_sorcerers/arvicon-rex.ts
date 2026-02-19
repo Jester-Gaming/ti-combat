@@ -13,8 +13,8 @@ export const arviconRex: Ability = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      call: (ctx, _params, dice) => {
-        dice.own.modifyHitValue(-2, ctx.getUnit())
+      call: ctx => {
+        ctx.api.own.modifyHitValue(-2, ctx.getUnit())
       },
     },
   ],

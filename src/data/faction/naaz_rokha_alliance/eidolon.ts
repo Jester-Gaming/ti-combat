@@ -1,4 +1,5 @@
 import type { Ability } from '@/combat/abilities/types'
+import { getUnitLocator } from '@/combat/utils/compact-units'
 import type { UnitType } from '@/types'
 
 export const eidolon: Ability = {
@@ -28,7 +29,7 @@ export const eidolon: Ability = {
         // Modify all mechs to Z-Grav form: combat [8, 2]
         const mechs = ctx.api.own.getUnits('MECH')
         for (let i = 0; i < mechs.length; i++) {
-          ctx.api.own.modifyUnit(mechs[i], { COMBAT: [8, 2] })
+          ctx.api.own.modifyUnit(getUnitLocator(mechs[i])!, { COMBAT: [8, 2] })
         }
       },
     },

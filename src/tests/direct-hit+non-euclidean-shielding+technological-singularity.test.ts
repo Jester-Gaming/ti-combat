@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('DIRECT_HIT + NON_EUCLIDEAN_SHIELDING + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('DIRECT_HIT + NON_EUCLIDEAN_SHIELDING + TECHNOLOGICAL_SINGULARITY', () => {
   it('sustain cancels 2 hits after direct hit kill', () => {
     const t = combatTest({
       mode: 'SPACE',

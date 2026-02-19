@@ -1,7 +1,8 @@
 import { CombatState } from './combat-state/combat-state'
 import {
-  extractLeafOutcome,
-  generateOutcomeKey,
+  determineWinner,
+  extractSurvivors,
+  generateCompactOutcomeKey,
   type OutcomeRecord,
 } from './probability/flatten-tree'
 import type { CombatOutcome, ProbabilityNode } from './types'
@@ -179,6 +180,33 @@ export class CombatEngine {
           }
         }
 
+        // Fast path: single child record with no cycles — return directly
+        if (recordGroups.size === 1 && cycleProb === 0) {
+          const [[childRecord, totalProb]] = recordGroups
+          let merged: OutcomeRecord
+          if (totalProb === 1) {
+            merged = childRecord
+          } else {
+            merged = new Map()
+            for (const [key, outcome] of childRecord) {
+              merged.set(key, {
+                attackerData: outcome.attackerData,
+                defenderData: outcome.defenderData,
+                attackerParticipating: outcome.attackerParticipating,
+                defenderParticipating: outcome.defenderParticipating,
+                probability: outcome.probability * totalProb,
+              })
+            }
+          }
+
+          if (cacheKey) {
+            subtreeCache.set(cacheKey, merged)
+            inProgress.delete(cacheKey)
+          }
+
+          return merged
+        }
+
         // Merge grouped records into final outcome
         const merged: OutcomeRecord = new Map()
 
@@ -191,9 +219,10 @@ export class CombatEngine {
               existing.probability += adjustedProb
             } else {
               merged.set(key, {
-                attacker: outcome.attacker,
-                defender: outcome.defender,
-                winner: outcome.winner,
+                attackerData: outcome.attackerData,
+                defenderData: outcome.defenderData,
+                attackerParticipating: outcome.attackerParticipating,
+                defenderParticipating: outcome.defenderParticipating,
                 probability: adjustedProb,
               })
             }
@@ -243,10 +272,22 @@ export class CombatEngine {
 }
 
 function makeLeafOutcome(state: CombatState): OutcomeRecord {
-  const outcome = extractLeafOutcome(state)
-  const key = generateOutcomeKey(outcome.attacker, outcome.defender)
+  const attackerParticipating = state.getParticipatingUnits('attacker')
+  const defenderParticipating = state.getParticipatingUnits('defender')
+  const key = generateCompactOutcomeKey(
+    state.data.attacker,
+    state.data.defender,
+    attackerParticipating,
+    defenderParticipating,
+  )
   const record: OutcomeRecord = new Map()
-  record.set(key, { ...outcome, probability: 1 })
+  record.set(key, {
+    attackerData: state.data.attacker,
+    defenderData: state.data.defender,
+    attackerParticipating,
+    defenderParticipating,
+    probability: 1,
+  })
   return record
 }
 
@@ -254,9 +295,9 @@ function outcomeRecordToArray(record: OutcomeRecord): CombatOutcome[] {
   const results: CombatOutcome[] = []
   for (const [, o] of record) {
     results.push({
-      attacker: o.attacker,
-      defender: o.defender,
-      winner: o.winner,
+      attacker: extractSurvivors(o.attackerData, o.attackerParticipating),
+      defender: extractSurvivors(o.defenderData, o.defenderParticipating),
+      winner: determineWinner(o),
       probability: o.probability,
     })
   }

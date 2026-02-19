@@ -52,14 +52,21 @@ export function isDeclaredParam(
 /**
  * Extract plain default values from an ability's `params`.
  * DeclaredParam values are unwrapped to their `.default`.
+ * Results are cached per ability instance (ability objects are stable).
  */
-export function extractDefaults(ability: Ability): Record<string, unknown> {
-  const raw = ability.params
+const defaultsCache = new WeakMap<Ability, Record<string, unknown>>()
 
+export function extractDefaults(ability: Ability): Record<string, unknown> {
+  const cached = defaultsCache.get(ability)
+  if (cached) return cached
+
+  const raw = ability.params
   const result: Record<string, unknown> = {}
   for (const [key, value] of Object.entries(raw)) {
     result[key] = isDeclaredParam(value) ? value.default : value
   }
+
+  defaultsCache.set(ability, result)
   return result
 }
 

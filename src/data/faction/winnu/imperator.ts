@@ -18,11 +18,8 @@ export const imperator: Ability<Params> = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (params, _ctx, dice) => {
-        return params.supportCount > 0 && !dice.own.isEmpty()
-      },
-      call: (_ctx, params, dice) => {
-        dice.own.modifyHitValue(-params.supportCount)
+      call: (ctx, params) => {
+        ctx.api.own.modifyHitValue(-params.supportCount)
       },
     },
   ],

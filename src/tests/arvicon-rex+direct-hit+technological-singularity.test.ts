@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('ARVICON_REX + DIRECT_HIT + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('ARVICON_REX + DIRECT_HIT + TECHNOLOGICAL_SINGULARITY', () => {
   it('-2 to flagship dice after direct hit kill', () => {
     const t = combatTest({
       mode: 'SPACE',

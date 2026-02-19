@@ -46,6 +46,7 @@ self.onmessage = (e: MessageEvent<SimulationInput>) => {
     abilities,
   } = e.data
 
+  console.time('Setup')
   const combatState = CombatState.forSimulation(
     buildSideState(attackerFaction, attackerSelections),
     buildSideState(defenderFaction, defenderSelections),
@@ -54,6 +55,7 @@ self.onmessage = (e: MessageEvent<SimulationInput>) => {
   )
 
   const engine = new CombatEngine()
+  console.timeEnd('Setup')
   console.time('Simulate')
   const outcomes = engine.simulate(combatState)
   console.timeEnd('Simulate')

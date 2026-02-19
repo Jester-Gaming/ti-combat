@@ -15,11 +15,8 @@ export const bunker: Ability = {
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: 'BOMBARDMENT',
-      isCallable: (_params, _ctx, dice) => {
-        return !dice.opponent.isEmpty()
-      },
-      call: (_ctx, _params, dice) => {
-        dice.opponent.modifyHitValue(4)
+      call: ctx => {
+        ctx.api.opponent.modifyHitValue(4)
       },
     },
   ],

@@ -15,15 +15,18 @@ export const blitz: Ability = {
   side: 'attacker',
   invoke: [
     {
-      timing: 'BEFORE_UNIT_ABILITY_ROLL',
-      context: 'BOMBARDMENT',
-      call: (ctx, _params, dice) => {
+      timing: 'PREPARE',
+      call: ctx => {
         for (const unitType of NON_FIGHTER_SHIPS) {
-          const units = ctx.api.own.getUnits(unitType)
-          for (const unit of units) {
-            if (!unit.UNIT_ABILITIES?.BOMBARDMENT) {
-              dice.own.addDiceGroup(unitType, unit, [6, 1])
-            }
+          const stats = ctx.api.own.getUnitStats(unitType)!
+          const hasBombardment = stats.UNIT_ABILITIES?.BOMBARDMENT
+
+          if (!hasBombardment) {
+            ctx.api.own.modifyUnit(unitType, {
+              UNIT_ABILITIES: {
+                BOMBARDMENT: [6, 1],
+              },
+            })
           }
         }
       },

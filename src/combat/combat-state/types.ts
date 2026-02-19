@@ -103,12 +103,17 @@ export interface UnitAbilityRestrictions {
   lost?: Partial<Record<UnitAbility, RestrictionEntry[]>>
 }
 
-/** A unit that was removed (not destroyed) — excluded from AFTER_DESTROY detection */
-export interface RemovedUnit {
-  type: UnitType
-  variantKey: string
-  stats: UnitStats
+/** A stored hit-value modifier applied after BEFORE_DICE_ROLL abilities */
+export interface HitValueModifier {
+  amount: number
+  unitType?: string
+  excludeUnitTypes?: string[]
+  unitLocator?: { key: string; index: number }
+  context: MetaPhase
 }
+
+/** A stats entry: either concrete stats or a factory that derives from parent type stats */
+export type UnitStatsEntry = UnitStats | ((parentStats: UnitStats) => UnitStats)
 
 /** State data for one side of combat */
 export interface SideStateData {
@@ -117,13 +122,13 @@ export interface SideStateData {
   units: Record<string, number>
   /** Variant key → per-unit mutable state (only entries with non-default state) */
   unitState: Record<string, UnitState[]>
-  /** Variant key → shared stats template */
-  unitStats: Record<string, UnitStats>
+  /** Variant key → shared stats template (may be a factory for subtypes) */
+  unitStats: Record<string, UnitStatsEntry>
   hitPools: HitPool[]
   unitAbilityRestrictions?: UnitAbilityRestrictions
   unitSelections?: Record<UnitType, UnitSelection>
-  /** Units removed via removeUnit (not destroyed) — excluded from AFTER_DESTROY detection */
-  _removedUnits?: RemovedUnit[]
+  /** Stored hit-value modifiers from abilities, applied to dice after BEFORE_DICE_ROLL */
+  hitValueModifiers?: HitValueModifier[]
 }
 
 /** Ability configuration for both sides */

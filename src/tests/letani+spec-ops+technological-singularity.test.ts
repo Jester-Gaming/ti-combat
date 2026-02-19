@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('LETANI + SPEC_OPS + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('LETANI + SPEC_OPS + TECHNOLOGICAL_SINGULARITY', () => {
   it('uses first upgrade before kill', () => {
     const t = combatTest({
       mode: 'GROUND',

@@ -15,8 +15,8 @@ export const arozHollow: Ability = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      call: (_ctx, _params, dice) => {
-        dice.own.modifyHitValue(-1)
+      call: ctx => {
+        ctx.api.own.modifyHitValue(-1)
       },
     },
   ],

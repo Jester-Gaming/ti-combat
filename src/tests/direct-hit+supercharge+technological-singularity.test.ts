@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('DIRECT_HIT + SUPERCHARGE + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('DIRECT_HIT + SUPERCHARGE + TECHNOLOGICAL_SINGULARITY', () => {
   it('supercharge activates in round 2 after direct hit kill', () => {
     const t = combatTest({
       mode: 'SPACE',

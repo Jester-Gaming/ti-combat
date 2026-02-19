@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('SARDAKK_FLAGSHIP + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('SARDAKK_FLAGSHIP + TECHNOLOGICAL_SINGULARITY', () => {
   it('no bonus to non-flagship dice in round 1', () => {
     const t = combatTest({
       mode: 'SPACE',

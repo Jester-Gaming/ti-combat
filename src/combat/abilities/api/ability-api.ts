@@ -4,7 +4,9 @@ import type {
   CombatSide,
   Unit,
   UnitAbility,
+  UnitLocator,
   UnitState,
+  UnitStats,
   UnitType,
 } from '@/types'
 import { UNIT_STATE_KEYS } from '@/types'
@@ -20,20 +22,23 @@ import type {
 import {
   clearReconstructCache,
   ensureUnitState,
-  getUnitLocator,
   reconstructAllUnits,
+  reconstructUnit,
   reconstructUnitsForType,
   resolveGlobalIndex,
+  resolveUnitStats,
+  tagUnit,
   totalCountForType,
 } from '../../utils/compact-units'
 import {
   getVariantDisplayName,
   makeVariantId,
   parseVariantId,
-  unitMatchesVariant,
 } from '../../utils/unit-variant'
+import type { AbilitiesParams } from '../abilities-params'
 import type {
   Ability,
+  AbilityReadContext,
   AbilityTiming,
   DeclaredSubtype,
   SideApi,
@@ -72,11 +77,13 @@ function findUnitByPriorityInSide(
     const count = sideState.units[variantId]
     if (!count || count <= 0) continue
 
-    // Use cached reconstruction so the returned unit has a locator tag
-    const units = reconstructUnitsForType(sideState, type)
-    for (const unit of units) {
-      if (unitMatchesVariant(unit, variantId)) return unit
-    }
+    // Direct lookup: reconstruct single unit for index 0 of this variant
+    const stats = resolveUnitStats(sideState, variantId)
+    if (!stats) continue
+    const state = sideState.unitState[variantId]?.[0]
+    const unit = reconstructUnit(stats, state, variantId)
+    tagUnit(unit, { key: variantId, index: 0 })
+    return unit
   }
   return undefined
 }
@@ -358,7 +365,7 @@ function buildSideReadApi(
     },
 
     getUnitStats(unitType: UnitType) {
-      return sideState.unitStats[unitType]
+      return resolveUnitStats(sideState, unitType)
     },
 
     isUnitAbilityLost(ability: UnitAbility, unitType: UnitType) {
@@ -377,17 +384,6 @@ function buildSideReadApi(
 }
 
 // ============================================================================
-// READ API (for isCallable — operates on readonly state)
-// ============================================================================
-
-export function buildReadApi(
-  side: CombatSide,
-  state: Readonly<CombatStateData>,
-): SideReadApi {
-  return buildSideReadApi(side, state as CombatStateData)
-}
-
-// ============================================================================
 // WRITE API (for call — operates on Immer draft)
 // ============================================================================
 
@@ -395,12 +391,13 @@ export function buildApi(
   side: CombatSide,
   draft: CombatStateData,
   abilityKey: string,
+  abilitiesParams?: AbilitiesParams,
 ): SideApi {
   const api: SideApi = {
     ...buildSideReadApi(side, draft),
 
     destroyUnit(
-      unitTypeOrTypesOrUnit: UnitType | UnitType[] | Unit,
+      unitTypeOrTypesOrUnit: UnitType | UnitType[] | UnitLocator,
       index?: number,
     ): void {
       const sideState = draft[side]
@@ -414,6 +411,11 @@ export function buildApi(
             const { type } = parseVariantId(key)
             if (type !== unitType) continue
             if (sideState.units[key] <= 0) continue
+            if (abilitiesParams) {
+              abilitiesParams._destroyed[side][key] =
+                (abilitiesParams._destroyed[side][key] ?? 0) + 1
+              abilitiesParams._destroyCount++
+            }
             sideState.units[key]--
             if (sideState.units[key] <= 0) {
               delete sideState.units[key]
@@ -431,41 +433,25 @@ export function buildApi(
       }
 
       if (typeof unitTypeOrTypesOrUnit !== 'string') {
-        // destroyUnit(unit) — by unit reference, use locator
-        const locator = getUnitLocator(unitTypeOrTypesOrUnit)
-        if (locator) {
-          const { key, index: subIndex } = locator
-          if (sideState.units[key] && sideState.units[key] > 0) {
-            sideState.units[key]--
-            if (sideState.units[key] <= 0) {
-              delete sideState.units[key]
-              delete sideState.unitState[key]
-            } else {
-              const stateArr = sideState.unitState[key]
-              if (stateArr && stateArr.length > 0) {
-                stateArr.splice(Math.min(subIndex, stateArr.length - 1), 1)
-                if (stateArr.length > sideState.units[key]) {
-                  stateArr.length = sideState.units[key]
-                }
-              }
-            }
+        // destroyUnit(locator) — by UnitLocator
+        const { key, index: subIndex } = unitTypeOrTypesOrUnit
+        if (sideState.units[key] && sideState.units[key] > 0) {
+          if (abilitiesParams) {
+            abilitiesParams._destroyed[side][key] =
+              (abilitiesParams._destroyed[side][key] ?? 0) + 1
+            abilitiesParams._destroyCount++
           }
-        } else {
-          // Fallback: search by unit reference in reconstructed units
-          for (const key of Object.keys(sideState.units)) {
-            const { type } = parseVariantId(key)
-            const units = reconstructUnitsForType(sideState, type)
-            const idx = units.indexOf(unitTypeOrTypesOrUnit)
-            if (idx !== -1) {
-              const loc = getUnitLocator(units[idx])
-              if (loc) {
-                sideState.units[loc.key]--
-                if (sideState.units[loc.key] <= 0) {
-                  delete sideState.units[loc.key]
-                  delete sideState.unitState[loc.key]
-                }
+          sideState.units[key]--
+          if (sideState.units[key] <= 0) {
+            delete sideState.units[key]
+            delete sideState.unitState[key]
+          } else {
+            const stateArr = sideState.unitState[key]
+            if (stateArr && stateArr.length > 0) {
+              stateArr.splice(Math.min(subIndex, stateArr.length - 1), 1)
+              if (stateArr.length > sideState.units[key]) {
+                stateArr.length = sideState.units[key]
               }
-              return
             }
           }
         }
@@ -482,6 +468,11 @@ export function buildApi(
       )
       if (!sideState.units[key] || sideState.units[key] <= 0) return
 
+      if (abilitiesParams) {
+        abilitiesParams._destroyed[side][key] =
+          (abilitiesParams._destroyed[side][key] ?? 0) + 1
+        abilitiesParams._destroyCount++
+      }
       sideState.units[key]--
       if (sideState.units[key] <= 0) {
         delete sideState.units[key]
@@ -497,37 +488,24 @@ export function buildApi(
       }
     },
 
-    removeUnit(unitTypeOrUnit: UnitType | Unit, index?: number): void {
+    removeUnit(unitTypeOrUnit: UnitType | UnitLocator, index?: number): void {
       const sideState = draft[side]
       clearReconstructCache(sideState)
-      if (!sideState._removedUnits) {
-        sideState._removedUnits = []
-      }
 
       if (typeof unitTypeOrUnit !== 'string') {
-        // removeUnit(unit) — by unit reference
-        const locator = getUnitLocator(unitTypeOrUnit)
-        if (locator) {
-          const { key, index: subIndex } = locator
-          const { type } = parseVariantId(key)
-          const stats = sideState.unitStats[key]
-          if (stats && sideState.units[key] && sideState.units[key] > 0) {
-            sideState._removedUnits.push({
-              type: type as UnitType,
-              variantKey: key,
-              stats: { ...stats },
-            })
-            sideState.units[key]--
-            if (sideState.units[key] <= 0) {
-              delete sideState.units[key]
-              delete sideState.unitState[key]
-            } else {
-              const stateArr = sideState.unitState[key]
-              if (stateArr && stateArr.length > 0) {
-                stateArr.splice(Math.min(subIndex, stateArr.length - 1), 1)
-                if (stateArr.length > sideState.units[key]) {
-                  stateArr.length = sideState.units[key]
-                }
+        // removeUnit(locator) — by UnitLocator
+        const { key, index: subIndex } = unitTypeOrUnit
+        if (sideState.units[key] && sideState.units[key] > 0) {
+          sideState.units[key]--
+          if (sideState.units[key] <= 0) {
+            delete sideState.units[key]
+            delete sideState.unitState[key]
+          } else {
+            const stateArr = sideState.unitState[key]
+            if (stateArr && stateArr.length > 0) {
+              stateArr.splice(Math.min(subIndex, stateArr.length - 1), 1)
+              if (stateArr.length > sideState.units[key]) {
+                stateArr.length = sideState.units[key]
               }
             }
           }
@@ -544,15 +522,6 @@ export function buildApi(
       )
       if (!sideState.units[key] || sideState.units[key] <= 0) return
 
-      const { type } = parseVariantId(key)
-      const stats = sideState.unitStats[key]
-      if (stats) {
-        sideState._removedUnits.push({
-          type: type as UnitType,
-          variantKey: key,
-          stats: { ...stats },
-        })
-      }
       sideState.units[key]--
       if (sideState.units[key] <= 0) {
         delete sideState.units[key]
@@ -584,13 +553,19 @@ export function buildApi(
         const allowed = Math.min(count, limit - existing)
         if (allowed <= 0) continue
 
-        sideState.units[unitType] = (sideState.units[unitType] ?? 0) + allowed
+        const prevCount = sideState.units[unitType] ?? 0
+        sideState.units[unitType] = prevCount + allowed
         if (!sideState.unitState[unitType]) {
           sideState.unitState[unitType] = []
         }
         if (!sideState.unitStats[unitType]) {
           // Shouldn't happen, but fallback
           sideState.unitStats[unitType] = {}
+        }
+
+        // Queue invoke registration (flushed after produce completes)
+        if (abilitiesParams) {
+          abilitiesParams.queueUnitInvokes(side, unitType, prevCount, allowed)
         }
       }
     },
@@ -647,6 +622,12 @@ export function buildApi(
 
           if (hasStatsUpdates) {
             if (sideState.unitStats[resolvedKey]) {
+              if (typeof sideState.unitStats[resolvedKey] === 'function') {
+                sideState.unitStats[resolvedKey] = resolveUnitStats(
+                  sideState,
+                  resolvedKey,
+                )!
+              }
               Object.assign(sideState.unitStats[resolvedKey], statsUpdates)
             }
           }
@@ -658,7 +639,11 @@ export function buildApi(
 
           if (isVariantKey) {
             // Update just this variant's stats
+            const hadAbilities = resolveUnitStats(sideState, key)?.ABILITIES
             if (sideState.unitStats[key]) {
+              if (typeof sideState.unitStats[key] === 'function') {
+                sideState.unitStats[key] = resolveUnitStats(sideState, key)!
+              }
               Object.assign(sideState.unitStats[key], updates)
             }
             // Update per-unit state for all units of this variant
@@ -677,12 +662,28 @@ export function buildApi(
                 Object.assign(us, stateUpdates)
               }
             }
+            // Queue invoke registration if ABILITIES were just added
+            if (
+              !hadAbilities &&
+              'ABILITIES' in updates &&
+              abilitiesParams &&
+              count > 0
+            ) {
+              abilitiesParams.queueUnitInvokes(side, key, 0, count)
+            }
           } else {
             // Update all variant keys of this base type
+            const hasAbilitiesUpdate = 'ABILITIES' in updates
             for (const vKey of Object.keys(sideState.units)) {
               const { type: vType } = parseVariantId(vKey)
               if (vType !== type) continue
+              const hadAbilities =
+                hasAbilitiesUpdate &&
+                resolveUnitStats(sideState, vKey)?.ABILITIES
               if (sideState.unitStats[vKey]) {
+                if (typeof sideState.unitStats[vKey] === 'function') {
+                  sideState.unitStats[vKey] = resolveUnitStats(sideState, vKey)!
+                }
                 Object.assign(sideState.unitStats[vKey], updates)
               }
               // Update per-unit state for all units of this variant
@@ -701,34 +702,48 @@ export function buildApi(
                   Object.assign(us, stateUpdates)
                 }
               }
+              // Queue invoke registration if ABILITIES were just added
+              if (
+                !hadAbilities &&
+                hasAbilitiesUpdate &&
+                abilitiesParams &&
+                count > 0
+              ) {
+                abilitiesParams.queueUnitInvokes(side, vKey, 0, count)
+              }
             }
             // Also update the base unitStats template
             if (sideState.unitStats[type]) {
+              if (typeof sideState.unitStats[type] === 'function') {
+                sideState.unitStats[type] = resolveUnitStats(sideState, type)!
+              }
               Object.assign(sideState.unitStats[type], updates)
             }
           }
         }
       } else {
-        // modifyUnit(unit, updates) — unit ref from findUnit()
+        // modifyUnit(locator, updates) — by UnitLocator
         const updates = indexOrUpdates as Partial<Unit>
-        const locator = getUnitLocator(unitTypeOrUnit)
-        if (locator) {
-          // Split state vs stats updates
-          for (const [k, v] of Object.entries(updates)) {
-            if (UNIT_STATE_KEYS.has(k)) {
-              const us = ensureUnitState(sideState, locator.key, locator.index)
-              ;(us as Record<string, unknown>)[k] = v
-            } else {
-              if (sideState.unitStats[locator.key]) {
-                ;(sideState.unitStats[locator.key] as Record<string, unknown>)[
-                  k
-                ] = v
+        const locator = unitTypeOrUnit as UnitLocator
+        // Split state vs stats updates
+        for (const [k, v] of Object.entries(updates)) {
+          if (UNIT_STATE_KEYS.has(k)) {
+            const us = ensureUnitState(sideState, locator.key, locator.index)
+            ;(us as Record<string, unknown>)[k] = v
+          } else {
+            if (sideState.unitStats[locator.key]) {
+              if (typeof sideState.unitStats[locator.key] === 'function') {
+                sideState.unitStats[locator.key] = resolveUnitStats(
+                  sideState,
+                  locator.key,
+                )!
               }
+              ;(sideState.unitStats[locator.key] as Record<string, unknown>)[
+                k
+              ] = v
             }
           }
         }
-        // Also update the reconstructed object so callers see changes
-        Object.assign(unitTypeOrUnit, updates)
       }
     },
 
@@ -809,7 +824,11 @@ export function buildApi(
       )
     },
 
-    addSubtype(variantId: string, subtype: string) {
+    addSubtype(
+      variantId: string,
+      subtype: string,
+      statsFactory?: (parentStats: UnitStats) => UnitStats,
+    ) {
       const sideState = draft[side]
       clearReconstructCache(sideState)
       const { type, subtypes: currentSubtypes } = parseVariantId(variantId)
@@ -850,8 +869,15 @@ export function buildApi(
 
       // Copy stats from source (or base type) to new key if not present
       if (!sideState.unitStats[newKey]) {
-        sideState.unitStats[newKey] = {
-          ...(sideState.unitStats[sourceKey] ?? sideState.unitStats[type]),
+        if (statsFactory) {
+          sideState.unitStats[newKey] = statsFactory
+        } else {
+          const sourceStats =
+            resolveUnitStats(sideState, sourceKey) ??
+            resolveUnitStats(sideState, type)
+          if (sourceStats) {
+            sideState.unitStats[newKey] = { ...sourceStats }
+          }
         }
       }
     },
@@ -922,11 +948,59 @@ export function buildApi(
         sideConfig[targetKey] = {}
       }
 
+      const oldIsEnabled = sideConfig[targetKey].isEnabled
+      const oldUses = sideConfig[targetKey].uses
+
       for (const [key, value] of Object.entries(updates)) {
         sideConfig[targetKey][key] =
           typeof value === 'function'
             ? value(sideConfig[targetKey][key])
             : value
+      }
+
+      if (abilitiesParams) {
+        // Sync invokes when isEnabled or uses changed
+        if (
+          sideConfig[targetKey].isEnabled !== oldIsEnabled ||
+          sideConfig[targetKey].uses !== oldUses
+        ) {
+          abilitiesParams.syncInvokesForKey(side, targetKey, draft)
+        }
+
+        // Reconcile SETTINGS when it's modified
+        if (targetKey === 'SETTINGS') {
+          abilitiesParams.reconcileSettingsOnDraft(draft)
+        }
+      }
+    },
+
+    modifyHitValue(amount: number, target?: unknown): void {
+      const sideState = draft[side]
+      if (!sideState.hitValueModifiers) {
+        sideState.hitValueModifiers = []
+      }
+      const base = { amount, context: draft.currentPhase.meta }
+
+      if (target === undefined) {
+        sideState.hitValueModifiers.push(base)
+      } else if (typeof target === 'string') {
+        sideState.hitValueModifiers.push({ ...base, unitType: target })
+      } else if (
+        typeof target === 'object' &&
+        target !== null &&
+        'exclude' in target
+      ) {
+        sideState.hitValueModifiers.push({
+          ...base,
+          excludeUnitTypes: (target as { exclude: string[] }).exclude,
+        })
+      } else {
+        // UnitLocator — store directly
+        const locator = target as UnitLocator
+        sideState.hitValueModifiers.push({
+          ...base,
+          unitLocator: { key: locator.key, index: locator.index },
+        })
       }
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -938,111 +1012,153 @@ export function buildApi(
 // CONTEXT BUILDERS (used by abilities-tracker)
 // ============================================================================
 
+export class AbilityContext {
+  state: CombatStateData
+  api: { own: SideReadApi | SideApi; opponent: SideReadApi | SideApi }
+  log: (...data: unknown[]) => void
+
+  private _side: CombatSide
+  private _unitSource?: { unitType: UnitType; unitIndex: number }
+  private _triggerCallback?: (event: TriggerEvent) => void
+  private _abilities?: readonly Ability[]
+
+  constructor(
+    side: CombatSide,
+    state: CombatStateData,
+    unitSource?: { unitType: UnitType; unitIndex: number },
+    abilities?: readonly Ability[],
+  ) {
+    this._side = side
+    this.state = state
+    this._unitSource = unitSource
+    this._abilities = abilities
+    this.log = () => {}
+    this.api = {
+      own: buildSideReadApi(side, state),
+      opponent: buildSideReadApi(getOpponentSide(side), state),
+    }
+  }
+
+  upgradeForCall(
+    draft: CombatStateData,
+    abilityKey: string,
+    log: (...data: unknown[]) => void,
+    triggerCallback: (event: TriggerEvent) => void,
+    abilitiesParams: AbilitiesParams,
+  ) {
+    this.state = draft
+    this.log = log
+    this._triggerCallback = triggerCallback
+    this.api = {
+      own: buildApi(this._side, draft, abilityKey, abilitiesParams),
+      opponent: buildApi(
+        getOpponentSide(this._side),
+        draft,
+        abilityKey,
+        abilitiesParams,
+      ),
+    }
+  }
+
+  trigger(name: TriggerEvent['name'], context: unknown): void {
+    if (this._triggerCallback) {
+      this._triggerCallback({ name, side: this._side, context })
+    }
+  }
+
+  getUnit(): UnitLocator {
+    if (!this._unitSource) {
+      throw new Error('getUnit() can only be called from unit abilities')
+    }
+    const sideState = this.state[this._side]
+    const { key, subIndex } = resolveGlobalIndex(
+      sideState,
+      this._unitSource.unitType,
+      this._unitSource.unitIndex,
+    )
+    return { key, index: subIndex }
+  }
+
+  getUnitState(): Readonly<UnitState> {
+    if (!this._unitSource) {
+      throw new Error('getUnitState() can only be called from unit abilities')
+    }
+    const sideState = this.state[this._side]
+    const { key, subIndex } = resolveGlobalIndex(
+      sideState,
+      this._unitSource.unitType,
+      this._unitSource.unitIndex,
+    )
+    return sideState.unitState[key]?.[subIndex] ?? {}
+  }
+
+  getUnitStats(): Readonly<UnitStats> {
+    if (!this._unitSource) {
+      throw new Error('getUnitStats() can only be called from unit abilities')
+    }
+    const sideState = this.state[this._side]
+    const { key } = resolveGlobalIndex(
+      sideState,
+      this._unitSource.unitType,
+      this._unitSource.unitIndex,
+    )
+    return resolveUnitStats(sideState, key) ?? {}
+  }
+
+  getUnitType(): UnitType {
+    if (!this._unitSource) {
+      throw new Error('getUnitType() can only be called from unit abilities')
+    }
+    return this._unitSource.unitType
+  }
+
+  getUnitIndex(): number {
+    if (!this._unitSource) {
+      throw new Error('getUnitIndex() can only be called from unit abilities')
+    }
+    return this._unitSource.unitIndex
+  }
+
+  getAbilitiesForTiming(
+    timing: AbilityTiming | AbilityTiming[],
+  ): { key: string; name: string }[] {
+    if (!this._abilities) return []
+    const timings = Array.isArray(timing) ? timing : [timing]
+    const sideConfig = this.state.abilities[this._side]
+    const results: { key: string; name: string }[] = []
+    for (const ability of this._abilities) {
+      if (ability.key === 'ABILITY_ORDER') continue
+      if (ability.context && ability.context !== this.state.combatMode) continue
+      const config = sideConfig[ability.key] ?? ability.params
+      if ('isEnabled' in config && !config.isEnabled) continue
+      if (
+        'uses' in config &&
+        typeof config.uses === 'number' &&
+        isFinite(config.uses as number) &&
+        (config.uses as number) <= 0
+      )
+        continue
+      const hasMatchingInvoke = ability.invoke.some(inv =>
+        timings.includes(inv.timing),
+      )
+      if (hasMatchingInvoke) {
+        results.push({ key: ability.key, name: ability.name })
+      }
+    }
+    return results
+  }
+}
+
 export function buildReadContext(
   side: CombatSide,
   state: Readonly<CombatStateData>,
   unitSource?: { unitType: UnitType; unitIndex: number },
   abilities?: readonly Ability[],
-) {
-  return {
-    state,
-    api: {
-      own: buildReadApi(side, state),
-      opponent: buildReadApi(getOpponentSide(side), state),
-    },
-    getUnit(): Unit {
-      if (!unitSource) {
-        throw new Error('getUnit() can only be called from unit abilities')
-      }
-      const sideState = state[side]
-      const units = reconstructUnitsForType(sideState, unitSource.unitType)
-      return units[unitSource.unitIndex]
-    },
-    getUnitType(): UnitType {
-      if (!unitSource) {
-        throw new Error('getUnitType() can only be called from unit abilities')
-      }
-      return unitSource.unitType
-    },
-    getUnitIndex(): number {
-      if (!unitSource) {
-        throw new Error('getUnitIndex() can only be called from unit abilities')
-      }
-      return unitSource.unitIndex
-    },
-    getAbilitiesForTiming(
-      timing: AbilityTiming | AbilityTiming[],
-    ): { key: string; name: string }[] {
-      if (!abilities) return []
-      const timings = Array.isArray(timing) ? timing : [timing]
-      const sideConfig = state.abilities[side]
-      const results: { key: string; name: string }[] = []
-      for (const ability of abilities) {
-        if (ability.key === 'ABILITY_ORDER') continue
-        if (ability.context && ability.context !== state.combatMode) continue
-        const config = sideConfig[ability.key] ?? ability.params
-        if ('isEnabled' in config && !config.isEnabled) continue
-        if (
-          'uses' in config &&
-          typeof config.uses === 'number' &&
-          isFinite(config.uses as number) &&
-          (config.uses as number) <= 0
-        )
-          continue
-        const hasMatchingInvoke = ability.invoke.some(inv =>
-          timings.includes(inv.timing),
-        )
-        if (hasMatchingInvoke) {
-          results.push({ key: ability.key, name: ability.name })
-        }
-      }
-      return results
-    },
-  }
-}
-
-export function buildCallContext(
-  side: CombatSide,
-  draft: CombatStateData,
-  abilityKey: string,
-  log?: (...data: unknown[]) => void,
-  unitSource?: { unitType: UnitType; unitIndex: number },
-  triggerCallback?: (event: TriggerEvent) => void,
-) {
-  return {
-    state: draft,
-    api: {
-      own: buildApi(side, draft, abilityKey),
-      opponent: buildApi(getOpponentSide(side), draft, abilityKey),
-    },
-    log: log ?? (() => {}),
-    trigger(name: TriggerEvent['name'], context: unknown): void {
-      if (triggerCallback) {
-        triggerCallback({ name, side, context })
-      }
-    },
-    getUnit(): Unit {
-      if (!unitSource) {
-        throw new Error('getUnit() can only be called from unit abilities')
-      }
-      const sideState = draft[side]
-      const units = reconstructUnitsForType(sideState, unitSource.unitType)
-      return units[unitSource.unitIndex]
-    },
-    getUnitType(): UnitType {
-      if (!unitSource) {
-        throw new Error('getUnitType() can only be called from unit abilities')
-      }
-      return unitSource.unitType
-    },
-    getUnitIndex(): number {
-      if (!unitSource) {
-        throw new Error('getUnitIndex() can only be called from unit abilities')
-      }
-      return unitSource.unitIndex
-    },
-    getAbilitiesForTiming() {
-      return []
-    },
-  }
+): AbilityReadContext {
+  return new AbilityContext(
+    side,
+    state as CombatStateData,
+    unitSource,
+    abilities,
+  ) as unknown as AbilityReadContext
 }

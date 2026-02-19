@@ -1,5 +1,5 @@
 import type { Ability } from '@/combat/abilities/types'
-import type { Unit } from '@/types'
+import type { UnitLocator } from '@/types'
 
 export const custodiaVigilia: Ability = {
   key: 'CUSTODIA_VIGILIA',
@@ -15,7 +15,7 @@ export const custodiaVigilia: Ability = {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: ['SPACE_CANNON_OFFENSE', 'SPACE_CANNON_DEFENSE'],
       call: (_ctx, _params, dice) => {
-        dice.own.addDiceGroup('CUSTODIA_VIGILIA', {} as Unit, [5, 1])
+        dice.own.addDiceGroup('CUSTODIA_VIGILIA', {} as UnitLocator, [5, 1])
       },
     },
   ],

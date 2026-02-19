@@ -2,7 +2,6 @@ import { UNIT_LIMITS, UNIT_TYPES } from '@/constants/units'
 import type {
   CombatSide,
   FactionKey,
-  SourcedDiceGroup,
   UnitAbility,
   UnitSelection,
   UnitType,
@@ -12,7 +11,7 @@ import { getSimulationUnits } from '@/utils/get-simulation-units'
 import type { DicePool } from '../abilities/types'
 import type { CombatState } from '../combat-state/combat-state'
 import type { HitSource, SideStateData } from '../combat-state/types'
-import { reconstructUnitsForType } from '../utils/compact-units'
+import { resolveUnitStats } from '../utils/compact-units'
 import { parseVariantId } from '../utils/unit-variant'
 
 export function createDefaultUnitSelections(): Record<UnitType, UnitSelection> {
@@ -45,8 +44,11 @@ export function destroyUnitsFromPool(
 
   for (const variantId of sacrificeOrder) {
     if (remaining <= 0) break
-    const { type } = parseVariantId(variantId)
-    if (validTargets.length > 0 && !validTargets.includes(type)) continue
+    if (
+      validTargets.length > 0 &&
+      !validTargets.includes(parseVariantId(variantId).type)
+    )
+      continue
 
     const count = newUnits[variantId]
     if (!count || count <= 0) continue
@@ -138,47 +140,51 @@ export class CombatSideState {
     allowedUnitTypes?: ReadonlySet<UnitType>,
   ): DicePool {
     const result: DicePool = {}
+    const data = this.data
+    const { units } = data
 
     const skipParticipatingFilter =
       source === 'SPACE_CANNON' || source === 'BOMBARDMENT'
 
-    // Collect unique base types present
-    const seenTypes = new Set<UnitType>()
-    for (const key of Object.keys(this.data.units)) {
-      if (this.data.units[key] <= 0) continue
+    // Track which base types had restrictions checked
+    const restrictionChecked = new Map<UnitType, boolean>()
+
+    for (const key of Object.keys(units)) {
+      const count = units[key]
+      if (count <= 0) continue
+
       const { type } = parseVariantId(key)
-      seenTypes.add(type)
-    }
+      if (allowedUnitTypes && !allowedUnitTypes.has(type)) continue
+      if (!skipParticipatingFilter && !participatingUnits.has(type)) continue
 
-    for (const unitType of seenTypes) {
-      if (allowedUnitTypes && !allowedUnitTypes.has(unitType)) continue
-      if (!skipParticipatingFilter && !participatingUnits.has(unitType))
-        continue
-
-      // Check restrictions for unit ability sources
+      // Check restrictions once per base type
       if (source !== 'COMBAT') {
-        if (
-          this.isUnitAbilityLost(source, unitType) ||
-          this.isUnitAbilityCannotBeUsed(source, unitType)
-        ) {
-          continue
+        let allowed = restrictionChecked.get(type)
+        if (allowed === undefined) {
+          allowed = !(
+            this.isUnitAbilityLost(source, type) ||
+            this.isUnitAbilityCannotBeUsed(source, type)
+          )
+          restrictionChecked.set(type, allowed)
         }
+        if (!allowed) continue
       }
 
-      const units = reconstructUnitsForType(this.data, unitType)
-      const dice: SourcedDiceGroup[] = []
-      for (const unit of units) {
-        const dieData =
-          source === 'COMBAT' ? unit.COMBAT : unit.UNIT_ABILITIES?.[source]
-        if (!dieData) continue
+      // Read dice values directly from shared stats
+      const stats = resolveUnitStats(data, key)
+      if (!stats) continue
+      const dieData =
+        source === 'COMBAT' ? stats.COMBAT : stats.UNIT_ABILITIES?.[source]
+      if (!dieData) continue
+      const [hitValue, dicePerUnit] = dieData
+      if (dicePerUnit <= 0) continue
 
-        const [hitValue, dicePerUnit] = dieData
-        if (dicePerUnit <= 0) continue
-        dice.push([hitValue, dicePerUnit, unit])
+      // Store UnitLocator directly per unit
+      const arr = result[type] ?? []
+      for (let i = 0; i < count; i++) {
+        arr.push([hitValue, dicePerUnit, { key, index: i }])
       }
-      if (dice.length === 0) continue
-
-      result[unitType] = dice
+      result[type] = arr
     }
 
     return result

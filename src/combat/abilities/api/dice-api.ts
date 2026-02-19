@@ -1,18 +1,11 @@
-import { isDraft, original } from 'immer'
+import type {
+  DiceGroup,
+  SourcedDiceGroup,
+  UnitLocator,
+  UnitType,
+} from '@/types'
 
-import type { DiceGroup, SourcedDiceGroup, Unit, UnitType } from '@/types'
-
-import { getUnitLocator } from '../../utils/compact-units'
 import type { DiceApi, DicePool, DiceReadApi } from '../types'
-
-/** Match unit by UnitLocator tag, falling back to reference equality */
-function unitMatches(a: Unit, b: Unit): boolean {
-  if (a === b) return true
-  const la = getUnitLocator(a)
-  const lb = getUnitLocator(b)
-  if (la && lb) return la.key === lb.key && la.index === lb.index
-  return false
-}
 
 function countPool(pool: DicePool): number {
   let total = 0
@@ -26,7 +19,6 @@ export function buildDiceReadApi(pool: DicePool): DiceReadApi {
   return {
     getAll: () => pool,
     get: (source: string) => pool[source],
-    count: () => countPool(pool),
     isEmpty: () => countPool(pool) === 0,
   }
 }
@@ -49,50 +41,7 @@ export function buildDiceApi(pool: DicePool): DiceApi {
   const api: DiceApi = {
     getAll: () => data,
     get: (source: string) => data[source],
-    count: () => countPool(data),
     isEmpty: () => countPool(data) === 0,
-
-    modifyHitValue: (amount: number, filterOrSourceOrUnit?: unknown) => {
-      // Overload: (amount, Unit) — match by locator tag (or reference)
-      if (
-        typeof filterOrSourceOrUnit === 'object' &&
-        filterOrSourceOrUnit !== null
-      ) {
-        const targetUnit = isDraft(filterOrSourceOrUnit)
-          ? original(filterOrSourceOrUnit)!
-          : (filterOrSourceOrUnit as Unit)
-        for (const [, dice] of Object.entries(data)) {
-          if (!dice) continue
-          for (let i = 0; i < dice.length; i++) {
-            if (unitMatches(dice[i][2], targetUnit)) {
-              dice[i] = [
-                Math.max(1, dice[i][0] + amount),
-                dice[i][1],
-                dice[i][2],
-              ]
-              return
-            }
-          }
-        }
-        return
-      }
-
-      const predicate =
-        filterOrSourceOrUnit === undefined
-          ? () => true
-          : typeof filterOrSourceOrUnit === 'function'
-            ? (source: UnitType) =>
-                (filterOrSourceOrUnit as (s: UnitType) => boolean)(source)
-            : (source: UnitType) => source === filterOrSourceOrUnit
-
-      for (const [type, dice] of Object.entries(data)) {
-        if (!dice) continue
-        if (!predicate(type as UnitType)) continue
-        for (let i = 0; i < dice.length; i++) {
-          dice[i] = [Math.max(1, dice[i][0] + amount), dice[i][1], dice[i][2]]
-        }
-      }
-    },
 
     addDiceCount: (
       count: number,
@@ -100,18 +49,17 @@ export function buildDiceApi(pool: DicePool): DiceApi {
     ) => {
       if (countPool(data) === 0) return
 
-      // Overload: (count, Unit) — match by locator tag (or reference)
+      // Overload: (count, UnitLocator) — match by key + index
       if (
         typeof strategyOrSourceOrUnit === 'object' &&
         strategyOrSourceOrUnit !== null
       ) {
-        const targetUnit = isDraft(strategyOrSourceOrUnit)
-          ? original(strategyOrSourceOrUnit)!
-          : (strategyOrSourceOrUnit as Unit)
+        const target = strategyOrSourceOrUnit as UnitLocator
         for (const [, dice] of Object.entries(data)) {
           if (!dice) continue
           for (let i = 0; i < dice.length; i++) {
-            if (unitMatches(dice[i][2], targetUnit)) {
+            const loc = dice[i][2]
+            if (loc.key === target.key && loc.index === target.index) {
               dice[i] = [dice[i][0], dice[i][1] + count, dice[i][2]]
               return
             }
@@ -162,10 +110,9 @@ export function buildDiceApi(pool: DicePool): DiceApi {
       }
     },
 
-    addDiceGroup: (source: string, unit: Unit, diceGroup: DiceGroup) => {
+    addDiceGroup: (source: string, unit: UnitLocator, diceGroup: DiceGroup) => {
       const existing = data[source] ?? []
-      const resolvedUnit = isDraft(unit) ? original(unit)! : unit
-      data[source] = [...existing, [diceGroup[0], diceGroup[1], resolvedUnit]]
+      data[source] = [...existing, [diceGroup[0], diceGroup[1], unit]]
     },
   } as DiceApi
 

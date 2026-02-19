@@ -1,33 +1,29 @@
-import { produce } from 'immer'
+import { create } from 'mutative'
 
 import { GROUND_FORCES, SHIPS, UNIT_PRICE } from '@/constants/units'
 import type { CombatSide, FactionKey, UnitType } from '@/types'
 
 import { TIMING_GROUPS } from '../../data/abilities/general/ability-order'
 import { getOpponentSide } from '../combat-side-state/combat-side-state'
-import { getDestroyedUnits } from '../combat-side-state/utils/get-destroyed-units'
 import { CombatState } from '../combat-state/combat-state'
 import type {
   AbilitiesConfig,
   CombatStateData,
-  RemovedUnit,
   SideStateData,
 } from '../combat-state/types'
 import { Logger } from '../logger'
 import type { LogEntry } from '../types'
 import {
-  getUnitLocator as compactGetUnitLocator,
-  reconstructUnitsForType,
+  resolveUnitStats,
   toGlobalIndex,
   totalCountForType,
 } from '../utils/compact-units'
 import { makeVariantId, parseVariantId } from '../utils/unit-variant'
-import { buildCallContext, buildReadContext } from './api/ability-api'
+import { AbilityContext } from './api/ability-api'
 import { buildDiceApi, buildDiceReadApi } from './api/dice-api'
 import { extractDefaults, extractSyncSources } from './declare-param'
 import {
   getAvailableAbilities,
-  getUnitDefinitionAbilities,
   getUnitDefinitionAbilityKeys,
 } from './get-available-abilities'
 import type {
@@ -51,47 +47,10 @@ type SideConfig = Record<string, Record<string, unknown>>
 
 // ── Ability execution engine (module-private helpers) ────────────────────
 
-/**
- * Subtract removed units (via removeUnit) from the destroyed record.
- * Each removed unit cancels one matching destroyed count by variant key.
- */
-function excludeRemovedUnits(
-  destroyed: Record<string, number>,
-  removed: RemovedUnit[] | undefined,
-): Record<string, number> {
-  if (!removed || removed.length === 0) return destroyed
-
-  const toSubtract = new Map<string, number>()
-  for (const r of removed) {
-    toSubtract.set(r.variantKey, (toSubtract.get(r.variantKey) ?? 0) + 1)
-  }
-
-  const result: Record<string, number> = {}
-  for (const key in destroyed) {
-    const remaining = destroyed[key] - (toSubtract.get(key) ?? 0)
-    if (remaining > 0) result[key] = remaining
-  }
-  return result
-}
-
-/** Merge two destroyed-unit records by summing counts */
-function mergeDestroyed(
-  a: Record<string, number>,
-  b: Record<string, number>,
-): Record<string, number> {
-  if (Object.keys(b).length === 0) return a
-  const result = { ...a }
-  for (const key in b) {
-    result[key] = (result[key] ?? 0) + b[key]
-  }
-  return result
-}
-
-/** Source of an ability - either from config, a living unit, or a destroyed unit */
+/** Source of an ability - either from config or a unit */
 type AbilitySource =
   | { type: 'config' }
   | { type: 'unit'; unitType: UnitType; unitIndex: number }
-  | { type: 'destroyed'; unitType: UnitType; destroyedIndex: number }
 
 // Type guard to detect sided objects (attacker/defender)
 function isSidedContext<T>(ctx: unknown): ctx is SidedContext<T> {
@@ -101,28 +60,6 @@ function isSidedContext<T>(ctx: unknown): ctx is SidedContext<T> {
     'attacker' in ctx &&
     'defender' in ctx
   )
-}
-
-/** Stable reference to a unit across Immer produce boundaries */
-interface UnitLocator {
-  __unitLocator: true
-  side: CombatSide
-  unitType: UnitType
-  unitIndex: number
-}
-
-function isUnitLocator(value: unknown): value is UnitLocator {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    (value as UnitLocator).__unitLocator === true
-  )
-}
-
-function resolveUnitLocator(state: CombatStateData, locator: UnitLocator) {
-  const sideState = state[locator.side]
-  const units = reconstructUnitsForType(sideState, locator.unitType)
-  return units[locator.unitIndex]
 }
 
 // Transform sided -> own/opponent based on current side
@@ -160,21 +97,13 @@ interface UnitAbilityEntry {
   unitIndex: number
 }
 
-const unitAbilitiesCache = new WeakMap<SideStateData, UnitAbilityEntry[]>()
+const EMPTY_LOG: LogEntry[] = []
 
 interface TimingInvokeEntry {
   ability: Ability
   invoke: AbilityInvoke
   params: Record<string, unknown>
   source: AbilitySource
-}
-
-/** Get merged params for an ability */
-function getAbilityMergedParams(
-  ability: Ability,
-  config?: Record<string, Record<string, unknown>>,
-): Record<string, unknown> {
-  return { ...extractDefaults(ability), ...config?.[ability.key] }
 }
 
 /**
@@ -231,6 +160,7 @@ function decrementUses(
   side: CombatSide,
   abilityKey: string,
   params: Record<string, unknown>,
+  abilitiesParams?: AbilitiesParams,
 ): void {
   if (
     'uses' in params &&
@@ -238,10 +168,16 @@ function decrementUses(
     isFinite(params.uses)
   ) {
     const config = draft.abilities[side][abilityKey]
-    if (config) {
+    if (config && typeof config.uses === 'number') {
+      config.uses -= 1
+    } else if (config) {
+      // Config exists but uses not set — initialize from params default
       config.uses = params.uses - 1
     } else {
       draft.abilities[side][abilityKey] = { uses: params.uses - 1 }
+    }
+    if (abilitiesParams) {
+      abilitiesParams.syncInvokesForKey(side, abilityKey, draft)
     }
   }
 }
@@ -366,8 +302,7 @@ export interface RunAbilitiesResult<T extends AbilityTiming> {
 /** Invocation tracker for a single side's abilities */
 interface SideInvocationTracker {
   configAbilities: Set<AbilityInvoke>
-  unitAbilities: Map<string, Set<number>> // "timing:unitType" -> Set<unitIndex>
-  destroyedAbilities: Map<string, Set<number>> // "timing:unitType" -> Set<destroyedIndex>
+  unitAbilities: Map<string, Set<number>> // "timing:unitType:abilityKey" -> Set<unitIndex>
 }
 
 /** Invocation tracker per side */
@@ -377,6 +312,7 @@ interface AbilityResult {
   state: CombatStateData
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context?: any
+  unitsChanged?: boolean
 }
 
 export interface RunAbilitiesOptions {
@@ -392,11 +328,40 @@ export interface RunAbilitiesOptions {
  * ability config through CombatState.data.abilities. During ability
  * execution, updates CombatState.data directly after each Immer produce.
  */
+export interface InvokeCollections {
+  attacker: Map<AbilityTiming, TimingInvokeEntry[]>
+  defender: Map<AbilityTiming, TimingInvokeEntry[]>
+}
+
+export function cloneInvokes(invokes: InvokeCollections): InvokeCollections {
+  return {
+    attacker: new Map(Array.from(invokes.attacker, ([k, v]) => [k, [...v]])),
+    defender: new Map(Array.from(invokes.defender, ([k, v]) => [k, [...v]])),
+  }
+}
+
 export class AbilitiesParams {
   private _combatState: CombatState
   private _abilities: Record<CombatSide, Ability[]>
-  private _activeTimings!: Set<AbilityTiming>
-  private _timingIndex!: Record<CombatSide, Map<AbilityTiming, Ability[]>>
+
+  /** Destroyed units collected at source by destroyUnit */
+  _destroyed: {
+    attacker: Record<string, number>
+    defender: Record<string, number>
+  } = {
+    attacker: {},
+    defender: {},
+  }
+  /** Cheap "any destruction?" counter — incremented by destroyUnit */
+  _destroyCount = 0
+
+  /** Deferred invoke registrations — flushed after Immer produce completes */
+  _pendingUnitInvokes: {
+    side: CombatSide
+    variantKey: string
+    startSubIndex: number
+    count: number
+  }[] = []
 
   private static loadAbilities(
     attackerFaction: FactionKey,
@@ -408,48 +373,19 @@ export class AbilitiesParams {
     }
   }
 
-  /** Build set of all timings that have at least one registered invoke */
-  private buildActiveTimings(): void {
-    const timings = new Set<AbilityTiming>()
-    const timingIndex: Record<CombatSide, Map<AbilityTiming, Ability[]>> = {
-      attacker: new Map(),
-      defender: new Map(),
-    }
-
-    for (const side of ['attacker', 'defender'] as const) {
-      const sideIndex = timingIndex[side]
-      for (const ability of this._abilities[side]) {
-        for (const invoke of ability.invoke) {
-          timings.add(invoke.timing)
-          const list = sideIndex.get(invoke.timing)
-          if (list) {
-            list.push(ability)
-          } else {
-            sideIndex.set(invoke.timing, [ability])
-          }
-        }
-      }
-    }
-
-    // Include timings from unit definition abilities (both factions)
-    const factionKeys = [
-      this._combatState.data.attacker.faction,
-      this._combatState.data.defender.faction,
-    ]
-    for (const factionKey of factionKeys) {
-      for (const ability of getUnitDefinitionAbilities(factionKey)) {
-        for (const invoke of ability.invoke) {
-          timings.add(invoke.timing)
-        }
-      }
-    }
-
-    this._activeTimings = timings
-    this._timingIndex = timingIndex
-  }
-
   private get state(): CombatStateData {
     return this._combatState.data
+  }
+
+  get combatState(): CombatState {
+    return this._combatState
+  }
+
+  setCombatState(cs: CombatState): void {
+    this._combatState = cs
+    this._destroyed = { attacker: {}, defender: {} }
+    this._destroyCount = 0
+    this._pendingUnitInvokes = []
   }
 
   // ── Read accessors ──────────────────────────────────────────────────
@@ -478,10 +414,10 @@ export class AbilitiesParams {
       combatState.data.attacker.faction,
       combatState.data.defender.faction,
     )
-    this.buildActiveTimings()
 
     this.initializeDefaults()
     this.reconcile()
+    this.buildInvokes()
   }
 
   // ── Deserialize: from existing config data ──────────────────────────
@@ -497,12 +433,13 @@ export class AbilitiesParams {
   static fromConfig(combatState: CombatState): AbilitiesParams {
     const instance = Object.create(AbilitiesParams.prototype) as AbilitiesParams
     instance._combatState = combatState
+    instance._destroyed = { attacker: {}, defender: {} }
+    instance._destroyCount = 0
+    instance._pendingUnitInvokes = []
     instance._abilities = AbilitiesParams.loadAbilities(
       combatState.data.attacker.faction,
       combatState.data.defender.faction,
     )
-    instance.buildActiveTimings()
-
     // Phase 1: Enrich consumers from full SETTINGS (with group additions).
     // Consumer params (e.g. AC targetPriority) sync from enriched groups,
     // so they include all possible targets (e.g. Infantry via Alastor).
@@ -513,6 +450,7 @@ export class AbilitiesParams {
     // participation — findUnitByPriority filters by participation.
     instance.reconcile({ applyGroupAdditions: false, settingsOnly: true })
 
+    instance.buildInvokes()
     return instance
   }
 
@@ -524,11 +462,14 @@ export class AbilitiesParams {
   static wrap(combatState: CombatState): AbilitiesParams {
     const instance = Object.create(AbilitiesParams.prototype) as AbilitiesParams
     instance._combatState = combatState
+    instance._destroyed = { attacker: {}, defender: {} }
+    instance._destroyCount = 0
+    instance._pendingUnitInvokes = []
     instance._abilities = AbilitiesParams.loadAbilities(
       combatState.data.attacker.faction,
       combatState.data.defender.faction,
     )
-    instance.buildActiveTimings()
+    instance.buildInvokes()
     return instance
   }
 
@@ -538,8 +479,16 @@ export class AbilitiesParams {
     side: CombatSide,
   ): UnitAbilityEntry[] {
     const sideState = state[side]
-    const cached = unitAbilitiesCache.get(sideState)
-    if (cached) return cached
+
+    // Quick check: if no unitStats have ABILITIES, skip the full scan
+    let hasAnyAbilities = false
+    for (const key in sideState.unitStats) {
+      if (resolveUnitStats(sideState, key)?.ABILITIES) {
+        hasAnyAbilities = true
+        break
+      }
+    }
+    if (!hasAnyAbilities) return []
 
     const results: UnitAbilityEntry[] = []
 
@@ -563,7 +512,7 @@ export class AbilitiesParams {
       let globalIndex = 0
       for (const key of keys) {
         const count = sideState.units[key]
-        const stats = sideState.unitStats[key]
+        const stats = resolveUnitStats(sideState, key)
         if (!stats?.ABILITIES) {
           globalIndex += count
           continue
@@ -581,7 +530,6 @@ export class AbilitiesParams {
       }
     }
 
-    unitAbilitiesCache.set(sideState, results)
     return results
   }
 
@@ -599,7 +547,6 @@ export class AbilitiesParams {
    */
   reconcileFaction(side: CombatSide, faction: FactionKey): void {
     this._abilities[side] = getAvailableAbilities(side, faction)
-    this.buildActiveTimings()
 
     // Rebuild side config: keep existing params for surviving abilities,
     // initialize defaults for new ones
@@ -697,11 +644,23 @@ export class AbilitiesParams {
     options?: RunAbilitiesOptions,
     logger?: Logger,
   ): RunAbilitiesResult<T> {
-    // Short-circuit: if none of the requested timings have any registered
-    // abilities, skip tracker creation and the entire resolution loop.
-    const timingsArr = Array.isArray(timing) ? timing : [timing]
-    if (!timingsArr.some(t => this._activeTimings.has(t))) {
-      return { state, context: context as TimingContextMap[T], log: [] }
+    // Short-circuit: if none of the requested timings have any callable
+    // invokes (enabled config abilities, unit abilities, or destroyed-unit
+    // abilities), skip the expensive resolution loop entirely.
+    let hasAnyInvokes = false
+    if (Array.isArray(timing)) {
+      for (const t of timing) {
+        if (this.hasCallableInvoke(t as AbilityTiming)) {
+          hasAnyInvokes = true
+          break
+        }
+      }
+    } else {
+      hasAnyInvokes = this.hasCallableInvoke(timing as AbilityTiming)
+    }
+
+    if (!hasAnyInvokes) {
+      return { state, context: context as TimingContextMap[T], log: EMPTY_LOG }
     }
 
     const activeLogger = logger ?? Logger.create()
@@ -711,12 +670,10 @@ export class AbilitiesParams {
       attacker: {
         configAbilities: new Set(),
         unitAbilities: new Map(),
-        destroyedAbilities: new Map(),
       },
       defender: {
         configAbilities: new Set(),
         unitAbilities: new Map(),
-        destroyedAbilities: new Map(),
       },
     }
     // Point CombatState at the current state data
@@ -732,12 +689,6 @@ export class AbilitiesParams {
     const initialUnits = {
       attacker: this._combatState.attacker.countUnits(),
       defender: this._combatState.defender.countUnits(),
-    }
-
-    // Track SETTINGS references to detect runtime changes
-    let lastSettings = {
-      attacker: state.abilities.attacker['SETTINGS'],
-      defender: state.abilities.defender['SETTINGS'],
     }
 
     while (consecutiveSkips < 2) {
@@ -759,33 +710,13 @@ export class AbilitiesParams {
         }
         consecutiveSkips = 0
 
-        // When an ability changes SETTINGS base groups (e.g. Alastor
-        // adding Infantry to ships), re-sync SETTINGS computed params
-        // (spaceCombatParticipating, nonFighterShips, etc.) so
-        // participation checks see the update. Consumer params are NOT
-        // re-synced — they were pre-enriched at init.
-        const newSettings = {
-          attacker: currentState.abilities.attacker['SETTINGS'],
-          defender: currentState.abilities.defender['SETTINGS'],
-        }
-        if (
-          newSettings.attacker !== lastSettings.attacker ||
-          newSettings.defender !== lastSettings.defender
-        ) {
-          this.reconcile({ resetBaseGroups: false, settingsOnly: true })
-          currentState = this._combatState.data
-          lastSettings = {
-            attacker: currentState.abilities.attacker['SETTINGS'],
-            defender: currentState.abilities.defender['SETTINGS'],
-          }
-        }
-
         // Stop resolving abilities if a side that had units was eliminated
         if (
-          (initialUnits.attacker > 0 &&
+          result.unitsChanged &&
+          ((initialUnits.attacker > 0 &&
             this._combatState.attacker.countUnits() === 0) ||
-          (initialUnits.defender > 0 &&
-            this._combatState.defender.countUnits() === 0)
+            (initialUnits.defender > 0 &&
+              this._combatState.defender.countUnits() === 0))
         ) {
           break
         }
@@ -803,6 +734,44 @@ export class AbilitiesParams {
     }
   }
 
+  /**
+   * Run the DESTROY → WHEN_DESTROY → AFTER_DESTROY sequence.
+   * Called after units are destroyed (by ability execution or hit assignment).
+   * If a WHEN_DESTROY ability destroys additional units, tryResolveOne
+   * triggers a nested runDestroyAbilities for those automatically.
+   */
+  runDestroyAbilities(
+    destroyedContext: {
+      attacker: Record<string, number>
+      defender: Record<string, number>
+    },
+    state: CombatStateData,
+    logger?: Logger,
+  ): CombatStateData {
+    const { state: afterDestroy } = this.runAbilities(
+      'DESTROY',
+      state,
+      destroyedContext,
+      undefined,
+      logger,
+    )
+    const { state: afterWhenDestroy } = this.runAbilities(
+      'WHEN_DESTROY',
+      afterDestroy,
+      destroyedContext,
+      undefined,
+      logger,
+    )
+    const { state: final } = this.runAbilities(
+      'AFTER_DESTROY',
+      afterWhenDestroy,
+      destroyedContext,
+      undefined,
+      logger,
+    )
+    return final
+  }
+
   // ── Private execution engine methods ──────────────────────────────
 
   private tryResolveOne<T extends AbilityTiming>(
@@ -816,63 +785,6 @@ export class AbilitiesParams {
   ): AbilityResult | null {
     const invokes = this.getInvokesForTiming(timing, side, state, triggerSide)
 
-    // Collect DESTROY / WHEN_DESTROY / AFTER_DESTROY invokes from destroyed units in context
-    const timings = Array.isArray(timing) ? timing : [timing]
-    if (
-      (timings.includes('DESTROY' as T) ||
-        timings.includes('AFTER_DESTROY' as T) ||
-        timings.includes('WHEN_DESTROY' as T)) &&
-      context !== undefined &&
-      isSidedContext(context)
-    ) {
-      const destroyedCounts = (context as SidedContext<Record<string, number>>)[
-        side
-      ]
-      const { meta } = state.currentPhase
-      let globalIndex = 0
-      for (const key in destroyedCounts) {
-        const count = destroyedCounts[key]
-        if (count <= 0) continue
-        const { type: unitType } = parseVariantId(key)
-        const stats = state[side].unitStats[key]
-        if (!stats?.ABILITIES) {
-          globalIndex += count
-          continue
-        }
-        for (const ability of stats.ABILITIES) {
-          if (ability.context && ability.context !== state.combatMode) continue
-          for (const invoke of ability.invoke) {
-            if (
-              invoke.timing !== 'DESTROY' &&
-              invoke.timing !== 'AFTER_DESTROY' &&
-              invoke.timing !== 'WHEN_DESTROY'
-            )
-              continue
-            if (!timings.includes(invoke.timing as T)) continue
-            if (invoke.context) {
-              const allowed = Array.isArray(invoke.context)
-                ? invoke.context
-                : [invoke.context]
-              if (!allowed.includes(meta)) continue
-            }
-            for (let i = 0; i < count; i++) {
-              invokes.push({
-                ability,
-                invoke,
-                params: getAbilityMergedParams(ability, state.abilities[side]),
-                source: {
-                  type: 'destroyed',
-                  unitType,
-                  destroyedIndex: globalIndex + i,
-                },
-              })
-            }
-          }
-        }
-        globalIndex += count
-      }
-    }
-
     const sideTracker = tracker[side]
 
     for (const { ability, invoke, params, source } of invokes) {
@@ -881,18 +793,30 @@ export class AbilitiesParams {
         if (sideTracker.configAbilities.has(invoke)) {
           continue
         }
-      } else if (source.type === 'destroyed') {
-        // Destroyed unit ability - no unit-exists check needed
-        const key = `destroyed:${invoke.timing}:${source.unitType}`
-        const invokedIndices = sideTracker.destroyedAbilities.get(key)
-        if (invokedIndices?.has(source.destroyedIndex)) {
-          continue
-        }
       } else {
-        // Unit ability - check if unit still exists
         const totalCount = totalCountForType(state[side].units, source.unitType)
-        if (totalCount <= source.unitIndex) {
-          continue // Unit destroyed
+        const isDestroyTiming =
+          invoke.timing === 'DESTROY' ||
+          invoke.timing === 'WHEN_DESTROY' ||
+          invoke.timing === 'AFTER_DESTROY'
+
+        if (isDestroyTiming) {
+          // DESTROY fires for units that are GONE and RECENTLY destroyed
+          if (totalCount > source.unitIndex) continue // Unit still alive
+          // Verify the unit was destroyed in this context (not a prior round)
+          if (context !== undefined && isSidedContext(context)) {
+            const destroyedCounts = (
+              context as SidedContext<Record<string, number>>
+            )[side]
+            const destroyedForType = totalCountForType(
+              destroyedCounts,
+              source.unitType,
+            )
+            if (source.unitIndex >= totalCount + destroyedForType) continue
+          }
+        } else {
+          // Normal abilities fire for units that EXIST
+          if (totalCount <= source.unitIndex) continue // Unit destroyed
         }
 
         // Check if this unit instance already invoked this ability
@@ -902,6 +826,12 @@ export class AbilitiesParams {
           continue
         }
       }
+
+      // Merge pre-merged params with live config so runtime changes
+      // (uses decrement, structures update, isEnabled toggle) are visible
+      // while defaults from extractDefaults remain available.
+      const liveConfig = state.abilities[side][ability.key]
+      const freshParams = liveConfig ? { ...params, ...liveConfig } : params
 
       // Transform sided context to own/opponent for the ability
       let internalContext: InternalTimingContextMap[T] | undefined
@@ -919,40 +849,42 @@ export class AbilitiesParams {
       const inv = invoke as any
       const diceTiming = isDiceTiming(timing)
 
+      const isDestroyTiming =
+        invoke.timing === 'DESTROY' ||
+        invoke.timing === 'WHEN_DESTROY' ||
+        invoke.timing === 'AFTER_DESTROY'
       const unitSource =
-        source.type === 'unit'
+        source.type === 'unit' && !isDestroyTiming
           ? { unitType: source.unitType, unitIndex: source.unitIndex }
           : undefined
-      const readCtx = buildReadContext(side, state, unitSource)
 
-      // Global isEnabled / uses gate — abilities don't need to check these themselves
-      if (!invoke.always && 'isEnabled' in params && !params.isEnabled) continue
+      // Global isEnabled / uses gate
+      if ('isEnabled' in freshParams && !freshParams.isEnabled) continue
       if (
-        !invoke.always &&
-        'uses' in params &&
-        typeof params.uses === 'number' &&
-        params.uses <= 0
+        'uses' in freshParams &&
+        typeof freshParams.uses === 'number' &&
+        freshParams.uses <= 0
       )
         continue
 
+      const ctx = new AbilityContext(side, state, unitSource)
+
       let canCall: boolean
-      if (diceTiming && internalContext) {
-        const rawDice = internalContext as OwnOpponentContext<DicePool>
-        const diceReadCtx: DiceReadContext = {
-          own: buildDiceReadApi(rawDice.own),
-          opponent: buildDiceReadApi(rawDice.opponent),
+      if (inv.isCallable) {
+        if (inv.isCallable.length <= 1) {
+          canCall = inv.isCallable(freshParams)
+        } else if (diceTiming && internalContext) {
+          const rawDice = internalContext as OwnOpponentContext<DicePool>
+          const diceReadCtx: DiceReadContext = {
+            own: buildDiceReadApi(rawDice.own),
+            opponent: buildDiceReadApi(rawDice.opponent),
+          }
+          canCall = inv.isCallable(freshParams, ctx, diceReadCtx)
+        } else {
+          canCall = inv.isCallable(freshParams, ctx, internalContext)
         }
-        canCall = inv.isCallable
-          ? inv.isCallable(params, readCtx, diceReadCtx)
-          : true
       } else {
-        // Resolve unit locators to state references for isCallable
-        const readableContext = isUnitLocator(internalContext)
-          ? resolveUnitLocator(state, internalContext)
-          : internalContext
-        canCall = inv.isCallable
-          ? inv.isCallable(params, readCtx, readableContext)
-          : true
+        canCall = true
       }
 
       if (canCall) {
@@ -968,27 +900,13 @@ export class AbilitiesParams {
         // Collect trigger events emitted during produce
         const triggerEvents: TriggerEvent[] = []
         const triggerCallback = (event: TriggerEvent) => {
-          let context = event.context
-          // If context is a Unit with a locator tag, convert to stable locator
-          if (typeof context === 'object' && context !== null) {
-            const locator = compactGetUnitLocator(context)
-            if (locator) {
-              const { type } = parseVariantId(locator.key)
-              const globalIndex = toGlobalIndex(
-                state[event.side],
-                locator.key,
-                locator.index,
-              )
-              context = {
-                __unitLocator: true,
-                side: event.side,
-                unitType: type as UnitType,
-                unitIndex: globalIndex,
-              } satisfies UnitLocator
-            }
-          }
-          triggerEvents.push({ ...event, context })
+          triggerEvents.push(event)
         }
+
+        // Reset per-ability destroyed tracking
+        const timingArray = Array.isArray(timing) ? timing : [timing]
+        this._destroyed = { attacker: {}, defender: {} }
+        const prevDestroyCount = this._destroyCount
 
         // Wrap call in Immer produce
         let resultState: CombatStateData
@@ -998,45 +916,38 @@ export class AbilitiesParams {
             own: buildDiceApi(rawDice.own),
             opponent: buildDiceApi(rawDice.opponent),
           }
-          resultState = produce(state, draft => {
-            // draftRef removed — compact state uses UnitLocator tags
-            const callCtx = buildCallContext(
-              side,
+          resultState = create(state, draft => {
+            ctx.upgradeForCall(
               draft,
               ability.key,
               logCallback,
-              unitSource,
               triggerCallback,
+              this,
             )
-            inv.call(callCtx, params, diceCallCtx)
-            if (!invoke.always) decrementUses(draft, side, ability.key, params)
+            inv.call(ctx, freshParams, diceCallCtx)
+            decrementUses(draft, side, ability.key, freshParams, this)
           })
-          // draftRef removed
           resultContext = {
             own: diceCallCtx.own.getAll(),
             opponent: diceCallCtx.opponent.getAll(),
           }
         } else {
-          resultState = produce(state, draft => {
-            // draftRef removed — compact state uses UnitLocator tags
-            const callCtx = buildCallContext(
-              side,
+          resultState = create(state, draft => {
+            ctx.upgradeForCall(
               draft,
               ability.key,
               logCallback,
-              unitSource,
               triggerCallback,
+              this,
             )
-            // Resolve unit locators to draft references
-            const callContext = isUnitLocator(internalContext)
-              ? resolveUnitLocator(draft, internalContext)
-              : internalContext
-            const result = inv.call(callCtx, params, callContext)
+            const result = inv.call(ctx, freshParams, internalContext)
             if (result !== undefined) resultContext = result
-            if (!invoke.always) decrementUses(draft, side, ability.key, params)
+            decrementUses(draft, side, ability.key, freshParams, this)
           })
-          // draftRef removed
         }
+
+        // Flush deferred invoke registrations (from addUnit/modifyUnit inside produce)
+        this.flushPendingUnitInvokes(resultState)
 
         // Single structured log entry per ability
         const childLogger = logger?.child(invoke.timing).child(ability.key)
@@ -1052,12 +963,6 @@ export class AbilitiesParams {
         // Mark as invoked
         if (source.type === 'config') {
           sideTracker.configAbilities.add(invoke)
-        } else if (source.type === 'destroyed') {
-          const key = `destroyed:${invoke.timing}:${source.unitType}`
-          const invokedIndices =
-            sideTracker.destroyedAbilities.get(key) ?? new Set()
-          invokedIndices.add(source.destroyedIndex)
-          sideTracker.destroyedAbilities.set(key, invokedIndices)
         } else {
           const key = `${invoke.timing}:${source.unitType}:${ability.key}`
           const invokedIndices = sideTracker.unitAbilities.get(key) ?? new Set()
@@ -1077,112 +982,19 @@ export class AbilitiesParams {
           resultState = triggerResult.state
         }
 
-        // Trigger DESTROY then WHEN_DESTROY then AFTER_DESTROY if units were destroyed by the ability (or trigger processing)
-        // Skip if already resolving DESTROY/WHEN_DESTROY/AFTER_DESTROY to prevent recursion
-        const timingArray = Array.isArray(timing) ? timing : [timing]
-        if (
-          !timingArray.some(
-            t =>
-              t === 'DESTROY' || t === 'AFTER_DESTROY' || t === 'WHEN_DESTROY',
-          )
-        ) {
-          let destroyedAttacker = getDestroyedUnits(
-            state.attacker,
-            resultState.attacker,
-          )
-          let destroyedDefender = getDestroyedUnits(
-            state.defender,
-            resultState.defender,
-          )
+        // Trigger DESTROY → WHEN_DESTROY → AFTER_DESTROY if units were destroyed.
+        // Recursion is safe — controlled by ability uses/invocation tracker.
+        {
+          const hasDestroyed =
+            Object.keys(this._destroyed.attacker).length > 0 ||
+            Object.keys(this._destroyed.defender).length > 0
 
-          // Exclude units that were removed (not destroyed) via removeUnit
-          destroyedAttacker = excludeRemovedUnits(
-            destroyedAttacker,
-            resultState.attacker._removedUnits,
-          )
-          destroyedDefender = excludeRemovedUnits(
-            destroyedDefender,
-            resultState.defender._removedUnits,
-          )
-
-          // Clear _removedUnits from result state
-          if (
-            resultState.attacker._removedUnits ||
-            resultState.defender._removedUnits
-          ) {
-            resultState = produce(resultState, draft => {
-              delete draft.attacker._removedUnits
-              delete draft.defender._removedUnits
-            })
-          }
-
-          const hasDestroyedAttacker = Object.keys(destroyedAttacker).length > 0
-          const hasDestroyedDefender = Object.keys(destroyedDefender).length > 0
-          if (hasDestroyedAttacker || hasDestroyedDefender) {
-            const destroyedContext = {
-              attacker: destroyedAttacker,
-              defender: destroyedDefender,
-            }
-
-            // First run DESTROY (cleanup, no cascading)
-            const destroyResult = this.runAbilities(
-              'DESTROY',
+          if (hasDestroyed) {
+            resultState = this.runDestroyAbilities(
+              this._destroyed,
               resultState,
-              destroyedContext,
-              undefined,
               childLogger,
             )
-            const stateAfterDestroy = destroyResult.state
-
-            // Then run WHEN_DESTROY (may destroy additional units)
-            const whenDestroy = this.runAbilities(
-              'WHEN_DESTROY',
-              stateAfterDestroy,
-              destroyedContext,
-              undefined,
-              childLogger,
-            )
-            const stateAfterWhen = whenDestroy.state
-
-            // Skip diff when WHEN_DESTROY didn't change state (no ability fired)
-            let mergedContext = destroyedContext
-            if (stateAfterWhen !== stateAfterDestroy) {
-              const additionalAttacker = getDestroyedUnits(
-                stateAfterDestroy.attacker,
-                stateAfterWhen.attacker,
-              )
-              const additionalDefender = getDestroyedUnits(
-                stateAfterDestroy.defender,
-                stateAfterWhen.defender,
-              )
-              if (
-                Object.keys(additionalAttacker).length > 0 ||
-                Object.keys(additionalDefender).length > 0
-              ) {
-                mergedContext = {
-                  attacker: mergeDestroyed(
-                    destroyedAttacker,
-                    additionalAttacker,
-                  ),
-                  defender: mergeDestroyed(
-                    destroyedDefender,
-                    additionalDefender,
-                  ),
-                }
-              }
-            }
-
-            resultState = stateAfterWhen
-
-            // Then run AFTER_DESTROY with all destroyed units
-            const afterDestroy = this.runAbilities(
-              'AFTER_DESTROY',
-              resultState,
-              mergedContext,
-              undefined,
-              childLogger,
-            )
-            resultState = afterDestroy.state
           }
         }
 
@@ -1201,8 +1013,15 @@ export class AbilitiesParams {
           resultState = afterAssign.data
         }
 
+        const unitsDestroyed = this._destroyCount > prevDestroyCount
+        const unitsChanged =
+          state.attacker.units !== resultState.attacker.units ||
+          state.defender.units !== resultState.defender.units
+
         // Adjust tracker indices when units were destroyed by triggers/AFTER_DESTROY
-        adjustTrackerForDestroyedUnits(tracker, state, resultState)
+        if (unitsDestroyed) {
+          adjustTrackerForDestroyedUnits(tracker, state, resultState)
+        }
 
         // Transform own/opponent context back to sided
         if (
@@ -1219,6 +1038,7 @@ export class AbilitiesParams {
         return {
           state: resultState,
           context: resultContext,
+          unitsChanged,
         }
       }
     }
@@ -1226,7 +1046,284 @@ export class AbilitiesParams {
     return null
   }
 
-  /** Get invokes for a timing (or multiple timings) from ability definitions and unit abilities */
+  /**
+   * Build unified invoke collection once — config + unit entries.
+   * Called at init; never rebuilt. Stale entries (destroyed units) are
+   * safely skipped by the existence check in tryResolveOne.
+   */
+  private buildInvokes(): void {
+    const collections: InvokeCollections = {
+      attacker: new Map(),
+      defender: new Map(),
+    }
+    const state = this.state
+
+    for (const side of ['attacker', 'defender'] as const) {
+      const sideMap = collections[side]
+      const sideConfig = state.abilities[side]
+      const factionUnitKeys = getUnitDefinitionAbilityKeys(state[side].faction)
+
+      // 1. Config invokes (non-unit-definition abilities)
+      for (const ability of this._abilities[side]) {
+        if (factionUnitKeys.has(ability.key)) continue
+        if (ability.context && ability.context !== state.combatMode) continue
+
+        const configParams = sideConfig[ability.key]
+        const mergedParams = configParams
+          ? { ...extractDefaults(ability), ...configParams }
+          : extractDefaults(ability)
+
+        // Filter by isEnabled — syncInvokesForKey handles runtime changes
+        if ('isEnabled' in mergedParams && !mergedParams.isEnabled) continue
+
+        for (const invoke of ability.invoke) {
+          if (
+            'uses' in mergedParams &&
+            typeof mergedParams.uses === 'number' &&
+            mergedParams.uses <= 0
+          )
+            continue
+          const list = sideMap.get(invoke.timing)
+          const entry: TimingInvokeEntry = {
+            ability,
+            invoke,
+            params: mergedParams,
+            source: { type: 'config' },
+          }
+          if (list) list.push(entry)
+          else sideMap.set(invoke.timing, [entry])
+        }
+      }
+
+      // 2. Unit invokes from initial state
+      const unitAbilities = AbilitiesParams.collectUnitAbilities(state, side)
+      for (const { ability, unitType, unitIndex } of unitAbilities) {
+        if (ability.context && ability.context !== state.combatMode) continue
+        const configParams = sideConfig[ability.key]
+        const mergedParams = configParams
+          ? { ...extractDefaults(ability), ...configParams }
+          : extractDefaults(ability)
+
+        for (const invoke of ability.invoke) {
+          const list = sideMap.get(invoke.timing)
+          const entry: TimingInvokeEntry = {
+            ability,
+            invoke,
+            params: mergedParams,
+            source: { type: 'unit', unitType, unitIndex },
+          }
+          if (list) list.push(entry)
+          else sideMap.set(invoke.timing, [entry])
+        }
+      }
+    }
+
+    this._combatState._invokes = collections
+    this._combatState._invokesOwned = true
+  }
+
+  /**
+   * Check if any invoke (config or unit) for the given timing is callable
+   * (isEnabled !== false, uses > 0).
+   * For unit entries, existence check is deferred to tryResolveOne.
+   *
+   * Results are cached per state.abilities reference — when abilities
+   * config doesn't change (no ability fires), repeated checks for the
+   * same timing are O(1).
+   */
+  private hasCallableInvoke(timing: AbilityTiming): boolean {
+    const invokes = this._combatState._invokes
+    const attackerEntries = invokes.attacker.get(timing)
+    if (attackerEntries && attackerEntries.length > 0) return true
+    const defenderEntries = invokes.defender.get(timing)
+    return defenderEntries !== undefined && defenderEntries.length > 0
+  }
+
+  /**
+   * Queue invoke registration for after Immer produce completes.
+   * Called from addUnit/modifyUnit inside the produce — draft proxies
+   * would be revoked if we registered immediately.
+   */
+  queueUnitInvokes(
+    side: CombatSide,
+    variantKey: string,
+    startSubIndex: number,
+    count: number,
+  ): void {
+    this._pendingUnitInvokes.push({ side, variantKey, startSubIndex, count })
+  }
+
+  /**
+   * Flush pending invoke registrations using finalized (non-draft) state.
+   * Called after Immer produce completes in tryResolveOne.
+   */
+  flushPendingUnitInvokes(state: CombatStateData): void {
+    if (this._pendingUnitInvokes.length === 0) return
+    const pending = this._pendingUnitInvokes
+    this._pendingUnitInvokes = []
+    for (const { side, variantKey, startSubIndex, count } of pending) {
+      this.appendUnitInvokes(
+        side,
+        state[side],
+        variantKey,
+        startSubIndex,
+        count,
+      )
+    }
+  }
+
+  /**
+   * Append invoke entries for units that just gained abilities.
+   * Called from addUnit (new units) and modifyUnit (existing units gain ABILITIES).
+   */
+  appendUnitInvokes(
+    side: CombatSide,
+    sideState: SideStateData,
+    variantKey: string,
+    startSubIndex: number,
+    count: number,
+  ): void {
+    const stats = resolveUnitStats(sideState, variantKey)
+    if (!stats?.ABILITIES) return
+
+    this._combatState.ensureOwnInvokes()
+    const sideConfig = this.state.abilities[side]
+    const sideMap = this._combatState._invokes[side]
+    const { type: unitType } = parseVariantId(variantKey)
+
+    for (const ability of stats.ABILITIES) {
+      if (ability.context && ability.context !== this.state.combatMode) continue
+      const configParams = sideConfig[ability.key]
+      const mergedParams = configParams
+        ? { ...extractDefaults(ability), ...configParams }
+        : extractDefaults(ability)
+
+      for (const invoke of ability.invoke) {
+        const baseGlobalIndex = toGlobalIndex(
+          sideState,
+          variantKey,
+          startSubIndex,
+        )
+        for (let i = 0; i < count; i++) {
+          const entry: TimingInvokeEntry = {
+            ability,
+            invoke,
+            params: mergedParams,
+            source: {
+              type: 'unit',
+              unitType: unitType as UnitType,
+              unitIndex: baseGlobalIndex + i,
+            },
+          }
+          const list = sideMap.get(invoke.timing)
+          if (list) list.push(entry)
+          else sideMap.set(invoke.timing, [entry])
+        }
+      }
+    }
+  }
+
+  /** Remove config-source invoke entries for a given ability key */
+  private removeConfigInvokeEntries(
+    side: CombatSide,
+    abilityKey: string,
+    keepIf?: (entry: TimingInvokeEntry) => boolean,
+  ): void {
+    this._combatState.ensureOwnInvokes()
+    const sideMap = this._combatState._invokes[side]
+    for (const [timing, entries] of sideMap) {
+      const filtered = entries.filter(e => {
+        if (e.source.type !== 'config' || e.ability.key !== abilityKey)
+          return true
+        return keepIf ? keepIf(e) : false
+      })
+      if (filtered.length !== entries.length) {
+        if (filtered.length === 0) sideMap.delete(timing)
+        else sideMap.set(timing, filtered)
+      }
+    }
+  }
+
+  /** Add config ability invokes to _invokes (caller must ensure isEnabled check) */
+  private addConfigAbilityInvokes(
+    side: CombatSide,
+    ability: Ability,
+    mergedParams: Record<string, unknown>,
+    state: CombatStateData,
+  ): void {
+    if (ability.context && ability.context !== state.combatMode) return
+    this._combatState.ensureOwnInvokes()
+    const sideMap = this._combatState._invokes[side]
+    for (const invoke of ability.invoke) {
+      if (
+        'uses' in mergedParams &&
+        typeof mergedParams.uses === 'number' &&
+        mergedParams.uses <= 0
+      )
+        continue
+      const entry: TimingInvokeEntry = {
+        ability,
+        invoke,
+        params: mergedParams,
+        source: { type: 'config' },
+      }
+      const list = sideMap.get(invoke.timing)
+      if (list) list.push(entry)
+      else sideMap.set(invoke.timing, [entry])
+    }
+  }
+
+  /**
+   * Sync _invokes for a single ability key on one side.
+   * Called from within Immer produce (updateAbilityConfig / decrementUses)
+   * so it operates on the draft state.
+   */
+  syncInvokesForKey(
+    side: CombatSide,
+    key: string,
+    draft: CombatStateData,
+  ): void {
+    const factionUnitKeys = getUnitDefinitionAbilityKeys(draft[side].faction)
+    if (factionUnitKeys.has(key)) return
+
+    const ability = this._abilities[side].find(a => a.key === key)
+    if (!ability) return
+
+    this.removeConfigInvokeEntries(side, key)
+
+    const newConfig = draft.abilities[side][key]
+    const defaults = extractDefaults(ability)
+    const mergedParams = newConfig ? { ...defaults, ...newConfig } : defaults
+
+    if ('isEnabled' in mergedParams && !mergedParams.isEnabled) return
+
+    this.addConfigAbilityInvokes(side, ability, mergedParams, draft)
+  }
+
+  /**
+   * Reconcile SETTINGS computed params directly on an Immer draft.
+   * Called from updateAbilityConfig when SETTINGS is modified during produce.
+   */
+  reconcileSettingsOnDraft(draft: CombatStateData): void {
+    for (const side of ['attacker', 'defender'] as const) {
+      const sideAbilities = this._abilities[side]
+      const { settings, subtypes } = resolveSettings(
+        sideAbilities,
+        draft.abilities[side],
+      )
+      this.reconcileSyncSources(
+        side,
+        sideAbilities.filter(a => a.key === 'SETTINGS'),
+        draft.abilities[side],
+        settings,
+        settings,
+        subtypes,
+        subtypes,
+      )
+    }
+  }
+
+  /** Get invokes for a timing (or multiple timings) from unified invoke collection. */
   private getInvokesForTiming<T extends AbilityTiming>(
     timing: T | T[],
     side: CombatSide,
@@ -1234,90 +1331,53 @@ export class AbilitiesParams {
     triggerSide?: CombatSide,
   ): TimingInvokeEntry[] {
     const timings = Array.isArray(timing) ? timing : [timing]
+    const { meta } = state.currentPhase
     const results: TimingInvokeEntry[] = []
 
-    const { meta } = state.currentPhase
-
-    const sideConfig = state.abilities[side]
-
-    // 1. Collect unit abilities from units on field
-    const unitAbilities = AbilitiesParams.collectUnitAbilities(state, side)
-    // Use faction definition keys (not just living units) so destroyed-unit abilities
-    // are never collected as config abilities
-    const factionUnitKeys = getUnitDefinitionAbilityKeys(state[side].faction)
-    const liveUnitKeys = new Set<string>()
-    for (const ua of unitAbilities) {
-      liveUnitKeys.add(ua.ability.key)
-    }
-
-    const collectInvokes = (ability: Ability, source: AbilitySource): void => {
-      if (ability.context && ability.context !== state.combatMode) return
-      const mergedParams = getAbilityMergedParams(ability, sideConfig)
-
-      for (const invoke of ability.invoke) {
-        if (!timings.includes(invoke.timing as T)) continue
-        // Unit abilities with DESTROY/WHEN_DESTROY/AFTER_DESTROY only fire when that
-        // specific unit is destroyed — handled via destroyed context, not here
-        if (
-          source.type === 'unit' &&
-          (invoke.timing === 'DESTROY' ||
-            invoke.timing === 'WHEN_DESTROY' ||
-            invoke.timing === 'AFTER_DESTROY')
-        )
-          continue
-        if (invoke.context) {
-          const allowed = Array.isArray(invoke.context)
-            ? invoke.context
-            : [invoke.context]
+    const sideMap = this._combatState._invokes[side]
+    for (const t of timings) {
+      const entries = sideMap.get(t as AbilityTiming)
+      if (!entries) continue
+      for (const entry of entries) {
+        // Filter by invoke.context (MetaPhase) — not pre-filtered
+        if (entry.invoke.context) {
+          const allowed = Array.isArray(entry.invoke.context)
+            ? entry.invoke.context
+            : [entry.invoke.context]
           if (!allowed.includes(meta)) continue
         }
-        if (triggerSide && invoke.side) {
-          if (invoke.side === 'OWN' && side !== triggerSide) continue
-          if (invoke.side === 'OPPONENT' && side === triggerSide) continue
+        // Filter by triggerSide
+        if (triggerSide && entry.invoke.side) {
+          if (entry.invoke.side === 'OWN' && side !== triggerSide) continue
+          if (entry.invoke.side === 'OPPONENT' && side === triggerSide) continue
         }
-        results.push({ ability, invoke, params: mergedParams, source })
+        results.push(entry)
       }
     }
 
-    for (const { ability, unitType, unitIndex } of unitAbilities) {
-      collectInvokes(ability, { type: 'unit', unitType, unitIndex })
-    }
+    // Apply ABILITY_ORDER sorting across all collected entries (matches old
+    // behavior where entries from different timings in the same group were
+    // interleaved by user-chosen ability order).
+    if (results.length > 1) {
+      const timingSet = new Set(timings)
+      const sideConfig = state.abilities[side]
+      for (const group of TIMING_GROUPS) {
+        if (!group.timings.some(t => timingSet.has(t as T))) continue
+        const orderConfig = sideConfig['ABILITY_ORDER']
+        if (!orderConfig) break
+        const order = orderConfig[group.paramKey] as string[] | undefined
+        if (!order || order.length === 0) break
 
-    // 2. Collect regular abilities from config via timing index
-    //    (skip unit abilities — handled per-unit above)
-    const candidateAbilities = new Set<Ability>()
-    const sideIndex = this._timingIndex[side]
-    for (const t of timings) {
-      const indexed = sideIndex.get(t as AbilityTiming)
-      if (indexed) {
-        for (const a of indexed) candidateAbilities.add(a)
+        const orderIndex = new Map(order.map((key, i) => [key, i]))
+        let nextSlot = order.length
+        const sortKey = new Map<TimingInvokeEntry, number>()
+        for (const entry of results) {
+          const oi = orderIndex.get(entry.ability.key)
+          sortKey.set(entry, oi !== undefined ? oi : nextSlot++)
+        }
+        results.sort((a, b) => sortKey.get(a)! - sortKey.get(b)!)
+        break // Only one group can match
       }
-    }
-    for (const ability of candidateAbilities) {
-      if (factionUnitKeys.has(ability.key) || liveUnitKeys.has(ability.key))
-        continue
-      collectInvokes(ability, { type: 'config' })
-    }
-
-    // 3. Apply ABILITY_ORDER sorting for matching timing groups (config abilities only)
-    const timingSet = new Set(timings)
-    for (const group of TIMING_GROUPS) {
-      if (!group.timings.some(t => timingSet.has(t as T))) continue
-      const orderConfig = sideConfig['ABILITY_ORDER']
-      if (!orderConfig) break
-      const order = orderConfig[group.paramKey] as string[] | undefined
-      if (!order || order.length === 0) break
-
-      const orderIndex = new Map(order.map((key, i) => [key, i]))
-      // Build a total order: ordered items first (by position), unordered after
-      let nextSlot = order.length
-      const sortKey = new Map<TimingInvokeEntry, number>()
-      for (const entry of results) {
-        const oi = orderIndex.get(entry.ability.key)
-        sortKey.set(entry, oi !== undefined ? oi : nextSlot++)
-      }
-      results.sort((a, b) => sortKey.get(a)! - sortKey.get(b)!)
-      break // Only one group can match
     }
 
     return results

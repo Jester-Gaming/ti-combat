@@ -1,4 +1,5 @@
 import type { Ability } from '@/combat/abilities/types'
+import { getUnitLocator } from '@/combat/utils/compact-units'
 import type { UnitType } from '@/types'
 
 export const eidolonMaximum: Ability = {
@@ -32,7 +33,7 @@ export const eidolonMaximum: Ability = {
         // Modify all mechs to Eidolon Maximum form: combat [4, 4]
         const mechs = ctx.api.own.getUnits('MECH')
         for (const mech of mechs) {
-          ctx.api.own.modifyUnit(mech, { COMBAT: [4, 4] })
+          ctx.api.own.modifyUnit(getUnitLocator(mech)!, { COMBAT: [4, 4] })
         }
       },
     },
@@ -73,7 +74,7 @@ export const eidolonMaximum: Ability = {
         const mechs = ctx.api.own.getUnits('MECH')
         for (const mech of mechs) {
           if (mech.isDamaged) {
-            ctx.api.own.modifyUnit(mech, { isDamaged: false })
+            ctx.api.own.modifyUnit(getUnitLocator(mech)!, { isDamaged: false })
           }
         }
       },

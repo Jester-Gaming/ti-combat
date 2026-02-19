@@ -19,11 +19,8 @@ export const theEgeiro: Ability<Params> = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (params, _ctx, dice) => {
-        return params.nonHomeSystems > 0 && !dice.own.isEmpty()
-      },
-      call: (ctx, params, dice) => {
-        dice.own.modifyHitValue(-params.nonHomeSystems, ctx.getUnit())
+      call: (ctx, params) => {
+        ctx.api.own.modifyHitValue(-params.nonHomeSystems, ctx.getUnit())
       },
     },
   ],

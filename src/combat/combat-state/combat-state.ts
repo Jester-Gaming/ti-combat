@@ -1,3 +1,5 @@
+import { create } from 'mutative'
+
 import { GROUND_FORCES, STRUCTURES } from '@/constants/units'
 import factions from '@/data/faction'
 import type { CombatSide, DiceGroup, FactionKey, UnitType } from '@/types'
@@ -6,6 +8,8 @@ import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 import {
   AbilitiesParams,
   type AbilityReadContext,
+  cloneInvokes,
+  type InvokeCollections,
   type RunAbilitiesResult,
   type SidedDiceData,
 } from '../abilities'
@@ -18,7 +22,6 @@ import type {
 import {
   CombatSideState,
   createDefaultUnitSelections,
-  destroyUnitsFromPool,
 } from '../combat-side-state/combat-side-state'
 import { getDestroyedUnits } from '../combat-side-state/utils/get-destroyed-units'
 import { getSettingsValidTargets } from '../combat-side-state/utils/get-settings-valid-targets'
@@ -39,6 +42,8 @@ import type {
   CombatMode,
   CombatStateData,
   HitSource,
+  HitValueModifier,
+  MetaPhase,
   PhaseIdentifier,
   SideStateData,
 } from './types'
@@ -90,6 +95,15 @@ export class CombatState {
   private _params!: AbilitiesParams
   private _attacker: CombatSideState | undefined
   private _defender: CombatSideState | undefined
+  public _invokes!: InvokeCollections
+  public _invokesOwned = true
+
+  ensureOwnInvokes(): void {
+    if (!this._invokesOwned) {
+      this._invokes = cloneInvokes(this._invokes)
+      this._invokesOwned = true
+    }
+  }
 
   get disableAbilities() {
     return false
@@ -201,7 +215,15 @@ export class CombatState {
     const instance = Object.create(CombatState.prototype) as CombatState
     instance.data = data
     // CombatSideState instances created lazily via getters
-    instance._params = params ?? AbilitiesParams.wrap(instance)
+    if (params) {
+      instance._params = params
+      const source = params.combatState
+      instance._invokes = source._invokes
+      instance._invokesOwned = false
+      source._invokesOwned = false
+    } else {
+      instance._params = AbilitiesParams.wrap(instance)
+    }
     return instance
   }
 
@@ -303,7 +325,14 @@ export class CombatState {
         log: EMPTY_LOG,
       } as RunAbilitiesResult<T>
     }
-    const activeLogger = logger ?? Logger.create().child(this.currentPhase.meta)
+    this._params.setCombatState(this)
+    // Only create Logger when logging is enabled — avoids allocations
+    // on every call when abilities short-circuit during simulation
+    const activeLogger =
+      logger ??
+      (this._enableLog
+        ? Logger.create().child(this.currentPhase.meta)
+        : undefined)
     return this._params.runAbilities(
       timing,
       stateData,
@@ -386,55 +415,10 @@ export class CombatState {
       }
     }
 
-    // Run DESTROY first (cleanup, no cascading)
-    const { state: afterCleanup } = this.runAbilities(
-      'DESTROY',
+    // Run DESTROY → WHEN_DESTROY → AFTER_DESTROY sequence
+    const afterDestroy = this._params.runDestroyAbilities(
       destroyedContext,
       resultData,
-      logger,
-    )
-
-    // Run WHEN_DESTROY (may destroy additional units, e.g. Van Hauge)
-    const { state: afterWhenDestroy } = this.runAbilities(
-      'WHEN_DESTROY',
-      destroyedContext,
-      afterCleanup,
-      logger,
-    )
-
-    // Skip diff when WHEN_DESTROY didn't change state (no ability fired)
-    let mergedDestroyedContext = destroyedContext
-    if (afterWhenDestroy !== afterCleanup) {
-      const additionalAttacker = getDestroyedUnits(
-        afterCleanup.attacker,
-        afterWhenDestroy.attacker,
-      )
-      const additionalDefender = getDestroyedUnits(
-        afterCleanup.defender,
-        afterWhenDestroy.defender,
-      )
-      if (
-        Object.keys(additionalAttacker).length > 0 ||
-        Object.keys(additionalDefender).length > 0
-      ) {
-        mergedDestroyedContext = {
-          attacker: mergeDestroyed(
-            destroyedContext.attacker,
-            additionalAttacker,
-          ),
-          defender: mergeDestroyed(
-            destroyedContext.defender,
-            additionalDefender,
-          ),
-        }
-      }
-    }
-
-    // Then run AFTER_DESTROY with all destroyed units
-    const { state: afterDestroy } = this.runAbilities(
-      'AFTER_DESTROY',
-      mergedDestroyedContext,
-      afterWhenDestroy,
       logger,
     )
 
@@ -599,10 +583,17 @@ export class CombatState {
 
     const results: StateWithProbability[] = []
 
+    // Save baseline _invokes reference — COW protects it from mutation
+    const baseInvokes = this._invokes
+
     for (const attOutcome of attackerDist) {
       for (const defOutcome of defenderDist) {
         const probability = attOutcome.probability * defOutcome.probability
         if (probability === 0) continue
+
+        // Reset _invokes to baseline for this outcome (COW armed)
+        this._invokes = baseInvokes
+        this._invokesOwned = false
 
         // Build final data with hits + next phase in one spread
         let finalData = addHitsToDataWithPhase(
@@ -629,7 +620,9 @@ export class CombatState {
               finalData,
               afterRollLogger,
             )
-            finalData = { ...afterRoll, currentPhase: nextPhase }
+            if (afterRoll !== finalData) {
+              finalData = { ...afterRoll, currentPhase: nextPhase }
+            }
             if (afterRollLog.length > 0) log.push(...afterRollLog)
           } else {
             log = prependLog ? [...prependLog, diceRollEntry] : [diceRollEntry]
@@ -640,7 +633,11 @@ export class CombatState {
             undefined,
             finalData,
           )
-          finalData = { ...afterRoll, currentPhase: nextPhase }
+          // Skip spread when abilities didn't change state (short-circuited) —
+          // finalData already has nextPhase from addHitsToDataWithPhase
+          if (afterRoll !== finalData) {
+            finalData = { ...afterRoll, currentPhase: nextPhase }
+          }
         }
 
         results.push({
@@ -650,6 +647,10 @@ export class CombatState {
         })
       }
     }
+
+    // Restore baseline
+    this._invokes = baseInvokes
+    this._invokesOwned = true
 
     return results
   }
@@ -746,6 +747,23 @@ export class CombatState {
       log: abilityLog,
     } = this.runAbilities('BEFORE_UNIT_ABILITY_ROLL', sidedDiceData)
 
+    // Apply stored hit-value modifiers
+    const meta = this.currentPhase.meta
+    if (afterWhen.attacker.hitValueModifiers?.length) {
+      applyStoredHitValueModifiers(
+        modifiedDice.attacker,
+        afterWhen.attacker.hitValueModifiers,
+        meta,
+      )
+    }
+    if (afterWhen.defender.hitValueModifiers?.length) {
+      applyStoredHitValueModifiers(
+        modifiedDice.defender,
+        afterWhen.defender.hitValueModifiers,
+        meta,
+      )
+    }
+
     // Clear dice for sides not in firing config
     // (abilities may inject dice for non-firing sides, e.g. attacker during SCD)
     if (!firing.includes('attacker')) modifiedDice.attacker = {}
@@ -831,6 +849,23 @@ export class CombatState {
       log: abilityLog,
     } = this.runAbilities('BEFORE_DICE_ROLL', sidedDiceData)
 
+    // Apply stored hit-value modifiers (from ctx.api.own.modifyHitValue)
+    const meta = this.currentPhase.meta
+    if (afterWhen.attacker.hitValueModifiers?.length) {
+      applyStoredHitValueModifiers(
+        modifiedDice.attacker,
+        afterWhen.attacker.hitValueModifiers,
+        meta,
+      )
+    }
+    if (afterWhen.defender.hitValueModifiers?.length) {
+      applyStoredHitValueModifiers(
+        modifiedDice.defender,
+        afterWhen.defender.hitValueModifiers,
+        meta,
+      )
+    }
+
     let prependLog: LogEntry[] | undefined
     if (this._enableLog) {
       const dicePoolLog: LogEntry = {
@@ -880,11 +915,22 @@ export class CombatState {
   private processEndOfRound(): StateWithProbability[] {
     const { state: newData, log } = this.runAbilities(['END_OF_COMBAT_ROUND'])
 
-    const { state: cleanedData } = this.runAbilities(
+    let { state: cleanedData } = this.runAbilities(
       'CLEANUP_ROUND',
       undefined,
       newData,
     )
+
+    // Clear stored hit-value modifiers
+    if (
+      cleanedData.attacker.hitValueModifiers?.length ||
+      cleanedData.defender.hitValueModifiers?.length
+    ) {
+      cleanedData = create(cleanedData, draft => {
+        delete draft.attacker.hitValueModifiers
+        delete draft.defender.hitValueModifiers
+      })
+    }
 
     return this.transitionPhaseWithData(
       cleanedData,
@@ -893,17 +939,46 @@ export class CombatState {
   }
 }
 
-/** Merge two destroyed-unit records by summing counts */
-function mergeDestroyed(
-  a: Record<string, number>,
-  b: Record<string, number>,
-): Record<string, number> {
-  if (Object.keys(b).length === 0) return a
-  const result = { ...a }
-  for (const key in b) {
-    result[key] = (result[key] ?? 0) + b[key]
+/** Apply stored hit-value modifiers to a dice pool for one side */
+function applyStoredHitValueModifiers(
+  pool: DicePool,
+  modifiers: readonly HitValueModifier[],
+  currentMeta: MetaPhase,
+): void {
+  for (const mod of modifiers) {
+    if (mod.context !== currentMeta) continue
+
+    if (mod.unitLocator) {
+      // Target specific unit by locator
+      for (const dice of Object.values(pool)) {
+        if (!dice) continue
+        for (let i = 0; i < dice.length; i++) {
+          const loc = dice[i][2]
+          if (
+            loc.key === mod.unitLocator.key &&
+            loc.index === mod.unitLocator.index
+          ) {
+            dice[i] = [
+              Math.max(1, dice[i][0] + mod.amount),
+              dice[i][1],
+              dice[i][2],
+            ]
+            break
+          }
+        }
+      }
+      continue
+    }
+
+    for (const [type, dice] of Object.entries(pool)) {
+      if (!dice) continue
+      if (mod.unitType && type !== mod.unitType) continue
+      if (mod.excludeUnitTypes?.includes(type)) continue
+      for (let i = 0; i < dice.length; i++) {
+        dice[i] = [Math.max(1, dice[i][0] + mod.amount), dice[i][1], dice[i][2]]
+      }
+    }
   }
-  return result
 }
 
 /** Add hits and set next phase — constructs result directly to minimize spreads */
@@ -920,13 +995,21 @@ function addHitsToDataWithPhase(
       defenderHits > 0
         ? {
             ...data.attacker,
-            hitPools: [
-              ...data.attacker.hitPools,
-              {
-                hits: defenderHits,
-                validTargets: validTargets.attacker,
-              },
-            ],
+            hitPools:
+              data.attacker.hitPools.length === 0
+                ? [
+                    {
+                      hits: defenderHits,
+                      validTargets: validTargets.attacker,
+                    },
+                  ]
+                : [
+                    ...data.attacker.hitPools,
+                    {
+                      hits: defenderHits,
+                      validTargets: validTargets.attacker,
+                    },
+                  ],
           }
         : data.attacker,
     // Attacker's dice hit defender
@@ -934,13 +1017,21 @@ function addHitsToDataWithPhase(
       attackerHits > 0
         ? {
             ...data.defender,
-            hitPools: [
-              ...data.defender.hitPools,
-              {
-                hits: attackerHits,
-                validTargets: validTargets.defender,
-              },
-            ],
+            hitPools:
+              data.defender.hitPools.length === 0
+                ? [
+                    {
+                      hits: attackerHits,
+                      validTargets: validTargets.defender,
+                    },
+                  ]
+                : [
+                    ...data.defender.hitPools,
+                    {
+                      hits: attackerHits,
+                      validTargets: validTargets.defender,
+                    },
+                  ],
           }
         : data.defender,
     abilities: data.abilities,
@@ -1032,7 +1123,8 @@ function getFilteredSacrificeOrder(
   return result
 }
 
-/** Assign hits to a side directly on data, returning new SideStateData */
+/** Assign hits to a side directly on data, returning new SideStateData.
+ * Batches all hit pools into a single pass to minimize object spreads. */
 function assignHitsToSide(
   sideData: SideStateData,
   participatingUnits: ReadonlySet<UnitType>,
@@ -1045,17 +1137,52 @@ function assignHitsToSide(
     participatingUnits,
   )
 
-  let current = sideData
+  // Spread once, then mutate in-place across all pools
+  const newUnits = { ...sideData.units }
+  const newUnitState = { ...sideData.unitState }
+  let changed = false
+
   for (const pool of sideData.hitPools) {
-    current = destroyUnitsFromPool(
-      current,
-      pool.hits,
-      pool.validTargets,
-      sacrificeOrder,
-    )
+    let remaining = pool.hits
+    if (remaining <= 0) continue
+
+    const validTargets = pool.validTargets
+
+    for (const variantId of sacrificeOrder) {
+      if (remaining <= 0) break
+      if (
+        validTargets.length > 0 &&
+        !validTargets.includes(parseVariantId(variantId).type)
+      )
+        continue
+
+      const count = newUnits[variantId]
+      if (!count || count <= 0) continue
+
+      const toDestroy = Math.min(count, remaining)
+      const newCount = count - toDestroy
+      changed = true
+
+      if (newCount <= 0) {
+        delete newUnits[variantId]
+        delete newUnitState[variantId]
+      } else {
+        newUnits[variantId] = newCount
+        const stateArr = newUnitState[variantId]
+        if (stateArr && stateArr.length > newCount) {
+          newUnitState[variantId] = stateArr.slice(0, newCount)
+        }
+      }
+
+      remaining -= toDestroy
+    }
   }
 
-  return { ...current, hitPools: [] }
+  // Always clear hitPools — even when no units were destroyed,
+  // stale pools must not leak into subsequent phases
+  if (!changed) return { ...sideData, hitPools: [] }
+
+  return { ...sideData, units: newUnits, unitState: newUnitState, hitPools: [] }
 }
 
 const abilitiesSideHashCache = new WeakMap<
@@ -1116,35 +1243,6 @@ function getSideHash(side: SideStateData): string {
       }
     } else {
       result += key + ':' + count
-    }
-  }
-
-  // Include hitPools in hash
-  if (side.hitPools.length > 0) {
-    for (const p of side.hitPools) {
-      if (result) result += ','
-      const targets = [...p.validTargets].sort().join('+')
-      result += 'pools:[' + p.hits + ':' + targets + ']'
-    }
-  }
-
-  // Include unit ability restrictions in hash
-  if (side.unitAbilityRestrictions) {
-    const r = side.unitAbilityRestrictions
-    for (const layer of ['lost', 'cannotBeUsed'] as const) {
-      const layerData = r[layer]
-      if (!layerData) continue
-      const rKeys = Object.keys(layerData).sort()
-      for (const rKey of rKeys) {
-        const entries = layerData[rKey as keyof typeof layerData]
-        if (!entries || entries.length === 0) continue
-        const entriesHash = entries
-          .map(e => `${e.reason}${e.unitType ? `:${e.unitType}` : ''}`)
-          .sort()
-          .join(';')
-        if (result) result += ','
-        result += layer + '.' + rKey + ':[' + entriesHash + ']'
-      }
     }
   }
 

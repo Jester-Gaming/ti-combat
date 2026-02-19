@@ -5,6 +5,7 @@ import type {
   SourcedDiceGroup,
   Unit,
   UnitAbility,
+  UnitLocator,
   UnitState,
   UnitStats,
   UnitType,
@@ -62,23 +63,17 @@ export type SidedDiceData = SidedContext<DicePool>
 export interface DiceReadApi {
   getAll(): DicePool
   get(source: string): readonly SourcedDiceGroup[] | undefined
-  count(): number
   isEmpty(): boolean
 }
 
 /** Full read-write API for mutating dice */
 export interface DiceApi extends DiceReadApi {
-  modifyHitValue(amount: number): void
-  modifyHitValue(amount: number, unit: Unit): void
-  modifyHitValue(amount: number, source: UnitType): void
-  modifyHitValue(amount: number, filter: (source: UnitType) => boolean): void
-
   addDiceCount(count: number): void
   addDiceCount(count: number, strategy: 'BEST' | 'WORST'): void
   addDiceCount(count: number, source: UnitType): void
-  addDiceCount(count: number, unit: Unit): void
+  addDiceCount(count: number, unit: UnitLocator): void
 
-  addDiceGroup(source: string, unit: Unit, diceGroup: DiceGroup): void
+  addDiceGroup(source: string, unit: UnitLocator, diceGroup: DiceGroup): void
 }
 
 export type DiceReadContext = OwnOpponentContext<DiceReadApi>
@@ -98,8 +93,8 @@ export interface TimingContextMap {
   AFTER_DICE_ROLL: void
   BEFORE_ASSIGN_HITS: void
   AFTER_ASSIGN_HITS_STEP: void
-  WHEN_SUSTAIN_DAMAGE_USE: Unit
-  AFTER_SUSTAIN_DAMAGE_USE: Unit
+  WHEN_SUSTAIN_DAMAGE_USE: UnitLocator
+  AFTER_SUSTAIN_DAMAGE_USE: UnitLocator
   DESTROY: SidedContext<Record<string, number>>
   WHEN_DESTROY: SidedContext<Record<string, number>>
   AFTER_DESTROY: SidedContext<Record<string, number>>
@@ -111,8 +106,8 @@ export interface TimingContextMap {
 
 /** Events that can be emitted via ctx.trigger() during produce */
 export interface TriggerEventMap {
-  WHEN_SUSTAIN_DAMAGE_USE: Unit
-  AFTER_SUSTAIN_DAMAGE_USE: Unit
+  WHEN_SUSTAIN_DAMAGE_USE: UnitLocator
+  AFTER_SUSTAIN_DAMAGE_USE: UnitLocator
 }
 
 // Internal map for ability calls (uses own/opponent)
@@ -179,12 +174,12 @@ export interface SideReadApi {
 /** Full read-write API for mutating one side's state (within Immer draft) */
 export interface SideApi extends SideReadApi {
   // Unit operations
-  destroyUnit(unit: Unit): void
+  destroyUnit(unit: UnitLocator): void
   destroyUnit(unitType: UnitType): void
   destroyUnit(unitType: UnitType, index: number): void
   destroyUnit(unitTypes: UnitType[]): void
   /** Remove a unit without triggering AFTER_DESTROY */
-  removeUnit(unit: Unit): void
+  removeUnit(unit: UnitLocator): void
   removeUnit(unitType: UnitType): void
   removeUnit(unitType: UnitType, index: number): void
   addUnit(units: Partial<Record<UnitType, number>>): void
@@ -194,7 +189,7 @@ export interface SideApi extends SideReadApi {
     updates: Partial<Unit>,
   ): void
   modifyUnit(unitTypeOrVariantKey: string, updates: Partial<Unit>): void
-  modifyUnit(unit: Unit, updates: Partial<Unit>): void
+  modifyUnit(unit: UnitLocator, updates: Partial<Unit>): void
 
   // Hit operations
   reduceHits(amount: number): void
@@ -223,12 +218,22 @@ export interface SideApi extends SideReadApi {
   ): void
 
   // Subtype operations
-  addSubtype(variantId: string, subtype: string): void
+  addSubtype(
+    variantId: string,
+    subtype: string,
+    statsFactory?: (parentStats: UnitStats) => UnitStats,
+  ): void
   removeSubtype(variantId: string, subtype: string): void
 
   // Ability config mutations
   updateAbilityConfig(updates: Record<string, unknown>): void
   updateAbilityConfig(key: string, updates: Record<string, unknown>): void
+
+  // Hit value modifiers (stored, applied after BEFORE_DICE_ROLL)
+  modifyHitValue(amount: number): void
+  modifyHitValue(amount: number, unitType: string): void
+  modifyHitValue(amount: number, unit: UnitLocator): void
+  modifyHitValue(amount: number, options: { exclude: string[] }): void
 }
 
 // ============================================================================
@@ -242,8 +247,12 @@ export interface AbilityReadContext {
     readonly own: SideReadApi
     readonly opponent: SideReadApi
   }
-  /** Get the unit instance this ability is attached to. Throws if called from a non-unit ability. */
-  getUnit(): Unit
+  /** Get the unit locator this ability is attached to. Throws if called from a non-unit ability. */
+  getUnit(): UnitLocator
+  /** Get the per-unit mutable state (isDamaged, etc.). Throws if called from a non-unit ability. */
+  getUnitState(): Readonly<UnitState>
+  /** Get the shared stats for the unit variant. Throws if called from a non-unit ability. */
+  getUnitStats(): Readonly<UnitStats>
   /** Get the unit type this ability is attached to. Throws if called from a non-unit ability. */
   getUnitType(): UnitType
   /** Get the unit index this ability is attached to. Throws if called from a non-unit ability. */
@@ -275,8 +284,12 @@ export interface AbilityCallContext {
     name: K,
     context: TriggerEventMap[K],
   ): void
-  /** Get the unit instance this ability is attached to (Immer draft). Throws if called from a non-unit ability. */
-  getUnit(): Unit
+  /** Get the unit locator this ability is attached to. Throws if called from a non-unit ability. */
+  getUnit(): UnitLocator
+  /** Get the per-unit mutable state (isDamaged, etc.). Throws if called from a non-unit ability. */
+  getUnitState(): Readonly<UnitState>
+  /** Get the shared stats for the unit variant. Throws if called from a non-unit ability. */
+  getUnitStats(): Readonly<UnitStats>
   /** Get the unit type this ability is attached to. Throws if called from a non-unit ability. */
   getUnitType(): UnitType
   /** Get the unit index this ability is attached to. Throws if called from a non-unit ability. */
@@ -295,8 +308,6 @@ type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
   context?: MetaPhase | MetaPhase[]
   /** Filter invoke by trigger side. 'OWN' = only fires for the side that caused the trigger. 'OPPONENT' = only fires for the other side. Omit for no filtering. */
   side?: 'OWN' | 'OPPONENT'
-  /** When true, this invoke is always called and does not decrement the ability's uses count. */
-  always?: boolean
 } & (InternalTimingContextMap[T] extends void
   ? {
       // Void timings (PREPARE, START_OF_COMBAT, etc.)

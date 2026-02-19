@@ -1,10 +1,7 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability, AbilityReadContext } from '@/combat/abilities/types'
-import {
-  getUnitVariantId,
-  parseVariantId,
-  unitMatchesVariant,
-} from '@/combat/utils/unit-variant'
+import { getUnitLocator } from '@/combat/utils/compact-units'
+import { parseVariantId, unitMatchesVariant } from '@/combat/utils/unit-variant'
 
 type Params = {
   spacePriority: string[]
@@ -27,7 +24,7 @@ function isHighestPrioritySustainTarget(
   const validTargets = ctx.api.own.getHitPoolValidTargets()
   const validTargetSet = validTargets.length > 0 ? new Set(validTargets) : null
 
-  const myUnit = ctx.getUnit()
+  const myLocator = ctx.getUnit()
 
   for (const variantId of priority) {
     const { type: unitType } = parseVariantId(variantId)
@@ -48,7 +45,12 @@ function isHighestPrioritySustainTarget(
       if (unit.isDamaged) continue
       if (!unit.UNIT_ABILITIES?.SUSTAIN_DAMAGE) continue
       // Found the highest-priority eligible unit — is it us?
-      return unit === myUnit
+      const loc = getUnitLocator(unit)
+      return (
+        loc !== undefined &&
+        loc.key === myLocator.key &&
+        loc.index === myLocator.index
+      )
     }
   }
 
@@ -77,12 +79,11 @@ export const sustainDamage: Ability<Params> = {
       isCallable: (params, ctx) => {
         if (ctx.api.own.getPendingHits() <= 0) return false
 
-        const unit = ctx.getUnit()
-        if (unit.isDamaged) return false
-        if (!unit.UNIT_ABILITIES?.SUSTAIN_DAMAGE) return false
+        if (ctx.getUnitState().isDamaged) return false
+        if (!ctx.getUnitStats().UNIT_ABILITIES?.SUSTAIN_DAMAGE) return false
 
         const unitType = ctx.getUnitType()
-        const variantId = getUnitVariantId(unitType, unit)
+        const variantId = ctx.getUnit().key
 
         const isGround = ctx.state.combatMode === 'GROUND'
         const allowedUnits = new Set(

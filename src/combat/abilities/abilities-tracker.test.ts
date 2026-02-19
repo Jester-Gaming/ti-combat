@@ -221,7 +221,10 @@ describe('unit ability invocation', () => {
 
 describe('AFTER_DESTROY triggered by destroyUnit', () => {
   it('should trigger AFTER_DESTROY when an ability destroys units', () => {
-    const afterDestroyCalls: { own: unknown[]; opponent: unknown[] }[] = []
+    const afterDestroyCalls: {
+      own: Record<string, number>
+      opponent: Record<string, number>
+    }[] = []
 
     const destroyAbility: Ability = {
       key: 'DESTROY_ABILITY',
@@ -249,7 +252,7 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
           call: (
             _ctx: AbilityCallContext,
             _params: Record<string, never>,
-            context: OwnOpponentContext<unknown[]>,
+            context: OwnOpponentContext<Record<string, number>>,
           ) => {
             afterDestroyCalls.push({
               own: context.own,

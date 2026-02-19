@@ -1,6 +1,5 @@
 import nomadIcon from '@/assets/faction/nomad.svg?raw'
 import { declareParam } from '@/combat/abilities/declare-param'
-import { makeVariantId } from '@/combat/utils/unit-variant'
 import type { UnitType } from '@/types'
 import { getEffectiveStats } from '@/utils/get-simulation-units'
 
@@ -60,19 +59,20 @@ export const cavalry: Ability<Params> = {
       },
       call: (ctx, params) => {
         const flagship = nomad.units.FLAGSHIP!
-        const stats = getEffectiveStats(
+        const memoriaStats = getEffectiveStats(
           flagship.BASE,
           flagship.UPGRADED,
           params.memoria2,
         )
 
-        ctx.api.own.addSubtype(params.unitType, 'Cavalry')
-        const cavalryKey = makeVariantId(params.unitType, ['Cavalry'])
-        ctx.api.own.modifyUnit(cavalryKey, 0, {
-          COMBAT: stats.COMBAT,
-          UNIT_ABILITIES: stats.UNIT_ABILITIES,
-          ...(stats.ABILITIES ? { ABILITIES: stats.ABILITIES } : {}),
-        })
+        ctx.api.own.addSubtype(params.unitType, 'Cavalry', stats => ({
+          ...stats,
+          COMBAT: memoriaStats.COMBAT,
+          UNIT_ABILITIES: memoriaStats.UNIT_ABILITIES,
+          ...(memoriaStats.ABILITIES
+            ? { ABILITIES: memoriaStats.ABILITIES }
+            : {}),
+        }))
       },
     },
   ],

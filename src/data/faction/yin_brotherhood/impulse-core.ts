@@ -1,5 +1,6 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
+import { getUnitLocator } from '@/combat/utils/compact-units'
 import { parseVariantId } from '@/combat/utils/unit-variant'
 
 type Params = {
@@ -50,7 +51,7 @@ export const impulseCore: Ability<Params> = {
         )
         if (!sacrifice) return
 
-        ctx.api.own.destroyUnit(sacrifice)
+        ctx.api.own.destroyUnit(getUnitLocator(sacrifice)!)
 
         for (const variantId of params.targetPriority) {
           if (ctx.api.opponent.findUnitByPriority([variantId])) {

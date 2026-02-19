@@ -90,7 +90,6 @@ export function connectTechnologicalSingularity(
   // Single unified PREPARE: register with TS when deferred, run originals otherwise
   result.push({
     timing: 'PREPARE' as const,
-    always: true,
     call: (ctx: AbilityCallContext, params: Record<string, unknown>) => {
       if (params.enableBySingularity) {
         registerDeferredPrepare(ctx, ability.key, deferredPrepareFn)
@@ -196,7 +195,6 @@ export const technologicalSingularity: Ability<Params> = {
   invoke: [
     {
       timing: 'AFTER_DESTROY',
-      always: true,
       context: ['SPACE_COMBAT', 'GROUND_COMBAT'],
       isCallable: (params, _ctx, units) => {
         if (params.opponentDestroyed) return false

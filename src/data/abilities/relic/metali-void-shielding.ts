@@ -2,6 +2,7 @@ import type {
   Ability,
   AbilityReadContext,
 } from '../../../combat/abilities/types'
+import { getUnitLocator } from '../../../combat/utils/compact-units'
 import {
   parseVariantId,
   unitMatchesVariant,
@@ -60,11 +61,12 @@ export const metaliVoidShielding: Ability = {
         const target = findVoidShieldTarget(ctx)
         if (!target) return
 
-        ctx.api.own.modifyUnit(target.unit, { isDamaged: true })
+        const locator = getUnitLocator(target.unit)!
+        ctx.api.own.modifyUnit(locator, { isDamaged: true })
         ctx.api.own.reduceHits(1)
         ctx.log(target.unitType)
-        ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', target.unit)
-        ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', target.unit)
+        ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', locator)
+        ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', locator)
       },
     },
   ],

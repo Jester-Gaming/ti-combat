@@ -1,5 +1,6 @@
 import type { Ability } from '@/combat/abilities/types'
-import type { Unit } from '@/types'
+import { parseVariantId } from '@/combat/utils/unit-variant'
+import type { UnitLocator } from '@/types'
 
 export const dynamoFlagship: Ability = {
   key: 'DYNAMO',
@@ -15,22 +16,19 @@ export const dynamoFlagship: Ability = {
     {
       timing: 'AFTER_SUSTAIN_DAMAGE_USE',
       side: 'OWN',
-      isCallable: (_params, ctx, unit: Unit) => {
-        const allUnits = ctx.api.own.getUnits()
-        return Object.values(allUnits).some(units =>
-          units?.some(u => u === unit),
-        )
+      isCallable: (_params, ctx, unit: UnitLocator) => {
+        const { type } = parseVariantId(unit.key)
+        return ctx.api.own.getUnits(type).length > 0
       },
-      call: (ctx, _params, unit: Unit) => {
+      call: (ctx, _params, unit: UnitLocator) => {
         ctx.api.own.modifyUnit(unit, { isDamaged: false })
       },
     },
     {
       timing: 'DESTROY',
-      always: true,
       isCallable: params => params.isEnabled !== false,
       call: ctx => {
-        ctx.api.own.updateAbilityConfig('DYNAMO', { uses: 0 })
+        ctx.api.own.updateAbilityConfig('DYNAMO', { isEnabled: false })
       },
     },
   ],

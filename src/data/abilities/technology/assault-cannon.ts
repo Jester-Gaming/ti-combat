@@ -1,3 +1,4 @@
+import { getUnitLocator } from '@/combat/utils/compact-units'
 import { type UnitType } from '@/types'
 
 import { declareParam } from '../../../combat/abilities/declare-param'
@@ -56,7 +57,7 @@ export const assaultCannon: Ability<Params> = {
 
         if (!target) return
 
-        ctx.api.opponent.destroyUnit(target)
+        ctx.api.opponent.destroyUnit(getUnitLocator(target)!)
       },
     },
   ],

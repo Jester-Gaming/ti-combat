@@ -11,8 +11,10 @@ export type {
   Unit,
   UnitAbility,
   UnitDefinition,
+  UnitLocator,
   UnitState,
   UnitStats,
+  UnitType,
+  UnitVariant,
 } from './unit'
-export type { UnitType } from './unit'
 export { UNIT_STATE_KEYS } from './unit'

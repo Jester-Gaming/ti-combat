@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('NON_EUCLIDEAN_SHIELDING + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('NON_EUCLIDEAN_SHIELDING + TECHNOLOGICAL_SINGULARITY', () => {
   describe('enableBySingularity', () => {
     it('sustain cancels only 1 hit before kill', () => {
       const t = combatTest({

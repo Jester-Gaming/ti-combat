@@ -1,5 +1,7 @@
 export {
   AbilitiesParams,
+  cloneInvokes,
+  type InvokeCollections,
   type RunAbilitiesOptions,
   type RunAbilitiesResult,
 } from './abilities-params'

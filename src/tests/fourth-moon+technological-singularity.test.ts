@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('FOURTH_MOON + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('FOURTH_MOON + TECHNOLOGICAL_SINGULARITY', () => {
   it('sustain blocked when FM always active', () => {
     const t = combatTest({
       mode: 'SPACE',

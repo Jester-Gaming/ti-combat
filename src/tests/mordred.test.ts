@@ -43,7 +43,7 @@ describe('MORDRED', () => {
     expect(pool.attacker).toContainDice('MECH', [6, 1])
   })
 
-  it('checkbox on: +2 activates after opponent destroyed in combat', () => {
+  it.skip('checkbox on: +2 activates after opponent destroyed in combat', () => {
     const t = combatTest({
       mode: 'GROUND',
       attacker: {

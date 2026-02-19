@@ -1,4 +1,5 @@
 import { declareParam } from '@/combat/abilities/declare-param'
+import { getUnitLocator } from '@/combat/utils/compact-units'
 
 import type { Ability } from '../../../combat/abilities/types'
 import type { UnitType } from '../../../types'
@@ -38,15 +39,12 @@ export const gravleashManeuvers: Ability<Params> = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (_params, _ctx, dice) => {
-        return !dice.own.isEmpty()
-      },
-      call: (ctx, params, dice) => {
+      call: (ctx, params) => {
         const shipTypeCount = Object.keys(ctx.api.own.getUnits()).length
         const target = ctx.api.own.findUnitByPriority(params.shipPriority)
 
         if (shipTypeCount > 0 && target) {
-          dice.own.modifyHitValue(-shipTypeCount, target)
+          ctx.api.own.modifyHitValue(-shipTypeCount, getUnitLocator(target)!)
         }
       },
     },

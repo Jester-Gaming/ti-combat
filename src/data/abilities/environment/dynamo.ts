@@ -1,4 +1,5 @@
-import type { Unit } from '@/types'
+import { parseVariantId } from '@/combat/utils/unit-variant'
+import type { UnitLocator } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
@@ -20,13 +21,11 @@ export const dynamo: Ability<Params> = {
     {
       timing: 'AFTER_SUSTAIN_DAMAGE_USE',
       side: 'OWN',
-      isCallable: (_params, ctx, unit: Unit) => {
-        const allUnits = ctx.api.own.getUnits()
-        return Object.values(allUnits).some(units =>
-          units?.some(u => u === unit),
-        )
+      isCallable: (_params, ctx, unit: UnitLocator) => {
+        const { type } = parseVariantId(unit.key)
+        return ctx.api.own.getUnits(type).length > 0
       },
-      call: (ctx, _params, unit: Unit) => {
+      call: (ctx, _params, unit: UnitLocator) => {
         ctx.api.own.modifyUnit(unit, { isDamaged: false })
       },
     },

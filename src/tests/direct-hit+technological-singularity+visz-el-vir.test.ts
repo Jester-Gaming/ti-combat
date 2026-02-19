@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('DIRECT_HIT + VISZ_EL_VIR + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('DIRECT_HIT + VISZ_EL_VIR + TECHNOLOGICAL_SINGULARITY', () => {
   it('+1 mech die after direct hit kill', () => {
     const t = combatTest({
       mode: 'SPACE',

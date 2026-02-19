@@ -23,14 +23,11 @@ export const fragile: Ability<Params> = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      call: (_ctx, params, dice) => {
+      call: (ctx, params) => {
         if (params.excludeUnits.length === 0) {
-          dice.own.modifyHitValue(1)
+          ctx.api.own.modifyHitValue(1)
         } else {
-          dice.own.modifyHitValue(
-            1,
-            unit => !params.excludeUnits.includes(unit),
-          )
+          ctx.api.own.modifyHitValue(1, { exclude: params.excludeUnits })
         }
       },
     },

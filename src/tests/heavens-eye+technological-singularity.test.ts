@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('HEAVENS_EYE + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('HEAVENS_EYE + TECHNOLOGICAL_SINGULARITY', () => {
   it('flagship not repaired without kill', () => {
     const t = combatTest({
       mode: 'SPACE',

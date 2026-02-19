@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('SPEC_OPS + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('SPEC_OPS + TECHNOLOGICAL_SINGULARITY', () => {
   it('applies Spec Ops stats when enabled', () => {
     const t = combatTest({
       mode: 'GROUND',

@@ -17,8 +17,7 @@ export const quantumManipulator: Ability = {
       timing: 'BEFORE_ASSIGN_HITS',
       isCallable: (_params, ctx) => {
         if (ctx.api.own.getPendingHits() <= 0) return false
-        const unit = ctx.getUnit()
-        if (unit.isDamaged) return false
+        if (ctx.getUnitState().isDamaged) return false
         const unitType = ctx.getUnitType()
         if (
           ctx.api.own.isUnitAbilityLost('SUSTAIN_DAMAGE', unitType) ||
@@ -29,12 +28,12 @@ export const quantumManipulator: Ability = {
         return true
       },
       call: ctx => {
-        const unit = ctx.getUnit()
-        ctx.api.own.modifyUnit(unit, { isDamaged: true })
+        const locator = ctx.getUnit()
+        ctx.api.own.modifyUnit(locator, { isDamaged: true })
         ctx.api.own.reduceHits(1)
         ctx.log(ctx.getUnitType())
-        ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', unit)
-        ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', unit)
+        ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', locator)
+        ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', locator)
       },
     },
   ],

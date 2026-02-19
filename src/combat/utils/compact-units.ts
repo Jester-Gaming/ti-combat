@@ -1,16 +1,11 @@
-import type { Unit, UnitState, UnitStats, UnitType } from '@/types'
+import type { Unit, UnitLocator, UnitState, UnitStats, UnitType } from '@/types'
 
 import type { SideStateData } from '../combat-state/types'
-import { parseVariantId } from './unit-variant'
+import { makeVariantId, parseVariantId } from './unit-variant'
 
-/** Locator for a unit within compact state */
-export interface UnitLocator {
-  key: string
-  index: number
-}
-
-/** WeakMap tag for reconstructed Unit → locator */
-const unitLocatorMap = new WeakMap<Unit, UnitLocator>()
+/** Symbol keys for locator — own properties on Unit, invisible to Object.keys/for-in */
+export const LOCATOR_KEY = Symbol('lk')
+export const LOCATOR_IDX = Symbol('li')
 
 /** Cache for reconstructed unit arrays per side state + base type */
 const reconstructCache = new WeakMap<SideStateData, Map<string, Unit[]>>()
@@ -20,14 +15,80 @@ export function clearReconstructCache(sideState: SideStateData): void {
   reconstructCache.delete(sideState)
 }
 
-/** Tag a reconstructed unit with its locator */
+/** Reusable descriptor for symbol properties (not enumerable) */
+const _symDesc: PropertyDescriptor = {
+  value: undefined,
+  writable: true,
+  configurable: true,
+}
+
+/** Tag a reconstructed unit with its locator (uses defineProperty to bypass proxy prototypes) */
 export function tagUnit(unit: Unit, locator: UnitLocator): void {
-  unitLocatorMap.set(unit, locator)
+  _symDesc.value = locator.key
+  Object.defineProperty(unit, LOCATOR_KEY, _symDesc)
+  _symDesc.value = locator.index
+  Object.defineProperty(unit, LOCATOR_IDX, _symDesc)
+  _symDesc.value = undefined
 }
 
 /** Get the locator for a reconstructed unit */
 export function getUnitLocator(unit: Unit): UnitLocator | undefined {
-  return unitLocatorMap.get(unit)
+  const key = (unit as Record<symbol, unknown>)[LOCATOR_KEY] as
+    | string
+    | undefined
+  const index = (unit as Record<symbol, unknown>)[LOCATOR_IDX] as
+    | number
+    | undefined
+  if (key !== undefined && index !== undefined) return { key, index }
+  return undefined
+}
+
+/** Reusable property descriptor to avoid allocations */
+const _desc: PropertyDescriptor = {
+  value: undefined,
+  writable: true,
+  enumerable: true,
+  configurable: true,
+}
+
+/** Set an own property bypassing prototype chain (works with frozen/proxy prototypes) */
+export function defOwn(obj: object, key: string, value: unknown): void {
+  _desc.value = value
+  Object.defineProperty(obj, key, _desc)
+  _desc.value = undefined
+}
+
+/**
+ * Resolve a unitStats entry to concrete UnitStats.
+ * If the entry is a factory function, applies it to the nearest parent with
+ * concrete stats (tries each one-subtype-removed variant, then base type).
+ */
+export function resolveUnitStats(
+  sideState: SideStateData,
+  key: string,
+): UnitStats | undefined {
+  const entry = sideState.unitStats[key]
+  if (!entry) return undefined
+  if (typeof entry === 'function') {
+    const { type, subtypes } = parseVariantId(key)
+    // Try each parent variant (remove one subtype at a time)
+    for (let i = 0; i < subtypes.length; i++) {
+      const parentSubs = [...subtypes.slice(0, i), ...subtypes.slice(i + 1)]
+      const parentKey =
+        parentSubs.length > 0 ? makeVariantId(type, parentSubs) : type
+      const parentEntry = sideState.unitStats[parentKey]
+      if (parentEntry !== undefined && typeof parentEntry !== 'function') {
+        return entry(parentEntry)
+      }
+    }
+    // Fallback: base type
+    const baseEntry = sideState.unitStats[type]
+    if (baseEntry !== undefined && typeof baseEntry !== 'function') {
+      return entry(baseEntry)
+    }
+    return undefined
+  }
+  return entry
 }
 
 /** Reconstruct a Unit from stats + state + variant key */
@@ -37,17 +98,34 @@ export function reconstructUnit(
   key: string,
 ): Unit {
   const { subtypes } = parseVariantId(key)
-  const unit: Unit = { ...stats }
-  if (state) Object.assign(unit, state)
-  if (subtypes.length > 0) unit.subtypes = subtypes
+  const unit = Object.create(stats) as Unit
+  if (state) {
+    if (state.isDamaged !== undefined)
+      defOwn(unit, 'isDamaged', state.isDamaged)
+    if (state.usedSustainThisRound !== undefined)
+      defOwn(unit, 'usedSustainThisRound', state.usedSustainThisRound)
+  }
+  if (subtypes.length > 0) defOwn(unit, 'subtypes', subtypes)
   return unit
 }
+
+/** Cache: units record → (baseType → sorted variant keys) */
+const variantKeysCache = new WeakMap<
+  Record<string, number>,
+  Map<string, string[]>
+>()
 
 /** Get sorted variant keys for a base type from units record */
 export function getVariantKeysForType(
   units: Record<string, number>,
   baseType: UnitType,
 ): string[] {
+  let cacheMap = variantKeysCache.get(units)
+  if (cacheMap) {
+    const cached = cacheMap.get(baseType)
+    if (cached) return cached
+  }
+
   const keys: string[] = []
   for (const key of Object.keys(units)) {
     if (units[key] <= 0) continue
@@ -55,6 +133,13 @@ export function getVariantKeysForType(
     if (type === baseType) keys.push(key)
   }
   keys.sort()
+
+  if (!cacheMap) {
+    cacheMap = new Map()
+    variantKeysCache.set(units, cacheMap)
+  }
+  cacheMap.set(baseType, keys)
+
   return keys
 }
 
@@ -130,7 +215,7 @@ export function reconstructUnitsForType(
 
   for (const key of keys) {
     const count = sideState.units[key]
-    const stats = sideState.unitStats[key]
+    const stats = resolveUnitStats(sideState, key)
     if (!stats) continue
     const stateArr = sideState.unitState[key]
 

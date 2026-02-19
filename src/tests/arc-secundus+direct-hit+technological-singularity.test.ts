@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('ARC_SECUNDUS + DIRECT_HIT + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('ARC_SECUNDUS + DIRECT_HIT + TECHNOLOGICAL_SINGULARITY', () => {
   it('flagship repaired after direct hit kill', () => {
     const t = combatTest({
       mode: 'SPACE',

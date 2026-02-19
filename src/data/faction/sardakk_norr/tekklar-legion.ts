@@ -17,10 +17,10 @@ export const tekklarLegion: Ability = {
     {
       timing: 'BEFORE_DICE_ROLL',
       context: 'GROUND_COMBAT',
-      call: (ctx, _params, dice) => {
-        dice.own.modifyHitValue(-1)
+      call: ctx => {
+        ctx.api.own.modifyHitValue(-1)
         if (ctx.api.opponent.getFaction() === 'SARDAKK_NORR') {
-          dice.opponent.modifyHitValue(1)
+          ctx.api.opponent.modifyHitValue(1)
         }
       },
     },

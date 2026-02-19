@@ -1,4 +1,4 @@
-import type { Unit } from '@/types'
+import type { UnitLocator } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
@@ -18,7 +18,11 @@ export const experimentalBattlestation: Ability = {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: 'SPACE_CANNON_OFFENSE',
       call: (_ctx, _params, dice) => {
-        dice.own.addDiceGroup('EXPERIMENTAL_BATTLESTATION', {} as Unit, [5, 3])
+        dice.own.addDiceGroup(
+          'EXPERIMENTAL_BATTLESTATION',
+          {} as UnitLocator,
+          [5, 3],
+        )
       },
     },
   ],

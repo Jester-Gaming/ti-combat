@@ -84,7 +84,6 @@ function createFactionUnitAbility(
     invoke: [
       {
         timing: 'PREPARE' as const,
-        always: true,
         call: (ctx: AbilityCallContext) => {
           ctx.api.own.modifyUnit(unitType, stats)
         },

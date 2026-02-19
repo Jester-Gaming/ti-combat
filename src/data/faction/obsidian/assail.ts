@@ -13,17 +13,14 @@ export const assail: Ability = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      call: (_ctx, _params, dice) => {
-        dice.own.modifyHitValue(-1)
+      call: ctx => {
+        ctx.api.own.modifyHitValue(-1)
       },
     },
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
-      isCallable: (_params, _ctx, dice) => {
-        return !dice.own.isEmpty()
-      },
-      call: (_ctx, _params, dice) => {
-        dice.own.modifyHitValue(-1)
+      call: ctx => {
+        ctx.api.own.modifyHitValue(-1)
       },
     },
   ],

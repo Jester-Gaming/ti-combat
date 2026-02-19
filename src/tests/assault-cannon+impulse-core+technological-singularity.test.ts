@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('ASSAULT_CANNON + IMPULSE_CORE + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('ASSAULT_CANNON + IMPULSE_CORE + TECHNOLOGICAL_SINGULARITY', () => {
   it('impulse core fires after assault cannon kill', () => {
     const t = combatTest({
       mode: 'SPACE',

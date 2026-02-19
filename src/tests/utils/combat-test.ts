@@ -1,22 +1,16 @@
-import type {
-  CombatSide,
-  FactionKey,
-  Unit,
-  UnitState,
-  UnitStats,
-  UnitType,
-} from '@/types'
-import { getFactionUnitConfig } from '@/utils/get-faction-unit-config'
-import { buildUnitStatsMap } from '@/utils/get-simulation-units'
+import type { CombatSide, Unit, UnitType } from '@/types'
 
 import type { DicePool } from '../../combat/abilities/types'
+import {
+  buildCombatState,
+  type CombatStateConfig,
+  type SideConfig,
+} from '../../combat/build-combat-state'
 import {
   CombatState,
   type StateWithProbability,
 } from '../../combat/combat-state/combat-state'
 import type {
-  AbilitiesConfig,
-  CombatMode,
   CombatStateData,
   MetaPhase,
   MicroPhase,
@@ -25,105 +19,14 @@ import type {
 import type { LogEntry } from '../../combat/types'
 import { reconstructAllUnits } from '../../combat/utils/compact-units'
 
-// ============================================================================
-// CONFIG TYPES
-// ============================================================================
-
-export interface SideConfig {
-  faction: FactionKey
-  units: Partial<Record<UnitType, number>>
-  upgrades?: UnitType[]
-  abilities?: Record<string, true | Record<string, unknown>>
-}
-
-export interface CombatTestConfig {
-  mode: CombatMode
-  attacker: SideConfig
-  defender: SideConfig
-}
+export type { SideConfig }
+export type CombatTestConfig = CombatStateConfig
 
 // ============================================================================
 // HITS SPEC
 // ============================================================================
 
 export type HitsSpec = number | { attacker?: number; defender?: number }
-
-// ============================================================================
-// UNIT CREATION HELPERS
-// ============================================================================
-
-/** Build SideStateData from a SideConfig (compact format) */
-function buildSideState(config: SideConfig): SideStateData {
-  const upgradedSet = new Set(config.upgrades ?? [])
-  const units: Record<string, number> = {}
-  const unitState: Record<string, UnitState[]> = {}
-  const unitStats: Record<string, UnitStats> = {}
-
-  const factionConfig = getFactionUnitConfig(config.faction)
-
-  for (const [type, count] of Object.entries(config.units)) {
-    const unitType = type as UnitType
-    if (!count || count <= 0) continue
-
-    const def = factionConfig[unitType]
-    if (!def?.BASE) continue
-
-    const upgraded = upgradedSet.has(unitType)
-    let stats: UnitStats = { ...def.BASE }
-    if (upgraded && def.UPGRADED) {
-      stats = {
-        ...stats,
-        ...def.UPGRADED,
-        UNIT_ABILITIES: {
-          ...stats.UNIT_ABILITIES,
-          ...def.UPGRADED.UNIT_ABILITIES,
-        },
-      }
-    }
-
-    units[unitType] = count
-    unitState[unitType] = []
-    unitStats[unitType] = stats
-  }
-
-  return {
-    faction: config.faction,
-    units,
-    unitState,
-    unitStats: {
-      ...buildUnitStatsMap(config.faction, upgradedSet),
-      ...unitStats,
-    },
-    hitPools: [],
-  }
-}
-
-/** Build AbilitiesConfig from side configs */
-function buildAbilitiesConfig(
-  attacker: SideConfig,
-  defender: SideConfig,
-): AbilitiesConfig {
-  const buildSideConfig = (
-    config: SideConfig,
-  ): Record<string, Record<string, unknown>> => {
-    const result: Record<string, Record<string, unknown>> = {}
-    if (!config.abilities) return result
-
-    for (const [key, value] of Object.entries(config.abilities)) {
-      if (value === true) {
-        result[key] = { isEnabled: true }
-      } else {
-        result[key] = { ...value }
-      }
-    }
-    return result
-  }
-
-  return {
-    attacker: buildSideConfig(attacker),
-    defender: buildSideConfig(defender),
-  }
-}
 
 // ============================================================================
 // SIDE VIEW (reconstructs units for test assertions)
@@ -326,17 +229,5 @@ function pickOutcomeByHits(
 // ============================================================================
 
 export function combatTest(config: CombatTestConfig): CombatTest {
-  const attackerSide = buildSideState(config.attacker)
-  const defenderSide = buildSideState(config.defender)
-  const abilitiesConfig = buildAbilitiesConfig(config.attacker, config.defender)
-
-  // CombatState.forSimulation runs PREPARE timings
-  const cs = CombatState.forSimulation(
-    attackerSide,
-    defenderSide,
-    config.mode,
-    abilitiesConfig,
-  )
-
-  return new CombatTest(cs)
+  return new CombatTest(buildCombatState(config))
 }

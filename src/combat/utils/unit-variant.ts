@@ -1,17 +1,16 @@
 import { UNIT_DISPLAY_NAMES } from '@/constants/units'
-import type { Unit, UnitType } from '@/types'
+import type { Unit, UnitType, UnitVariant } from '@/types'
 
 /**
  * A variant ID is a UnitType optionally suffixed with sorted subtypes.
  * Examples: "CRUISER", "CRUISER:Cavalry", "CRUISER:Cavalry,Galvanize"
  * A plain UnitType string is a valid UnitVariantId (variant with no subtypes).
  */
-export type UnitVariantId = string
 
 export function makeVariantId(
-  variantId: UnitVariantId,
+  variantId: string,
   subtypes?: string[],
-): UnitVariantId {
+): UnitType | UnitVariant {
   const { type, subtypes: currentSubtypes } = parseVariantId(variantId)
   if (!subtypes || subtypes.length === 0) return type
   const sorted = [...subtypes, ...currentSubtypes].sort()
@@ -19,12 +18,9 @@ export function makeVariantId(
 }
 
 const EMPTY_SUBTYPES: string[] = []
-const parseCache = new Map<
-  UnitVariantId,
-  { type: UnitType; subtypes: string[] }
->()
+const parseCache = new Map<string, { type: UnitType; subtypes: string[] }>()
 
-export function parseVariantId(id: UnitVariantId): {
+export function parseVariantId(id: string): {
   type: UnitType
   subtypes: string[]
 } {
@@ -45,14 +41,14 @@ export function parseVariantId(id: UnitVariantId): {
   return result
 }
 
-export function getUnitVariantId(type: UnitType, unit: Unit): UnitVariantId {
+export function getUnitVariantId(
+  type: UnitType,
+  unit: Unit,
+): UnitType | UnitVariant {
   return makeVariantId(type, unit.subtypes)
 }
 
-export function unitMatchesVariant(
-  unit: Unit,
-  variantId: UnitVariantId,
-): boolean {
+export function unitMatchesVariant(unit: Unit, variantId: string): boolean {
   const { subtypes } = parseVariantId(variantId)
   if (subtypes.length === 0) {
     return !unit.subtypes || unit.subtypes.length === 0
@@ -62,7 +58,7 @@ export function unitMatchesVariant(
   return subtypes.every(s => unit.subtypes!.includes(s))
 }
 
-export function getVariantDisplayName(id: UnitVariantId): string {
+export function getVariantDisplayName(id: string): string {
   const { type, subtypes } = parseVariantId(id)
   const base = UNIT_DISPLAY_NAMES[type]
   if (subtypes.length === 0) return base

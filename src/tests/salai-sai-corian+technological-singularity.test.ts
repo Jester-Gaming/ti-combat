@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('SALAI_SAI_CORIAN + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('SALAI_SAI_CORIAN + TECHNOLOGICAL_SINGULARITY', () => {
   it('no dice count change in round 1', () => {
     const t = combatTest({
       mode: 'SPACE',

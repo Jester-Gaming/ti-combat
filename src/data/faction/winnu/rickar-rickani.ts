@@ -15,8 +15,8 @@ export const rickarRickani: Ability = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      call: (_ctx, _params, dice) => {
-        dice.own.modifyHitValue(-2)
+      call: ctx => {
+        ctx.api.own.modifyHitValue(-2)
       },
     },
   ],

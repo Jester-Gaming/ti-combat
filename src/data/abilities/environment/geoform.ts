@@ -1,4 +1,4 @@
-import type { Unit } from '@/types'
+import type { UnitLocator } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
@@ -17,7 +17,7 @@ export const geoform: Ability = {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: ['SPACE_CANNON_OFFENSE', 'SPACE_CANNON_DEFENSE'],
       call: (_ctx, _params, dice) => {
-        dice.own.addDiceGroup('GEOFORM', {} as Unit, [5, 3])
+        dice.own.addDiceGroup('GEOFORM', {} as UnitLocator, [5, 3])
       },
     },
   ],

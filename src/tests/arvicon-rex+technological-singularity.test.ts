@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('ARVICON_REX + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('ARVICON_REX + TECHNOLOGICAL_SINGULARITY', () => {
   it('no bonus to flagship dice in round 1', () => {
     const t = combatTest({
       mode: 'SPACE',

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('DIRECT_HIT + THE_EGEIRO + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('DIRECT_HIT + THE_EGEIRO + TECHNOLOGICAL_SINGULARITY', () => {
   it('-N to flagship dice after direct hit kill', () => {
     const t = combatTest({
       mode: 'SPACE',

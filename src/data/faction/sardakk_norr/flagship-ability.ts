@@ -14,8 +14,8 @@ export const sardakkFlagshipAbility: Ability = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      call: (_ctx, _params, dice) => {
-        dice.own.modifyHitValue(-1, source => source !== 'FLAGSHIP')
+      call: ctx => {
+        ctx.api.own.modifyHitValue(-1, { exclude: ['FLAGSHIP'] })
       },
     },
   ],

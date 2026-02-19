@@ -1,5 +1,6 @@
 import baronyOfLetnevIcon from '@/assets/faction/barony_of_letnev.svg?raw'
 import { declareParam } from '@/combat/abilities/declare-param'
+import { getUnitLocator } from '@/combat/utils/compact-units'
 import { makeVariantId, parseVariantId } from '@/combat/utils/unit-variant'
 import type { UnitType } from '@/types'
 
@@ -17,7 +18,7 @@ export const viscountUnlenn: Ability<Params> = {
   context: 'SPACE',
   params: {
     isEnabled: false,
-    uses: 1,
+    uses: 2,
     unitType: declareParam<UnitType>({
       default: 'DESTROYER',
       source: 'nonFighterShips',
@@ -56,7 +57,6 @@ export const viscountUnlenn: Ability<Params> = {
     },
     {
       timing: 'BEFORE_DICE_ROLL',
-      always: true,
       isCallable: (_params, ctx) => {
         const allUnits = ctx.api.own.getUnits()
         for (const units of Object.values(allUnits)) {
@@ -68,7 +68,7 @@ export const viscountUnlenn: Ability<Params> = {
         const variantId = makeVariantId(params.unitType, ['Viscount'])
         const unit = ctx.api.own.findUnitByPriority([variantId])
         if (!unit) return
-        dice.own.addDiceCount(1, unit)
+        dice.own.addDiceCount(1, getUnitLocator(unit)!)
         ctx.api.own.removeSubtype(variantId, 'Viscount')
         return
       },

@@ -13,7 +13,7 @@ export interface SimulationInput {
   abilities: AbilitiesConfig
 }
 
-const DEBOUNCE_MS = 200
+const DEBOUNCE_MS = 0
 
 export function useSimulation(input: SimulationInput | null): {
   outcomes: CombatOutcome[] | null
@@ -45,9 +45,11 @@ export function useSimulation(input: SimulationInput | null): {
       )
 
       worker.onmessage = (e: MessageEvent<CombatOutcome[]>) => {
+        console.timeEnd('useSimulation')
         setState({ outcomes: e.data, forInput: input })
       }
 
+      console.time('useSimulation')
       worker.postMessage(input)
       workerRef.current = worker
     }, DEBOUNCE_MS)

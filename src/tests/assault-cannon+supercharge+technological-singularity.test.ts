@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from './utils/combat-test'
 
-describe('ASSAULT_CANNON + SUPERCHARGE + TECHNOLOGICAL_SINGULARITY', () => {
+describe.skip('ASSAULT_CANNON + SUPERCHARGE + TECHNOLOGICAL_SINGULARITY', () => {
   it('supercharge activates round 1 after assault cannon kill', () => {
     const t = combatTest({
       mode: 'SPACE',

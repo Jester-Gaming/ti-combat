@@ -22,7 +22,7 @@ describe('CAVALRY + VISCOUNT_UNLENN', () => {
 
     // Both abilities fired
     expect(t.abilityLog('CAVALRY')).toHaveLength(1)
-    expect(t.abilityLog('VISCOUNT_UNLENN')).toHaveLength(2) // START_OF_COMBAT_ROUND + BEFORE_DICE_ROLL
+    expect(t.abilityLog('VISCOUNT_UNLENN')).toHaveLength(2)
 
     const pool = t.dicePool()!
 
