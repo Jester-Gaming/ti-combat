@@ -5,6 +5,7 @@ export {
   type RunAbilitiesOptions,
   type RunAbilitiesResult,
 } from './abilities-params'
+export { SideApi } from './api/ability-api'
 export { declareParam, isDeclaredParam } from './declare-param'
 export { getAvailableAbilities } from './get-available-abilities'
 export type {
@@ -20,10 +21,6 @@ export type {
   DiceReadContext,
   OwnOpponentContext,
   ParamChange,
-  SideApi,
   SidedContext,
   SidedDiceData,
-  SideReadApi,
-  TriggerEvent,
-  TriggerEventMap,
 } from './types'

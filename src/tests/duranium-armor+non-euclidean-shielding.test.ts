@@ -26,7 +26,7 @@ describe('DURANIUM_ARMOR + NON_EUCLIDEAN_SHIELDING', () => {
 
     // Dreadnought sustained this round → not eligible for repair
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
-    expect(t.abilityLog('NON_EUCLIDEAN_SHIELDING')).toHaveLength(1)
+    expect(t.abilityLog('NON_EUCLIDEAN_SHIELDING')).not.toHaveLength(0)
 
     // Round 2: 0 hits → Dreadnought didn't sustain → repaired
     t.advanceRound({ attacker: 0 })

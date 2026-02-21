@@ -1,10 +1,9 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
-import { parseVariantId, unitMatchesVariant } from '@/combat/utils/unit-variant'
-import type { UnitBaseType } from '@/types'
+import type { UnitType } from '@/types'
 
 type Params = {
-  targetPriority: UnitBaseType[]
+  targetPriority: UnitType[]
 }
 
 export const dimensionalSplicer: Ability<Params> = {
@@ -33,18 +32,12 @@ export const dimensionalSplicer: Ability<Params> = {
         )
       },
       call: (ctx, params) => {
-        for (const variantId of params.targetPriority) {
-          const { type } = parseVariantId(variantId)
-          const units = ctx.api.opponent.getUnits(type)
-          if (
-            units.length > 0 &&
-            units.some(u => unitMatchesVariant(u, variantId))
-          ) {
-            ctx.api.opponent.addHits(1, [type])
-            ctx.log(type)
-            return
-          }
-        }
+        const target = ctx.api.opponent.findUnitByPriority(
+          params.targetPriority,
+        )!
+        const type = ctx.api.opponent.getUnitBaseType(target)!
+
+        ctx.api.opponent.addHits(1, [type])
       },
     },
   ],

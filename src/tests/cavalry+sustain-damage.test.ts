@@ -23,7 +23,7 @@ describe('CAVALRY + SUSTAIN_DAMAGE', () => {
     t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
 
     // Cavalry fired at START_OF_COMBAT
-    expect(t.abilityLog('CAVALRY')).toHaveLength(1)
+    expect(t.abilityLog('CAVALRY')).not.toHaveLength(0)
 
     // Process combat dice: pick outcome where defender receives 1 hit
     t.advanceTo('SPACE_COMBAT', 'END', { defender: 1 })

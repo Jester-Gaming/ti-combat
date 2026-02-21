@@ -9,6 +9,7 @@ import { getFactionUnitConfig } from '@/utils/get-faction-unit-config'
 import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 
 import { CombatState } from './combat-state/combat-state'
+import type { UnitStatsEntry } from './combat-state/types'
 import type {
   AbilitiesConfig,
   CombatMode,
@@ -76,7 +77,7 @@ function buildSideState(config: SideConfig): SideStateData {
     unitStats: {
       ...buildUnitStatsMap(config.faction, upgradedSet),
       ...unitStats,
-    },
+    } as Record<import('@/types').UnitType, UnitStatsEntry>,
     hitPools: [],
   }
 }

@@ -1,4 +1,5 @@
 import { disablePlanetaryShield } from '@/data/abilities/unit/disable-planetary-shield'
+import { planetaryShield } from '@/data/abilities/unit/planetary-shield'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -112,6 +113,7 @@ export const neutral: Faction = {
           PLANETARY_SHIELD: true,
           SPACE_CANNON: [6, 1],
         },
+        ABILITIES: [planetaryShield],
       },
     },
     SPACE_DOCK: {

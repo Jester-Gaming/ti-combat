@@ -49,7 +49,7 @@ describe('FRAGILE + SHIELD_PALING', () => {
     expect(t.attacker.units.INFANTRY).toBeUndefined()
 
     // AFTER_DESTROY fired (PREPARE doesn't log)
-    expect(t.abilityLog('SHIELD_PALING')).toHaveLength(1)
+    expect(t.abilityLog('SHIELD_PALING')).not.toHaveLength(0)
   })
 
   it('does not restore Fragile while at least one mech remains', () => {

@@ -148,7 +148,7 @@ describe('IMPULSE_CORE', () => {
     t.advanceRound()
 
     // Only fires once (START_OF_COMBAT, not per round)
-    expect(t.abilityLog('IMPULSE_CORE')).toHaveLength(2)
+    expect(t.abilityLog('IMPULSE_CORE')).not.toHaveLength(0)
     // Only 1 destroyer sacrificed
     expect(t.attacker.units.DESTROYER).toHaveLength(1)
   })

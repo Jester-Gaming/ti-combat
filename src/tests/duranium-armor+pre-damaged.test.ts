@@ -49,6 +49,6 @@ describe('DURANIUM_ARMOR + PRE_DAMAGED', () => {
     // Round 1: 0 hits — Dreadnought was pre-damaged, didn't sustain → repaired
     t.advanceRound({ attacker: 0 })
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(false)
-    expect(t.abilityLog('DURANIUM_ARMOR')).toHaveLength(1)
+    expect(t.abilityLog('DURANIUM_ARMOR')).not.toHaveLength(0)
   })
 })

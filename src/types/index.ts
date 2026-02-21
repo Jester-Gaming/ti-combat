@@ -15,5 +15,7 @@ export type {
   UnitId,
   UnitState,
   UnitStats,
+  UnitType,
   UnitVariant,
+  UnitVariantId,
 } from './unit'

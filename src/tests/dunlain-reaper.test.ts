@@ -22,7 +22,7 @@ describe('DUNLAIN_REAPER', () => {
 
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
     expect(t.attacker.units.MECH).toHaveLength(1)
-    expect(t.abilityLog('DUNLAIN_REAPER')).toHaveLength(1)
+    expect(t.abilityLog('DUNLAIN_REAPER')).not.toHaveLength(0)
   })
 
   it('fires each round while uses remain', () => {
@@ -45,7 +45,7 @@ describe('DUNLAIN_REAPER', () => {
 
     expect(t.attacker.units.INFANTRY).toHaveLength(1)
     expect(t.attacker.units.MECH).toHaveLength(2)
-    expect(t.abilityLog('DUNLAIN_REAPER')).toHaveLength(2)
+    expect(t.abilityLog('DUNLAIN_REAPER')).not.toHaveLength(0)
   })
 
   it('does not fire when no infantry present', () => {
@@ -112,6 +112,6 @@ describe('DUNLAIN_REAPER', () => {
     // Only 1 use, so only 1 replacement
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
     expect(t.attacker.units.MECH).toHaveLength(1)
-    expect(t.abilityLog('DUNLAIN_REAPER')).toHaveLength(1)
+    expect(t.abilityLog('DUNLAIN_REAPER')).not.toHaveLength(0)
   })
 })

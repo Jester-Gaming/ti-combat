@@ -1,6 +1,3 @@
-import { getUnitId } from '@/combat/utils/compact-units'
-import type { UnitBaseType } from '@/types'
-
 import type { Ability } from '../../../combat/abilities/types'
 
 export const directHit: Ability = {
@@ -18,16 +15,13 @@ export const directHit: Ability = {
       timing: 'AFTER_SUSTAIN_DAMAGE_USE',
       side: 'OPPONENT',
       isCallable: (_params, ctx, unitId) => {
-        // Only target ships — not mechs or ground forces
-        const settings = ctx.api.opponent.getAbilityConfig('SETTINGS')
-        const ships = (settings?.ships as UnitBaseType[]) ?? []
-        // Find the unit among opponent's ships
-        for (const shipType of ships) {
-          const units = ctx.api.opponent.getUnits(shipType)
-          const target = units.find(u => getUnitId(u) === unitId)
-          if (target) return !target.DIRECT_HIT_IMMUNE
-        }
-        return false
+        if (!ctx.api.opponent.hasUnit(unitId)) return false
+        const { ships } = ctx.api.opponent.getAbilityConfig('SETTINGS')
+        const type = ctx.api.opponent.getUnitBaseType(unitId)!
+        if (!ships.includes(type)) return false
+        const stats = ctx.api.opponent.getUnitStats(unitId)!
+        if (stats.DIRECT_HIT_IMMUNE) return false
+        return true
       },
       call: (ctx, _params, unitId) => {
         ctx.api.opponent.destroyUnit(unitId)

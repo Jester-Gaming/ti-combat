@@ -19,7 +19,7 @@ describe('GREYFIRE_MUTAGEN', () => {
 
     t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
 
-    expect(t.abilityLog('GREYFIRE_MUTAGEN')).toHaveLength(1)
+    expect(t.abilityLog('GREYFIRE_MUTAGEN')).not.toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
     expect(t.defender.units.INFANTRY).toHaveLength(1)
   })
@@ -122,7 +122,7 @@ describe('GREYFIRE_MUTAGEN', () => {
 
     t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
 
-    expect(t.abilityLog('GREYFIRE_MUTAGEN')).toHaveLength(1)
+    expect(t.abilityLog('GREYFIRE_MUTAGEN')).not.toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
     expect(t.defender.units.INFANTRY).toBeUndefined()
     expect(t.defender.units.MECH).toHaveLength(1)

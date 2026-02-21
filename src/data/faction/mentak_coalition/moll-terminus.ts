@@ -25,7 +25,7 @@ export const mollTerminus: Ability = {
     {
       timing: 'DESTROY',
       call: ctx => {
-        if (!ctx.api.own.hasUnit('MECH')) {
+        if (!ctx.api.own.hasUnitType('MECH')) {
           ctx.api.opponent.removeUnitAbilityCannotBeUsed(
             'SUSTAIN_DAMAGE',
             'MOLL_TERMINUS',

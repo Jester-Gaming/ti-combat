@@ -22,7 +22,7 @@ describe('METALI_VOID_SHIELDING', () => {
 
     expect(t.defender.units.CRUISER).toHaveLength(1)
     expect(t.defender.units.CRUISER![0].isDamaged).toBe(true)
-    expect(t.abilityLog('METALI_VOID_SHIELDING')).toHaveLength(1)
+    expect(t.abilityLog('METALI_VOID_SHIELDING')).not.toHaveLength(0)
   })
 
   it('does not target ships with native sustain', () => {

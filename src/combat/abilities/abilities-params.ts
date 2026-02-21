@@ -1,5 +1,12 @@
 import { GROUND_FORCES, SHIPS, UNIT_PRICE } from '@/constants/units'
-import type { CombatSide, FactionKey, UnitBaseType, UnitId } from '@/types'
+import type {
+  CombatSide,
+  FactionKey,
+  UnitBaseType,
+  UnitId,
+  UnitType,
+  UnitVariantId,
+} from '@/types'
 
 import { TIMING_GROUPS } from '../../data/abilities/general/ability-order'
 import { getOpponentSide } from '../combat-side-state/combat-side-state'
@@ -33,7 +40,6 @@ import type {
   SidedContext,
   SyncSourceConfig,
   TimingContextMap,
-  TriggerEvent,
 } from './types'
 
 type SideConfig = Record<string, Record<string, unknown>>
@@ -104,33 +110,6 @@ function countAllUnits(units: Record<string, unknown[]>): number {
   let n = 0
   for (const key in units) n += units[key].length
   return n
-}
-
-/**
- * Adjust tracker after units are destroyed during trigger/AFTER_DESTROY.
- * Uses the destroyed record instead of comparing old/new state.
- */
-function adjustTrackerForDestroyed(
-  tracker: InvocationTracker,
-  destroyed: {
-    attacker: Record<string, UnitId[]>
-    defender: Record<string, UnitId[]>
-  },
-): void {
-  for (const side of ['attacker', 'defender'] as const) {
-    const sideTracker = tracker[side]
-    const sideDestroyed = destroyed[side]
-    const removedIds = new Set<UnitId>()
-    for (const ids of Object.values(sideDestroyed)) {
-      for (const id of ids) removedIds.add(id)
-    }
-    if (removedIds.size === 0) continue
-    for (const [, ids] of sideTracker.unitAbilities) {
-      for (const id of ids) {
-        if (removedIds.has(id)) ids.delete(id)
-      }
-    }
-  }
 }
 
 /** Resolve SETTINGS ability defaults + config into merged settings and subtypes */
@@ -220,7 +199,9 @@ function expandWithSubtypes(
     const subs = simpleByType.get(unitType)
     if (subs) {
       for (const sub of subs) {
-        const variantId = makeVariantId(sub.unitType, [sub.name])
+        const variantId = makeVariantId(sub.unitType, [
+          sub.name as UnitVariantId,
+        ])
         if (!seen.has(variantId)) {
           result.push(variantId)
           seen.add(variantId)
@@ -232,7 +213,10 @@ function expandWithSubtypes(
   for (const sub of compound) {
     if (!seen.has(sub.unitType)) continue
     const { type, subtypes: parentSubs } = parseVariantId(sub.unitType)
-    const variantId = makeVariantId(type, [...parentSubs, sub.name])
+    const variantId = makeVariantId(type, [
+      ...parentSubs,
+      sub.name as UnitVariantId,
+    ])
     if (!seen.has(variantId)) {
       const parentIndex = result.indexOf(sub.unitType)
       result.splice(parentIndex + 1, 0, variantId)
@@ -290,7 +274,6 @@ function reconcileStringParam(current: string, validList: string[]): string {
 // ── Tracker types ────────────────────────────────────────────────────────
 
 export interface RunAbilitiesResult<T extends AbilityTiming> {
-  state: CombatStateData
   context: TimingContextMap[T]
   log: LogEntry[]
 }
@@ -341,17 +324,6 @@ export class AbilitiesParams {
   private _attackerCtx!: AbilityContext
   private _defenderCtx!: AbilityContext
 
-  /** Destroyed units collected at source by destroyUnit (variant key → UnitId[]) */
-  _destroyed: {
-    attacker: Record<string, UnitId[]>
-    defender: Record<string, UnitId[]>
-  } = {
-    attacker: {},
-    defender: {},
-  }
-  /** Cheap "any destruction?" counter — incremented by destroyUnit */
-  _destroyCount = 0
-
   /** UnitIds destroyed during current produce / set by runDestroyAbilities for timing checks */
   _destroyedIds: {
     attacker: Set<UnitId>
@@ -388,8 +360,6 @@ export class AbilitiesParams {
 
   setCombatState(cs: CombatState): void {
     this._combatState = cs
-    this._destroyed = { attacker: {}, defender: {} }
-    this._destroyCount = 0
     this._destroyedIds = { attacker: new Set(), defender: new Set() }
     this._pendingUnitInvokes = []
   }
@@ -456,10 +426,8 @@ export class AbilitiesParams {
       combatState.data.attacker.faction,
       combatState.data.defender.faction,
     )
-    this._attackerCtx = new AbilityContext('attacker')
-    this._attackerCtx._abilitiesParams = this
-    this._defenderCtx = new AbilityContext('defender')
-    this._defenderCtx._abilitiesParams = this
+    this._attackerCtx = new AbilityContext('attacker', this)
+    this._defenderCtx = new AbilityContext('defender', this)
 
     this.initializeDefaults()
     this.reconcile()
@@ -479,18 +447,14 @@ export class AbilitiesParams {
   static fromConfig(combatState: CombatState): AbilitiesParams {
     const instance = Object.create(AbilitiesParams.prototype) as AbilitiesParams
     instance._combatState = combatState
-    instance._destroyed = { attacker: {}, defender: {} }
-    instance._destroyCount = 0
     instance._destroyedIds = { attacker: new Set(), defender: new Set() }
     instance._pendingUnitInvokes = []
     instance._abilities = AbilitiesParams.loadAbilities(
       combatState.data.attacker.faction,
       combatState.data.defender.faction,
     )
-    instance._attackerCtx = new AbilityContext('attacker')
-    instance._attackerCtx._abilitiesParams = instance
-    instance._defenderCtx = new AbilityContext('defender')
-    instance._defenderCtx._abilitiesParams = instance
+    instance._attackerCtx = new AbilityContext('attacker', instance)
+    instance._defenderCtx = new AbilityContext('defender', instance)
     // Phase 1: Enrich consumers from full SETTINGS (with group additions).
     // Consumer params (e.g. AC targetPriority) sync from enriched groups,
     // so they include all possible targets (e.g. Infantry via Alastor).
@@ -513,18 +477,14 @@ export class AbilitiesParams {
   static wrap(combatState: CombatState): AbilitiesParams {
     const instance = Object.create(AbilitiesParams.prototype) as AbilitiesParams
     instance._combatState = combatState
-    instance._destroyed = { attacker: {}, defender: {} }
-    instance._destroyCount = 0
     instance._destroyedIds = { attacker: new Set(), defender: new Set() }
     instance._pendingUnitInvokes = []
     instance._abilities = AbilitiesParams.loadAbilities(
       combatState.data.attacker.faction,
       combatState.data.defender.faction,
     )
-    instance._attackerCtx = new AbilityContext('attacker')
-    instance._attackerCtx._abilitiesParams = instance
-    instance._defenderCtx = new AbilityContext('defender')
-    instance._defenderCtx._abilitiesParams = instance
+    instance._attackerCtx = new AbilityContext('attacker', instance)
+    instance._defenderCtx = new AbilityContext('defender', instance)
     instance.buildInvokes()
     return instance
   }
@@ -539,7 +499,7 @@ export class AbilitiesParams {
     // Quick check: if no unitStats have ABILITIES, skip the full scan
     let hasAnyAbilities = false
     for (const key in sideState.unitStats) {
-      if (resolveUnitStats(sideState, key)?.ABILITIES) {
+      if (resolveUnitStats(sideState, key as UnitType)?.ABILITIES) {
         hasAnyAbilities = true
         break
       }
@@ -676,7 +636,6 @@ export class AbilitiesParams {
    */
   runAbilities<T extends AbilityTiming>(
     timing: T | T[],
-    state: CombatStateData,
     context?: TimingContextMap[T],
     options?: RunAbilitiesOptions,
     logger?: Logger,
@@ -697,7 +656,7 @@ export class AbilitiesParams {
     }
 
     if (!hasAnyInvokes) {
-      return { state, context: context as TimingContextMap[T], log: EMPTY_LOG }
+      return { context: context as TimingContextMap[T], log: EMPTY_LOG }
     }
 
     const activeLogger = logger ?? Logger.create()
@@ -713,8 +672,6 @@ export class AbilitiesParams {
         unitAbilities: new Map(),
       },
     }
-    // Point CombatState at the current state data (set once — draft is mutated in place)
-    this._combatState.data = state
 
     let consecutiveSkips = 0
     let currentSide: CombatSide = options?.triggerSide ?? 'attacker'
@@ -731,7 +688,6 @@ export class AbilitiesParams {
       const result = this.tryResolveOne(
         timing,
         currentSide,
-        state,
         workingContext,
         tracker,
         options?.triggerSide,
@@ -762,7 +718,6 @@ export class AbilitiesParams {
     }
 
     return {
-      state,
       context: workingContext as TimingContextMap[T],
       log: activeLogger.entries.slice(startIndex) as LogEntry[],
     }
@@ -779,7 +734,6 @@ export class AbilitiesParams {
       attacker: Record<string, UnitId[]>
       defender: Record<string, UnitId[]>
     },
-    state: CombatStateData,
     logger?: Logger,
   ): void {
     // Save previous _destroyedIds and derive this cycle's scope from the Record.
@@ -792,9 +746,9 @@ export class AbilitiesParams {
       defender: new Set(Object.values(destroyed.defender).flat()),
     }
 
-    this.runAbilities('DESTROY', state, destroyed, undefined, logger)
-    this.runAbilities('WHEN_DESTROY', state, destroyed, undefined, logger)
-    this.runAbilities('AFTER_DESTROY', state, destroyed, undefined, logger)
+    this.runAbilities('DESTROY', destroyed, undefined, logger)
+    this.runAbilities('WHEN_DESTROY', destroyed, undefined, logger)
+    this.runAbilities('AFTER_DESTROY', destroyed, undefined, logger)
 
     // Restore previous _destroyedIds for the outer scope
     this._destroyedIds = savedDestroyedIds
@@ -805,13 +759,13 @@ export class AbilitiesParams {
   private tryResolveOne<T extends AbilityTiming>(
     timing: T | T[],
     side: CombatSide,
-    state: CombatStateData,
     context: TimingContextMap[T] | undefined,
     tracker: InvocationTracker,
     triggerSide?: CombatSide,
     logger?: Logger,
   ): AbilityResult | null {
-    const invokes = this.getInvokesForTiming(timing, side, state, triggerSide)
+    const state = this._combatState.data
+    const invokes = this.getInvokesForTiming(timing, side, triggerSide)
 
     const sideTracker = tracker[side]
 
@@ -884,9 +838,7 @@ export class AbilitiesParams {
         invoke.timing === 'WHEN_DESTROY' ||
         invoke.timing === 'AFTER_DESTROY'
       const unitSource =
-        source.type === 'unit' && !isDestroyTiming
-          ? { unitType: source.unitType, unitId: source.unitId }
-          : undefined
+        source.type === 'unit' && !isDestroyTiming ? source.unitId : undefined
 
       // Global isEnabled / uses gate
       if ('isEnabled' in freshParams && !freshParams.isEnabled) continue
@@ -928,22 +880,14 @@ export class AbilitiesParams {
           logData.push(...data)
         }
 
-        // Collect trigger events emitted during the call
-        const triggerEvents: TriggerEvent[] = []
-        const triggerCallback = (event: TriggerEvent) => {
-          triggerEvents.push(event)
-        }
-
-        // Reset per-ability destroyed tracking for this call cycle.
-        // destroyUnit populates _destroyed during the call; runDestroyAbilities
-        // derives _destroyedIds from it for the DESTROY timing window.
         const timingArray = Array.isArray(timing) ? timing : [timing]
-        this._destroyed = { attacker: {}, defender: {} }
-        const prevDestroyCount = this._destroyCount
 
         // Snapshot unit counts before the call for change detection
         const prevAttackerUnitCount = countAllUnits(state.attacker.units)
         const prevDefenderUnitCount = countAllUnits(state.defender.units)
+
+        // Logger scoped to this ability call (used for logging + triggers)
+        const childLogger = logger?.child(invoke.timing).child(ability.key)
 
         // State IS now a Mutative draft — abilities mutate it directly
         if (diceTiming && internalContext) {
@@ -952,7 +896,7 @@ export class AbilitiesParams {
             own: buildDiceApi(rawDice.own),
             opponent: buildDiceApi(rawDice.opponent),
           }
-          ctx.upgradeForCall(state, ability.key, logCallback, triggerCallback)
+          ctx.upgradeForCall(state, ability.key, logCallback, childLogger)
           inv.call(ctx, freshParams, diceCallCtx)
           decrementUses(state, side, ability.key, freshParams, this)
           ctx.resetAfterCall()
@@ -961,7 +905,7 @@ export class AbilitiesParams {
             opponent: diceCallCtx.opponent.getAll(),
           }
         } else {
-          ctx.upgradeForCall(state, ability.key, logCallback, triggerCallback)
+          ctx.upgradeForCall(state, ability.key, logCallback, childLogger)
           const result = inv.call(ctx, freshParams, internalContext)
           if (result !== undefined) resultContext = result
           decrementUses(state, side, ability.key, freshParams, this)
@@ -969,10 +913,9 @@ export class AbilitiesParams {
         }
 
         // Flush deferred invoke registrations (from placeUnits/modifyUnitType)
-        this.flushPendingUnitInvokes(state)
+        this.flushPendingUnitInvokes()
 
         // Single structured log entry per ability
-        const childLogger = logger?.child(invoke.timing).child(ability.key)
         if (childLogger) {
           const sideLogger = childLogger.forSide(side)
           if (logData.length > 0) {
@@ -993,29 +936,6 @@ export class AbilitiesParams {
           sideTracker.unitAbilities.set(key, invokedIds)
         }
 
-        // Process trigger events emitted during the call
-        for (const event of triggerEvents) {
-          this.runAbilities(
-            event.name,
-            state,
-            event.context,
-            { triggerSide: event.side },
-            childLogger,
-          )
-        }
-
-        // Trigger DESTROY → WHEN_DESTROY → AFTER_DESTROY if units were destroyed.
-        // Recursion is safe — controlled by ability uses/invocation tracker.
-        {
-          const hasDestroyed =
-            Object.keys(this._destroyed.attacker).length > 0 ||
-            Object.keys(this._destroyed.defender).length > 0
-
-          if (hasDestroyed) {
-            this.runDestroyAbilities(this._destroyed, state, childLogger)
-          }
-        }
-
         // Process pending hit pools produced by the ability.
         // Skip during BEFORE_ASSIGN_HITS (recursion) and during DICE_ROLL
         // micro-phase (hits from dice flow are assigned at ASSIGN_HITS).
@@ -1027,48 +947,12 @@ export class AbilitiesParams {
             state.defender.hitPools.length > 0)
         ) {
           // Run BEFORE_ASSIGN_HITS (e.g. SUSTAIN_DAMAGE) before assigning hits
-          this.runAbilities(
-            'BEFORE_ASSIGN_HITS',
-            state,
-            undefined,
-            undefined,
-            childLogger,
-          )
-
-          // Now assign remaining hits
-          const attDestroyed = this._combatState
-            .side('attacker')
-            .assignHits(state, true)
-          const defDestroyed = this._combatState
-            .side('defender')
-            .assignHits(state, true)
-
-          // Log ASSIGN_HITS entry (matches CombatState.assignHits behavior)
-          const destroyedCtx = {
-            attacker: attDestroyed,
-            defender: defDestroyed,
-          }
-          if (childLogger) {
-            childLogger.child('ASSIGN_HITS').log(destroyedCtx)
-          }
-
-          const hasDestroyed =
-            Object.keys(attDestroyed).length > 0 ||
-            Object.keys(defDestroyed).length > 0
-          if (hasDestroyed) {
-            this.runDestroyAbilities(destroyedCtx, state, childLogger)
-          }
+          this._combatState.assignHits(childLogger)
         }
 
-        const unitsDestroyed = this._destroyCount > prevDestroyCount
         const unitsChanged =
           countAllUnits(state.attacker.units) !== prevAttackerUnitCount ||
           countAllUnits(state.defender.units) !== prevDefenderUnitCount
-
-        // Adjust tracker indices when units were destroyed by triggers/AFTER_DESTROY
-        if (unitsDestroyed) {
-          adjustTrackerForDestroyed(tracker, this._destroyed)
-        }
 
         // Transform own/opponent context back to sided
         if (
@@ -1208,18 +1092,20 @@ export class AbilitiesParams {
    * Flush pending invoke registrations using finalized (non-draft) state.
    * Called after ability call completes in tryResolveOne.
    */
-  flushPendingUnitInvokes(state: CombatStateData): void {
+  flushPendingUnitInvokes(): void {
     if (this._pendingUnitInvokes.length === 0) return
     const pending = this._pendingUnitInvokes
     this._pendingUnitInvokes = []
+    const state = this._combatState.data
     for (const { side, variantKey, unitIds } of pending) {
       this.appendUnitInvokes(side, state[side], variantKey, unitIds)
     }
   }
 
   /**
-   * Append invoke entries for units that just gained abilities.
-   * Called from placeUnits (new units) and modifyUnitType (existing units gain ABILITIES).
+   * Register invoke entries for units with abilities.
+   * Idempotent: removes existing entries for the given unitIds before adding new ones.
+   * Called from placeUnits (new units) and modifyUnitType (ABILITIES changed).
    */
   appendUnitInvokes(
     side: CombatSide,
@@ -1227,13 +1113,26 @@ export class AbilitiesParams {
     variantKey: string,
     unitIds: UnitId[],
   ): void {
-    const stats = resolveUnitStats(sideState, variantKey)
+    const stats = resolveUnitStats(sideState, variantKey as UnitType)
     if (!stats?.ABILITIES) return
 
     this._combatState.ensureOwnInvokes()
     const sideConfig = this.state.abilities[side]
     const sideMap = this._combatState._invokes[side]
     const { type: unitType } = parseVariantId(variantKey)
+
+    // Remove existing unit-invoke entries for these unitIds
+    const idSet = new Set<UnitId>(unitIds)
+    for (const [timing, list] of sideMap) {
+      const filtered = list.filter(
+        e =>
+          e.source.type !== 'unit' ||
+          !idSet.has((e.source as { unitId: UnitId }).unitId),
+      )
+      if (filtered.length !== list.length) {
+        sideMap.set(timing, filtered)
+      }
+    }
 
     for (const ability of stats.ABILITIES) {
       if (ability.context && ability.context !== this.state.combatMode) continue
@@ -1366,11 +1265,10 @@ export class AbilitiesParams {
   private getInvokesForTiming<T extends AbilityTiming>(
     timing: T | T[],
     side: CombatSide,
-    state: CombatStateData,
     triggerSide?: CombatSide,
   ): TimingInvokeEntry[] {
     const timings = Array.isArray(timing) ? timing : [timing]
-    const { meta } = state.currentPhase
+    const { meta } = this._combatState.data.currentPhase
     const results: TimingInvokeEntry[] = []
 
     const sideMap = this._combatState._invokes[side]
@@ -1399,7 +1297,7 @@ export class AbilitiesParams {
     // interleaved by user-chosen ability order).
     if (results.length > 1) {
       const timingSet = new Set(timings)
-      const sideConfig = state.abilities[side]
+      const sideConfig = this._combatState.data.abilities[side]
       for (const group of TIMING_GROUPS) {
         if (!group.timings.some(t => timingSet.has(t as T))) continue
         const orderConfig = sideConfig['ABILITY_ORDER']

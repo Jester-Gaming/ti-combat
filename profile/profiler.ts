@@ -89,31 +89,9 @@ function analyze(profile: CPUProfile, coverageCalls: Map<string, number>) {
   }
 }
 
-export interface ProfileOptions {
-  disableAbilities?: boolean
-}
-
-export async function runProfile(
-  state: CombatState,
-  profilePath: string,
-  options: ProfileOptions = {},
-) {
+export async function runProfile(state: CombatState, profilePath: string) {
   const session = new Session()
   session.connect()
-
-  let originalDescriptor: PropertyDescriptor | undefined
-  if (options.disableAbilities) {
-    originalDescriptor = Object.getOwnPropertyDescriptor(
-      CombatState.prototype,
-      'disableAbilities',
-    )
-    Object.defineProperty(CombatState.prototype, 'disableAbilities', {
-      configurable: true,
-      get() {
-        return true
-      },
-    })
-  }
 
   try {
     await session.post('Profiler.enable')
@@ -147,13 +125,6 @@ export async function runProfile(
     )
     analyze(stopResult.profile as unknown as CPUProfile, coverageCalls)
   } finally {
-    if (originalDescriptor) {
-      Object.defineProperty(
-        CombatState.prototype,
-        'disableAbilities',
-        originalDescriptor,
-      )
-    }
     session.disconnect()
   }
 }

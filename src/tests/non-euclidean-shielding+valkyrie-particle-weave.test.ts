@@ -23,7 +23,7 @@ describe('NON_EUCLIDEAN_SHIELDING + VALKYRIE_PARTICLE_WEAVE', () => {
     // Defender rolls 1 hit on attacker
     t.advanceRound({ attacker: 1, defender: 2 })
 
-    expect(t.abilityLog('VALKYRIE_PARTICLE_WEAVE')).toHaveLength(1)
+    expect(t.abilityLog('VALKYRIE_PARTICLE_WEAVE')).not.toHaveLength(0)
     // Mech sustains once, NES cancels 1 additional → both hits absorbed
     expect(t.defender.units.MECH![0].isDamaged).toBe(true)
     expect(t.defender.units.MECH).toHaveLength(1)

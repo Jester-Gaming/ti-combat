@@ -20,7 +20,7 @@ export const indoctrination: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT',
       isCallable: (_params, ctx) => {
-        return ctx.api.opponent.hasUnit('INFANTRY')
+        return ctx.api.opponent.hasUnitType('INFANTRY')
       },
       call: (ctx, params) => {
         ctx.api.opponent.removeUnit('INFANTRY')

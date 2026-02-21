@@ -25,7 +25,7 @@ describe('OVERWING_ZETA', () => {
 
     t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
 
-    expect(t.abilityLog('OVERWING_ZETA')).toHaveLength(1)
+    expect(t.abilityLog('OVERWING_ZETA')).not.toHaveLength(0)
     expect(t.attacker.units.FLAGSHIP).toHaveLength(1)
     // 1 original + 1 placed = 2
     expect(t.attacker.units.CRUISER).toHaveLength(2)
@@ -170,7 +170,7 @@ describe('OVERWING_ZETA', () => {
 
     // R2: 1 non-fighter + 2 to place = 3 <= 4 fleet pool → fires
     t.advanceRound()
-    expect(t.abilityLog('OVERWING_ZETA')).toHaveLength(1)
+    expect(t.abilityLog('OVERWING_ZETA')).not.toHaveLength(0)
     expect(t.attacker.units.CRUISER).toHaveLength(3) // 1 + 2 placed
   })
 

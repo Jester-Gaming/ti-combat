@@ -1,5 +1,5 @@
-import type { LogEntry } from '@/combat'
-import type { CombatSide, Unit, UnitBaseType } from '@/types'
+import type { LogEntry } from '@/combat/logger'
+import type { CombatSide, UnitBaseType, UnitState } from '@/types'
 
 import type { DicePool } from '../../combat/abilities/types'
 import {
@@ -17,7 +17,7 @@ import type {
   MicroPhase,
   SideStateData,
 } from '../../combat/combat-state/types'
-import { reconstructAllUnits } from '../../combat/utils/compact-units'
+import { parseVariantId } from '../../combat/utils/unit-variant'
 
 export type { SideConfig }
 export type CombatTestConfig = CombatStateConfig
@@ -32,14 +32,31 @@ export type HitsSpec = number | { attacker?: number; defender?: number }
 // SIDE VIEW (reconstructs units for test assertions)
 // ============================================================================
 
+type TestUnit = UnitState & { subtypes?: string[] }
+
 type SideView = Omit<SideStateData, 'units' | 'unitState' | 'unitStats'> & {
-  units: Partial<Record<UnitBaseType, Unit[]>>
+  units: Partial<Record<UnitBaseType, TestUnit[]>>
 }
 
 function buildSideView(data: SideStateData): SideView {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { unitState, unitStats, units, ...rest } = data
-  return { ...rest, units: reconstructAllUnits(data) }
+  void unitStats
+  const result: Partial<Record<UnitBaseType, TestUnit[]>> = {}
+
+  for (const key of Object.keys(units)) {
+    const ids = units[key]
+    if (ids.length <= 0) continue
+    const { type, subtypes } = parseVariantId(key)
+    const arr = result[type] ?? (result[type] = [])
+    for (const id of ids) {
+      const state = unitState[id]
+      const unit: TestUnit = { ...state }
+      if (subtypes.length > 0) unit.subtypes = subtypes
+      arr.push(unit)
+    }
+  }
+
+  return { ...rest, units: result }
 }
 
 // ============================================================================

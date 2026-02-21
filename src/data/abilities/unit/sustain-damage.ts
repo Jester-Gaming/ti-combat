@@ -1,11 +1,11 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability, AbilityReadContext } from '@/combat/abilities/types'
-import { getUnitId } from '@/combat/utils/compact-units'
-import { parseVariantId, unitMatchesVariant } from '@/combat/utils/unit-variant'
+import { parseVariantId } from '@/combat/utils/unit-variant'
+import type { UnitType } from '@/types'
 
 type Params = {
-  spacePriority: string[]
-  groundPriority: string[]
+  spacePriority: UnitType[]
+  groundPriority: UnitType[]
 }
 
 /**
@@ -37,15 +37,16 @@ function isHighestPrioritySustainTarget(
       continue
     }
 
-    const units = ctx.api.own.getUnits(unitType)
-    if (!units) continue
+    const units = ctx.api.own.getUnits(variantId)
+    if (units.length === 0) continue
+    const stats = ctx.api.own.getUnitStats(variantId)
+    if (!stats?.UNIT_ABILITIES?.SUSTAIN_DAMAGE) continue
 
     for (const unit of units) {
-      if (!unitMatchesVariant(unit, variantId)) continue
-      if (unit.isDamaged) continue
-      if (!unit.UNIT_ABILITIES?.SUSTAIN_DAMAGE) continue
+      const state = ctx.api.own.getUnitState(unit)
+      if (state?.isDamaged) continue
       // Found the highest-priority eligible unit — is it us?
-      return getUnitId(unit) === myUnitId
+      return unit === myUnitId
     }
   }
 
@@ -74,11 +75,13 @@ export const sustainDamage: Ability<Params> = {
       isCallable: (params, ctx) => {
         if (ctx.api.own.getPendingHits() <= 0) return false
 
-        if (ctx.getUnitState().isDamaged) return false
-        if (!ctx.getUnitStats().UNIT_ABILITIES?.SUSTAIN_DAMAGE) return false
+        const unitId = ctx.getUnit()
+        if (ctx.api.own.getUnitState(unitId)?.isDamaged) return false
+        if (!ctx.api.own.getUnitStats(unitId)?.UNIT_ABILITIES?.SUSTAIN_DAMAGE)
+          return false
 
-        const unitType = ctx.getUnitType()
-        const variantId = ctx.getVariantKey()
+        const unitType = ctx.api.own.getUnitBaseType(unitId)!
+        const variantId = ctx.api.own.getVariantKey(unitId)! as UnitType
 
         const isGround = ctx.state.combatMode === 'GROUND'
         const allowedUnits = new Set(
@@ -87,7 +90,10 @@ export const sustainDamage: Ability<Params> = {
         if (!allowedUnits.has(variantId)) return false
 
         const validTargets = ctx.api.own.getHitPoolValidTargets()
-        if (validTargets.length > 0 && !validTargets.includes(unitType)) {
+        if (
+          validTargets.length > 0 &&
+          !validTargets.includes(unitType as UnitType)
+        ) {
           return false
         }
 
@@ -103,7 +109,7 @@ export const sustainDamage: Ability<Params> = {
       call: ctx => {
         ctx.api.own.modifyUnitState(ctx.getUnit(), { isDamaged: true })
         ctx.api.own.reduceHits(1)
-        ctx.log(ctx.getUnitType())
+        ctx.log(ctx.api.own.getUnitBaseType(ctx.getUnit()))
         ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', ctx.getUnit())
         ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', ctx.getUnit())
       },

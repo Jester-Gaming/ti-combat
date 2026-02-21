@@ -3,8 +3,10 @@ import type baseUnits from '@/data/base-units'
 
 import type { DiceGroup } from './die'
 
+export type UnitVariantId = string & { readonly __brand: 'UnitVariantId' }
+
 export type UnitBaseType = keyof typeof baseUnits | 'FLAGSHIP' | 'MECH'
-export type UnitVariant = `${UnitBaseType}:${string}`
+export type UnitVariant = `${UnitBaseType}:${UnitVariantId}`
 export type UnitType = UnitBaseType | UnitVariant
 
 // Unit abilities

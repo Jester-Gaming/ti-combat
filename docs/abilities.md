@@ -221,9 +221,11 @@ Available in both `isCallable` and `call`:
 
 ```typescript
 getFaction(): FactionKey
-getUnits(): Partial<Record<UnitType, Unit[]>>
-getUnits(unitType: UnitType): Unit[]
-hasUnit(unitType: UnitType): boolean
+getUnits(unitType: UnitType): UnitId[]
+getUnitsLegacy(): Partial<Record<UnitType, Unit[]>>
+getUnitsLegacy(unitType: UnitType): Unit[]
+hasUnit(unitId: UnitId): boolean
+hasUnitType(unitType: UnitType): boolean
 countUnits(filter?: ReadonlySet<UnitType>): number
 getPendingHits(): number
 getHitPoolValidTargets(): UnitType[]
@@ -231,7 +233,7 @@ getParticipatingUnitTypes(options?: { combatMode?: CombatMode }): UnitType[]
 getUnitVariants(filter?: { include?: UnitType[], exclude?: UnitType[], excludeSubtypes?: string[], combatMode?: CombatMode, includeNonParticipating?: boolean }): string[]
 getUnitVariantsOptions(filter?: { ... same as above }): { label: string, value: string }[]  // For uiConfig items
 findUnit(unitType: UnitType, predicate: Partial<UnitState>): { unit: Unit, index: number } | undefined
-findUnitByPriority(priority: string[]): Unit | undefined
+findUnitByPriority(priority: string[]): UnitId | undefined
 isUnitAbilityLost(ability: UnitAbility, unitType: UnitType): boolean
 isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: UnitType): boolean
 ```

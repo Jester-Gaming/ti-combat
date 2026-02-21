@@ -16,7 +16,7 @@ export const matriarch: Ability = {
   invoke: [
     {
       timing: 'COMMIT_UNITS',
-      isCallable: (_params, ctx) => ctx.api.own.hasUnit('FLAGSHIP'),
+      isCallable: (_params, ctx) => ctx.api.own.hasUnitType('FLAGSHIP'),
       call: ctx => {
         ctx.api.own.updateAbilityConfig('SETTINGS', {
           groundForces: (current: UnitBaseType[]) => [...current, 'FIGHTER'],

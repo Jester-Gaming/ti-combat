@@ -1,11 +1,11 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
-import { getUnitId } from '@/combat/utils/compact-units'
 import { parseVariantId } from '@/combat/utils/unit-variant'
+import type { UnitType } from '@/types'
 
 type Params = {
-  sacrificePriority: string[]
-  targetPriority: string[]
+  sacrificePriority: UnitType[]
+  targetPriority: UnitType[]
 }
 
 const SACRIFICE_TYPES = new Set(['CRUISER', 'DESTROYER'])
@@ -39,7 +39,7 @@ export const impulseCore: Ability<Params> = {
         const sacrifice = ctx.api.own.findUnitByPriority(
           params.sacrificePriority,
         )
-        if (!sacrifice) return false
+        if (sacrifice === undefined) return false
         return (
           ctx.api.opponent.findUnitByPriority(params.targetPriority) !==
           undefined
@@ -49,12 +49,12 @@ export const impulseCore: Ability<Params> = {
         const sacrifice = ctx.api.own.findUnitByPriority(
           params.sacrificePriority,
         )
-        if (!sacrifice) return
+        if (sacrifice === undefined) return
 
-        ctx.api.own.destroyUnit(getUnitId(sacrifice)!)
+        ctx.api.own.destroyUnit(sacrifice)
 
         for (const variantId of params.targetPriority) {
-          if (ctx.api.opponent.findUnitByPriority([variantId])) {
+          if (ctx.api.opponent.findUnitByPriority([variantId]) !== undefined) {
             ctx.api.opponent.addHits(1, [parseVariantId(variantId).type])
             return
           }

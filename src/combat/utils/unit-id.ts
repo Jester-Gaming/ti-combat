@@ -1,6 +1,6 @@
 import type { UnitId } from '@/types'
 
-let _nextId = 0
+let _nextId = 1
 
 export function nextUnitId(): UnitId {
   return _nextId++ as UnitId

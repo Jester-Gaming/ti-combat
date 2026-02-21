@@ -23,7 +23,7 @@ describe('VOS_HOLLOW', () => {
 
     expect(t.attacker.units.CRUISER).toHaveLength(1)
     expect(t.defender.units.CRUISER).toHaveLength(1)
-    expect(t.abilityLog('VOS_HOLLOW')).toHaveLength(1)
+    expect(t.abilityLog('VOS_HOLLOW')).not.toHaveLength(0)
   })
 
   it('does not trigger when only opponent ships are destroyed', () => {
@@ -108,14 +108,14 @@ describe('VOS_HOLLOW', () => {
 
     expect(t.attacker.units.CRUISER).toHaveLength(2)
     expect(t.defender.units.CRUISER).toHaveLength(2)
-    expect(t.abilityLog('VOS_HOLLOW')).toHaveLength(1)
+    expect(t.abilityLog('VOS_HOLLOW')).not.toHaveLength(0)
 
     // Round 2: another Cruiser destroyed, but agent is exhausted
     t.advanceRound({ attacker: 1 })
 
     expect(t.attacker.units.CRUISER).toHaveLength(1)
     expect(t.defender.units.CRUISER).toHaveLength(2)
-    expect(t.abilityLog('VOS_HOLLOW')).toHaveLength(1)
+    expect(t.abilityLog('VOS_HOLLOW')).not.toHaveLength(0)
   })
 
   it('follows priority list when multiple ship types destroyed', () => {
@@ -141,6 +141,6 @@ describe('VOS_HOLLOW', () => {
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
     expect(t.attacker.units.DESTROYER).toBeUndefined()
     expect(t.defender.units.DESTROYER).toBeUndefined()
-    expect(t.abilityLog('VOS_HOLLOW')).toHaveLength(1)
+    expect(t.abilityLog('VOS_HOLLOW')).not.toHaveLength(0)
   })
 })

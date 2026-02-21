@@ -85,9 +85,7 @@ export const sleeperCell: Ability<Params> = {
         // Build removal order: reverse of shipPriority (remove lowest priority first)
         // Non-fighter ships not in priority list are removed before listed ones
         const prioritySet = new Set(params.shipPriority)
-        const allUnitTypes = Object.keys(
-          ctx.api.own.getUnits(),
-        ) as UnitBaseType[]
+        const allUnitTypes = ctx.api.own.getActiveBaseTypes()
         const unlisted = allUnitTypes.filter(
           t => NON_FIGHTER_SET.has(t) && !prioritySet.has(t),
         )

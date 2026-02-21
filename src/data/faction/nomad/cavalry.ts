@@ -1,6 +1,6 @@
 import nomadIcon from '@/assets/faction/nomad.svg?raw'
 import { declareParam } from '@/combat/abilities/declare-param'
-import type { UnitBaseType } from '@/types'
+import type { UnitType, UnitVariantId } from '@/types'
 import { getEffectiveStats } from '@/utils/get-simulation-units'
 
 import type { Ability } from '../../../combat/abilities/types'
@@ -8,8 +8,10 @@ import { nomad } from './index'
 
 type Params = {
   memoria2: boolean
-  unitType: UnitBaseType
+  unitType: UnitType
 }
+
+export const CAVALRY = 'Cavalry' as UnitVariantId
 
 export const cavalry: Ability<Params> = {
   key: 'CAVALRY',
@@ -21,14 +23,14 @@ export const cavalry: Ability<Params> = {
     isEnabled: false,
     uses: 1,
     memoria2: false,
-    unitType: declareParam<UnitBaseType>({
+    unitType: declareParam<UnitType>({
       default: 'DESTROYER',
       source: 'nonFighterShips',
     }),
   },
   headerUI: 'isEnabled',
   declareParamChange: params => [
-    { key: 'subtypes', value: { name: 'Cavalry', unitType: params.unitType } },
+    { key: 'subtypes', value: { name: CAVALRY, unitType: params.unitType } },
   ],
   uiConfig: ctx => {
     return [
@@ -44,7 +46,7 @@ export const cavalry: Ability<Params> = {
         items: ctx.api.own
           .getUnitVariantsOptions({
             exclude: ['FIGHTER'],
-            excludeSubtypes: ['Cavalry'],
+            excludeSubtypes: [CAVALRY],
             combatMode: 'SPACE',
           })
           .reverse(),
@@ -55,7 +57,7 @@ export const cavalry: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT',
       isCallable: (params, ctx) => {
-        return ctx.api.own.hasUnit(params.unitType)
+        return ctx.api.own.hasUnitType(params.unitType)
       },
       call: (ctx, params) => {
         const flagship = nomad.units.FLAGSHIP!
@@ -65,7 +67,7 @@ export const cavalry: Ability<Params> = {
           params.memoria2,
         )
 
-        ctx.api.own.addSubtype(params.unitType, 'Cavalry', stats => ({
+        ctx.api.own.addSubtype(params.unitType, CAVALRY, stats => ({
           ...stats,
           COMBAT: memoriaStats.COMBAT,
           UNIT_ABILITIES: memoriaStats.UNIT_ABILITIES,

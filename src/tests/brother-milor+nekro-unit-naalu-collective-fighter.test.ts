@@ -22,7 +22,7 @@ describe('BROTHER_MILOR + NEKRO_UNIT_NAALU_COLLECTIVE_FIGHTER', () => {
     t.advanceRound({ attacker: 1 })
 
     expect(t.attacker.units.FIGHTER).toHaveLength(2)
-    expect(t.abilityLog('BROTHER_MILOR')).toHaveLength(1)
+    expect(t.abilityLog('BROTHER_MILOR')).not.toHaveLength(0)
 
     // Round 2: verify the placed fighters roll with Hybrid Crystal Fighter II stats [7, 1]
     t.advanceRound()

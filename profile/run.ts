@@ -42,15 +42,12 @@ async function main() {
     process.exit(1)
   }
 
-  const mod: { default: CombatState; disableAbilities?: boolean } =
-    await import(`./configs/${name}.ts`)
+  const mod: { default: CombatState } = await import(`./configs/${name}.ts`)
 
   const profilePath = `/tmp/profile-${name}.cpuprofile`
 
   console.info(`\nRunning profile: ${name}\n`)
-  await runProfile(mod.default, profilePath, {
-    disableAbilities: mod.disableAbilities,
-  })
+  await runProfile(mod.default, profilePath)
 }
 
 main()

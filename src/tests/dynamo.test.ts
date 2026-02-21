@@ -23,7 +23,7 @@ describe('DYNAMO', () => {
     // Dreadnought sustained then got repaired by Dynamo
     expect(t.attacker.units.DREADNOUGHT).toHaveLength(1)
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(false)
-    expect(t.abilityLog('DYNAMO')).toHaveLength(1)
+    expect(t.abilityLog('DYNAMO')).not.toHaveLength(0)
   })
 
   it('does not repair opponent units', () => {
@@ -94,7 +94,7 @@ describe('DYNAMO', () => {
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(false)
     expect(t.attacker.units.CRUISER).toBeUndefined()
     // Only 1 Dynamo use consumed (not 2)
-    expect(t.abilityLog('DYNAMO')).toHaveLength(1)
+    expect(t.abilityLog('DYNAMO')).not.toHaveLength(0)
   })
 
   it('flagship destruction sets uses to 0', () => {

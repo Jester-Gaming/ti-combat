@@ -2,15 +2,12 @@ import type {
   Ability,
   AbilityReadContext,
 } from '../../../combat/abilities/types'
-import { getUnitId } from '../../../combat/utils/compact-units'
-import {
-  parseVariantId,
-  unitMatchesVariant,
-} from '../../../combat/utils/unit-variant'
+import { parseVariantId } from '../../../combat/utils/unit-variant'
+import type { UnitId, UnitType } from '../../../types'
 
-function findVoidShieldTarget(ctx: AbilityReadContext) {
+function findVoidShieldTarget(ctx: AbilityReadContext): UnitId | undefined {
   const sustainConfig = ctx.api.own.getAbilityConfig('SUSTAIN_DAMAGE')
-  const priority = (sustainConfig?.spacePriority as string[]) ?? []
+  const priority = (sustainConfig?.spacePriority as UnitType[]) ?? []
 
   const validTargets = ctx.api.own.getHitPoolValidTargets()
   const validTargetSet = validTargets.length > 0 ? new Set(validTargets) : null
@@ -22,18 +19,21 @@ function findVoidShieldTarget(ctx: AbilityReadContext) {
       continue
     }
 
-    const units = ctx.api.own.getUnits(unitType)
-    for (const unit of units) {
-      if (!unitMatchesVariant(unit, variantId)) continue
-      if (unit.isDamaged) continue
-      // Skip units with active native sustain — they use their own ability
-      if (
-        unit.UNIT_ABILITIES?.SUSTAIN_DAMAGE &&
-        !ctx.api.own.isUnitAbilityLost('SUSTAIN_DAMAGE', unitType)
-      ) {
-        continue
-      }
-      return { unit, unitType }
+    const units = ctx.api.own.getUnits(variantId)
+    if (units.length === 0) continue
+
+    // Skip variant if it has active native sustain — those units use their own ability
+    const stats = ctx.api.own.getUnitStats(variantId)
+    if (
+      stats?.UNIT_ABILITIES?.SUSTAIN_DAMAGE &&
+      !ctx.api.own.isUnitAbilityLost('SUSTAIN_DAMAGE', unitType)
+    ) {
+      continue
+    }
+
+    for (const unitId of units) {
+      if (ctx.api.own.getUnitState(unitId)?.isDamaged) continue
+      return unitId
     }
   }
 
@@ -61,12 +61,11 @@ export const metaliVoidShielding: Ability = {
         const target = findVoidShieldTarget(ctx)
         if (!target) return
 
-        const locator = getUnitId(target.unit)!
-        ctx.api.own.modifyUnitState(locator, { isDamaged: true })
+        ctx.api.own.modifyUnitState(target, { isDamaged: true })
         ctx.api.own.reduceHits(1)
-        ctx.log(target.unitType)
-        ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', locator)
-        ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', locator)
+        ctx.log(ctx.api.own.getUnitVariant(target))
+        ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', target)
+        ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', target)
       },
     },
   ],

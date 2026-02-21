@@ -1,4 +1,5 @@
 import { disablePlanetaryShield } from '@/data/abilities/unit/disable-planetary-shield'
+import { planetaryShield } from '@/data/abilities/unit/planetary-shield'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 
 const baseUnits = {
@@ -74,6 +75,7 @@ const baseUnits = {
         PLANETARY_SHIELD: true,
         SPACE_CANNON: [6, 1],
       },
+      ABILITIES: [planetaryShield],
     },
     UPGRADED: {
       UNIT_ABILITIES: {

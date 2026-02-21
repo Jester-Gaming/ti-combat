@@ -1,24 +1,10 @@
-import { getUnitId } from '@/combat/utils/compact-units'
-import { type UnitBaseType } from '@/types'
+import { type UnitType } from '@/types'
 
 import { declareParam } from '../../../combat/abilities/declare-param'
-import type { Ability, SideReadApi } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities/types'
 
 type Params = {
-  targetPriority: UnitBaseType[]
-}
-
-/** Count non-fighter ships on a side */
-function countNonFighterShips(api: SideReadApi): number {
-  let count = 0
-  const units = api.getUnits()
-  for (const [unitType, typeUnits] of Object.entries(units)) {
-    if (unitType === 'FIGHTER') continue
-    if (typeUnits && typeUnits.length > 0) {
-      count += typeUnits.length
-    }
-  }
-  return count
+  targetPriority: UnitType[]
 }
 
 export const assaultCannon: Ability<Params> = {
@@ -39,25 +25,19 @@ export const assaultCannon: Ability<Params> = {
   invoke: [
     {
       timing: 'START_OF_COMBAT',
-      isCallable: (params, ctx) => {
-        // Must have at least 3 non-fighter ships
-        const nonFighterCount = countNonFighterShips(ctx.api.own)
+      isCallable: (_, ctx) => {
+        const { nonFighterShips } = ctx.api.own.getAbilityConfig('SETTINGS')
+        const nonFighterCount = ctx.api.own.countUnits(nonFighterShips)
         if (nonFighterCount < 3) return false
 
-        // Must have a valid target in opponent's units
-        const target = ctx.api.opponent.findUnitByPriority(
-          params.targetPriority,
-        )
-        return target !== undefined
+        return true
       },
       call: (ctx, params) => {
         const target = ctx.api.opponent.findUnitByPriority(
           params.targetPriority,
-        )
+        )!
 
-        if (!target) return
-
-        ctx.api.opponent.destroyUnit(getUnitId(target)!)
+        ctx.api.opponent.destroyUnit(target)
       },
     },
   ],

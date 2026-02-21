@@ -1,14 +1,9 @@
 import type {
   CombatSide,
   DiceGroup,
-  FactionKey,
   SourcedDiceGroup,
-  Unit,
-  UnitAbility,
   UnitBaseType,
   UnitId,
-  UnitState,
-  UnitStats,
 } from '@/types'
 
 import type {
@@ -16,6 +11,7 @@ import type {
   CombatStateData,
   MetaPhase,
 } from '../combat-state/types'
+import type { SideApi } from './api/ability-api'
 
 export interface ParamChange {
   key: string
@@ -35,6 +31,20 @@ export interface SyncSourceConfig {
 export interface DeclaredSubtype {
   name: string
   unitType: UnitBaseType
+}
+
+export type SettingsParams = {
+  nonFighterShips: UnitBaseType[]
+  ships: UnitBaseType[]
+  groundForces: UnitBaseType[]
+  structures: UnitBaseType[]
+  spaceCombatParticipating: UnitBaseType[]
+  groundCombatParticipating: UnitBaseType[]
+  validTargetsSpaceCannonOffense: UnitBaseType[]
+  validTargetsBombardment: UnitBaseType[]
+  validTargetsSpaceCannonDefense: UnitBaseType[]
+  validTargetsAntiFighterBarrage: UnitBaseType[]
+  subtypes: DeclaredSubtype[]
 }
 
 // Sided context (external API - attacker/defender perspective)
@@ -104,12 +114,6 @@ export interface TimingContextMap {
   AFTER_ROUND: void
 }
 
-/** Events that can be emitted via ctx.trigger() during produce */
-export interface TriggerEventMap {
-  WHEN_SUSTAIN_DAMAGE_USE: UnitId
-  AFTER_SUSTAIN_DAMAGE_USE: UnitId
-}
-
 // Internal map for ability calls (uses own/opponent)
 // Derived from TimingContextMap: SidedContext<T> -> OwnOpponentContext<T>
 type ToInternal<T> = T extends SidedContext<infer U> ? OwnOpponentContext<U> : T
@@ -121,118 +125,6 @@ export type InternalTimingContextMap = {
 export type AbilityTiming = keyof TimingContextMap
 
 // ============================================================================
-// SIDED API — read-only (for isCallable) and read-write (for call)
-// ============================================================================
-
-/** Read-only API for querying one side's state */
-export interface SideReadApi {
-  getFaction(): FactionKey
-  getUnits(): Partial<Record<UnitBaseType, Unit[]>>
-  getUnits(unitType: UnitBaseType): Unit[]
-  hasUnit(unitType: UnitBaseType): boolean
-  countUnits(filter?: UnitBaseType | UnitBaseType[]): number
-  getPendingHits(): number
-  getHitPoolValidTargets(): UnitBaseType[]
-  /** Get participating base unit types from SETTINGS, filtered to units present on this side.
-   *  Pass `combatMode` to override the current combat mode (e.g., for abilities with a fixed context). */
-  getParticipatingUnitTypes(options?: {
-    combatMode?: CombatMode
-  }): UnitBaseType[]
-  /** Get unit types + variant IDs from declared subtypes.
-   *  By default returns only participating units. Pass `includeNonParticipating: true` to include all unit types on this side.
-   *  Pass `combatMode` in filter to override the current combat mode.
-   *  `include`/`exclude` filter base unit types; `excludeSubtypes` removes variants that contain a given subtype name. */
-  getUnitVariants(filter?: {
-    include?: UnitBaseType[]
-    exclude?: UnitBaseType[]
-    excludeSubtypes?: string[]
-    combatMode?: CombatMode
-    includeNonParticipating?: boolean
-  }): string[]
-  /** Same as getUnitVariants but returns { label, value } items for UI config. */
-  getUnitVariantsOptions(filter?: {
-    include?: UnitBaseType[]
-    exclude?: UnitBaseType[]
-    excludeSubtypes?: string[]
-    combatMode?: CombatMode
-    includeNonParticipating?: boolean
-  }): { label: string; value: string }[]
-  /** Find the first unit matching a priority list of variant IDs.
-   *  A plain UnitBaseType matches only units with no subtypes. */
-  findUnitByPriority(priority: string[]): Unit | undefined
-  /** Get the unit stats template for a given type. Returns post-PREPARE values even if no units of this type are in the battle. */
-  getUnitStats(unitType: UnitBaseType): Readonly<UnitStats> | undefined
-  isUnitAbilityLost(ability: UnitAbility, unitType: UnitBaseType): boolean
-  isUnitAbilityCannotBeUsed(
-    ability: UnitAbility,
-    unitType: UnitBaseType,
-  ): boolean
-
-  // Ability config reads
-  getAbilityConfig(key: string): Readonly<Record<string, unknown>> | undefined
-}
-
-/** Full read-write API for mutating one side's state (within Immer draft) */
-export interface SideApi extends SideReadApi {
-  // Unit operations
-  destroyUnit(unit: UnitId): void
-  destroyUnit(unitType: UnitBaseType): void
-  /** Remove a unit without triggering AFTER_DESTROY */
-  removeUnit(unit: UnitId): void
-  removeUnit(unitType: UnitBaseType): void
-  placeUnits(units: Partial<Record<UnitBaseType, number>>): void
-  modifyUnitType(
-    unitTypeOrVariantKey: string,
-    updates: Partial<UnitStats>,
-  ): void
-  modifyUnitState(unit: UnitId, updates: Partial<UnitState>): void
-
-  // Hit operations
-  reduceHits(amount: number): void
-  addHits(hits: number, validTargets: UnitBaseType[]): void
-
-  // Ability restrictions
-  setUnitAbilityLost(
-    ability: UnitAbility,
-    reason: string,
-    unitType?: UnitBaseType,
-  ): void
-  removeUnitAbilityLost(
-    ability: UnitAbility,
-    reason: string,
-    unitType?: UnitBaseType,
-  ): void
-  setUnitAbilityCannotBeUsed(
-    ability: UnitAbility,
-    reason: string,
-    unitType?: UnitBaseType,
-  ): void
-  removeUnitAbilityCannotBeUsed(
-    ability: UnitAbility,
-    reason: string,
-    unitType?: UnitBaseType,
-  ): void
-
-  // Subtype operations
-  addSubtype(
-    variantId: string,
-    subtype: string,
-    statsFactory?: (parentStats: UnitStats) => UnitStats,
-  ): void
-  removeSubtype(variantId: string, subtype: string): void
-
-  // Ability config mutations
-  updateAbilityConfig(updates: Record<string, unknown>): void
-  updateAbilityConfig(key: string, updates: Record<string, unknown>): void
-
-  // Hit value modifiers (stored, applied after BEFORE_DICE_ROLL)
-  modifyHitValue(amount: number): void
-  modifyHitValue(amount: number, unitType: string): void
-  modifyHitValue(amount: number, unit: UnitId): void
-  modifyHitValue(amount: number, options: { exclude: string[] }): void
-}
-
-// ============================================================================
 // CONTEXT TYPES
 // ============================================================================
 
@@ -240,31 +132,15 @@ export interface SideApi extends SideReadApi {
 export interface AbilityReadContext {
   readonly state: Readonly<CombatStateData>
   readonly api: {
-    readonly own: SideReadApi
-    readonly opponent: SideReadApi
+    readonly own: SideApi
+    readonly opponent: SideApi
   }
   /** Get the UnitId this ability is attached to. Throws if called from a non-unit ability. */
   getUnit(): UnitId
-  /** Get the variant key for the unit this ability is attached to. Throws if called from a non-unit ability. */
-  getVariantKey(): string
-  /** Get the per-unit mutable state (isDamaged, etc.). Throws if called from a non-unit ability. */
-  getUnitState(): Readonly<UnitState>
-  /** Get the shared stats for the unit variant. Throws if called from a non-unit ability. */
-  getUnitStats(): Readonly<UnitStats>
-  /** Get the unit type this ability is attached to. Throws if called from a non-unit ability. */
-  getUnitType(): UnitBaseType
   /** Get enabled config abilities matching the given timing(s) for the current side. */
   getAbilitiesForTiming(
     timing: AbilityTiming | AbilityTiming[],
   ): { key: string; name: string }[]
-}
-
-/** Stored trigger event emitted via ctx.trigger() */
-export interface TriggerEvent {
-  name: keyof TriggerEventMap
-  side: CombatSide
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  context: any
 }
 
 /** Mutable context for call (Immer draft, full API) */
@@ -275,21 +151,10 @@ export interface AbilityCallContext {
     opponent: SideApi
   }
   log(...data: unknown[]): void
-  /** Emit a trigger event to be processed immediately after produce */
-  trigger<K extends keyof TriggerEventMap>(
-    name: K,
-    context: TriggerEventMap[K],
-  ): void
+  /** Run abilities for the given timing inline during this call */
+  trigger<K extends AbilityTiming>(name: K, context: TimingContextMap[K]): void
   /** Get the UnitId this ability is attached to. Throws if called from a non-unit ability. */
   getUnit(): UnitId
-  /** Get the variant key for the unit this ability is attached to. Throws if called from a non-unit ability. */
-  getVariantKey(): string
-  /** Get the per-unit mutable state (isDamaged, etc.). Throws if called from a non-unit ability. */
-  getUnitState(): Readonly<UnitState>
-  /** Get the shared stats for the unit variant. Throws if called from a non-unit ability. */
-  getUnitStats(): Readonly<UnitStats>
-  /** Get the unit type this ability is attached to. Throws if called from a non-unit ability. */
-  getUnitType(): UnitBaseType
   /** Get enabled config abilities matching the given timing(s) for the current side. */
   getAbilitiesForTiming(
     timing: AbilityTiming | AbilityTiming[],

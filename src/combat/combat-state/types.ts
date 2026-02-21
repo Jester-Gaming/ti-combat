@@ -6,6 +6,7 @@ import type {
   UnitSelection,
   UnitState,
   UnitStats,
+  UnitType,
 } from '@/types'
 
 // ============================================================================
@@ -89,7 +90,7 @@ export interface PhaseIdentifier {
 /** A pool of unassigned hits with valid targets */
 export interface HitPool {
   hits: number
-  validTargets: UnitBaseType[]
+  validTargets: UnitType[]
 }
 
 /** A single restriction entry explaining why an ability is restricted */
@@ -120,11 +121,11 @@ export type UnitStatsEntry = UnitStats | ((parentStats: UnitStats) => UnitStats)
 export interface SideStateData {
   faction: FactionKey
   /** Variant key → array of UnitIds */
-  units: Record<string, UnitId[]>
+  units: Record<UnitType, UnitId[]>
   /** UnitId → per-unit mutable state (flat map, sparse — only entries with non-default state) */
-  unitState: Record<number, UnitState>
+  unitState: Record<UnitId, UnitState>
   /** Variant key → shared stats template (may be a factory for subtypes) */
-  unitStats: Record<string, UnitStatsEntry>
+  unitStats: Record<UnitType, UnitStatsEntry>
   hitPools: HitPool[]
   unitAbilityRestrictions?: UnitAbilityRestrictions
   unitSelections?: Record<UnitBaseType, UnitSelection>

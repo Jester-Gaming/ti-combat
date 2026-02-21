@@ -1,53 +1,7 @@
-import type { Unit, UnitBaseType, UnitId, UnitState, UnitStats } from '@/types'
+import type { UnitBaseType, UnitId, UnitStats, UnitType } from '@/types'
 
 import type { SideStateData } from '../combat-state/types'
 import { makeVariantId, parseVariantId } from './unit-variant'
-
-/** Symbol key for UnitId — own property on Unit, invisible to Object.keys/for-in */
-export const UNIT_ID = Symbol('uid')
-
-/** Cache for reconstructed unit arrays per side state + base type */
-const reconstructCache = new WeakMap<SideStateData, Map<string, Unit[]>>()
-
-/** Clear the reconstruction cache for a given side state (call after mutations) */
-export function clearReconstructCache(sideState: SideStateData): void {
-  reconstructCache.delete(sideState)
-  variantKeysCache.delete(sideState.units)
-}
-
-/** Reusable descriptor for symbol properties (not enumerable) */
-const _symDesc: PropertyDescriptor = {
-  value: undefined,
-  writable: true,
-  configurable: true,
-}
-
-/** Tag a reconstructed unit with its UnitId (uses defineProperty to bypass proxy prototypes) */
-export function tagUnit(unit: Unit, id: UnitId): void {
-  _symDesc.value = id
-  Object.defineProperty(unit, UNIT_ID, _symDesc)
-  _symDesc.value = undefined
-}
-
-/** Get the UnitId for a reconstructed unit */
-export function getUnitId(unit: Unit): UnitId | undefined {
-  return (unit as Record<symbol, unknown>)[UNIT_ID] as UnitId | undefined
-}
-
-/** Reusable property descriptor to avoid allocations */
-const _desc: PropertyDescriptor = {
-  value: undefined,
-  writable: true,
-  enumerable: true,
-  configurable: true,
-}
-
-/** Set an own property bypassing prototype chain (works with frozen/proxy prototypes) */
-export function defOwn(obj: object, key: string, value: unknown): void {
-  _desc.value = value
-  Object.defineProperty(obj, key, _desc)
-  _desc.value = undefined
-}
 
 /**
  * Resolve a unitStats entry to concrete UnitStats.
@@ -56,7 +10,7 @@ export function defOwn(obj: object, key: string, value: unknown): void {
  */
 export function resolveUnitStats(
   sideState: SideStateData,
-  key: string,
+  key: UnitType,
 ): UnitStats | undefined {
   const entry = sideState.unitStats[key]
   if (!entry) return undefined
@@ -82,58 +36,6 @@ export function resolveUnitStats(
   return entry
 }
 
-/** Reconstruct a Unit from stats + state + variant key */
-export function reconstructUnit(
-  stats: UnitStats,
-  state: UnitState | undefined,
-  key: string,
-): Unit {
-  const { subtypes } = parseVariantId(key)
-  const unit = Object.create(stats) as Unit
-  if (state) {
-    if (state.isDamaged !== undefined)
-      defOwn(unit, 'isDamaged', state.isDamaged)
-    if (state.usedSustainThisRound !== undefined)
-      defOwn(unit, 'usedSustainThisRound', state.usedSustainThisRound)
-  }
-  if (subtypes.length > 0) defOwn(unit, 'subtypes', subtypes)
-  return unit
-}
-
-/** Cache: units record → (baseType → sorted variant keys) */
-const variantKeysCache = new WeakMap<
-  Record<string, UnitId[]>,
-  Map<string, string[]>
->()
-
-/** Get sorted variant keys for a base type from units record */
-export function getVariantKeysForType(
-  units: Record<string, UnitId[]>,
-  baseType: UnitBaseType,
-): string[] {
-  let cacheMap = variantKeysCache.get(units)
-  if (cacheMap) {
-    const cached = cacheMap.get(baseType)
-    if (cached) return cached
-  }
-
-  const keys: string[] = []
-  for (const key of Object.keys(units)) {
-    if (units[key].length <= 0) continue
-    const { type } = parseVariantId(key)
-    if (type === baseType) keys.push(key)
-  }
-  keys.sort()
-
-  if (!cacheMap) {
-    cacheMap = new Map()
-    variantKeysCache.set(units, cacheMap)
-  }
-  cacheMap.set(baseType, keys)
-
-  return keys
-}
-
 /** Total count across all variants of a base type */
 export function totalCountForType(
   units: Record<string, UnitId[]>,
@@ -145,100 +47,4 @@ export function totalCountForType(
     if (type === baseType) total += units[key].length
   }
   return total
-}
-
-/**
- * Find the variant key that contains a given UnitId for a base type.
- * Scans variant key arrays to find which one contains the UnitId.
- */
-export function findVariantKeyForUnit(
-  sideState: SideStateData,
-  unitId: UnitId,
-  baseType: UnitBaseType,
-): string {
-  for (const key of Object.keys(sideState.units)) {
-    const { type } = parseVariantId(key)
-    if (type !== baseType) continue
-    if (sideState.units[key].includes(unitId)) return key
-  }
-  return baseType
-}
-
-/**
- * Reconstruct all Unit objects for a base type (all variants), cached per sideState.
- * Returns a flat array with units ordered by sorted variant keys.
- */
-export function reconstructUnitsForType(
-  sideState: SideStateData,
-  baseType: UnitBaseType,
-): Unit[] {
-  let cacheMap = reconstructCache.get(sideState)
-  if (cacheMap) {
-    const cached = cacheMap.get(baseType)
-    if (cached) return cached
-  }
-
-  const keys = getVariantKeysForType(sideState.units, baseType)
-  const result: Unit[] = []
-
-  for (const key of keys) {
-    const ids = sideState.units[key]
-    const stats = resolveUnitStats(sideState, key)
-    if (!stats) continue
-
-    for (const id of ids) {
-      const state = sideState.unitState[id]
-      const unit = reconstructUnit(stats, state, key)
-      tagUnit(unit, id)
-      result.push(unit)
-    }
-  }
-
-  if (!cacheMap) {
-    cacheMap = new Map()
-    reconstructCache.set(sideState, cacheMap)
-  }
-  cacheMap.set(baseType, result)
-
-  return result
-}
-
-/**
- * Reconstruct all units across all types as Record<UnitBaseType, Unit[]>.
- * Used for API compatibility (getUnits() with no args).
- */
-export function reconstructAllUnits(
-  sideState: SideStateData,
-): Partial<Record<UnitBaseType, Unit[]>> {
-  const result: Partial<Record<UnitBaseType, Unit[]>> = {}
-  const seenTypes = new Set<UnitBaseType>()
-
-  for (const key of Object.keys(sideState.units)) {
-    if (sideState.units[key].length <= 0) continue
-    const { type } = parseVariantId(key)
-    seenTypes.add(type)
-  }
-
-  for (const type of seenTypes) {
-    const units = reconstructUnitsForType(sideState, type)
-    if (units.length > 0) {
-      result[type] = units
-    }
-  }
-
-  return result
-}
-
-/**
- * Ensure unitState entry exists for a given UnitId.
- * Creates an empty state object if none exists.
- */
-export function ensureUnitState(
-  sideState: SideStateData,
-  unitId: UnitId,
-): UnitState {
-  if (!sideState.unitState[unitId]) {
-    sideState.unitState[unitId] = {}
-  }
-  return sideState.unitState[unitId]
 }

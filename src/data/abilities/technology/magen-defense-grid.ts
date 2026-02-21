@@ -1,7 +1,5 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
-import { parseVariantId, unitMatchesVariant } from '@/combat/utils/unit-variant'
-import { STRUCTURES } from '@/constants/units'
 import type { UnitBaseType } from '@/types'
 
 type Params = {
@@ -28,7 +26,8 @@ export const magenDefenseGrid: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT',
       isCallable: (params, ctx) => {
-        const hasStructure = ctx.api.own.countUnits(STRUCTURES) > 0
+        const { structures } = ctx.api.own.getAbilityConfig('SETTINGS')
+        const hasStructure = ctx.api.own.countUnits(structures) > 0
         if (!hasStructure) return false
         return (
           ctx.api.opponent.findUnitByPriority(params.targetPriority) !==
@@ -36,18 +35,11 @@ export const magenDefenseGrid: Ability<Params> = {
         )
       },
       call: (ctx, params) => {
-        for (const variantId of params.targetPriority) {
-          const { type } = parseVariantId(variantId)
-          const units = ctx.api.opponent.getUnits(type)
-          if (
-            units.length > 0 &&
-            units.some(u => unitMatchesVariant(u, variantId))
-          ) {
-            ctx.api.opponent.addHits(1, [type])
-            ctx.log(type)
-            return
-          }
-        }
+        const target = ctx.api.opponent.findUnitByPriority(
+          params.targetPriority,
+        )!
+        const type = ctx.api.opponent.getUnitBaseType(target)!
+        ctx.api.opponent.addHits(1, [type])
       },
     },
   ],

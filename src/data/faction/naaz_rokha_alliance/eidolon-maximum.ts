@@ -1,5 +1,4 @@
 import type { Ability } from '@/combat/abilities/types'
-import { getUnitId } from '@/combat/utils/compact-units'
 import type { UnitBaseType } from '@/types'
 
 export const eidolonMaximum: Ability = {
@@ -42,10 +41,8 @@ export const eidolonMaximum: Ability = {
       context: ['AFB', 'SPACE_CANNON_OFFENSE'],
       isCallable: (_params, ctx) => {
         const settings = ctx.api.own.getAbilityConfig('SETTINGS')
-        const afb =
-          (settings?.validTargetsAntiFighterBarrage as UnitBaseType[]) ?? []
-        const sco =
-          (settings?.validTargetsSpaceCannonOffense as UnitBaseType[]) ?? []
+        const afb = settings?.validTargetsAntiFighterBarrage ?? []
+        const sco = settings?.validTargetsSpaceCannonOffense ?? []
         return afb.includes('MECH') || sco.includes('MECH')
       },
       call: ctx => {
@@ -68,12 +65,11 @@ export const eidolonMaximum: Ability = {
         })
 
         // Repair damaged mechs at start of each round
-        const mechs = ctx.api.own.getUnits('MECH')
-        for (const mech of mechs) {
-          if (mech.isDamaged) {
-            ctx.api.own.modifyUnitState(getUnitId(mech)!, {
-              isDamaged: false,
-            })
+        for (const id of ctx.api.own.getUnits('MECH', {
+          includeVariants: true,
+        })) {
+          if (ctx.api.own.getUnitState(id)?.isDamaged) {
+            ctx.api.own.modifyUnitState(id, { isDamaged: false })
           }
         }
       },

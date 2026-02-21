@@ -2,12 +2,13 @@ import { getSettingsValidTargets } from '@/combat/combat-side-state/utils/get-se
 import { UNIT_LIMITS } from '@/constants/units'
 import type {
   CombatSide,
-  Unit,
   UnitAbility,
   UnitBaseType,
   UnitId,
   UnitState,
   UnitStats,
+  UnitType,
+  UnitVariantId,
 } from '@/types'
 
 import { getOpponentSide } from '../../combat-side-state/combat-side-state'
@@ -18,17 +19,8 @@ import type {
   SideStateData,
   UnitAbilityRestrictions,
 } from '../../combat-state/types'
-import {
-  clearReconstructCache,
-  ensureUnitState,
-  findVariantKeyForUnit,
-  reconstructAllUnits,
-  reconstructUnit,
-  reconstructUnitsForType,
-  resolveUnitStats,
-  tagUnit,
-  totalCountForType,
-} from '../../utils/compact-units'
+import type { Logger } from '../../logger'
+import { resolveUnitStats, totalCountForType } from '../../utils/compact-units'
 import { nextUnitIds } from '../../utils/unit-id'
 import {
   getVariantDisplayName,
@@ -39,55 +31,60 @@ import type { AbilitiesParams } from '../abilities-params'
 import type {
   AbilityTiming,
   DeclaredSubtype,
-  SideApi,
-  SideReadApi,
-  TriggerEvent,
+  SettingsParams,
+  TimingContextMap,
 } from '../types'
 
 // ============================================================================
 // HELPERS
 // ============================================================================
 
-function findUnitByPriorityInSide(
+function findUnitIdByPriorityInSide(
   sideState: SideStateData,
-  priority: string[],
+  priority: UnitType[],
   participatingTypes?: ReadonlySet<UnitBaseType>,
-): Unit | undefined {
+): UnitId | undefined {
   for (const variantId of priority) {
     const { type } = parseVariantId(variantId)
     if (participatingTypes && !participatingTypes.has(type)) continue
     const ids = sideState.units[variantId]
     if (!ids || ids.length <= 0) continue
-
-    // Direct lookup: reconstruct single unit for first UnitId of this variant
-    const stats = resolveUnitStats(sideState, variantId)
-    if (!stats) continue
-    const id = ids[0]
-    const state = sideState.unitState[id]
-    const unit = reconstructUnit(stats, state, variantId)
-    tagUnit(unit, id)
-    return unit
+    return ids[0]
   }
   return undefined
 }
 
 function countUnitsInSide(
   sideState: SideStateData,
-  filter?: UnitBaseType | UnitBaseType[],
+  filter?: UnitType | UnitType[],
+  includeVariants?: boolean,
 ): number {
-  let total = 0
-  const filterSet = filter
-    ? typeof filter === 'string'
-      ? new Set([filter])
-      : new Set(filter)
-    : undefined
-  for (const [key, ids] of Object.entries(sideState.units)) {
-    if (ids.length <= 0) continue
-    if (filterSet) {
-      const { type } = parseVariantId(key)
-      if (!filterSet.has(type)) continue
+  if (!filter) {
+    let total = 0
+    for (const key of Object.keys(sideState.units)) {
+      total += sideState.units[key as UnitType].length
     }
-    total += ids.length
+    return total
+  }
+
+  const filters = typeof filter === 'string' ? [filter] : filter
+
+  if (includeVariants) {
+    const baseTypes = new Set(filters.map(f => parseVariantId(f).type))
+    let total = 0
+    for (const key of Object.keys(sideState.units) as UnitType[]) {
+      const ids = sideState.units[key]
+      if (ids.length <= 0) continue
+      if (baseTypes.has(parseVariantId(key).type)) {
+        total += ids.length
+      }
+    }
+    return total
+  }
+
+  let total = 0
+  for (const f of filters) {
+    total += sideState.units[f]?.length ?? 0
   }
   return total
 }
@@ -100,11 +97,14 @@ function isRestricted(
   sideState: SideStateData,
   layer: 'lost' | 'cannotBeUsed',
   ability: UnitAbility,
-  unitType: UnitBaseType,
+  unitType: string,
 ): boolean {
   const entries = sideState.unitAbilityRestrictions?.[layer]?.[ability]
   if (!entries) return false
-  return entries.some(e => !e.unitType || e.unitType === unitType)
+  const { type: baseType } = parseVariantId(unitType)
+  return entries.some(
+    e => !e.unitType || e.unitType === unitType || e.unitType === baseType,
+  )
 }
 
 function addRestrictionEntry(
@@ -172,7 +172,7 @@ function getParticipatingUnitTypesForSide(
   if (!settings) {
     const sideState = state[side]
     const types = new Set<UnitBaseType>()
-    for (const key of Object.keys(sideState.units)) {
+    for (const key of Object.keys(sideState.units) as UnitType[]) {
       if (sideState.units[key].length <= 0) continue
       const { type } = parseVariantId(key)
       types.add(type)
@@ -193,7 +193,7 @@ function getAllUnitTypesForSide(
   if (!settings) {
     const sideState = state[side]
     const types = new Set<UnitBaseType>()
-    for (const key of Object.keys(sideState.units)) {
+    for (const key of Object.keys(sideState.units) as UnitType[]) {
       if (sideState.units[key].length <= 0) continue
       const { type } = parseVariantId(key)
       types.add(type)
@@ -219,7 +219,7 @@ function getUnitVariantsForSide(
     combatMode?: CombatMode
     includeNonParticipating?: boolean
   },
-): string[] {
+): UnitType[] {
   let baseTypes = filter?.includeNonParticipating
     ? getAllUnitTypesForSide(state, side, filter?.combatMode)
     : getParticipatingUnitTypesForSide(state, side, filter?.combatMode)
@@ -249,7 +249,7 @@ function getUnitVariantsForSide(
   }
 
   const baseSet = new Set<string>(baseTypes)
-  const result: string[] = [...baseTypes]
+  const result: UnitType[] = [...baseTypes]
   const addedSet = new Set<string>(baseTypes)
   for (const decl of declaredSubtypes) {
     if (excludeSubtypeSet?.has(decl.name)) continue
@@ -257,7 +257,10 @@ function getUnitVariantsForSide(
     if (!baseSet.has(decl.unitType) && !addedSet.has(decl.unitType)) continue
     if (excludeSubtypeSet && parentSubs.some(s => excludeSubtypeSet.has(s)))
       continue
-    const variantId = makeVariantId(type, [...parentSubs, decl.name])
+    const variantId = makeVariantId(type, [
+      ...parentSubs,
+      decl.name as UnitVariantId,
+    ])
     if (addedSet.has(variantId)) continue
     result.push(variantId)
     addedSet.add(variantId)
@@ -275,498 +278,535 @@ function resolveSettingsValidTargets(
 }
 
 // ============================================================================
-// SIDE API BUILDER
+// SIDE API
 // ============================================================================
 
-function buildSideApi(
-  side: CombatSide,
-  state: CombatStateData,
-  abilityKey?: string,
-  abilitiesParams?: AbilitiesParams,
-): SideApi {
-  const api: SideApi = {
-    getFaction() {
-      return state[side].faction
-    },
+export class SideApi {
+  private _side: CombatSide
+  private _ctx!: AbilityContext
+  _abilityKey?: string
+  _abilitiesParams?: AbilitiesParams
 
-    getUnits(unitType?: UnitBaseType) {
-      const sideState = state[side]
-      if (unitType !== undefined) {
-        return reconstructUnitsForType(sideState, unitType)
+  constructor(side: CombatSide, ctx: AbilityContext) {
+    this._side = side
+    this._ctx = ctx
+  }
+
+  private get state(): CombatStateData {
+    return this._ctx.state
+  }
+
+  private get sideState(): SideStateData {
+    return this.state[this._side]
+  }
+
+  getFaction() {
+    return this.sideState.faction
+  }
+
+  getUnits(unitType: UnitType, options?: { includeVariants: true }) {
+    const sideState = this.sideState
+    if (options?.includeVariants) {
+      const result: UnitId[] = []
+      for (const key of Object.keys(sideState.units) as UnitType[]) {
+        const { type } = parseVariantId(key)
+        if (type === unitType) {
+          result.push(...sideState.units[key])
+        }
       }
-      return reconstructAllUnits(sideState)
-    },
+      return result
+    }
+    return sideState.units[unitType] ?? []
+  }
 
-    hasUnit(unitType: UnitBaseType) {
-      return totalCountForType(state[side].units, unitType) > 0
-    },
+  hasUnit(unitId: UnitId) {
+    return findVariantKeyContaining(this.sideState, unitId) !== ''
+  }
 
-    countUnits(filter?: UnitBaseType | UnitBaseType[]) {
-      return countUnitsInSide(state[side], filter)
-    },
-
-    getPendingHits() {
-      return getPendingHitsForSide(state[side])
-    },
-
-    getHitPoolValidTargets() {
-      const pool = state[side].hitPools[0]
-      if (pool && pool.validTargets.length > 0) return pool.validTargets
-      return resolveSettingsValidTargets(state, side)
-    },
-
-    getParticipatingUnitTypes(options?: { combatMode?: CombatMode }) {
-      return getParticipatingUnitTypesForSide(state, side, options?.combatMode)
-    },
-
-    getUnitVariants(filter?: {
-      include?: UnitBaseType[]
-      exclude?: UnitBaseType[]
-      excludeSubtypes?: string[]
-      combatMode?: CombatMode
-      includeNonParticipating?: boolean
-    }) {
-      return getUnitVariantsForSide(state, side, filter)
-    },
-
-    getUnitVariantsOptions(filter?: {
-      include?: UnitBaseType[]
-      exclude?: UnitBaseType[]
-      excludeSubtypes?: string[]
-      combatMode?: CombatMode
-      includeNonParticipating?: boolean
-    }) {
-      return getUnitVariantsForSide(state, side, filter).map(id => ({
-        label: getVariantDisplayName(id),
-        value: id,
-      }))
-    },
-
-    findUnitByPriority(priority: string[]) {
-      const participating = new Set(
-        getParticipatingUnitTypesForSide(state, side),
+  hasUnitType(unitType: UnitType, options?: { includeVariants: true }) {
+    if (options?.includeVariants) {
+      return (
+        totalCountForType(this.sideState.units, parseVariantId(unitType).type) >
+        0
       )
-      return findUnitByPriorityInSide(state[side], priority, participating)
-    },
+    }
+    const ids = this.sideState.units[unitType]
+    return !!ids && ids.length > 0
+  }
 
-    getUnitStats(unitType: UnitBaseType) {
-      return resolveUnitStats(state[side], unitType)
-    },
+  countUnits(
+    filter?: UnitType | UnitType[],
+    options?: { includeVariants: true },
+  ) {
+    return countUnitsInSide(this.sideState, filter, options?.includeVariants)
+  }
 
-    isUnitAbilityLost(ability: UnitAbility, unitType: UnitBaseType) {
-      return isRestricted(state[side], 'lost', ability, unitType)
-    },
+  getPendingHits() {
+    return getPendingHitsForSide(this.sideState)
+  }
 
-    isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: UnitBaseType) {
-      return isRestricted(state[side], 'cannotBeUsed', ability, unitType)
-    },
+  getHitPoolValidTargets() {
+    const pool = this.sideState.hitPools[0]
+    if (pool && pool.validTargets.length > 0) return pool.validTargets
+    return resolveSettingsValidTargets(this.state, this._side)
+  }
 
-    getAbilityConfig(key: string) {
-      return state.abilities[side][key]
-    },
-
-    destroyUnit(unitTypeOrUnit: UnitBaseType | UnitId): void {
-      const sideState = state[side]
-      let unitId: UnitId
-      let key: string
-
-      if (typeof unitTypeOrUnit === 'string') {
-        // Find first UnitId for this base type
-        const found = findFirstUnitId(sideState, unitTypeOrUnit)
-        if (!found) return
-        unitId = found.unitId
-        key = found.key
-      } else {
-        unitId = unitTypeOrUnit
-        // Find variant key containing this UnitId
-        key = findVariantKeyContaining(sideState, unitId)
-        if (!key) return
-      }
-
-      if (abilitiesParams) {
-        if (!abilitiesParams._destroyed[side][key]) {
-          abilitiesParams._destroyed[side][key] = []
-        }
-        abilitiesParams._destroyed[side][key].push(unitId)
-        abilitiesParams._destroyCount++
-      }
-      api.removeUnit(unitId)
-    },
-
-    removeUnit(unitTypeOrUnit: UnitBaseType | UnitId): void {
-      const sideState = state[side]
-      clearReconstructCache(sideState)
-      let unitId: UnitId
-      let key: string
-
-      if (typeof unitTypeOrUnit === 'string') {
-        const found = findFirstUnitId(sideState, unitTypeOrUnit)
-        if (!found) return
-        unitId = found.unitId
-        key = found.key
-      } else {
-        unitId = unitTypeOrUnit
-        key = findVariantKeyContaining(sideState, unitId)
-        if (!key) return
-      }
-
-      const ids = sideState.units[key]
-      const idx = ids.indexOf(unitId)
-      if (idx === -1) return
-
-      ids.splice(idx, 1)
-      delete sideState.unitState[unitId]
-
-      if (ids.length <= 0) {
-        delete sideState.units[key]
-      }
-    },
-
-    placeUnits(unitsToAdd: Partial<Record<UnitBaseType, number>>) {
-      const sideState = state[side]
-      clearReconstructCache(sideState)
-      for (const [type, count] of Object.entries(unitsToAdd)) {
-        const unitType = type as UnitBaseType
-        if (!count || count <= 0) continue
-        const existing = totalCountForType(sideState.units, unitType)
-        const limit = UNIT_LIMITS[unitType]
-        if (existing + count > limit) {
-          console.warn(
-            `Unit limit exceeded: ${unitType} has a maximum of ${limit}`,
-          )
-        }
-        const allowed = Math.min(count, limit - existing)
-        if (allowed <= 0) continue
-
-        const newIds = nextUnitIds(allowed)
-        if (!sideState.units[unitType]) {
-          sideState.units[unitType] = []
-        }
-        sideState.units[unitType].push(...newIds)
-        if (!sideState.unitStats[unitType]) {
-          // Shouldn't happen, but fallback
-          sideState.unitStats[unitType] = {}
-        }
-
-        // Queue invoke registration (flushed after produce completes)
-        if (abilitiesParams) {
-          abilitiesParams.queueUnitInvokes(side, unitType, newIds)
-        }
-      }
-    },
-
-    modifyUnitType(key: string, updates: Partial<UnitStats>): void {
-      const sideState = state[side]
-      clearReconstructCache(sideState)
-
+  getActiveBaseTypes() {
+    const sideState = this.sideState
+    const types = new Set<UnitBaseType>()
+    for (const key of Object.keys(sideState.units) as UnitType[]) {
+      if (sideState.units[key].length <= 0) continue
       const { type } = parseVariantId(key)
-      const isVariantKey = key.includes(':')
+      types.add(type)
+    }
+    return [...types]
+  }
 
-      if (isVariantKey) {
-        // Update just this variant's stats
-        const hadAbilities = resolveUnitStats(sideState, key)?.ABILITIES
-        if (sideState.unitStats[key]) {
-          if (typeof sideState.unitStats[key] === 'function') {
-            sideState.unitStats[key] = resolveUnitStats(sideState, key)!
-          }
-          Object.assign(sideState.unitStats[key], updates)
-        }
-        // Queue invoke registration if ABILITIES were just added
-        const ids = sideState.units[key]
-        if (
-          !hadAbilities &&
-          'ABILITIES' in updates &&
-          abilitiesParams &&
-          ids?.length > 0
-        ) {
-          abilitiesParams.queueUnitInvokes(side, key, ids)
-        }
-      } else {
-        // Update all variant keys of this base type
-        const hasAbilitiesUpdate = 'ABILITIES' in updates
-        for (const vKey of Object.keys(sideState.units)) {
-          const { type: vType } = parseVariantId(vKey)
-          if (vType !== type) continue
-          const hadAbilities =
-            hasAbilitiesUpdate && resolveUnitStats(sideState, vKey)?.ABILITIES
-          if (sideState.unitStats[vKey]) {
-            if (typeof sideState.unitStats[vKey] === 'function') {
-              sideState.unitStats[vKey] = resolveUnitStats(sideState, vKey)!
-            }
-            Object.assign(sideState.unitStats[vKey], updates)
-          }
-          // Queue invoke registration if ABILITIES were just added
-          const ids = sideState.units[vKey]
-          if (
-            !hadAbilities &&
-            hasAbilitiesUpdate &&
-            abilitiesParams &&
-            ids?.length > 0
-          ) {
-            abilitiesParams.queueUnitInvokes(side, vKey, ids)
-          }
-        }
-        // Also update the base unitStats template
-        if (sideState.unitStats[type]) {
-          if (typeof sideState.unitStats[type] === 'function') {
-            sideState.unitStats[type] = resolveUnitStats(sideState, type)!
-          }
-          Object.assign(sideState.unitStats[type], updates)
-        }
+  getParticipatingUnitTypes(options?: { combatMode?: CombatMode }) {
+    return getParticipatingUnitTypesForSide(
+      this.state,
+      this._side,
+      options?.combatMode,
+    )
+  }
+
+  getUnitVariantsOptions(filter?: {
+    include?: UnitBaseType[]
+    exclude?: UnitBaseType[]
+    excludeSubtypes?: UnitVariantId[]
+    combatMode?: CombatMode
+    includeNonParticipating?: boolean
+  }) {
+    return getUnitVariantsForSide(this.state, this._side, filter).map(id => ({
+      label: getVariantDisplayName(id),
+      value: id,
+    }))
+  }
+
+  findUnitByPriority(priority: UnitType[]) {
+    const participating = new Set(
+      getParticipatingUnitTypesForSide(this.state, this._side),
+    )
+    return findUnitIdByPriorityInSide(this.sideState, priority, participating)
+  }
+
+  getUnitStats(unitTypeOrId: string | UnitId) {
+    const sideState = this.sideState
+    if (typeof unitTypeOrId === 'string') {
+      const stats = resolveUnitStats(sideState, unitTypeOrId as UnitType)
+      if (stats) return stats
+      const { type } = parseVariantId(unitTypeOrId)
+      if (type !== unitTypeOrId) {
+        return resolveUnitStats(sideState, type)
       }
-    },
+      return undefined
+    }
+    const key = findVariantKeyContaining(sideState, unitTypeOrId)
+    if (!key) return undefined
+    return resolveUnitStats(sideState, key)
+  }
 
-    modifyUnitState(unitId: UnitId, updates: Partial<UnitState>): void {
-      const sideState = state[side]
-      clearReconstructCache(sideState)
-      const us = ensureUnitState(sideState, unitId)
-      Object.assign(us, updates)
-    },
+  getVariantKey(unitId: UnitId) {
+    return findVariantKeyContaining(this.sideState, unitId) || undefined
+  }
 
-    reduceHits(amount: number) {
-      const sideState = state[side]
-      if (sideState.hitPools.length === 0 || amount <= 0) return
-      let remaining = amount
-      for (const pool of sideState.hitPools) {
-        const reduce = Math.min(remaining, pool.hits)
-        pool.hits -= reduce
-        remaining -= reduce
-        if (remaining <= 0) break
+  getUnitState(unitId: UnitId) {
+    const sideState = this.sideState
+    const key = findVariantKeyContaining(sideState, unitId)
+    if (!key) return undefined
+    return sideState.unitState[unitId] ?? {}
+  }
+
+  getUnitBaseType(unitId: UnitId) {
+    const key = findVariantKeyContaining(this.sideState, unitId)
+    if (!key) return undefined
+    return parseVariantId(key).type as UnitBaseType
+  }
+
+  getUnitVariant(unitId: UnitId) {
+    return findVariantKeyContaining(this.sideState, unitId) || undefined
+  }
+
+  isUnitAbilityLost(ability: UnitAbility, unitType: string) {
+    return isRestricted(this.sideState, 'lost', ability, unitType)
+  }
+
+  isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: string) {
+    return isRestricted(this.sideState, 'cannotBeUsed', ability, unitType)
+  }
+
+  getAbilityConfig(key: 'SETTINGS'): SettingsParams
+  getAbilityConfig(key: string): Record<string, unknown>
+  getAbilityConfig(key: string) {
+    return this.state.abilities[this._side][key]
+  }
+
+  destroyUnit(unitTypeOrUnit: UnitBaseType | UnitId): void {
+    const sideState = this.sideState
+    let unitId: UnitId
+    let key: UnitType
+
+    if (typeof unitTypeOrUnit === 'string') {
+      const found = findFirstUnitId(sideState, unitTypeOrUnit)
+      if (!found) return
+      unitId = found.unitId
+      key = found.key
+    } else {
+      unitId = unitTypeOrUnit
+      const found = findVariantKeyContaining(sideState, unitId)
+      if (!found) return
+      key = found
+    }
+
+    this.removeUnit(unitId)
+
+    if (this._abilitiesParams) {
+      const destroyed = {
+        attacker: {} as Record<string, UnitId[]>,
+        defender: {} as Record<string, UnitId[]>,
       }
-    },
+      destroyed[this._side][key] = [unitId]
+      this._ctx.runDestroyAbilities(destroyed)
+    }
+  }
 
-    addHits(hits: number, validTargets: UnitBaseType[]) {
-      if (hits === 0) return
-      state[side].hitPools.push({ hits, validTargets })
-    },
+  removeUnit(unitTypeOrUnit: UnitBaseType | UnitId): void {
+    const sideState = this.sideState
 
-    setUnitAbilityLost(
-      ability: UnitAbility,
-      reason: string,
-      unitType?: UnitBaseType,
-    ) {
-      const sideState = state[side]
-      sideState.unitAbilityRestrictions = addRestrictionEntry(
-        sideState.unitAbilityRestrictions,
-        'lost',
-        ability,
-        reason,
-        unitType,
-      )
-    },
+    let unitId: UnitId
+    let key: UnitType
 
-    removeUnitAbilityLost(
-      ability: UnitAbility,
-      reason: string,
-      unitType?: UnitBaseType,
-    ) {
-      const sideState = state[side]
-      sideState.unitAbilityRestrictions = removeRestrictionEntry(
-        sideState.unitAbilityRestrictions,
-        'lost',
-        ability,
-        reason,
-        unitType,
-      )
-    },
+    if (typeof unitTypeOrUnit === 'string') {
+      const found = findFirstUnitId(sideState, unitTypeOrUnit)
+      if (!found) return
+      unitId = found.unitId
+      key = found.key
+    } else {
+      unitId = unitTypeOrUnit
+      const found = findVariantKeyContaining(sideState, unitId)
+      if (!found) return
+      key = found
+    }
 
-    setUnitAbilityCannotBeUsed(
-      ability: UnitAbility,
-      reason: string,
-      unitType?: UnitBaseType,
-    ) {
-      const sideState = state[side]
-      sideState.unitAbilityRestrictions = addRestrictionEntry(
-        sideState.unitAbilityRestrictions,
-        'cannotBeUsed',
-        ability,
-        reason,
-        unitType,
-      )
-    },
+    const ids = sideState.units[key]
+    const idx = ids.indexOf(unitId)
+    if (idx === -1) return
 
-    removeUnitAbilityCannotBeUsed(
-      ability: UnitAbility,
-      reason: string,
-      unitType?: UnitBaseType,
-    ) {
-      const sideState = state[side]
-      sideState.unitAbilityRestrictions = removeRestrictionEntry(
-        sideState.unitAbilityRestrictions,
-        'cannotBeUsed',
-        ability,
-        reason,
-        unitType,
-      )
-    },
+    ids.splice(idx, 1)
+    delete sideState.unitState[unitId]
 
-    addSubtype(
-      variantId: string,
-      subtype: string,
-      statsFactory?: (parentStats: UnitStats) => UnitStats,
-    ) {
-      const sideState = state[side]
-      clearReconstructCache(sideState)
-      const { type, subtypes: currentSubtypes } = parseVariantId(variantId)
+    if (ids.length <= 0) {
+      delete sideState.units[key]
+    }
+  }
 
-      // Find a matching key: variantId itself if it has units,
-      // otherwise the base type
-      let sourceKey = variantId
-      if (
-        !sideState.units[sourceKey] ||
-        sideState.units[sourceKey].length <= 0
-      ) {
-        sourceKey = type
+  placeUnits(unitsToAdd: Partial<Record<UnitBaseType, number>>) {
+    const sideState = this.sideState
+
+    for (const [type, count] of Object.entries(unitsToAdd)) {
+      const unitType = type as UnitBaseType
+      if (!count || count <= 0) continue
+      const existing = totalCountForType(sideState.units, unitType)
+      const limit = UNIT_LIMITS[unitType]
+      if (existing + count > limit) {
+        console.warn(
+          `Unit limit exceeded: ${unitType} has a maximum of ${limit}`,
+        )
       }
-      if (!sideState.units[sourceKey] || sideState.units[sourceKey].length <= 0)
-        return
+      const allowed = Math.min(count, limit - existing)
+      if (allowed <= 0) continue
 
-      // Compute new key with added subtype
-      const newSubtypes = [...currentSubtypes, subtype].sort()
-      const newKey = makeVariantId(type, newSubtypes)
-      if (newKey === sourceKey) return
-
-      // Pop a UnitId from source array, push to new key
-      const movedId = sideState.units[sourceKey].pop()!
-      if (sideState.units[sourceKey].length <= 0) {
-        delete sideState.units[sourceKey]
+      const newIds = nextUnitIds(allowed)
+      if (!sideState.units[unitType]) {
+        sideState.units[unitType] = []
+      }
+      sideState.units[unitType].push(...newIds)
+      if (!sideState.unitStats[unitType]) {
+        sideState.unitStats[unitType] = {}
       }
 
-      // Add to new key — unitState entry is preserved (keyed by UnitId)
-      if (!sideState.units[newKey]) {
-        sideState.units[newKey] = []
-      }
-      sideState.units[newKey].push(movedId)
-
-      // Copy stats from source (or base type) to new key if not present
-      if (!sideState.unitStats[newKey]) {
-        if (statsFactory) {
-          sideState.unitStats[newKey] = statsFactory
-        } else {
-          const sourceStats =
-            resolveUnitStats(sideState, sourceKey) ??
-            resolveUnitStats(sideState, type)
-          if (sourceStats) {
-            sideState.unitStats[newKey] = { ...sourceStats }
-          }
-        }
-      }
-    },
-
-    removeSubtype(variantId: string, subtype: string) {
-      const sideState = state[side]
-      clearReconstructCache(sideState)
-      const { type, subtypes: requiredSubtypes } = parseVariantId(variantId)
-
-      // Find a variant key that has the subtype
-      let sourceKey: string | undefined
-      for (const key of Object.keys(sideState.units)) {
-        if (sideState.units[key].length <= 0) continue
-        const { type: kType, subtypes: kSubs } = parseVariantId(key)
-        if (kType !== type) continue
-        if (!kSubs.includes(subtype)) continue
-        if (requiredSubtypes.every(s => kSubs.includes(s))) {
-          sourceKey = key
-          break
-        }
-      }
-      if (!sourceKey) return
-
-      const { subtypes: sourceSubs } = parseVariantId(sourceKey)
-      const newSubtypes = sourceSubs.filter(s => s !== subtype)
-      const newKey =
-        newSubtypes.length > 0 ? makeVariantId(type, newSubtypes) : type
-
-      // Pop a UnitId from source, push to new key
-      const movedId = sideState.units[sourceKey].pop()!
-      if (sideState.units[sourceKey].length <= 0) {
-        delete sideState.units[sourceKey]
-      }
-
-      if (!sideState.units[newKey]) {
-        sideState.units[newKey] = []
-      }
-      sideState.units[newKey].push(movedId)
-    },
-
-    updateAbilityConfig(
-      keyOrUpdates: string | Record<string, unknown>,
-      maybeUpdates?: Record<string, unknown>,
-    ) {
-      const sideConfig = state.abilities[side]
-
-      let targetKey: string
-      let updates: Record<string, unknown>
-
-      if (typeof keyOrUpdates === 'string') {
-        targetKey = keyOrUpdates
-        updates = maybeUpdates!
-      } else {
-        targetKey = abilityKey!
-        updates = keyOrUpdates
-      }
-
-      if (!sideConfig[targetKey]) {
-        sideConfig[targetKey] = {}
-      }
-
-      const oldIsEnabled = sideConfig[targetKey].isEnabled
-      const oldUses = sideConfig[targetKey].uses
-
-      for (const [key, value] of Object.entries(updates)) {
-        sideConfig[targetKey][key] =
-          typeof value === 'function'
-            ? value(sideConfig[targetKey][key])
-            : value
-      }
-
+      const abilitiesParams = this._abilitiesParams
       if (abilitiesParams) {
-        // Sync invokes when isEnabled or uses changed
-        if (
-          sideConfig[targetKey].isEnabled !== oldIsEnabled ||
-          sideConfig[targetKey].uses !== oldUses
-        ) {
-          abilitiesParams.syncInvokesForKey(side, targetKey, state)
-        }
+        abilitiesParams.queueUnitInvokes(this._side, unitType, newIds)
+      }
+    }
+  }
 
-        // Reconcile SETTINGS when it's modified
-        if (targetKey === 'SETTINGS') {
-          abilitiesParams.reconcileSettingsOnDraft(state)
+  modifyUnitType(key: UnitType, updates: Partial<UnitStats>): void {
+    const sideState = this.sideState
+
+    const { type } = parseVariantId(key)
+    const isVariantKey = key.includes(':')
+    const abilitiesParams = this._abilitiesParams
+
+    if (isVariantKey) {
+      if (sideState.unitStats[key]) {
+        if (typeof sideState.unitStats[key] === 'function') {
+          sideState.unitStats[key] = resolveUnitStats(sideState, key)!
+        }
+        Object.assign(sideState.unitStats[key], updates)
+      }
+      const ids = sideState.units[key]
+      if ('ABILITIES' in updates && abilitiesParams && ids?.length > 0) {
+        abilitiesParams.queueUnitInvokes(this._side, key, ids)
+      }
+    } else {
+      const hasAbilitiesUpdate = 'ABILITIES' in updates
+      for (const vKey of Object.keys(sideState.units) as UnitType[]) {
+        const { type: vType } = parseVariantId(vKey)
+        if (vType !== type) continue
+        if (sideState.unitStats[vKey]) {
+          if (typeof sideState.unitStats[vKey] === 'function') {
+            sideState.unitStats[vKey] = resolveUnitStats(sideState, vKey)!
+          }
+          Object.assign(sideState.unitStats[vKey], updates)
+        }
+        const ids = sideState.units[vKey]
+        if (hasAbilitiesUpdate && abilitiesParams && ids?.length > 0) {
+          abilitiesParams.queueUnitInvokes(this._side, vKey, ids)
         }
       }
-    },
-
-    modifyHitValue(amount: number, target?: unknown): void {
-      const sideState = state[side]
-      if (!sideState.hitValueModifiers) {
-        sideState.hitValueModifiers = []
+      if (sideState.unitStats[type]) {
+        if (typeof sideState.unitStats[type] === 'function') {
+          sideState.unitStats[type] = resolveUnitStats(sideState, type)!
+        }
+        Object.assign(sideState.unitStats[type], updates)
       }
-      const base = { amount, context: state.currentPhase.meta }
+    }
+  }
 
-      if (target === undefined) {
-        sideState.hitValueModifiers.push(base)
-      } else if (typeof target === 'string') {
-        sideState.hitValueModifiers.push({ ...base, unitType: target })
-      } else if (
-        typeof target === 'object' &&
-        target !== null &&
-        'exclude' in target
-      ) {
-        sideState.hitValueModifiers.push({
-          ...base,
-          excludeUnitTypes: (target as { exclude: string[] }).exclude,
-        })
+  modifyUnitState(unitId: UnitId, updates: Partial<UnitState>): void {
+    this.sideState.unitState[unitId] ??= {}
+    Object.assign(this.sideState.unitState[unitId], updates)
+  }
+
+  reduceHits(amount: number) {
+    const sideState = this.sideState
+    if (sideState.hitPools.length === 0 || amount <= 0) return
+    let remaining = amount
+    for (const pool of sideState.hitPools) {
+      const reduce = Math.min(remaining, pool.hits)
+      pool.hits -= reduce
+      remaining -= reduce
+      if (remaining <= 0) break
+    }
+  }
+
+  addHits(hits: number, validTargets: UnitType[]) {
+    if (hits === 0) return
+    this.sideState.hitPools.push({ hits, validTargets })
+  }
+
+  setUnitAbilityLost(
+    ability: UnitAbility,
+    reason: string,
+    unitType?: UnitBaseType,
+  ) {
+    const sideState = this.sideState
+    sideState.unitAbilityRestrictions = addRestrictionEntry(
+      sideState.unitAbilityRestrictions,
+      'lost',
+      ability,
+      reason,
+      unitType,
+    )
+  }
+
+  removeUnitAbilityLost(
+    ability: UnitAbility,
+    reason: string,
+    unitType?: UnitBaseType,
+  ) {
+    const sideState = this.sideState
+    sideState.unitAbilityRestrictions = removeRestrictionEntry(
+      sideState.unitAbilityRestrictions,
+      'lost',
+      ability,
+      reason,
+      unitType,
+    )
+  }
+
+  setUnitAbilityCannotBeUsed(
+    ability: UnitAbility,
+    reason: string,
+    unitType?: UnitBaseType,
+  ) {
+    const sideState = this.sideState
+    sideState.unitAbilityRestrictions = addRestrictionEntry(
+      sideState.unitAbilityRestrictions,
+      'cannotBeUsed',
+      ability,
+      reason,
+      unitType,
+    )
+  }
+
+  removeUnitAbilityCannotBeUsed(
+    ability: UnitAbility,
+    reason: string,
+    unitType?: UnitBaseType,
+  ) {
+    const sideState = this.sideState
+    sideState.unitAbilityRestrictions = removeRestrictionEntry(
+      sideState.unitAbilityRestrictions,
+      'cannotBeUsed',
+      ability,
+      reason,
+      unitType,
+    )
+  }
+
+  addSubtype(
+    variantId: UnitType,
+    subtype: UnitVariantId,
+    statsFactory?: (parentStats: UnitStats) => UnitStats,
+  ) {
+    const sideState = this.sideState
+
+    const { type, subtypes: currentSubtypes } = parseVariantId(variantId)
+
+    let sourceKey: UnitType = variantId
+    if (!sideState.units[sourceKey] || sideState.units[sourceKey].length <= 0) {
+      sourceKey = type
+    }
+    if (!sideState.units[sourceKey] || sideState.units[sourceKey].length <= 0)
+      return
+
+    const newSubtypes = [...currentSubtypes, subtype].sort()
+    const newKey = makeVariantId(type, newSubtypes as UnitVariantId[])
+    if (newKey === sourceKey) return
+
+    const movedId = sideState.units[sourceKey].pop()!
+    if (sideState.units[sourceKey].length <= 0) {
+      delete sideState.units[sourceKey]
+    }
+
+    if (!sideState.units[newKey]) {
+      sideState.units[newKey] = []
+    }
+    sideState.units[newKey].push(movedId)
+
+    if (!sideState.unitStats[newKey]) {
+      if (statsFactory) {
+        sideState.unitStats[newKey] = statsFactory
       } else {
-        // UnitId — store directly
-        sideState.hitValueModifiers.push({
-          ...base,
-          unitId: target as UnitId,
-        })
+        const sourceStats =
+          resolveUnitStats(sideState, sourceKey) ??
+          resolveUnitStats(sideState, type)
+        if (sourceStats) {
+          sideState.unitStats[newKey] = { ...sourceStats }
+        }
       }
-    },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } as any
-  return api
+    }
+  }
+
+  removeSubtype(variantId: UnitType, subtype: UnitVariantId) {
+    const sideState = this.sideState
+
+    const { type, subtypes: requiredSubtypes } = parseVariantId(variantId)
+
+    let sourceKey: UnitType | undefined
+    for (const key of Object.keys(sideState.units) as UnitType[]) {
+      if (sideState.units[key].length <= 0) continue
+      const { type: kType, subtypes: kSubs } = parseVariantId(key)
+      if (kType !== type) continue
+      if (!kSubs.includes(subtype as UnitVariantId)) continue
+      if (requiredSubtypes.every(s => kSubs.includes(s))) {
+        sourceKey = key
+        break
+      }
+    }
+    if (!sourceKey) return
+
+    const { subtypes: sourceSubs } = parseVariantId(sourceKey)
+    const newSubtypes = sourceSubs.filter(s => s !== subtype)
+    const newKey: UnitType =
+      newSubtypes.length > 0 ? makeVariantId(type, newSubtypes) : type
+
+    const movedId = sideState.units[sourceKey].pop()!
+    if (sideState.units[sourceKey].length <= 0) {
+      delete sideState.units[sourceKey]
+    }
+
+    if (!sideState.units[newKey]) {
+      sideState.units[newKey] = []
+    }
+    sideState.units[newKey].push(movedId)
+  }
+
+  updateAbilityConfig(
+    keyOrUpdates: string | Record<string, unknown>,
+    maybeUpdates?: Record<string, unknown>,
+  ) {
+    const state = this.state
+    const sideConfig = state.abilities[this._side]
+
+    let targetKey: string
+    let updates: Record<string, unknown>
+
+    if (typeof keyOrUpdates === 'string') {
+      targetKey = keyOrUpdates
+      updates = maybeUpdates!
+    } else {
+      targetKey = this._abilityKey!
+      updates = keyOrUpdates
+    }
+
+    if (!sideConfig[targetKey]) {
+      sideConfig[targetKey] = {}
+    }
+
+    const oldIsEnabled = sideConfig[targetKey].isEnabled
+    const oldUses = sideConfig[targetKey].uses
+
+    for (const [key, value] of Object.entries(updates)) {
+      sideConfig[targetKey][key] =
+        typeof value === 'function' ? value(sideConfig[targetKey][key]) : value
+    }
+
+    const abilitiesParams = this._abilitiesParams
+    if (abilitiesParams) {
+      if (
+        sideConfig[targetKey].isEnabled !== oldIsEnabled ||
+        sideConfig[targetKey].uses !== oldUses
+      ) {
+        abilitiesParams.syncInvokesForKey(this._side, targetKey, state)
+      }
+
+      if (targetKey === 'SETTINGS') {
+        abilitiesParams.reconcileSettingsOnDraft(state)
+      }
+    }
+  }
+
+  modifyHitValue(amount: number, target?: unknown): void {
+    const sideState = this.sideState
+    if (!sideState.hitValueModifiers) {
+      sideState.hitValueModifiers = []
+    }
+    const base = { amount, context: this.state.currentPhase.meta }
+
+    if (target === undefined) {
+      sideState.hitValueModifiers.push(base)
+    } else if (typeof target === 'string') {
+      sideState.hitValueModifiers.push({ ...base, unitType: target })
+    } else if (
+      typeof target === 'object' &&
+      target !== null &&
+      'exclude' in target
+    ) {
+      sideState.hitValueModifiers.push({
+        ...base,
+        excludeUnitTypes: (target as { exclude: string[] }).exclude,
+      })
+    } else {
+      sideState.hitValueModifiers.push({
+        ...base,
+        unitId: target as UnitId,
+      })
+    }
+  }
 }
 
 // ============================================================================
@@ -779,8 +819,8 @@ const noop = () => {}
 function findFirstUnitId(
   sideState: SideStateData,
   baseType: UnitBaseType,
-): { unitId: UnitId; key: string } | undefined {
-  for (const key of Object.keys(sideState.units)) {
+): { unitId: UnitId; key: UnitType } | undefined {
+  for (const key of Object.keys(sideState.units) as UnitType[]) {
     const { type } = parseVariantId(key)
     if (type !== baseType) continue
     const ids = sideState.units[key]
@@ -793,8 +833,8 @@ function findFirstUnitId(
 function findVariantKeyContaining(
   sideState: SideStateData,
   unitId: UnitId,
-): string {
-  for (const key of Object.keys(sideState.units)) {
+): UnitType | '' {
+  for (const key of Object.keys(sideState.units) as UnitType[]) {
     if (sideState.units[key].includes(unitId)) return key
   }
   return ''
@@ -802,119 +842,106 @@ function findVariantKeyContaining(
 
 export class AbilityContext {
   log: (...data: unknown[]) => void
-  unitSource?: { unitType: UnitBaseType; unitId: UnitId }
+  unitSource?: UnitId
 
-  _abilitiesParams!: AbilitiesParams
-
+  private _abilitiesParams: AbilitiesParams
   private _side: CombatSide
-  private _triggerCallback?: (event: TriggerEvent) => void
+  private _logger?: Logger
   private _draftState?: CombatStateData
-  private _draftApi?: {
-    own: SideReadApi | SideApi
-    opponent: SideReadApi | SideApi
-  }
-  private _cachedState?: CombatStateData
-  private _cachedApi?: { own: SideReadApi; opponent: SideReadApi }
+  private _api: { own: SideApi; opponent: SideApi }
 
-  constructor(side: CombatSide) {
+  constructor(side: CombatSide, abilitiesParams: AbilitiesParams) {
     this._side = side
+    this._abilitiesParams = abilitiesParams
     this.log = noop
+    this._api = {
+      own: new SideApi(side, this),
+      opponent: new SideApi(getOpponentSide(side), this),
+    }
   }
 
   get state(): CombatStateData {
     return this._draftState ?? this._abilitiesParams.combatState.data
   }
 
-  get api(): { own: SideReadApi | SideApi; opponent: SideReadApi | SideApi } {
-    if (this._draftApi) return this._draftApi
-    const currentState = this.state
-    if (currentState !== this._cachedState) {
-      this._cachedState = currentState
-      this._cachedApi = {
-        own: buildSideApi(this._side, currentState),
-        opponent: buildSideApi(getOpponentSide(this._side), currentState),
-      }
-    }
-    return this._cachedApi!
+  get api(): { own: SideApi; opponent: SideApi } {
+    return this._api
   }
 
   upgradeForCall(
     draft: CombatStateData,
     abilityKey: string,
     log: (...data: unknown[]) => void,
-    triggerCallback: (event: TriggerEvent) => void,
+    logger?: Logger,
   ) {
     this._draftState = draft
     this.log = log
-    this._triggerCallback = triggerCallback
-    this._draftApi = {
-      own: buildSideApi(this._side, draft, abilityKey, this._abilitiesParams),
-      opponent: buildSideApi(
-        getOpponentSide(this._side),
-        draft,
-        abilityKey,
-        this._abilitiesParams,
-      ),
-    }
+    this._logger = logger
+    this._api.own._abilityKey = abilityKey
+    this._api.own._abilitiesParams = this._abilitiesParams
+    this._api.opponent._abilityKey = abilityKey
+    this._api.opponent._abilitiesParams = this._abilitiesParams
   }
 
   resetAfterCall() {
     this._draftState = undefined
-    this._draftApi = undefined
     this.log = noop
-    this._triggerCallback = undefined
+    this._logger = undefined
+    this._api.own._abilityKey = undefined
+    this._api.own._abilitiesParams = undefined
+    this._api.opponent._abilityKey = undefined
+    this._api.opponent._abilitiesParams = undefined
   }
 
-  trigger(name: TriggerEvent['name'], context: unknown): void {
-    if (this._triggerCallback) {
-      this._triggerCallback({ name, side: this._side, context })
+  /** Run nested abilities preserving current call context */
+  private nested(fn: () => void): void {
+    const saved = {
+      unitSource: this.unitSource,
+      log: this.log,
+      logger: this._logger,
+      ownAbilityKey: this._api.own._abilityKey,
+      ownAbilitiesParams: this._api.own._abilitiesParams,
+      opponentAbilityKey: this._api.opponent._abilityKey,
+      opponentAbilitiesParams: this._api.opponent._abilitiesParams,
     }
+    fn()
+    this.unitSource = saved.unitSource
+    this.log = saved.log
+    this._logger = saved.logger
+    this._api.own._abilityKey = saved.ownAbilityKey
+    this._api.own._abilitiesParams = saved.ownAbilitiesParams
+    this._api.opponent._abilityKey = saved.opponentAbilityKey
+    this._api.opponent._abilitiesParams = saved.opponentAbilitiesParams
+  }
+
+  trigger<T extends AbilityTiming>(
+    name: T | T[],
+    context?: TimingContextMap[T],
+  ): void {
+    this.nested(() => {
+      this._abilitiesParams.runAbilities(
+        name,
+        context,
+        { triggerSide: this._side },
+        this._logger,
+      )
+    })
+  }
+
+  runDestroyAbilities(destroyed: {
+    attacker: Record<string, UnitId[]>
+    defender: Record<string, UnitId[]>
+  }): void {
+    this.nested(() => {
+      this._abilitiesParams.runDestroyAbilities(destroyed, this._logger)
+    })
   }
 
   getUnit(): UnitId {
     if (!this.unitSource) {
       throw new Error('getUnit() can only be called from unit abilities')
     }
-    return this.unitSource.unitId
-  }
-
-  getVariantKey(): string {
-    if (!this.unitSource) {
-      throw new Error('getVariantKey() can only be called from unit abilities')
-    }
-    const sideState = this.state[this._side]
-    return findVariantKeyForUnit(
-      sideState,
-      this.unitSource.unitId,
-      this.unitSource.unitType,
-    )
-  }
-
-  getUnitState(): Readonly<UnitState> {
-    if (!this.unitSource) {
-      throw new Error('getUnitState() can only be called from unit abilities')
-    }
-    return this.state[this._side].unitState[this.unitSource.unitId] ?? {}
-  }
-
-  getUnitStats(): Readonly<UnitStats> {
-    if (!this.unitSource) {
-      throw new Error('getUnitStats() can only be called from unit abilities')
-    }
-    const sideState = this.state[this._side]
-    const key = findVariantKeyForUnit(
-      sideState,
-      this.unitSource.unitId,
-      this.unitSource.unitType,
-    )
-    return resolveUnitStats(sideState, key) ?? {}
-  }
-
-  getUnitType(): UnitBaseType {
-    if (!this.unitSource) {
-      throw new Error('getUnitType() can only be called from unit abilities')
-    }
-    return this.unitSource.unitType
+    return this.unitSource
   }
 
   getAbilitiesForTiming(

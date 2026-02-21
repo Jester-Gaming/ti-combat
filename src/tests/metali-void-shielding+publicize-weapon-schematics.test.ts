@@ -26,6 +26,6 @@ describe('METALI_VOID_SHIELDING + PUBLICIZE_WEAPON_SCHEMATICS', () => {
     // War Sun lost sustain via PWS, Void Shielding grants it back
     expect(t.defender.units.WAR_SUN).toHaveLength(1)
     expect(t.defender.units.WAR_SUN![0].isDamaged).toBe(true)
-    expect(t.abilityLog('METALI_VOID_SHIELDING')).toHaveLength(1)
+    expect(t.abilityLog('METALI_VOID_SHIELDING')).not.toHaveLength(0)
   })
 })

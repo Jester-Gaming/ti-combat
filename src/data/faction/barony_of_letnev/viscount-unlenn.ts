@@ -1,14 +1,15 @@
 import baronyOfLetnevIcon from '@/assets/faction/barony_of_letnev.svg?raw'
 import { declareParam } from '@/combat/abilities/declare-param'
-import { getUnitId } from '@/combat/utils/compact-units'
 import { makeVariantId, parseVariantId } from '@/combat/utils/unit-variant'
-import type { UnitBaseType } from '@/types'
+import type { UnitType, UnitVariantId } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
 type Params = {
-  unitType: UnitBaseType
+  unitType: UnitType
 }
+
+export const VISCOUNT = 'Viscount' as UnitVariantId
 
 export const viscountUnlenn: Ability<Params> = {
   key: 'VISCOUNT_UNLENN',
@@ -19,13 +20,13 @@ export const viscountUnlenn: Ability<Params> = {
   params: {
     isEnabled: false,
     uses: 2,
-    unitType: declareParam<UnitBaseType>({
+    unitType: declareParam<UnitType>({
       default: 'DESTROYER',
       source: 'nonFighterShips',
     }),
   },
   declareParamChange: params => [
-    { key: 'subtypes', value: { name: 'Viscount', unitType: params.unitType } },
+    { key: 'subtypes', value: { name: VISCOUNT, unitType: params.unitType } },
   ],
   headerUI: 'isEnabled',
   uiConfig: ctx => {
@@ -37,7 +38,7 @@ export const viscountUnlenn: Ability<Params> = {
         items: ctx.api.own
           .getUnitVariantsOptions({
             exclude: ['FIGHTER'],
-            excludeSubtypes: ['Viscount'],
+            excludeSubtypes: [VISCOUNT],
             combatMode: 'SPACE',
           })
           .reverse(),
@@ -49,27 +50,25 @@ export const viscountUnlenn: Ability<Params> = {
       timing: 'START_OF_COMBAT_ROUND',
       isCallable: (params, ctx) => {
         const { type } = parseVariantId(params.unitType)
-        return ctx.api.own.hasUnit(type)
+        return ctx.api.own.hasUnitType(type)
       },
       call: (ctx, params) => {
-        ctx.api.own.addSubtype(params.unitType, 'Viscount')
+        ctx.api.own.addSubtype(params.unitType, VISCOUNT)
       },
     },
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (_params, ctx) => {
-        const allUnits = ctx.api.own.getUnits()
-        for (const units of Object.values(allUnits)) {
-          if (units?.some(u => u.subtypes?.includes('Viscount'))) return true
-        }
-        return false
+      isCallable: (params, ctx) => {
+        const variantId = makeVariantId(params.unitType, [VISCOUNT])
+        const unitId = ctx.api.own.findUnitByPriority([variantId])
+        return !!unitId
       },
       call: (ctx, params, dice) => {
-        const variantId = makeVariantId(params.unitType, ['Viscount'])
-        const unit = ctx.api.own.findUnitByPriority([variantId])
-        if (!unit) return
-        dice.own.addDiceCount(1, getUnitId(unit)!)
-        ctx.api.own.removeSubtype(variantId, 'Viscount')
+        const variantId = makeVariantId(params.unitType, [VISCOUNT])
+        const unitId = ctx.api.own.findUnitByPriority([variantId])
+        if (unitId === undefined) return
+        dice.own.addDiceCount(1, unitId)
+        ctx.api.own.removeSubtype(variantId, VISCOUNT)
         return
       },
     },

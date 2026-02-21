@@ -87,9 +87,7 @@ export const overwingZeta: Ability<Params> = {
         if (excess <= 0) return
 
         const prioritySet = new Set(params.shipPriority)
-        const allUnitTypes = Object.keys(
-          ctx.api.own.getUnits(),
-        ) as UnitBaseType[]
+        const allUnitTypes = ctx.api.own.getActiveBaseTypes()
         const unlisted = allUnitTypes.filter(
           t => NON_FIGHTER_SET.has(t) && !prioritySet.has(t),
         )
@@ -103,8 +101,7 @@ export const overwingZeta: Ability<Params> = {
           if (remaining <= 0) break
           if (!NON_FIGHTER_SET.has(type as UnitBaseType)) continue
           const unitType = type as UnitBaseType
-          const unitList = ctx.api.own.getUnits(unitType)
-          const toRemove = Math.min(remaining, unitList.length)
+          const toRemove = Math.min(remaining, ctx.api.own.countUnits(unitType))
           for (let i = 0; i < toRemove; i++) {
             ctx.api.own.removeUnit(unitType)
             remaining--

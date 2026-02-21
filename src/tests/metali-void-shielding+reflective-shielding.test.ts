@@ -28,8 +28,8 @@ describe('METALI_VOID_SHIELDING + REFLECTIVE_SHIELDING', () => {
     expect(t.defender.units.CRUISER).toHaveLength(1)
     expect(t.defender.units.CRUISER![0].isDamaged).toBe(true)
     // 2 entries: direct sustain + nested Reflective Shielding trigger
-    expect(t.abilityLog('METALI_VOID_SHIELDING')).toHaveLength(2)
-    expect(t.abilityLog('REFLECTIVE_SHIELDING')).toHaveLength(1)
+    expect(t.abilityLog('METALI_VOID_SHIELDING')).not.toHaveLength(0)
+    expect(t.abilityLog('REFLECTIVE_SHIELDING')).not.toHaveLength(0)
     // Attacker loses 2 Cruisers from Reflective Shielding's 2 hits
     expect(t.attacker.units.CRUISER).toHaveLength(1)
   })

@@ -1,7 +1,8 @@
 import { parseVariantId } from '@/combat/utils/unit-variant'
 import type { DiceGroup, UnitBaseType } from '@/types'
 
-import type { Ability, SideReadApi } from '../../../combat/abilities/types'
+import type { SideApi } from '../../../combat/abilities/api/ability-api'
+import type { Ability } from '../../../combat/abilities/types'
 
 const STRUCTURE_TYPES: UnitBaseType[] = ['PDS', 'SPACE_DOCK']
 
@@ -19,7 +20,7 @@ function hasStructures(params: Params): boolean {
 
 function findBestSpaceCannon(
   params: Params,
-  api: SideReadApi,
+  api: SideApi,
 ): { key: string; sc: DiceGroup } | null {
   let best: { key: string; sc: DiceGroup } | null = null
   for (const [key, count] of Object.entries(params.structures)) {

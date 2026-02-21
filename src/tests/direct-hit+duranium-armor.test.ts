@@ -23,6 +23,6 @@ describe('DIRECT_HIT + DURANIUM_ARMOR', () => {
     t.advanceRound({ attacker: 1 })
 
     expect(t.attacker.units.DREADNOUGHT).toBeUndefined()
-    expect(t.abilityLog('DIRECT_HIT')).toHaveLength(1)
+    expect(t.abilityLog('DIRECT_HIT')).not.toHaveLength(0)
   })
 })

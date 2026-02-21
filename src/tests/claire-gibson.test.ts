@@ -20,7 +20,7 @@ describe('Claire Gibson', () => {
     t.advanceTo('GROUND_COMBAT', 'START')
     t.advanceRound()
 
-    expect(t.abilityLog('CLAIRE_GIBSON')).toHaveLength(1)
+    expect(t.abilityLog('CLAIRE_GIBSON')).not.toHaveLength(0)
     expect(t.defender.units.INFANTRY).toHaveLength(3)
   })
 

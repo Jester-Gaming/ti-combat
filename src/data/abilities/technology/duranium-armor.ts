@@ -1,36 +1,30 @@
-import { getUnitId } from '@/combat/utils/compact-units'
-
 import { declareParam } from '../../../combat/abilities/declare-param'
 import type {
   Ability,
   AbilityReadContext,
 } from '../../../combat/abilities/types'
-import {
-  parseVariantId,
-  unitMatchesVariant,
-} from '../../../combat/utils/unit-variant'
+import type { UnitId, UnitType } from '../../../types'
 
 type Params = {
-  spaceRepairPriority: string[]
-  groundRepairPriority: string[]
+  spaceRepairPriority: UnitType[]
+  groundRepairPriority: UnitType[]
 }
 
-function findRepairTarget(params: Params, ctx: AbilityReadContext) {
+function findRepairTarget(
+  params: Params,
+  ctx: AbilityReadContext,
+): UnitId | undefined {
   const isGround = ctx.state.combatMode === 'GROUND'
   const priority = isGround
     ? params.groundRepairPriority
     : params.spaceRepairPriority
 
   for (const variantId of priority) {
-    const { type: unitType } = parseVariantId(variantId)
-    const units = ctx.api.own.getUnits(unitType)
-    if (!units) continue
-
-    for (const unit of units) {
-      if (!unitMatchesVariant(unit, variantId)) continue
-      if (!unit.isDamaged) continue
-      if (unit.usedSustainThisRound) continue
-      return unit
+    for (const unitId of ctx.api.own.getUnits(variantId)) {
+      const state = ctx.api.own.getUnitState(unitId)
+      if (!state?.isDamaged) continue
+      if (state.usedSustainThisRound) continue
+      return unitId
     }
   }
 
@@ -67,26 +61,29 @@ export const duraniumArmor: Ability<Params> = {
       context: ['SPACE_COMBAT', 'GROUND_COMBAT'],
       isCallable: (params, ctx) => findRepairTarget(params, ctx) !== undefined,
       call: (ctx, params) => {
-        const target = findRepairTarget(params, ctx)
-        if (!target) return
-        ctx.api.own.modifyUnitState(getUnitId(target)!, {
-          isDamaged: false,
-        })
+        const target = findRepairTarget(params, ctx)!
+        ctx.api.own.modifyUnitState(target, { isDamaged: false })
       },
     },
     {
       timing: 'CLEANUP_ROUND',
       isCallable: (_params, ctx) => {
-        for (const units of Object.values(ctx.api.own.getUnits())) {
-          if (units!.some(u => u.usedSustainThisRound)) return true
+        for (const type of ctx.api.own.getParticipatingUnitTypes()) {
+          for (const id of ctx.api.own.getUnits(type, {
+            includeVariants: true,
+          })) {
+            if (ctx.api.own.getUnitState(id)?.usedSustainThisRound) return true
+          }
         }
         return false
       },
       call: ctx => {
-        for (const units of Object.values(ctx.api.own.getUnits())) {
-          for (const unit of units!) {
-            if (unit.usedSustainThisRound) {
-              ctx.api.own.modifyUnitState(getUnitId(unit)!, {
+        for (const type of ctx.api.own.getParticipatingUnitTypes()) {
+          for (const id of ctx.api.own.getUnits(type, {
+            includeVariants: true,
+          })) {
+            if (ctx.api.own.getUnitState(id)?.usedSustainThisRound) {
+              ctx.api.own.modifyUnitState(id, {
                 usedSustainThisRound: false,
               })
             }

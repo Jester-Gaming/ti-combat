@@ -23,9 +23,7 @@ export const theAlastor: Ability = {
       timing: 'START_OF_COMBAT',
       call: ctx => {
         const settings = ctx.api.own.getAbilityConfig('SETTINGS')
-        const groundForces =
-          (settings?.groundForces as UnitBaseType[] | undefined) ??
-          GROUND_FORCES
+        const groundForces = settings?.groundForces ?? GROUND_FORCES
 
         ctx.api.own.updateAbilityConfig('SETTINGS', {
           ships: (current: UnitBaseType[]) => [

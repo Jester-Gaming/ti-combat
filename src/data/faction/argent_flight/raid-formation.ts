@@ -1,10 +1,9 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
-import { getUnitId } from '@/combat/utils/compact-units'
-import { parseVariantId } from '@/combat/utils/unit-variant'
+import type { UnitType } from '@/types'
 
 type Params = {
-  targetPriority: string[]
+  targetPriority: UnitType[]
 }
 
 export const raidFormation: Ability<Params> = {
@@ -41,13 +40,13 @@ export const raidFormation: Ability<Params> = {
       context: 'AFB',
       isCallable: (_, ctx) => {
         const pendingHits = ctx.api.opponent.getPendingHits()
-        const fighterCount = ctx.api.opponent.getUnits('FIGHTER').length
+        const fighterCount = ctx.api.opponent.countUnits('FIGHTER')
 
         return pendingHits > fighterCount
       },
       call: (ctx, params) => {
         const pendingHits = ctx.api.opponent.getPendingHits()
-        const fighterCount = ctx.api.opponent.getUnits('FIGHTER').length
+        const fighterCount = ctx.api.opponent.countUnits('FIGHTER')
         const excess = pendingHits - fighterCount
 
         let damaged = 0
@@ -56,21 +55,23 @@ export const raidFormation: Ability<Params> = {
           let found = false
 
           for (const variantId of params.targetPriority) {
-            const { type: unitType } = parseVariantId(variantId)
-
             if (
-              ctx.api.opponent.isUnitAbilityLost('SUSTAIN_DAMAGE', unitType)
+              ctx.api.opponent.isUnitAbilityLost('SUSTAIN_DAMAGE', variantId)
             ) {
               continue
             }
 
-            const units = ctx.api.opponent.getUnits(unitType)
-            const index = units.findIndex(
-              unit => !unit.isDamaged && unit.UNIT_ABILITIES?.SUSTAIN_DAMAGE,
+            const units = ctx.api.opponent.getUnits(variantId)
+            const stats = ctx.api.opponent.getUnitStats(variantId)
+
+            if (!stats?.UNIT_ABILITIES?.SUSTAIN_DAMAGE) continue
+
+            const unit = units.find(
+              unit => !ctx.api.opponent.getUnitState(unit)?.isDamaged,
             )
 
-            if (index >= 0) {
-              ctx.api.opponent.modifyUnitState(getUnitId(units[index])!, {
+            if (unit) {
+              ctx.api.opponent.modifyUnitState(unit, {
                 isDamaged: true,
               })
               damaged++
@@ -83,7 +84,7 @@ export const raidFormation: Ability<Params> = {
         }
 
         if (damaged > 0) {
-          ctx.log(`Raid Formation: ${damaged} ship(s) damaged`)
+          ctx.log(`${damaged} ship(s) damaged`)
         }
       },
     },

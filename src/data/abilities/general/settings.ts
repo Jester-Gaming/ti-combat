@@ -7,23 +7,9 @@ import {
 import type { UnitBaseType } from '@/types'
 
 import { declareParam } from '../../../combat/abilities/declare-param'
-import type { Ability, DeclaredSubtype } from '../../../combat/abilities/types'
+import type { Ability, SettingsParams } from '../../../combat/abilities/types'
 
-type Params = {
-  nonFighterShips: UnitBaseType[]
-  ships: UnitBaseType[]
-  groundForces: UnitBaseType[]
-  structures: UnitBaseType[]
-  spaceCombatParticipating: UnitBaseType[]
-  groundCombatParticipating: UnitBaseType[]
-  validTargetsSpaceCannonOffense: UnitBaseType[]
-  validTargetsBombardment: UnitBaseType[]
-  validTargetsSpaceCannonDefense: UnitBaseType[]
-  validTargetsAntiFighterBarrage: UnitBaseType[]
-  subtypes: DeclaredSubtype[]
-}
-
-export const settings: Ability<Params> = {
+export const settings: Ability<SettingsParams> = {
   key: 'SETTINGS',
   name: 'Settings',
   category: 'GENERAL',

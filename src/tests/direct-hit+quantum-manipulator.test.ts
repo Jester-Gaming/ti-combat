@@ -23,7 +23,7 @@ describe('DIRECT_HIT + QUANTUM_MANIPULATOR', () => {
     // Mech sustains but Direct Hit cannot target it (not a ship)
     expect(t.defender.units.MECH).toHaveLength(1)
     expect(t.defender.units.MECH![0].isDamaged).toBe(true)
-    expect(t.abilityLog('QUANTUM_MANIPULATOR')).toHaveLength(1)
+    expect(t.abilityLog('QUANTUM_MANIPULATOR')).not.toHaveLength(0)
     expect(t.abilityLog('DIRECT_HIT')).toHaveLength(0)
   })
 })

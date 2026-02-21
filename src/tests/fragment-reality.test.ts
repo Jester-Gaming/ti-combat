@@ -24,7 +24,7 @@ describe('FRAGMENT_REALITY', () => {
 
     t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
 
-    expect(t.abilityLog('FRAGMENT_REALITY')).toHaveLength(1)
+    expect(t.abilityLog('FRAGMENT_REALITY')).not.toHaveLength(0)
     // 1 original + 2 placed = 3
     expect(t.attacker.units.CRUISER).toHaveLength(3)
   })

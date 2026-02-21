@@ -1,5 +1,3 @@
-import { NON_FIGHTER_SHIPS } from '@/constants/units'
-
 import type { Ability } from '../../../combat/abilities/types'
 
 export const blitz: Ability = {
@@ -17,7 +15,8 @@ export const blitz: Ability = {
     {
       timing: 'PREPARE',
       call: ctx => {
-        for (const unitType of NON_FIGHTER_SHIPS) {
+        const { nonFighterShips } = ctx.api.own.getAbilityConfig('SETTINGS')
+        for (const unitType of nonFighterShips) {
           const stats = ctx.api.own.getUnitStats(unitType)!
           const hasBombardment = stats.UNIT_ABILITIES?.BOMBARDMENT
 

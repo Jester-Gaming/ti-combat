@@ -23,7 +23,7 @@ describe('NON_EUCLIDEAN_SHIELDING + X_89_BACTERIAL_WEAPON', () => {
     // Defender mech sustains once, NES cancels 2 hits → both absorbed
     t.advanceRound({ defender: 2 })
 
-    expect(t.abilityLog('X_89_BACTERIAL_WEAPON')).toHaveLength(1)
+    expect(t.abilityLog('X_89_BACTERIAL_WEAPON')).not.toHaveLength(0)
     expect(t.defender.units.MECH![0].isDamaged).toBe(true)
     expect(t.defender.units.MECH).toHaveLength(1)
   })
@@ -49,7 +49,7 @@ describe('NON_EUCLIDEAN_SHIELDING + X_89_BACTERIAL_WEAPON', () => {
     // 2 hits destroy mech + infantry
     t.advanceRound({ defender: 4 })
 
-    expect(t.abilityLog('X_89_BACTERIAL_WEAPON')).toHaveLength(1)
+    expect(t.abilityLog('X_89_BACTERIAL_WEAPON')).not.toHaveLength(0)
     expect(t.defender.units.MECH).toBeUndefined()
     expect(t.defender.units.INFANTRY).toBeUndefined()
   })

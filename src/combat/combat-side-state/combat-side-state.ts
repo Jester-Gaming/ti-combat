@@ -6,6 +6,7 @@ import type {
   UnitBaseType,
   UnitId,
   UnitSelection,
+  UnitType,
 } from '@/types'
 import { getSimulationUnits } from '@/utils/get-simulation-units'
 
@@ -16,7 +17,7 @@ import type {
   HitSource,
   SideStateData,
 } from '../combat-state/types'
-import { clearReconstructCache, resolveUnitStats } from '../utils/compact-units'
+import { resolveUnitStats } from '../utils/compact-units'
 import { parseVariantId } from '../utils/unit-variant'
 import { getSettingsValidTargets } from './utils/get-settings-valid-targets'
 
@@ -272,9 +273,6 @@ export class CombatSideState {
     const sideData = stateData[this._side]
     if (sideData.hitPools.length === 0) return EMPTY_DESTROYED
 
-    // Clear caches — units reference will change
-    clearReconstructCache(sideData)
-
     const participatingUnits = this.getParticipatingUnitsFromData(stateData)
     const unitPriority = this.getUnitPriorityFromData(stateData)
     const sacrificeOrder = getFilteredSacrificeOrder(
@@ -294,13 +292,15 @@ export class CombatSideState {
 
       for (const variantId of sacrificeOrder) {
         if (remaining <= 0) break
+        const vid = variantId as UnitType
         if (
           validTargets.length > 0 &&
+          !validTargets.includes(vid) &&
           !validTargets.includes(parseVariantId(variantId).type)
         )
           continue
 
-        const ids = units[variantId]
+        const ids = units[vid]
         if (!ids || ids.length <= 0) continue
 
         const toDestroy = Math.min(ids.length, remaining)
@@ -318,8 +318,8 @@ export class CombatSideState {
         const kept = ids.length - toDestroy
         if (kept <= 0) {
           // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { [variantId]: _removed, ...rest } = units
-          units = rest
+          const { [vid]: _removed, ...rest } = units
+          units = rest as SideStateData['units']
         } else {
           units = { ...units, [variantId]: ids.slice(0, kept) }
         }

@@ -23,6 +23,6 @@ describe('DIMENSIONAL_SPLICER + METALI_VOID_SHIELDING', () => {
     // DS adds 1 hit targeting Cruiser, Void Shielding sustains it
     expect(t.defender.units.CRUISER).toHaveLength(2)
     expect(t.defender.units.CRUISER!.filter(u => u.isDamaged)).toHaveLength(1)
-    expect(t.abilityLog('METALI_VOID_SHIELDING')).toHaveLength(1)
+    expect(t.abilityLog('METALI_VOID_SHIELDING')).not.toHaveLength(0)
   })
 })

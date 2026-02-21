@@ -1,6 +1,12 @@
 import { GROUND_FORCES, STRUCTURES } from '@/constants/units'
 import factions from '@/data/faction'
-import type { CombatSide, DiceGroup, FactionKey, UnitBaseType } from '@/types'
+import type {
+  CombatSide,
+  DiceGroup,
+  FactionKey,
+  UnitBaseType,
+  UnitType,
+} from '@/types'
 import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 
 import {
@@ -107,10 +113,6 @@ export class CombatState {
     }
   }
 
-  get disableAbilities() {
-    return false
-  }
-
   get attacker(): CombatSideState {
     return (this._attacker ??= new CombatSideState(this, 'attacker'))
   }
@@ -148,7 +150,7 @@ export class CombatState {
     this.data = {
       attacker: {
         faction: defaultFaction,
-        units: {},
+        units: {} as SideStateData['units'],
         unitState: {},
         unitStats: defaultUnitStats,
         hitPools: [],
@@ -156,7 +158,7 @@ export class CombatState {
       },
       defender: {
         faction: defaultFaction,
-        units: {},
+        units: {} as SideStateData['units'],
         unitState: {},
         unitStats: defaultUnitStats,
         hitPools: [],
@@ -198,7 +200,7 @@ export class CombatState {
     instance._params = AbilitiesParams.fromConfig(instance)
 
     // PREPARE abilities mutate baseData in-place
-    instance._params.runAbilities('PREPARE', instance.data)
+    instance._params.runAbilities('PREPARE')
 
     return instance
   }
@@ -255,12 +257,8 @@ export class CombatState {
   private runAbilities<T extends AbilityTiming>(
     timing: T | T[],
     context?: TimingContextMap[T],
-    stateData: CombatStateData = this.data,
     logger?: Logger,
   ): RunAbilitiesResult<T> {
-    if (this.disableAbilities) {
-      return { state: stateData, context } as RunAbilitiesResult<T>
-    }
     this._params.setCombatState(this)
     // Only create Logger when logging is enabled — avoids allocations
     // on every call when abilities short-circuit during simulation
@@ -269,13 +267,7 @@ export class CombatState {
       (this._enableLog
         ? Logger.create().child(this.currentPhase.meta)
         : undefined)
-    return this._params.runAbilities(
-      timing,
-      stateData,
-      context,
-      undefined,
-      activeLogger,
-    )
+    return this._params.runAbilities(timing, context, undefined, activeLogger)
   }
 
   assignHits(parentLogger?: Logger): void {
@@ -287,7 +279,7 @@ export class CombatState {
     const startIndex = logger ? logger.entries.length : 0
     const trackDestroyed = !!logger || this._params.hasDestroyAbilities()
 
-    this.runAbilities('BEFORE_ASSIGN_HITS', undefined, this.data, logger)
+    this.runAbilities('BEFORE_ASSIGN_HITS', undefined, logger)
 
     const attackerDestroyed = this.side('attacker').assignHits(
       this.data,
@@ -316,7 +308,7 @@ export class CombatState {
 
     if (hasDestroyed) {
       // Run DESTROY → WHEN_DESTROY → AFTER_DESTROY sequence
-      this._params.runDestroyAbilities(destroyedContext, this.data, logger)
+      this._params.runDestroyAbilities(destroyedContext, logger)
     }
 
     if (logger) {
@@ -401,7 +393,7 @@ export class CombatState {
 
   private rollDiceOutcomes(
     modifiedDice: SidedDiceData,
-    validTargets: { attacker: UnitBaseType[]; defender: UnitBaseType[] },
+    validTargets: { attacker: UnitType[]; defender: UnitType[] },
     afterRollTiming?: AbilityTiming,
   ): StateWithProbability[] {
     const attackerDist = getCombinedDiceDistribution(
@@ -422,9 +414,7 @@ export class CombatState {
     // Check once whether after-roll abilities exist — avoids per-branch
     // deepCloneSides + runAbilities overhead when no abilities are registered.
     const runAfterRoll =
-      afterRollTiming != null &&
-      !this.disableAbilities &&
-      this._params.hasCallableInvoke(afterRollTiming)
+      afterRollTiming != null && this._params.hasCallableInvoke(afterRollTiming)
 
     // this.data is the base for all branches (plain object, already mutated by
     // preceding abilities). Each branch gets an independent shallow copy.
@@ -464,7 +454,6 @@ export class CombatState {
             this.data = branchData
             const { log: afterRollLog } = this._params.runAbilities(
               afterRollTiming!,
-              branchData,
               undefined,
               undefined,
               afterRollLogger,
@@ -473,7 +462,7 @@ export class CombatState {
           }
         } else if (runAfterRoll) {
           this.data = branchData
-          this._params.runAbilities(afterRollTiming!, branchData)
+          this._params.runAbilities(afterRollTiming!)
         }
 
         const branchState = CombatState.fromData(branchData, this._params)
@@ -706,11 +695,7 @@ export class CombatState {
   private processAssignHits(): StateWithProbability[] {
     this.assignHits()
 
-    const { log: stepLog } = this.runAbilities(
-      'AFTER_ASSIGN_HITS_STEP',
-      undefined,
-      this.data,
-    )
+    const { log: stepLog } = this.runAbilities('AFTER_ASSIGN_HITS_STEP')
     this.appendLog(stepLog)
 
     // If either side is completely wiped, go directly to COMPLETE
@@ -728,7 +713,7 @@ export class CombatState {
     const { log } = this.runAbilities(['END_OF_COMBAT_ROUND'])
     this.appendLog(log)
 
-    this.runAbilities('CLEANUP_ROUND', undefined, this.data)
+    this.runAbilities('CLEANUP_ROUND')
 
     // Clear stored hit-value modifiers
     if (
@@ -788,7 +773,8 @@ function cloneUnitState(
 ): SideStateData['unitState'] {
   const clone: SideStateData['unitState'] = {}
   for (const k in us) {
-    clone[k] = { ...us[k] }
+    const id = k as unknown as import('@/types').UnitId
+    clone[id] = { ...us[id] }
   }
   return clone
 }
@@ -824,7 +810,7 @@ function addHitsToData(
   data: CombatStateData,
   attackerHits: number,
   defenderHits: number,
-  validTargets: { attacker: UnitBaseType[]; defender: UnitBaseType[] },
+  validTargets: { attacker: UnitType[]; defender: UnitType[] },
 ): void {
   // Defender's dice hit attacker
   if (defenderHits > 0) {

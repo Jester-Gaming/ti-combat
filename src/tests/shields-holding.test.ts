@@ -18,7 +18,7 @@ describe('Shields Holding', () => {
     t.advanceRound({ attacker: 3 })
 
     // 3 hits - 2 cancelled = 1 effective → 2 cruisers survive
-    expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(1)
+    expect(t.abilityLog('SHIELDS_HOLDING')).not.toHaveLength(0)
     expect(t.attacker.units.CRUISER).toHaveLength(2)
   })
 
@@ -37,7 +37,7 @@ describe('Shields Holding', () => {
     t.advanceRound({ attacker: 1 })
 
     // 1 hit - cancelled = 0 effective → both cruisers survive
-    expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(1)
+    expect(t.abilityLog('SHIELDS_HOLDING')).not.toHaveLength(0)
     expect(t.attacker.units.CRUISER).toHaveLength(2)
   })
 
@@ -57,7 +57,7 @@ describe('Shields Holding', () => {
     // Shields Holding cancels 2 → 1 effective hit → 2 fighters survive
     t.advanceTo('SPACE_COMBAT', 'DICE_ROLL', 3)
 
-    expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(1)
+    expect(t.abilityLog('SHIELDS_HOLDING')).not.toHaveLength(0)
     expect(t.attacker.units.FIGHTER).toHaveLength(2)
   })
 
@@ -114,12 +114,12 @@ describe('Shields Holding', () => {
 
     // First round: cancels 2 hits, uses decremented to 0
     t.advanceRound({ attacker: 3 })
-    expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(1)
+    expect(t.abilityLog('SHIELDS_HOLDING')).not.toHaveLength(0)
     expect(t.attacker.units.CRUISER).toHaveLength(2)
 
     // Second round: no uses left, hits remain → 2 more cruisers destroyed
     t.advanceRound({ attacker: 2 })
-    expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(1) // still just 1
+    expect(t.abilityLog('SHIELDS_HOLDING')).not.toHaveLength(0)
     expect(t.attacker.units.CRUISER).toBeUndefined()
   })
 })

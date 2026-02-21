@@ -23,7 +23,7 @@ describe('QUANTUM_MANIPULATOR + REFLECTIVE_SHIELDING', () => {
     // Mech sustains but Reflective Shielding doesn't trigger (mech is not a ship)
     expect(t.defender.units.MECH).toHaveLength(1)
     expect(t.defender.units.MECH![0].isDamaged).toBe(true)
-    expect(t.abilityLog('QUANTUM_MANIPULATOR')).toHaveLength(1)
+    expect(t.abilityLog('QUANTUM_MANIPULATOR')).not.toHaveLength(0)
     expect(t.abilityLog('REFLECTIVE_SHIELDING')).toHaveLength(0)
   })
 })

@@ -254,7 +254,7 @@ exports[`ground combat snapshots > 2 dreadnoughts + 5 infantry vs 2 PDS + 5 infa
         },
       ],
     },
-    "probability": 0.0901508039220316,
+    "probability": 0.09015080392203162,
     "winner": "defender",
   },
   {
@@ -279,7 +279,7 @@ exports[`ground combat snapshots > 2 dreadnoughts + 5 infantry vs 2 PDS + 5 infa
         },
       ],
     },
-    "probability": 0.20036399443335287,
+    "probability": 0.20036399443335284,
     "winner": "defender",
   },
   {
@@ -330,7 +330,7 @@ exports[`ground combat snapshots > 2 dreadnoughts + 5 infantry vs 2 PDS + 5 infa
         },
       ],
     },
-    "probability": 0.08017206108317829,
+    "probability": 0.0801720610831783,
     "winner": "defender",
   },
   {
@@ -441,7 +441,7 @@ exports[`ground combat snapshots > 2 dreadnoughts + 5 infantry vs 2 PDS + 5 infa
       ],
     },
     "defender": {},
-    "probability": 0.0066991592787288765,
+    "probability": 0.006699159278728877,
     "winner": "attacker",
   },
 ]
@@ -790,7 +790,7 @@ exports[`ground combat snapshots > 5 infantry vs 2 PDS + 3 infantry 1`] = `
       ],
     },
     "defender": {},
-    "probability": 0.11379685297000655,
+    "probability": 0.11379685297000657,
     "winner": "attacker",
   },
   {
@@ -834,7 +834,7 @@ exports[`ground combat snapshots > 5 infantry vs 2 PDS + 3 infantry 1`] = `
       ],
     },
     "defender": {},
-    "probability": 0.2279599003858524,
+    "probability": 0.22795990038585234,
     "winner": "attacker",
   },
   {
@@ -888,7 +888,7 @@ exports[`ground combat snapshots > 5 infantry vs 2 PDS + 3 infantry 1`] = `
       ],
     },
     "defender": {},
-    "probability": 0.045794729219477345,
+    "probability": 0.04579472921947735,
     "winner": "attacker",
   },
 ]

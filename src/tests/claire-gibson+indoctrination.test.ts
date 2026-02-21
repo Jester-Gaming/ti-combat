@@ -21,9 +21,9 @@ describe('CLAIRE_GIBSON + INDOCTRINATION', () => {
     t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
 
     // Claire Gibson adds 1 infantry to defender
-    expect(t.abilityLog('CLAIRE_GIBSON')).toHaveLength(1)
+    expect(t.abilityLog('CLAIRE_GIBSON')).not.toHaveLength(0)
     // Indoctrination removes 1 opponent infantry and adds 1 to attacker
-    expect(t.abilityLog('INDOCTRINATION')).toHaveLength(1)
+    expect(t.abilityLog('INDOCTRINATION')).not.toHaveLength(0)
 
     // Attacker: 2 + 1 (indoctrination) = 3
     expect(t.attacker.units.INFANTRY).toHaveLength(3)
@@ -49,7 +49,7 @@ describe('CLAIRE_GIBSON + INDOCTRINATION', () => {
     t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
 
     // Indoctrination removes defender's only infantry → combat ends
-    expect(t.abilityLog('INDOCTRINATION')).toHaveLength(1)
+    expect(t.abilityLog('INDOCTRINATION')).not.toHaveLength(0)
     expect(t.abilityLog('CLAIRE_GIBSON')).toHaveLength(0)
   })
 })

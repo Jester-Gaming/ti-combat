@@ -47,7 +47,7 @@ export const vosHollow: Ability<Params> = {
         const ownDestroyedShips = findDestroyedShipTypes(units.own)
         for (const variantId of params.targetPriority) {
           const { type } = parseVariantId(variantId)
-          if (ownDestroyedShips.has(type) && ctx.api.opponent.hasUnit(type))
+          if (ownDestroyedShips.has(type) && ctx.api.opponent.hasUnitType(type))
             return true
         }
         return false
@@ -56,7 +56,10 @@ export const vosHollow: Ability<Params> = {
         const ownDestroyedShips = findDestroyedShipTypes(units.own)
         for (const variantId of params.targetPriority) {
           const { type } = parseVariantId(variantId)
-          if (ownDestroyedShips.has(type) && ctx.api.opponent.hasUnit(type)) {
+          if (
+            ownDestroyedShips.has(type) &&
+            ctx.api.opponent.hasUnitType(type)
+          ) {
             ctx.api.opponent.destroyUnit(type)
             return
           }

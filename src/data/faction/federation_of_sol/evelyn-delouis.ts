@@ -1,14 +1,15 @@
 import federationOfSolIcon from '@/assets/faction/federation_of_sol.svg?raw'
 import { declareParam } from '@/combat/abilities/declare-param'
-import { getUnitId } from '@/combat/utils/compact-units'
 import { makeVariantId, parseVariantId } from '@/combat/utils/unit-variant'
-import type { UnitBaseType } from '@/types'
+import type { UnitType, UnitVariantId } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
 type Params = {
-  unitType: UnitBaseType
+  unitType: UnitType
 }
+
+export const EVELYN = 'Evelyn' as UnitVariantId
 
 export const evelynDelouis: Ability<Params> = {
   key: 'EVELYN_DELOUIS',
@@ -19,24 +20,24 @@ export const evelynDelouis: Ability<Params> = {
   params: {
     isEnabled: false,
     uses: 2,
-    unitType: declareParam<UnitBaseType>({
+    unitType: declareParam<UnitType>({
       default: 'INFANTRY',
       source: 'groundForces',
     }),
   },
   declareParamChange: params => [
-    { key: 'subtypes', value: { name: 'Evelyn', unitType: params.unitType } },
+    { key: 'subtypes', value: { name: EVELYN, unitType: params.unitType } },
   ],
   headerUI: 'isEnabled',
   uiConfig: ctx => {
     return [
       {
-        key: 'unitType' as const,
+        key: 'unitType',
         label: 'Unit Type',
-        type: 'select' as const,
+        type: 'select',
         items: ctx.api.own
           .getUnitVariantsOptions({
-            excludeSubtypes: ['Evelyn'],
+            excludeSubtypes: [EVELYN],
             combatMode: 'GROUND',
           })
           .reverse(),
@@ -48,27 +49,25 @@ export const evelynDelouis: Ability<Params> = {
       timing: 'START_OF_COMBAT_ROUND',
       isCallable: (params, ctx) => {
         const { type } = parseVariantId(params.unitType)
-        return ctx.api.own.hasUnit(type)
+        return ctx.api.own.hasUnitType(type)
       },
       call: (ctx, params) => {
-        ctx.api.own.addSubtype(params.unitType, 'Evelyn')
+        ctx.api.own.addSubtype(params.unitType, EVELYN)
       },
     },
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (_params, ctx) => {
-        const allUnits = ctx.api.own.getUnits()
-        for (const units of Object.values(allUnits)) {
-          if (units?.some(u => u.subtypes?.includes('Evelyn'))) return true
-        }
-        return false
+      isCallable: (params, ctx) => {
+        const variantId = makeVariantId(params.unitType, [EVELYN])
+        const unitId = ctx.api.own.findUnitByPriority([variantId])
+        return !!unitId
       },
       call: (ctx, params, dice) => {
-        const variantId = makeVariantId(params.unitType, ['Evelyn'])
-        const unit = ctx.api.own.findUnitByPriority([variantId])
-        if (!unit) return
-        dice.own.addDiceCount(1, getUnitId(unit)!)
-        ctx.api.own.removeSubtype(variantId, 'Evelyn')
+        const variantId = makeVariantId(params.unitType, [EVELYN])
+        const unitId = ctx.api.own.findUnitByPriority([variantId])
+        if (unitId === undefined) return
+        dice.own.addDiceCount(1, unitId)
+        ctx.api.own.removeSubtype(variantId, EVELYN)
       },
     },
   ],

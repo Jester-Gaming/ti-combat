@@ -16,7 +16,7 @@ export const greyfireMutagen: Ability = {
       isCallable: (_params, ctx) => {
         if (ctx.api.opponent.getFaction() === 'YIN_BROTHERHOOD') return false
         if (ctx.api.opponent.countUnits(GROUND_FORCES) < 2) return false
-        return ctx.api.opponent.hasUnit('INFANTRY')
+        return ctx.api.opponent.hasUnitType('INFANTRY')
       },
       call: ctx => {
         ctx.api.opponent.removeUnit('INFANTRY')

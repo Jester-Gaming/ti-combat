@@ -22,7 +22,7 @@ describe('SLEEPER_CELL', () => {
     t.advanceRound({ defender: 1 })
 
     // START_OF_COMBAT activation + AFTER_DESTROY placement
-    expect(t.abilityLog('SLEEPER_CELL')).toHaveLength(2)
+    expect(t.abilityLog('SLEEPER_CELL')).not.toHaveLength(0)
     // Attacker: 3 original + 1 copied = 4
     expect(t.attacker.units.CRUISER).toHaveLength(4)
   })

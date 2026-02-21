@@ -1,6 +1,3 @@
-import { getUnitId } from '@/combat/utils/compact-units'
-import type { UnitBaseType } from '@/types'
-
 import type { Ability } from '../../../combat/abilities/types'
 
 export const reflectiveShielding: Ability = {
@@ -20,10 +17,14 @@ export const reflectiveShielding: Ability = {
       isCallable: (_params, ctx, unitId) => {
         // Only trigger for ships — not mechs or ground forces
         const settings = ctx.api.own.getAbilityConfig('SETTINGS')
-        const ships = (settings?.ships as UnitBaseType[]) ?? []
+        const ships = settings?.ships ?? []
         for (const shipType of ships) {
-          const units = ctx.api.own.getUnits(shipType)
-          if (units.some(u => getUnitId(u) === unitId)) return true
+          if (
+            ctx.api.own
+              .getUnits(shipType, { includeVariants: true })
+              .includes(unitId)
+          )
+            return true
         }
         return false
       },

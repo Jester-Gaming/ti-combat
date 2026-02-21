@@ -1,4 +1,5 @@
 import titansOfUlIcon from '@/assets/faction/titans_of_ul.svg?raw'
+import { planetaryShield } from '@/data/abilities/unit/planetary-shield'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
@@ -72,7 +73,7 @@ export const titans_of_ul: Faction = {
           SPACE_CANNON: [6, 1],
           PRODUCTION: 1,
         },
-        ABILITIES: [sustainDamage, helTitan],
+        ABILITIES: [planetaryShield, sustainDamage, helTitan],
       },
       UPGRADED: {
         NAME: 'Hel-Titan II',

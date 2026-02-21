@@ -1,5 +1,3 @@
-import type { UnitBaseType } from '@/types'
-
 import type { Ability } from '../../../combat/abilities/types'
 
 export const waylay: Ability = {
@@ -18,7 +16,7 @@ export const waylay: Ability = {
       context: 'AFB',
       call: ctx => {
         const settings = ctx.api.opponent.getAbilityConfig('SETTINGS')
-        const ships = (settings?.ships as UnitBaseType[]) ?? []
+        const ships = settings?.ships ?? []
         ctx.api.opponent.updateAbilityConfig('SETTINGS', {
           validTargetsAntiFighterBarrage: [...ships],
         })
