@@ -1,6 +1,6 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
-import { getUnitLocator } from '@/combat/utils/compact-units'
+import { getUnitId } from '@/combat/utils/compact-units'
 import { parseVariantId } from '@/combat/utils/unit-variant'
 
 type Params = {
@@ -53,7 +53,7 @@ export const devotion: Ability<Params> = {
 
         for (const variantId of params.targetPriority) {
           if (ctx.api.opponent.findUnitByPriority([variantId])) {
-            ctx.api.own.destroyUnit(getUnitLocator(sacrifice)!)
+            ctx.api.own.destroyUnit(getUnitId(sacrifice)!)
             ctx.api.opponent.addHits(1, [parseVariantId(variantId).type])
             return
           }

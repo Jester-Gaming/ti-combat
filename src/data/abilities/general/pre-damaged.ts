@@ -1,4 +1,4 @@
-import { getUnitLocator } from '@/combat/utils/compact-units'
+import { getUnitId } from '@/combat/utils/compact-units'
 import { UNIT_DISPLAY_NAMES } from '@/constants/units'
 import type { UnitBaseType } from '@/types'
 
@@ -54,7 +54,7 @@ export const preDamaged: Ability<Params> = {
           const units = ctx.api.own.getUnits(unitType as UnitBaseType)
           const max = Math.min(count, units.length)
           for (let i = 0; i < max; i++) {
-            ctx.api.own.modifyUnitState(getUnitLocator(units[i])!, {
+            ctx.api.own.modifyUnitState(getUnitId(units[i])!, {
               isDamaged: true,
             })
           }

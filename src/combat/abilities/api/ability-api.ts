@@ -5,7 +5,7 @@ import type {
   Unit,
   UnitAbility,
   UnitBaseType,
-  UnitLocator,
+  UnitId,
   UnitState,
   UnitStats,
 } from '@/types'
@@ -21,14 +21,15 @@ import type {
 import {
   clearReconstructCache,
   ensureUnitState,
+  findVariantKeyForUnit,
   reconstructAllUnits,
   reconstructUnit,
   reconstructUnitsForType,
-  resolveGlobalIndex,
   resolveUnitStats,
   tagUnit,
   totalCountForType,
 } from '../../utils/compact-units'
+import { nextUnitIds } from '../../utils/unit-id'
 import {
   getVariantDisplayName,
   makeVariantId,
@@ -55,15 +56,16 @@ function findUnitByPriorityInSide(
   for (const variantId of priority) {
     const { type } = parseVariantId(variantId)
     if (participatingTypes && !participatingTypes.has(type)) continue
-    const count = sideState.units[variantId]
-    if (!count || count <= 0) continue
+    const ids = sideState.units[variantId]
+    if (!ids || ids.length <= 0) continue
 
-    // Direct lookup: reconstruct single unit for index 0 of this variant
+    // Direct lookup: reconstruct single unit for first UnitId of this variant
     const stats = resolveUnitStats(sideState, variantId)
     if (!stats) continue
-    const state = sideState.unitState[variantId]?.[0]
+    const id = ids[0]
+    const state = sideState.unitState[id]
     const unit = reconstructUnit(stats, state, variantId)
-    tagUnit(unit, { key: variantId, index: 0 })
+    tagUnit(unit, id)
     return unit
   }
   return undefined
@@ -79,13 +81,13 @@ function countUnitsInSide(
       ? new Set([filter])
       : new Set(filter)
     : undefined
-  for (const [key, count] of Object.entries(sideState.units)) {
-    if (count <= 0) continue
+  for (const [key, ids] of Object.entries(sideState.units)) {
+    if (ids.length <= 0) continue
     if (filterSet) {
       const { type } = parseVariantId(key)
       if (!filterSet.has(type)) continue
     }
-    total += count
+    total += ids.length
   }
   return total
 }
@@ -171,7 +173,7 @@ function getParticipatingUnitTypesForSide(
     const sideState = state[side]
     const types = new Set<UnitBaseType>()
     for (const key of Object.keys(sideState.units)) {
-      if (sideState.units[key] <= 0) continue
+      if (sideState.units[key].length <= 0) continue
       const { type } = parseVariantId(key)
       types.add(type)
     }
@@ -192,7 +194,7 @@ function getAllUnitTypesForSide(
     const sideState = state[side]
     const types = new Set<UnitBaseType>()
     for (const key of Object.keys(sideState.units)) {
-      if (sideState.units[key] <= 0) continue
+      if (sideState.units[key].length <= 0) continue
       const { type } = parseVariantId(key)
       types.add(type)
     }
@@ -363,42 +365,60 @@ function buildSideApi(
       return state.abilities[side][key]
     },
 
-    destroyUnit(unitTypeOrUnit: UnitBaseType | UnitLocator): void {
+    destroyUnit(unitTypeOrUnit: UnitBaseType | UnitId): void {
       const sideState = state[side]
-      const { key, subIndex } =
-        typeof unitTypeOrUnit === 'string'
-          ? resolveGlobalIndex(sideState, unitTypeOrUnit, 0)
-          : { key: unitTypeOrUnit.key, subIndex: unitTypeOrUnit.index }
-      if (!sideState.units[key] || sideState.units[key] <= 0) return
+      let unitId: UnitId
+      let key: string
+
+      if (typeof unitTypeOrUnit === 'string') {
+        // Find first UnitId for this base type
+        const found = findFirstUnitId(sideState, unitTypeOrUnit)
+        if (!found) return
+        unitId = found.unitId
+        key = found.key
+      } else {
+        unitId = unitTypeOrUnit
+        // Find variant key containing this UnitId
+        key = findVariantKeyContaining(sideState, unitId)
+        if (!key) return
+      }
+
       if (abilitiesParams) {
-        abilitiesParams._destroyed[side][key] =
-          (abilitiesParams._destroyed[side][key] ?? 0) + 1
+        if (!abilitiesParams._destroyed[side][key]) {
+          abilitiesParams._destroyed[side][key] = []
+        }
+        abilitiesParams._destroyed[side][key].push(unitId)
         abilitiesParams._destroyCount++
       }
-      api.removeUnit({ key, index: subIndex })
+      api.removeUnit(unitId)
     },
 
-    removeUnit(unitTypeOrUnit: UnitBaseType | UnitLocator): void {
+    removeUnit(unitTypeOrUnit: UnitBaseType | UnitId): void {
       const sideState = state[side]
       clearReconstructCache(sideState)
-      const { key, subIndex } =
-        typeof unitTypeOrUnit === 'string'
-          ? resolveGlobalIndex(sideState, unitTypeOrUnit, 0)
-          : { key: unitTypeOrUnit.key, subIndex: unitTypeOrUnit.index }
-      if (!sideState.units[key] || sideState.units[key] <= 0) return
+      let unitId: UnitId
+      let key: string
 
-      sideState.units[key]--
-      if (sideState.units[key] <= 0) {
-        delete sideState.units[key]
-        delete sideState.unitState[key]
+      if (typeof unitTypeOrUnit === 'string') {
+        const found = findFirstUnitId(sideState, unitTypeOrUnit)
+        if (!found) return
+        unitId = found.unitId
+        key = found.key
       } else {
-        const stateArr = sideState.unitState[key]
-        if (stateArr && stateArr.length > 0) {
-          stateArr.splice(Math.min(subIndex, stateArr.length - 1), 1)
-          if (stateArr.length > sideState.units[key]) {
-            stateArr.length = sideState.units[key]
-          }
-        }
+        unitId = unitTypeOrUnit
+        key = findVariantKeyContaining(sideState, unitId)
+        if (!key) return
+      }
+
+      const ids = sideState.units[key]
+      const idx = ids.indexOf(unitId)
+      if (idx === -1) return
+
+      ids.splice(idx, 1)
+      delete sideState.unitState[unitId]
+
+      if (ids.length <= 0) {
+        delete sideState.units[key]
       }
     },
 
@@ -418,11 +438,11 @@ function buildSideApi(
         const allowed = Math.min(count, limit - existing)
         if (allowed <= 0) continue
 
-        const prevCount = sideState.units[unitType] ?? 0
-        sideState.units[unitType] = prevCount + allowed
-        if (!sideState.unitState[unitType]) {
-          sideState.unitState[unitType] = []
+        const newIds = nextUnitIds(allowed)
+        if (!sideState.units[unitType]) {
+          sideState.units[unitType] = []
         }
+        sideState.units[unitType].push(...newIds)
         if (!sideState.unitStats[unitType]) {
           // Shouldn't happen, but fallback
           sideState.unitStats[unitType] = {}
@@ -430,7 +450,7 @@ function buildSideApi(
 
         // Queue invoke registration (flushed after produce completes)
         if (abilitiesParams) {
-          abilitiesParams.queueUnitInvokes(side, unitType, prevCount, allowed)
+          abilitiesParams.queueUnitInvokes(side, unitType, newIds)
         }
       }
     },
@@ -452,14 +472,14 @@ function buildSideApi(
           Object.assign(sideState.unitStats[key], updates)
         }
         // Queue invoke registration if ABILITIES were just added
-        const count = sideState.units[key] ?? 0
+        const ids = sideState.units[key]
         if (
           !hadAbilities &&
           'ABILITIES' in updates &&
           abilitiesParams &&
-          count > 0
+          ids?.length > 0
         ) {
-          abilitiesParams.queueUnitInvokes(side, key, 0, count)
+          abilitiesParams.queueUnitInvokes(side, key, ids)
         }
       } else {
         // Update all variant keys of this base type
@@ -476,14 +496,14 @@ function buildSideApi(
             Object.assign(sideState.unitStats[vKey], updates)
           }
           // Queue invoke registration if ABILITIES were just added
-          const count = sideState.units[vKey] ?? 0
+          const ids = sideState.units[vKey]
           if (
             !hadAbilities &&
             hasAbilitiesUpdate &&
             abilitiesParams &&
-            count > 0
+            ids?.length > 0
           ) {
-            abilitiesParams.queueUnitInvokes(side, vKey, 0, count)
+            abilitiesParams.queueUnitInvokes(side, vKey, ids)
           }
         }
         // Also update the base unitStats template
@@ -496,10 +516,10 @@ function buildSideApi(
       }
     },
 
-    modifyUnitState(locator: UnitLocator, updates: Partial<UnitState>): void {
+    modifyUnitState(unitId: UnitId, updates: Partial<UnitState>): void {
       const sideState = state[side]
       clearReconstructCache(sideState)
-      const us = ensureUnitState(sideState, locator.key, locator.index)
+      const us = ensureUnitState(sideState, unitId)
       Object.assign(us, updates)
     },
 
@@ -589,39 +609,34 @@ function buildSideApi(
       clearReconstructCache(sideState)
       const { type, subtypes: currentSubtypes } = parseVariantId(variantId)
 
-      // Find a matching key: variantId itself if it has count > 0,
+      // Find a matching key: variantId itself if it has units,
       // otherwise the base type
       let sourceKey = variantId
-      if (!sideState.units[sourceKey] || sideState.units[sourceKey] <= 0) {
+      if (
+        !sideState.units[sourceKey] ||
+        sideState.units[sourceKey].length <= 0
+      ) {
         sourceKey = type
       }
-      if (!sideState.units[sourceKey] || sideState.units[sourceKey] <= 0) return
+      if (!sideState.units[sourceKey] || sideState.units[sourceKey].length <= 0)
+        return
 
       // Compute new key with added subtype
       const newSubtypes = [...currentSubtypes, subtype].sort()
       const newKey = makeVariantId(type, newSubtypes)
       if (newKey === sourceKey) return
 
-      // Transfer one unit from source to new key
-      sideState.units[sourceKey]--
-      const sourceState = sideState.unitState[sourceKey]
-      let transferredState: UnitState | undefined
-      if (sourceState && sourceState.length > 0) {
-        transferredState = sourceState.shift()
-      }
-      if (sideState.units[sourceKey] <= 0) {
+      // Pop a UnitId from source array, push to new key
+      const movedId = sideState.units[sourceKey].pop()!
+      if (sideState.units[sourceKey].length <= 0) {
         delete sideState.units[sourceKey]
-        delete sideState.unitState[sourceKey]
       }
 
-      // Add to new key
-      sideState.units[newKey] = (sideState.units[newKey] ?? 0) + 1
-      if (!sideState.unitState[newKey]) {
-        sideState.unitState[newKey] = []
+      // Add to new key — unitState entry is preserved (keyed by UnitId)
+      if (!sideState.units[newKey]) {
+        sideState.units[newKey] = []
       }
-      if (transferredState) {
-        sideState.unitState[newKey].push(transferredState)
-      }
+      sideState.units[newKey].push(movedId)
 
       // Copy stats from source (or base type) to new key if not present
       if (!sideState.unitStats[newKey]) {
@@ -646,7 +661,7 @@ function buildSideApi(
       // Find a variant key that has the subtype
       let sourceKey: string | undefined
       for (const key of Object.keys(sideState.units)) {
-        if (sideState.units[key] <= 0) continue
+        if (sideState.units[key].length <= 0) continue
         const { type: kType, subtypes: kSubs } = parseVariantId(key)
         if (kType !== type) continue
         if (!kSubs.includes(subtype)) continue
@@ -662,25 +677,16 @@ function buildSideApi(
       const newKey =
         newSubtypes.length > 0 ? makeVariantId(type, newSubtypes) : type
 
-      // Transfer one unit
-      sideState.units[sourceKey]--
-      const sourceState = sideState.unitState[sourceKey]
-      let transferredState: UnitState | undefined
-      if (sourceState && sourceState.length > 0) {
-        transferredState = sourceState.shift()
-      }
-      if (sideState.units[sourceKey] <= 0) {
+      // Pop a UnitId from source, push to new key
+      const movedId = sideState.units[sourceKey].pop()!
+      if (sideState.units[sourceKey].length <= 0) {
         delete sideState.units[sourceKey]
-        delete sideState.unitState[sourceKey]
       }
 
-      sideState.units[newKey] = (sideState.units[newKey] ?? 0) + 1
-      if (!sideState.unitState[newKey]) {
-        sideState.unitState[newKey] = []
+      if (!sideState.units[newKey]) {
+        sideState.units[newKey] = []
       }
-      if (transferredState) {
-        sideState.unitState[newKey].push(transferredState)
-      }
+      sideState.units[newKey].push(movedId)
     },
 
     updateAbilityConfig(
@@ -751,11 +757,10 @@ function buildSideApi(
           excludeUnitTypes: (target as { exclude: string[] }).exclude,
         })
       } else {
-        // UnitLocator — store directly
-        const locator = target as UnitLocator
+        // UnitId — store directly
         sideState.hitValueModifiers.push({
           ...base,
-          unitLocator: { key: locator.key, index: locator.index },
+          unitId: target as UnitId,
         })
       }
     },
@@ -770,9 +775,34 @@ function buildSideApi(
 
 const noop = () => {}
 
+/** Find the first UnitId for a base type (used by destroyUnit/removeUnit string overloads) */
+function findFirstUnitId(
+  sideState: SideStateData,
+  baseType: UnitBaseType,
+): { unitId: UnitId; key: string } | undefined {
+  for (const key of Object.keys(sideState.units)) {
+    const { type } = parseVariantId(key)
+    if (type !== baseType) continue
+    const ids = sideState.units[key]
+    if (ids.length > 0) return { unitId: ids[0], key }
+  }
+  return undefined
+}
+
+/** Find variant key containing a UnitId (scans all keys) */
+function findVariantKeyContaining(
+  sideState: SideStateData,
+  unitId: UnitId,
+): string {
+  for (const key of Object.keys(sideState.units)) {
+    if (sideState.units[key].includes(unitId)) return key
+  }
+  return ''
+}
+
 export class AbilityContext {
   log: (...data: unknown[]) => void
-  unitSource?: { unitType: UnitBaseType; unitIndex: number }
+  unitSource?: { unitType: UnitBaseType; unitId: UnitId }
 
   _abilitiesParams!: AbilitiesParams
 
@@ -841,30 +871,30 @@ export class AbilityContext {
     }
   }
 
-  getUnit(): UnitLocator {
+  getUnit(): UnitId {
     if (!this.unitSource) {
       throw new Error('getUnit() can only be called from unit abilities')
     }
+    return this.unitSource.unitId
+  }
+
+  getVariantKey(): string {
+    if (!this.unitSource) {
+      throw new Error('getVariantKey() can only be called from unit abilities')
+    }
     const sideState = this.state[this._side]
-    const { key, subIndex } = resolveGlobalIndex(
+    return findVariantKeyForUnit(
       sideState,
+      this.unitSource.unitId,
       this.unitSource.unitType,
-      this.unitSource.unitIndex,
     )
-    return { key, index: subIndex }
   }
 
   getUnitState(): Readonly<UnitState> {
     if (!this.unitSource) {
       throw new Error('getUnitState() can only be called from unit abilities')
     }
-    const sideState = this.state[this._side]
-    const { key, subIndex } = resolveGlobalIndex(
-      sideState,
-      this.unitSource.unitType,
-      this.unitSource.unitIndex,
-    )
-    return sideState.unitState[key]?.[subIndex] ?? {}
+    return this.state[this._side].unitState[this.unitSource.unitId] ?? {}
   }
 
   getUnitStats(): Readonly<UnitStats> {
@@ -872,10 +902,10 @@ export class AbilityContext {
       throw new Error('getUnitStats() can only be called from unit abilities')
     }
     const sideState = this.state[this._side]
-    const { key } = resolveGlobalIndex(
+    const key = findVariantKeyForUnit(
       sideState,
+      this.unitSource.unitId,
       this.unitSource.unitType,
-      this.unitSource.unitIndex,
     )
     return resolveUnitStats(sideState, key) ?? {}
   }
@@ -885,13 +915,6 @@ export class AbilityContext {
       throw new Error('getUnitType() can only be called from unit abilities')
     }
     return this.unitSource.unitType
-  }
-
-  getUnitIndex(): number {
-    if (!this.unitSource) {
-      throw new Error('getUnitIndex() can only be called from unit abilities')
-    }
-    return this.unitSource.unitIndex
   }
 
   getAbilitiesForTiming(

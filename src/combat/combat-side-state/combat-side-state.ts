@@ -32,54 +32,6 @@ export function getOpponentSide(side: CombatSide): CombatSide {
   return side === 'attacker' ? 'defender' : 'attacker'
 }
 
-export function destroyUnitsFromPool(
-  sideState: SideStateData,
-  hits: number,
-  validTargets: UnitBaseType[],
-  sacrificeOrder: string[],
-): SideStateData {
-  if (hits <= 0) return sideState
-
-  let remaining = hits
-  let changed = false
-  const newUnits = { ...sideState.units }
-  const newUnitState = { ...sideState.unitState }
-
-  for (const variantId of sacrificeOrder) {
-    if (remaining <= 0) break
-    if (
-      validTargets.length > 0 &&
-      !validTargets.includes(parseVariantId(variantId).type)
-    )
-      continue
-
-    const count = newUnits[variantId]
-    if (!count || count <= 0) continue
-
-    const toDestroy = Math.min(count, remaining)
-    const newCount = count - toDestroy
-    changed = true
-
-    if (newCount <= 0) {
-      delete newUnits[variantId]
-      delete newUnitState[variantId]
-    } else {
-      newUnits[variantId] = newCount
-      // Truncate unitState from end if needed
-      const stateArr = newUnitState[variantId]
-      if (stateArr && stateArr.length > newCount) {
-        newUnitState[variantId] = stateArr.slice(0, newCount)
-      }
-    }
-
-    remaining -= toDestroy
-  }
-
-  if (!changed) return sideState
-
-  return { ...sideState, units: newUnits, unitState: newUnitState }
-}
-
 function isRestricted(
   sideState: SideStateData,
   layer: 'lost' | 'cannotBeUsed',
@@ -153,8 +105,8 @@ export class CombatSideState {
     const restrictionChecked = new Map<UnitBaseType, boolean>()
 
     for (const key of Object.keys(units)) {
-      const count = units[key]
-      if (count <= 0) continue
+      const ids = units[key]
+      if (ids.length <= 0) continue
 
       const { type } = parseVariantId(key)
       if (allowedUnitTypes && !allowedUnitTypes.has(type)) continue
@@ -182,10 +134,10 @@ export class CombatSideState {
       const [hitValue, dicePerUnit] = dieData
       if (dicePerUnit <= 0) continue
 
-      // Store UnitLocator directly per unit
+      // Store UnitId directly per unit
       const arr = result[type] ?? []
-      for (let i = 0; i < count; i++) {
-        arr.push([hitValue, dicePerUnit, { key, index: i }])
+      for (const id of ids) {
+        arr.push([hitValue, dicePerUnit, id])
       }
       result[type] = arr
     }
@@ -200,13 +152,13 @@ export class CombatSideState {
         ? new Set([filter])
         : new Set(filter)
       : undefined
-    for (const [key, count] of Object.entries(this.data.units)) {
-      if (count <= 0) continue
+    for (const [key, ids] of Object.entries(this.data.units)) {
+      if (ids.length <= 0) continue
       if (filterSet) {
         const { type } = parseVariantId(key)
         if (!filterSet.has(type)) continue
       }
-      total += count
+      total += ids.length
     }
     return total
   }
@@ -224,42 +176,6 @@ export class CombatSideState {
 
   isUpgraded(unitType: UnitBaseType): boolean {
     return this.unitSelections[unitType].upgraded
-  }
-
-  addHits(hits: number, validTargets: UnitBaseType[]): void {
-    if (hits === 0) return
-    this.updateSideData({
-      hitPools: [...this.data.hitPools, { hits, validTargets }],
-    })
-  }
-
-  assignHits(
-    participatingUnits: ReadonlySet<UnitBaseType>,
-    unitPriority: string[],
-  ): void {
-    if (this.data.hitPools.length === 0) return
-
-    const sacrificeOrder = unitPriority.filter(id => {
-      const { type } = parseVariantId(id)
-      return participatingUnits.has(type)
-    })
-
-    let currentSideState = this.data
-
-    for (const pool of this.data.hitPools) {
-      currentSideState = destroyUnitsFromPool(
-        currentSideState,
-        pool.hits,
-        pool.validTargets,
-        sacrificeOrder,
-      )
-    }
-
-    this.updateSideData({
-      units: currentSideState.units,
-      unitState: currentSideState.unitState,
-      hitPools: [],
-    })
   }
 
   // ── UI mutation methods ───────────────────────────────────────────

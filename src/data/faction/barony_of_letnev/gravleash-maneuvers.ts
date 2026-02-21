@@ -1,5 +1,5 @@
 import { declareParam } from '@/combat/abilities/declare-param'
-import { getUnitLocator } from '@/combat/utils/compact-units'
+import { getUnitId } from '@/combat/utils/compact-units'
 
 import type { Ability } from '../../../combat/abilities/types'
 import type { UnitBaseType } from '../../../types'
@@ -44,7 +44,7 @@ export const gravleashManeuvers: Ability<Params> = {
         const target = ctx.api.own.findUnitByPriority(params.shipPriority)
 
         if (shipTypeCount > 0 && target) {
-          ctx.api.own.modifyHitValue(-shipTypeCount, getUnitLocator(target)!)
+          ctx.api.own.modifyHitValue(-shipTypeCount, getUnitId(target)!)
         }
       },
     },

@@ -2,6 +2,7 @@ import type {
   FactionKey,
   UnitAbility,
   UnitBaseType,
+  UnitId,
   UnitSelection,
   UnitState,
   UnitStats,
@@ -108,7 +109,7 @@ export interface HitValueModifier {
   amount: number
   unitType?: string
   excludeUnitTypes?: string[]
-  unitLocator?: { key: string; index: number }
+  unitId?: UnitId
   context: MetaPhase
 }
 
@@ -118,10 +119,10 @@ export type UnitStatsEntry = UnitStats | ((parentStats: UnitStats) => UnitStats)
 /** State data for one side of combat */
 export interface SideStateData {
   faction: FactionKey
-  /** Variant key → count (e.g. "DESTROYER": 7, "DESTROYER:Cavalry": 1) */
-  units: Record<string, number>
-  /** Variant key → per-unit mutable state (only entries with non-default state) */
-  unitState: Record<string, UnitState[]>
+  /** Variant key → array of UnitIds */
+  units: Record<string, UnitId[]>
+  /** UnitId → per-unit mutable state (flat map, sparse — only entries with non-default state) */
+  unitState: Record<number, UnitState>
   /** Variant key → shared stats template (may be a factory for subtypes) */
   unitStats: Record<string, UnitStatsEntry>
   hitPools: HitPool[]

@@ -1,5 +1,5 @@
-import { parseVariantId } from '@/combat/utils/unit-variant'
-import type { UnitBaseType, UnitLocator } from '@/types'
+import { getUnitId } from '@/combat/utils/compact-units'
+import type { UnitBaseType } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
@@ -17,12 +17,15 @@ export const reflectiveShielding: Ability = {
     {
       timing: 'WHEN_SUSTAIN_DAMAGE_USE',
       side: 'OWN',
-      isCallable: (_params, ctx, unit: UnitLocator) => {
+      isCallable: (_params, ctx, unitId) => {
         // Only trigger for ships — not mechs or ground forces
-        const { type: unitType } = parseVariantId(unit.key)
         const settings = ctx.api.own.getAbilityConfig('SETTINGS')
         const ships = (settings?.ships as UnitBaseType[]) ?? []
-        return ships.includes(unitType)
+        for (const shipType of ships) {
+          const units = ctx.api.own.getUnits(shipType)
+          if (units.some(u => getUnitId(u) === unitId)) return true
+        }
+        return false
       },
       call: ctx => {
         ctx.api.opponent.addHits(2, [])

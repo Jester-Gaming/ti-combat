@@ -51,8 +51,5 @@ export type Unit = UnitStats &
     subtypes?: string[]
   }
 
-/** Locator for a unit within compact state */
-export interface UnitLocator {
-  key: string
-  index: number
-}
+/** Branded unique identifier for a unit instance */
+export type UnitId = number & { readonly __brand: 'UnitId' }

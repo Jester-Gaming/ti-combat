@@ -12,7 +12,7 @@ export type {
   UnitAbility,
   UnitBaseType,
   UnitDefinition,
-  UnitLocator,
+  UnitId,
   UnitState,
   UnitStats,
   UnitVariant,

@@ -1,9 +1,4 @@
-import type {
-  DiceGroup,
-  SourcedDiceGroup,
-  UnitBaseType,
-  UnitLocator,
-} from '@/types'
+import type { DiceGroup, SourcedDiceGroup, UnitBaseType, UnitId } from '@/types'
 
 import type { DiceApi, DicePool, DiceReadApi } from '../types'
 
@@ -45,21 +40,17 @@ export function buildDiceApi(pool: DicePool): DiceApi {
 
     addDiceCount: (
       count: number,
-      strategyOrSourceOrUnit?: 'BEST' | 'WORST' | UnitBaseType | object,
+      strategyOrSourceOrUnit?: 'BEST' | 'WORST' | UnitBaseType | UnitId,
     ) => {
       if (countPool(data) === 0) return
 
-      // Overload: (count, UnitLocator) — match by key + index
-      if (
-        typeof strategyOrSourceOrUnit === 'object' &&
-        strategyOrSourceOrUnit !== null
-      ) {
-        const target = strategyOrSourceOrUnit as UnitLocator
+      // Overload: (count, UnitId) — match by UnitId
+      if (typeof strategyOrSourceOrUnit === 'number') {
+        const target = strategyOrSourceOrUnit as UnitId
         for (const [, dice] of Object.entries(data)) {
           if (!dice) continue
           for (let i = 0; i < dice.length; i++) {
-            const loc = dice[i][2]
-            if (loc.key === target.key && loc.index === target.index) {
+            if (dice[i][2] === target) {
               dice[i] = [dice[i][0], dice[i][1] + count, dice[i][2]]
               return
             }
@@ -110,7 +101,7 @@ export function buildDiceApi(pool: DicePool): DiceApi {
       }
     },
 
-    addDiceGroup: (source: string, unit: UnitLocator, diceGroup: DiceGroup) => {
+    addDiceGroup: (source: string, unit: UnitId, diceGroup: DiceGroup) => {
       const existing = data[source] ?? []
       data[source] = [...existing, [diceGroup[0], diceGroup[1], unit]]
     },

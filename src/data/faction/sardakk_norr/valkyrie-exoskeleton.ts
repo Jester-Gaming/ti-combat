@@ -1,5 +1,4 @@
 import type { Ability } from '@/combat/abilities/types'
-import type { UnitLocator } from '@/types'
 
 export const valkyrieExoskeleton: Ability = {
   key: 'VALKYRIE_EXOSKELETON',
@@ -17,9 +16,8 @@ export const valkyrieExoskeleton: Ability = {
     {
       timing: 'AFTER_SUSTAIN_DAMAGE_USE',
       side: 'OWN',
-      isCallable: (_params, ctx, unit: UnitLocator) => {
-        const myUnit = ctx.getUnit()
-        return unit.key === myUnit.key && unit.index === myUnit.index
+      isCallable: (_params, ctx, unitId) => {
+        return unitId === ctx.getUnit()
       },
       call: ctx => {
         ctx.api.opponent.addHits(1, [])

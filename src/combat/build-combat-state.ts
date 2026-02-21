@@ -1,4 +1,10 @@
-import type { FactionKey, UnitBaseType, UnitState, UnitStats } from '@/types'
+import type {
+  FactionKey,
+  UnitBaseType,
+  UnitId,
+  UnitState,
+  UnitStats,
+} from '@/types'
 import { getFactionUnitConfig } from '@/utils/get-faction-unit-config'
 import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 
@@ -8,6 +14,7 @@ import type {
   CombatMode,
   SideStateData,
 } from './combat-state/types'
+import { nextUnitIds } from './utils/unit-id'
 
 // ============================================================================
 // CONFIG TYPES
@@ -32,8 +39,8 @@ export interface CombatStateConfig {
 
 function buildSideState(config: SideConfig): SideStateData {
   const upgradedSet = new Set(config.upgrades ?? [])
-  const units: Record<string, number> = {}
-  const unitState: Record<string, UnitState[]> = {}
+  const units: Record<string, UnitId[]> = {}
+  const unitState: Record<number, UnitState> = {}
   const unitStats: Record<string, UnitStats> = {}
 
   const factionConfig = getFactionUnitConfig(config.faction)
@@ -58,8 +65,7 @@ function buildSideState(config: SideConfig): SideStateData {
       }
     }
 
-    units[unitType] = count
-    unitState[unitType] = []
+    units[unitType] = nextUnitIds(count)
     unitStats[unitType] = stats
   }
 

@@ -16,7 +16,7 @@ export const brotherMilor: Ability = {
       timing: 'AFTER_DESTROY',
       isCallable: (_params, _ctx, units) => {
         for (const key in units.own) {
-          if (units.own[key] > 0) return true
+          if (units.own[key]?.length > 0) return true
         }
         return false
       },

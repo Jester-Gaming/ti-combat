@@ -6,7 +6,7 @@ import type {
   Unit,
   UnitAbility,
   UnitBaseType,
-  UnitLocator,
+  UnitId,
   UnitState,
   UnitStats,
 } from '@/types'
@@ -71,9 +71,9 @@ export interface DiceApi extends DiceReadApi {
   addDiceCount(count: number): void
   addDiceCount(count: number, strategy: 'BEST' | 'WORST'): void
   addDiceCount(count: number, source: UnitBaseType): void
-  addDiceCount(count: number, unit: UnitLocator): void
+  addDiceCount(count: number, unit: UnitId): void
 
-  addDiceGroup(source: string, unit: UnitLocator, diceGroup: DiceGroup): void
+  addDiceGroup(source: string, unit: UnitId, diceGroup: DiceGroup): void
 }
 
 export type DiceReadContext = OwnOpponentContext<DiceReadApi>
@@ -93,11 +93,11 @@ export interface TimingContextMap {
   AFTER_DICE_ROLL: void
   BEFORE_ASSIGN_HITS: void
   AFTER_ASSIGN_HITS_STEP: void
-  WHEN_SUSTAIN_DAMAGE_USE: UnitLocator
-  AFTER_SUSTAIN_DAMAGE_USE: UnitLocator
-  DESTROY: SidedContext<Record<string, number>>
-  WHEN_DESTROY: SidedContext<Record<string, number>>
-  AFTER_DESTROY: SidedContext<Record<string, number>>
+  WHEN_SUSTAIN_DAMAGE_USE: UnitId
+  AFTER_SUSTAIN_DAMAGE_USE: UnitId
+  DESTROY: SidedContext<Record<string, UnitId[]>>
+  WHEN_DESTROY: SidedContext<Record<string, UnitId[]>>
+  AFTER_DESTROY: SidedContext<Record<string, UnitId[]>>
   END_OF_COMBAT_ROUND: void
   END_OF_COMBAT: void
   CLEANUP_ROUND: void
@@ -106,8 +106,8 @@ export interface TimingContextMap {
 
 /** Events that can be emitted via ctx.trigger() during produce */
 export interface TriggerEventMap {
-  WHEN_SUSTAIN_DAMAGE_USE: UnitLocator
-  AFTER_SUSTAIN_DAMAGE_USE: UnitLocator
+  WHEN_SUSTAIN_DAMAGE_USE: UnitId
+  AFTER_SUSTAIN_DAMAGE_USE: UnitId
 }
 
 // Internal map for ability calls (uses own/opponent)
@@ -175,17 +175,17 @@ export interface SideReadApi {
 /** Full read-write API for mutating one side's state (within Immer draft) */
 export interface SideApi extends SideReadApi {
   // Unit operations
-  destroyUnit(unit: UnitLocator): void
+  destroyUnit(unit: UnitId): void
   destroyUnit(unitType: UnitBaseType): void
   /** Remove a unit without triggering AFTER_DESTROY */
-  removeUnit(unit: UnitLocator): void
+  removeUnit(unit: UnitId): void
   removeUnit(unitType: UnitBaseType): void
   placeUnits(units: Partial<Record<UnitBaseType, number>>): void
   modifyUnitType(
     unitTypeOrVariantKey: string,
     updates: Partial<UnitStats>,
   ): void
-  modifyUnitState(unit: UnitLocator, updates: Partial<UnitState>): void
+  modifyUnitState(unit: UnitId, updates: Partial<UnitState>): void
 
   // Hit operations
   reduceHits(amount: number): void
@@ -228,7 +228,7 @@ export interface SideApi extends SideReadApi {
   // Hit value modifiers (stored, applied after BEFORE_DICE_ROLL)
   modifyHitValue(amount: number): void
   modifyHitValue(amount: number, unitType: string): void
-  modifyHitValue(amount: number, unit: UnitLocator): void
+  modifyHitValue(amount: number, unit: UnitId): void
   modifyHitValue(amount: number, options: { exclude: string[] }): void
 }
 
@@ -243,16 +243,16 @@ export interface AbilityReadContext {
     readonly own: SideReadApi
     readonly opponent: SideReadApi
   }
-  /** Get the unit locator this ability is attached to. Throws if called from a non-unit ability. */
-  getUnit(): UnitLocator
+  /** Get the UnitId this ability is attached to. Throws if called from a non-unit ability. */
+  getUnit(): UnitId
+  /** Get the variant key for the unit this ability is attached to. Throws if called from a non-unit ability. */
+  getVariantKey(): string
   /** Get the per-unit mutable state (isDamaged, etc.). Throws if called from a non-unit ability. */
   getUnitState(): Readonly<UnitState>
   /** Get the shared stats for the unit variant. Throws if called from a non-unit ability. */
   getUnitStats(): Readonly<UnitStats>
   /** Get the unit type this ability is attached to. Throws if called from a non-unit ability. */
   getUnitType(): UnitBaseType
-  /** Get the unit index this ability is attached to. Throws if called from a non-unit ability. */
-  getUnitIndex(): number
   /** Get enabled config abilities matching the given timing(s) for the current side. */
   getAbilitiesForTiming(
     timing: AbilityTiming | AbilityTiming[],
@@ -280,16 +280,16 @@ export interface AbilityCallContext {
     name: K,
     context: TriggerEventMap[K],
   ): void
-  /** Get the unit locator this ability is attached to. Throws if called from a non-unit ability. */
-  getUnit(): UnitLocator
+  /** Get the UnitId this ability is attached to. Throws if called from a non-unit ability. */
+  getUnit(): UnitId
+  /** Get the variant key for the unit this ability is attached to. Throws if called from a non-unit ability. */
+  getVariantKey(): string
   /** Get the per-unit mutable state (isDamaged, etc.). Throws if called from a non-unit ability. */
   getUnitState(): Readonly<UnitState>
   /** Get the shared stats for the unit variant. Throws if called from a non-unit ability. */
   getUnitStats(): Readonly<UnitStats>
   /** Get the unit type this ability is attached to. Throws if called from a non-unit ability. */
   getUnitType(): UnitBaseType
-  /** Get the unit index this ability is attached to. Throws if called from a non-unit ability. */
-  getUnitIndex(): number
   /** Get enabled config abilities matching the given timing(s) for the current side. */
   getAbilitiesForTiming(
     timing: AbilityTiming | AbilityTiming[],

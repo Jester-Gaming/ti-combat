@@ -1,6 +1,6 @@
 import federationOfSolIcon from '@/assets/faction/federation_of_sol.svg?raw'
 import { declareParam } from '@/combat/abilities/declare-param'
-import { getUnitLocator } from '@/combat/utils/compact-units'
+import { getUnitId } from '@/combat/utils/compact-units'
 import { makeVariantId, parseVariantId } from '@/combat/utils/unit-variant'
 import type { UnitBaseType } from '@/types'
 
@@ -67,7 +67,7 @@ export const evelynDelouis: Ability<Params> = {
         const variantId = makeVariantId(params.unitType, ['Evelyn'])
         const unit = ctx.api.own.findUnitByPriority([variantId])
         if (!unit) return
-        dice.own.addDiceCount(1, getUnitLocator(unit)!)
+        dice.own.addDiceCount(1, getUnitId(unit)!)
         ctx.api.own.removeSubtype(variantId, 'Evelyn')
       },
     },

@@ -1,4 +1,4 @@
-import type { CombatSide, UnitBaseType, UnitState } from '@/types'
+import type { CombatSide, UnitBaseType, UnitId, UnitState } from '@/types'
 
 import type { SideStateData } from '../combat-state/types'
 import type { SurvivorSide } from '../types'
@@ -33,8 +33,8 @@ export function generateCompactOutcomeKey(
 }
 
 function formatCompactSideKey(
-  units: Record<string, number>,
-  unitState: Record<string, UnitState[]>,
+  units: Record<string, UnitId[]>,
+  unitState: Record<number, UnitState>,
   participating: ReadonlySet<UnitBaseType>,
 ): string {
   const keys = Object.keys(units)
@@ -43,26 +43,21 @@ function formatCompactSideKey(
 
   let result = ''
   for (const key of keys) {
-    const count = units[key]
-    if (count <= 0) continue
+    const ids = units[key]
+    if (!ids || ids.length <= 0) continue
     const { type } = parseVariantId(key)
     if (!participating.has(type)) continue
 
     if (result) result += ','
 
-    const stateArr = unitState[key]
-    if (stateArr && stateArr.length > 0) {
-      let damaged = 0
-      for (let i = 0; i < count; i++) {
-        if (stateArr[i]?.isDamaged) damaged++
-      }
-      if (damaged === 0) {
-        result += key + ':' + count
-      } else {
-        result += key + ':' + count + 'd' + damaged
-      }
+    let damaged = 0
+    for (const id of ids) {
+      if (unitState[id]?.isDamaged) damaged++
+    }
+    if (damaged === 0) {
+      result += key + ':' + ids.length
     } else {
-      result += key + ':' + count
+      result += key + ':' + ids.length + 'd' + damaged
     }
   }
   return result
@@ -79,8 +74,8 @@ export function extractSurvivors(
   const survivors: SurvivorSide = {}
 
   for (const key in sideState.units) {
-    const count = sideState.units[key]
-    if (count <= 0) continue
+    const ids = sideState.units[key]
+    if (!ids || ids.length <= 0) continue
 
     const { type, subtypes } = parseVariantId(key)
     if (!participatingUnits.has(type)) continue
@@ -89,9 +84,8 @@ export function extractSurvivors(
       survivors[type] = []
     }
 
-    const stateArr = sideState.unitState[key]
-    for (let i = 0; i < count; i++) {
-      const us = stateArr?.[i]
+    for (const id of ids) {
+      const us = sideState.unitState[id]
       survivors[type]!.push({
         isDamaged: us?.isDamaged,
         subtypes: subtypes.length ? subtypes : undefined,
@@ -123,11 +117,11 @@ export function determineWinner(outcome: RelativeOutcome): CombatSide | 'draw' {
 }
 
 function hasParticipatingUnits(
-  units: Record<string, number>,
+  units: Record<string, UnitId[]>,
   participating: ReadonlySet<UnitBaseType>,
 ): boolean {
   for (const key in units) {
-    if (units[key] <= 0) continue
+    if (!units[key] || units[key].length <= 0) continue
     const { type } = parseVariantId(key)
     if (participating.has(type)) return true
   }

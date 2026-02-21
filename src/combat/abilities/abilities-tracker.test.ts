@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import type { UnitStats } from '@/types'
+import type { UnitId, UnitStats } from '@/types'
 
 import { CombatState } from '../combat-state/combat-state'
 import type { CombatStateData, SideStateData } from '../combat-state/types'
+import { nextUnitIds } from '../utils/unit-id'
 import { AbilitiesParams } from './abilities-params'
 import type { Ability, AbilityCallContext, OwnOpponentContext } from './types'
 
@@ -12,10 +13,10 @@ function buildSide(
   faction: SideStateData['faction'],
   unitSpecs: Record<string, { count: number; stats: UnitStats }>,
 ): SideStateData {
-  const units: Record<string, number> = {}
+  const units: Record<string, UnitId[]> = {}
   const unitStats: Record<string, UnitStats> = {}
   for (const [key, spec] of Object.entries(unitSpecs)) {
-    units[key] = spec.count
+    units[key] = nextUnitIds(spec.count)
     unitStats[key] = spec.stats
   }
   return { faction, units, unitState: {}, unitStats, hitPools: [] }
@@ -64,13 +65,13 @@ describe('collectUnitAbilities', () => {
     expect(result[0]).toMatchObject({
       ability: mockAbility,
       unitType: 'FLAGSHIP',
-      unitIndex: 0,
     })
     expect(result[1]).toMatchObject({
       ability: mockAbility,
       unitType: 'FLAGSHIP',
-      unitIndex: 1,
     })
+    // Each entry should have a unique UnitId
+    expect(result[0].unitId).not.toBe(result[1].unitId)
   })
 
   it('should return empty array when no units have abilities', () => {
@@ -222,8 +223,8 @@ describe('unit ability invocation', () => {
 describe('AFTER_DESTROY triggered by destroyUnit', () => {
   it('should trigger AFTER_DESTROY when an ability destroys units', () => {
     const afterDestroyCalls: {
-      own: Record<string, number>
-      opponent: Record<string, number>
+      own: Record<string, UnitId[]>
+      opponent: Record<string, UnitId[]>
     }[] = []
 
     const destroyAbility: Ability = {
@@ -252,7 +253,7 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
           call: (
             _ctx: AbilityCallContext,
             _params: Record<string, never>,
-            context: OwnOpponentContext<Record<string, number>>,
+            context: OwnOpponentContext<Record<string, UnitId[]>>,
           ) => {
             afterDestroyCalls.push({
               own: context.own,
@@ -299,7 +300,7 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
     // AFTER_DESTROY should have been called (from the destroyed fighter's ability)
     expect(afterDestroyCalls).toHaveLength(1)
     // Fighter was destroyed (from fighter's perspective: own side lost it)
-    expect(afterDestroyCalls[0].own).toEqual({ FIGHTER: 1 })
+    expect(afterDestroyCalls[0].own.FIGHTER).toHaveLength(1)
   })
 
   it('should NOT trigger AFTER_DESTROY when no units are destroyed', () => {

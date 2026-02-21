@@ -1,7 +1,9 @@
+import { nextUnitIds } from '@/combat/utils/unit-id'
 import { UNIT_TYPES } from '@/constants/units'
 import type {
   FactionKey,
   UnitBaseType,
+  UnitId,
   UnitSelection,
   UnitState,
   UnitStats,
@@ -11,19 +13,19 @@ import { getFactionUnitConfig } from './get-faction-unit-config'
 
 /**
  * Converts faction + unit selections into compact unit data for combat simulation.
- * Returns counts and stats maps keyed by variant key (base type only at creation).
+ * Returns UnitId arrays and stats maps keyed by variant key (base type only at creation).
  */
 export function getSimulationUnits(
   faction: FactionKey,
   selections: Record<UnitBaseType, UnitSelection>,
 ): {
-  units: Record<string, number>
-  unitState: Record<string, UnitState[]>
+  units: Record<string, UnitId[]>
+  unitState: Record<number, UnitState>
   unitStats: Record<string, UnitStats>
 } {
   const factionConfig = getFactionUnitConfig(faction)
-  const units: Record<string, number> = {}
-  const unitState: Record<string, UnitState[]> = {}
+  const units: Record<string, UnitId[]> = {}
+  const unitState: Record<number, UnitState> = {}
   const unitStats: Record<string, UnitStats> = {}
 
   for (const unitType of UNIT_TYPES) {
@@ -43,8 +45,7 @@ export function getSimulationUnits(
     )
     if (!effectiveStats) continue
 
-    units[unitType] = sel.count
-    unitState[unitType] = []
+    units[unitType] = nextUnitIds(sel.count)
     unitStats[unitType] = effectiveStats
   }
 

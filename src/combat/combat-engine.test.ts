@@ -5,6 +5,7 @@ import type {
   FactionKey,
   UnitBaseType,
   UnitDefinition,
+  UnitId,
   UnitStats,
 } from '@/types'
 
@@ -12,6 +13,7 @@ import { CombatEngine } from './combat-engine'
 import { CombatState } from './combat-state/combat-state'
 import type { CombatMode, SideStateData } from './combat-state/types'
 import type { CombatOutcome } from './types'
+import { nextUnitIds } from './utils/unit-id'
 
 const TEST_FACTION: FactionKey = 'ARBOREC'
 
@@ -56,13 +58,13 @@ function createSideState(
   defaultStats?: Record<UnitBaseType, UnitStats>,
 ): SideStateData {
   const allStats = defaultStats ?? getUnitDataStats()
-  const units: Record<string, number> = {}
+  const units: Record<string, UnitId[]> = {}
   const unitStats: Record<string, UnitStats> = {}
 
   for (const [type, count] of Object.entries(counts)) {
     if (count && count > 0) {
       const unitType = type as UnitBaseType
-      units[unitType] = count
+      units[unitType] = nextUnitIds(count)
       unitStats[unitType] = customStats?.[unitType] ?? allStats[unitType]
     }
   }

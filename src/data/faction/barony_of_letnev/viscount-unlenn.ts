@@ -1,6 +1,6 @@
 import baronyOfLetnevIcon from '@/assets/faction/barony_of_letnev.svg?raw'
 import { declareParam } from '@/combat/abilities/declare-param'
-import { getUnitLocator } from '@/combat/utils/compact-units'
+import { getUnitId } from '@/combat/utils/compact-units'
 import { makeVariantId, parseVariantId } from '@/combat/utils/unit-variant'
 import type { UnitBaseType } from '@/types'
 
@@ -68,7 +68,7 @@ export const viscountUnlenn: Ability<Params> = {
         const variantId = makeVariantId(params.unitType, ['Viscount'])
         const unit = ctx.api.own.findUnitByPriority([variantId])
         if (!unit) return
-        dice.own.addDiceCount(1, getUnitLocator(unit)!)
+        dice.own.addDiceCount(1, getUnitId(unit)!)
         ctx.api.own.removeSubtype(variantId, 'Viscount')
         return
       },

@@ -24,9 +24,8 @@ export const salaiSaiCorian: Ability = {
         }
 
         // Set dice count to number of non-fighter ships
-        const currentDice = dice.own.get(ctx.getUnitType())?.[
-          ctx.getUnitIndex()
-        ]
+        const entries = dice.own.get(ctx.getUnitType())
+        const currentDice = entries?.find(d => d[2] === ctx.getUnit())
         const currentCount = currentDice?.[1] ?? 0
         const delta = nonFighterCount - currentCount
         if (delta !== 0) {

@@ -2,7 +2,13 @@ import { create } from 'mutative'
 
 import { GROUND_FORCES, STRUCTURES } from '@/constants/units'
 import factions from '@/data/faction'
-import type { CombatSide, DiceGroup, FactionKey, UnitBaseType } from '@/types'
+import type {
+  CombatSide,
+  DiceGroup,
+  FactionKey,
+  UnitBaseType,
+  UnitId,
+} from '@/types'
 import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 
 import {
@@ -22,7 +28,6 @@ import {
   CombatSideState,
   createDefaultUnitSelections,
 } from '../combat-side-state/combat-side-state'
-import { getDestroyedUnits } from '../combat-side-state/utils/get-destroyed-units'
 import { getSettingsValidTargets } from '../combat-side-state/utils/get-settings-valid-targets'
 import { Logger } from '../logger'
 import type { LogEntry } from '../types'
@@ -49,6 +54,9 @@ import type {
 
 /** Shared empty array to avoid allocating new [] on every disabled-abilities call */
 const EMPTY_LOG: LogEntry[] = []
+
+/** Shared empty destroyed record to avoid per-call {} allocation */
+const EMPTY_DESTROYED: Record<string, UnitId[]> = {}
 
 /** A state with its probability and log entries */
 export interface StateWithProbability {
@@ -346,6 +354,7 @@ export class CombatState {
         ? Logger.create().child(this.currentPhase.meta)
         : undefined)
     const startIndex = logger ? logger.entries.length : 0
+    const trackDestroyed = !!logger || this._params.hasDestroyAbilities()
 
     const { state: afterAbilities } = this.runAbilities(
       'BEFORE_ASSIGN_HITS',
@@ -365,16 +374,20 @@ export class CombatState {
     const attackerPriority = getUnitPriorityFromData(afterAbilities, 'attacker')
     const defenderPriority = getUnitPriorityFromData(afterAbilities, 'defender')
 
-    const newAttacker = assignHitsToSide(
-      afterAbilities.attacker,
-      attackerParticipating,
-      attackerPriority,
-    )
-    const newDefender = assignHitsToSide(
-      afterAbilities.defender,
-      defenderParticipating,
-      defenderPriority,
-    )
+    const { state: newAttacker, destroyed: attackerDestroyed } =
+      assignHitsToSide(
+        afterAbilities.attacker,
+        attackerParticipating,
+        attackerPriority,
+        trackDestroyed,
+      )
+    const { state: newDefender, destroyed: defenderDestroyed } =
+      assignHitsToSide(
+        afterAbilities.defender,
+        defenderParticipating,
+        defenderPriority,
+        trackDestroyed,
+      )
 
     const resultData: CombatStateData = {
       ...afterAbilities,
@@ -382,30 +395,28 @@ export class CombatState {
       defender: newDefender,
     }
 
-    // Skip getDestroyedUnits when units refs haven't changed (no units destroyed)
-    const attackerChanged =
-      afterAbilities.attacker.units !== resultData.attacker.units
-    const defenderChanged =
-      afterAbilities.defender.units !== resultData.defender.units
+    // Fast path: no destroy abilities and no logger — skip destroyed tracking entirely
+    if (!trackDestroyed) {
+      return {
+        state: CombatState.fromData(resultData, this._params),
+        log: EMPTY_LOG,
+      }
+    }
 
-    const EMPTY_DESTROYED: Record<string, number> = {}
     const destroyedContext = {
-      attacker: attackerChanged
-        ? getDestroyedUnits(afterAbilities.attacker, resultData.attacker)
-        : EMPTY_DESTROYED,
-      defender: defenderChanged
-        ? getDestroyedUnits(afterAbilities.defender, resultData.defender)
-        : EMPTY_DESTROYED,
+      attacker: attackerDestroyed,
+      defender: defenderDestroyed,
     }
 
     if (logger) {
       logger.child('ASSIGN_HITS').log(destroyedContext)
     }
 
-    if (
-      destroyedContext.attacker === EMPTY_DESTROYED &&
-      destroyedContext.defender === EMPTY_DESTROYED
-    ) {
+    const hasDestroyed =
+      Object.keys(destroyedContext.attacker).length > 0 ||
+      Object.keys(destroyedContext.defender).length > 0
+
+    if (!hasDestroyed) {
       return {
         state: CombatState.fromData(resultData, this._params),
         log: logger ? [...logger.entries.slice(startIndex)] : [],
@@ -945,16 +956,12 @@ function applyStoredHitValueModifiers(
   for (const mod of modifiers) {
     if (mod.context !== currentMeta) continue
 
-    if (mod.unitLocator) {
-      // Target specific unit by locator
+    if (mod.unitId !== undefined) {
+      // Target specific unit by UnitId
       for (const dice of Object.values(pool)) {
         if (!dice) continue
         for (let i = 0; i < dice.length; i++) {
-          const loc = dice[i][2]
-          if (
-            loc.key === mod.unitLocator.key &&
-            loc.index === mod.unitLocator.index
-          ) {
+          if (dice[i][2] === mod.unitId) {
             dice[i] = [
               Math.max(1, dice[i][0] + mod.amount),
               dice[i][1],
@@ -1038,18 +1045,20 @@ function addHitsToDataWithPhase(
 }
 
 /** Check if units record has any units at all (no type filtering) */
-function hasAnyUnits(units: Record<string, number>): boolean {
-  for (const _ in units) return true
+function hasAnyUnits(units: Record<string, unknown[]>): boolean {
+  for (const key in units) {
+    if (units[key].length > 0) return true
+  }
   return false
 }
 
 /** Check if units record has any units of participating types (early exit) */
 function hasParticipatingUnits(
-  units: Record<string, number>,
+  units: Record<string, unknown[]>,
   participatingUnits: ReadonlySet<UnitBaseType>,
 ): boolean {
   for (const key in units) {
-    if (units[key] <= 0) continue
+    if (units[key].length <= 0) continue
     const { type } = parseVariantId(key)
     if (participatingUnits.has(type)) return true
   }
@@ -1120,14 +1129,17 @@ function getFilteredSacrificeOrder(
   return result
 }
 
-/** Assign hits to a side directly on data, returning new SideStateData.
- * Batches all hit pools into a single pass to minimize object spreads. */
+/** Assign hits to a side directly on data, returning new SideStateData and destroyed UnitIds.
+ * Batches all hit pools into a single pass to minimize object spreads.
+ * When trackDestroyed is false, skips building the destroyed record (no destroy abilities). */
 function assignHitsToSide(
   sideData: SideStateData,
   participatingUnits: ReadonlySet<UnitBaseType>,
   unitPriority: string[],
-): SideStateData {
-  if (sideData.hitPools.length === 0) return sideData
+  trackDestroyed?: boolean,
+): { state: SideStateData; destroyed: Record<string, UnitId[]> } {
+  if (sideData.hitPools.length === 0)
+    return { state: sideData, destroyed: EMPTY_DESTROYED }
 
   const sacrificeOrder = getFilteredSacrificeOrder(
     unitPriority,
@@ -1136,7 +1148,7 @@ function assignHitsToSide(
 
   // Spread once, then mutate in-place across all pools
   const newUnits = { ...sideData.units }
-  const newUnitState = { ...sideData.unitState }
+  let destroyed: Record<string, UnitId[]> | undefined
   let changed = false
 
   for (const pool of sideData.hitPools) {
@@ -1153,22 +1165,28 @@ function assignHitsToSide(
       )
         continue
 
-      const count = newUnits[variantId]
-      if (!count || count <= 0) continue
+      const origIds = newUnits[variantId]
+      if (!origIds || origIds.length <= 0) continue
 
-      const toDestroy = Math.min(count, remaining)
-      const newCount = count - toDestroy
+      const toDestroy = Math.min(origIds.length, remaining)
       changed = true
 
-      if (newCount <= 0) {
-        delete newUnits[variantId]
-        delete newUnitState[variantId]
-      } else {
-        newUnits[variantId] = newCount
-        const stateArr = newUnitState[variantId]
-        if (stateArr && stateArr.length > newCount) {
-          newUnitState[variantId] = stateArr.slice(0, newCount)
+      // Clone the array before mutating (newUnits is shallow-spread, arrays are shared)
+      const ids = origIds.slice(0, origIds.length - toDestroy)
+
+      // Track destroyed UnitIds (only when destroy abilities or logging need it)
+      if (trackDestroyed) {
+        if (!destroyed) destroyed = {}
+        if (!destroyed[variantId]) destroyed[variantId] = []
+        for (let i = origIds.length - toDestroy; i < origIds.length; i++) {
+          destroyed[variantId].push(origIds[i])
         }
+      }
+
+      if (ids.length <= 0) {
+        delete newUnits[variantId]
+      } else {
+        newUnits[variantId] = ids
       }
 
       remaining -= toDestroy
@@ -1177,9 +1195,17 @@ function assignHitsToSide(
 
   // Always clear hitPools — even when no units were destroyed,
   // stale pools must not leak into subsequent phases
-  if (!changed) return { ...sideData, hitPools: [] }
+  if (!changed)
+    return { state: { ...sideData, hitPools: [] }, destroyed: EMPTY_DESTROYED }
 
-  return { ...sideData, units: newUnits, unitState: newUnitState, hitPools: [] }
+  return {
+    state: {
+      ...sideData,
+      units: newUnits,
+      hitPools: [],
+    },
+    destroyed: destroyed ?? EMPTY_DESTROYED,
+  }
 }
 
 const abilitiesSideHashCache = new WeakMap<
@@ -1217,29 +1243,25 @@ function getSideHash(side: SideStateData): string {
   if (keys.length > 1) keys.sort()
 
   for (const key of keys) {
-    const count = side.units[key]
+    const ids = side.units[key]
+    const count = ids.length
     if (count <= 0) continue
 
     if (result) result += ','
 
-    // Count damaged units directly — avoids Map allocation
-    const stateArr = side.unitState[key]
-    if (stateArr && stateArr.length > 0) {
-      let damaged = 0
-      for (let i = 0; i < count; i++) {
-        if (stateArr[i]?.isDamaged) damaged++
-      }
-      const undamaged = count - damaged
-      if (damaged === 0) {
-        result += key + ':' + count
-      } else if (undamaged === 0) {
-        result += key + ':' + damaged + 'd'
-      } else {
-        // '' sorts before 'd', so undamaged first
-        result += key + ':' + undamaged + ',' + damaged + 'd'
-      }
-    } else {
+    // Count damaged units by looking up each UnitId's state
+    let damaged = 0
+    for (const id of ids) {
+      if (side.unitState[id]?.isDamaged) damaged++
+    }
+    const undamaged = count - damaged
+    if (damaged === 0) {
       result += key + ':' + count
+    } else if (undamaged === 0) {
+      result += key + ':' + damaged + 'd'
+    } else {
+      // '' sorts before 'd', so undamaged first
+      result += key + ':' + undamaged + ',' + damaged + 'd'
     }
   }
 

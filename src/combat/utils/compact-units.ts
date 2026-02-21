@@ -1,17 +1,10 @@
-import type {
-  Unit,
-  UnitBaseType,
-  UnitLocator,
-  UnitState,
-  UnitStats,
-} from '@/types'
+import type { Unit, UnitBaseType, UnitId, UnitState, UnitStats } from '@/types'
 
 import type { SideStateData } from '../combat-state/types'
 import { makeVariantId, parseVariantId } from './unit-variant'
 
-/** Symbol keys for locator — own properties on Unit, invisible to Object.keys/for-in */
-export const LOCATOR_KEY = Symbol('lk')
-export const LOCATOR_IDX = Symbol('li')
+/** Symbol key for UnitId — own property on Unit, invisible to Object.keys/for-in */
+export const UNIT_ID = Symbol('uid')
 
 /** Cache for reconstructed unit arrays per side state + base type */
 const reconstructCache = new WeakMap<SideStateData, Map<string, Unit[]>>()
@@ -28,25 +21,16 @@ const _symDesc: PropertyDescriptor = {
   configurable: true,
 }
 
-/** Tag a reconstructed unit with its locator (uses defineProperty to bypass proxy prototypes) */
-export function tagUnit(unit: Unit, locator: UnitLocator): void {
-  _symDesc.value = locator.key
-  Object.defineProperty(unit, LOCATOR_KEY, _symDesc)
-  _symDesc.value = locator.index
-  Object.defineProperty(unit, LOCATOR_IDX, _symDesc)
+/** Tag a reconstructed unit with its UnitId (uses defineProperty to bypass proxy prototypes) */
+export function tagUnit(unit: Unit, id: UnitId): void {
+  _symDesc.value = id
+  Object.defineProperty(unit, UNIT_ID, _symDesc)
   _symDesc.value = undefined
 }
 
-/** Get the locator for a reconstructed unit */
-export function getUnitLocator(unit: Unit): UnitLocator | undefined {
-  const key = (unit as Record<symbol, unknown>)[LOCATOR_KEY] as
-    | string
-    | undefined
-  const index = (unit as Record<symbol, unknown>)[LOCATOR_IDX] as
-    | number
-    | undefined
-  if (key !== undefined && index !== undefined) return { key, index }
-  return undefined
+/** Get the UnitId for a reconstructed unit */
+export function getUnitId(unit: Unit): UnitId | undefined {
+  return (unit as Record<symbol, unknown>)[UNIT_ID] as UnitId | undefined
 }
 
 /** Reusable property descriptor to avoid allocations */
@@ -117,13 +101,13 @@ export function reconstructUnit(
 
 /** Cache: units record → (baseType → sorted variant keys) */
 const variantKeysCache = new WeakMap<
-  Record<string, number>,
+  Record<string, UnitId[]>,
   Map<string, string[]>
 >()
 
 /** Get sorted variant keys for a base type from units record */
 export function getVariantKeysForType(
-  units: Record<string, number>,
+  units: Record<string, UnitId[]>,
   baseType: UnitBaseType,
 ): string[] {
   let cacheMap = variantKeysCache.get(units)
@@ -134,7 +118,7 @@ export function getVariantKeysForType(
 
   const keys: string[] = []
   for (const key of Object.keys(units)) {
-    if (units[key] <= 0) continue
+    if (units[key].length <= 0) continue
     const { type } = parseVariantId(key)
     if (type === baseType) keys.push(key)
   }
@@ -151,60 +135,37 @@ export function getVariantKeysForType(
 
 /** Total count across all variants of a base type */
 export function totalCountForType(
-  units: Record<string, number>,
+  units: Record<string, UnitId[]>,
   baseType: UnitBaseType,
 ): number {
   let total = 0
   for (const key of Object.keys(units)) {
     const { type } = parseVariantId(key)
-    if (type === baseType) total += units[key]
+    if (type === baseType) total += units[key].length
   }
   return total
 }
 
 /**
- * Resolve a global index (across all variants of a base type) to a specific
- * variant key and sub-index within that variant.
- * Variant keys are sorted alphabetically. Global index = sum of counts for
- * preceding keys + sub-index.
+ * Find the variant key that contains a given UnitId for a base type.
+ * Scans variant key arrays to find which one contains the UnitId.
  */
-export function resolveGlobalIndex(
+export function findVariantKeyForUnit(
   sideState: SideStateData,
+  unitId: UnitId,
   baseType: UnitBaseType,
-  globalIndex: number,
-): { key: string; subIndex: number } {
-  const keys = getVariantKeysForType(sideState.units, baseType)
-  let remaining = globalIndex
-  for (const key of keys) {
-    const count = sideState.units[key]
-    if (remaining < count) {
-      return { key, subIndex: remaining }
-    }
-    remaining -= count
+): string {
+  for (const key of Object.keys(sideState.units)) {
+    const { type } = parseVariantId(key)
+    if (type !== baseType) continue
+    if (sideState.units[key].includes(unitId)) return key
   }
-  // Fallback: use base type key
-  return { key: baseType, subIndex: 0 }
-}
-
-/** Convert (variant key, sub-index) to a global index across all variants of the base type */
-export function toGlobalIndex(
-  sideState: SideStateData,
-  key: string,
-  subIndex: number,
-): number {
-  const { type } = parseVariantId(key)
-  const keys = getVariantKeysForType(sideState.units, type)
-  let offset = 0
-  for (const k of keys) {
-    if (k === key) return offset + subIndex
-    offset += sideState.units[k]
-  }
-  return offset + subIndex
+  return baseType
 }
 
 /**
  * Reconstruct all Unit objects for a base type (all variants), cached per sideState.
- * Returns a flat array with global indexing.
+ * Returns a flat array with units ordered by sorted variant keys.
  */
 export function reconstructUnitsForType(
   sideState: SideStateData,
@@ -220,15 +181,14 @@ export function reconstructUnitsForType(
   const result: Unit[] = []
 
   for (const key of keys) {
-    const count = sideState.units[key]
+    const ids = sideState.units[key]
     const stats = resolveUnitStats(sideState, key)
     if (!stats) continue
-    const stateArr = sideState.unitState[key]
 
-    for (let i = 0; i < count; i++) {
-      const state = stateArr?.[i]
+    for (const id of ids) {
+      const state = sideState.unitState[id]
       const unit = reconstructUnit(stats, state, key)
-      tagUnit(unit, { key, index: i })
+      tagUnit(unit, id)
       result.push(unit)
     }
   }
@@ -253,7 +213,7 @@ export function reconstructAllUnits(
   const seenTypes = new Set<UnitBaseType>()
 
   for (const key of Object.keys(sideState.units)) {
-    if (sideState.units[key] <= 0) continue
+    if (sideState.units[key].length <= 0) continue
     const { type } = parseVariantId(key)
     seenTypes.add(type)
   }
@@ -269,20 +229,15 @@ export function reconstructAllUnits(
 }
 
 /**
- * Ensure unitState entry exists for a given key and index.
- * Lazily creates the array and fills with empty objects as needed.
+ * Ensure unitState entry exists for a given UnitId.
+ * Creates an empty state object if none exists.
  */
 export function ensureUnitState(
   sideState: SideStateData,
-  key: string,
-  index: number,
+  unitId: UnitId,
 ): UnitState {
-  if (!sideState.unitState[key]) {
-    sideState.unitState[key] = []
+  if (!sideState.unitState[unitId]) {
+    sideState.unitState[unitId] = {}
   }
-  const arr = sideState.unitState[key]
-  while (arr.length <= index) {
-    arr.push({})
-  }
-  return arr[index]
+  return sideState.unitState[unitId]
 }
