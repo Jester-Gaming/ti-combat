@@ -1,5 +1,6 @@
 import yinBrotherhoodIcon from '@/assets/faction/yin_brotherhood.svg?raw'
 import type { Ability } from '@/combat/abilities/types'
+import type { UnitType } from '@/types'
 
 export const brotherMilor: Ability = {
   key: 'BROTHER_MILOR',
@@ -16,7 +17,7 @@ export const brotherMilor: Ability = {
       timing: 'AFTER_DESTROY',
       isCallable: (_params, _ctx, units) => {
         for (const key in units.own) {
-          if (units.own[key]?.length > 0) return true
+          if (units.own[key as UnitType]?.length > 0) return true
         }
         return false
       },

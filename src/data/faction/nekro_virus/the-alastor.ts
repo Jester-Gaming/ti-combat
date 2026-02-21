@@ -14,7 +14,7 @@ export const theAlastor: Ability = {
   },
   headerUI: 'isEnabled',
   declareParamChange: (_params, settings) =>
-    ((settings.groundForces as UnitBaseType[]) ?? GROUND_FORCES).map(u => ({
+    (settings.groundForces ?? GROUND_FORCES).map(u => ({
       key: 'ships',
       value: u,
     })),

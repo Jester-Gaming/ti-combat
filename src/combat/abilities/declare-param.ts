@@ -1,25 +1,26 @@
-import type { Ability, SyncSourceConfig } from './types'
+import type { Ability, SettingsParams, SyncSourceConfig } from './types'
 
 const DECLARED_PARAM = Symbol('declaredParam')
 
-interface DeclaredParamOptions<T> {
+interface DeclaredParamOptions<
+  T,
+  K extends keyof SettingsParams = keyof SettingsParams,
+> {
   default: T
-  source?: string
+  source?: K
   side?: 'own' | 'opponent'
   sort?: 'asc' | 'desc'
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  compute?: (value: any) => T
-  filter?: (value: string) => boolean
+  compute?: (value: SettingsParams[K]) => T
+  filter?: (value: SettingsParams[K][number]) => boolean
 }
 
 interface DeclaredParamValue<T> {
   [DECLARED_PARAM]: true
   default: T
-  source?: string
+  source?: keyof SettingsParams
   side: 'own' | 'opponent'
   sort: 'asc' | 'desc'
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  compute?: (value: any) => T
+  compute?: (value: SettingsParams[keyof SettingsParams]) => T
   filter?: (value: string) => boolean
 }
 
@@ -27,7 +28,10 @@ interface DeclaredParamValue<T> {
  * Mark a param as synced from a SETTINGS group.
  * Returns `T` at the type level so `params` matches the `Params` generic.
  */
-export function declareParam<T>(options: DeclaredParamOptions<T>): T {
+export function declareParam<
+  T,
+  K extends keyof SettingsParams = keyof SettingsParams,
+>(options: DeclaredParamOptions<T, K>): T {
   return {
     [DECLARED_PARAM]: true,
     default: options.default,

@@ -3,6 +3,7 @@ import type {
   Ability,
   AbilityCallContext,
   ParamChange,
+  SettingsParams,
 } from '@/combat/abilities/types'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import baseUnits from '@/data/base-units'
@@ -64,7 +65,7 @@ function createFactionUnitAbility(
   // Collect declareParamChange from unit abilities (e.g. Hel-Titan adds PDS to groundForces)
   const paramChanges = (stats.ABILITIES ?? [])
     .filter(a => a.declareParamChange)
-    .flatMap(a => a.declareParamChange!(a.params, {}))
+    .flatMap(a => a.declareParamChange!(a.params, {} as SettingsParams))
 
   return {
     key,

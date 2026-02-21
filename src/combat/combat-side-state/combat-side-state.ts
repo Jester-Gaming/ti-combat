@@ -76,7 +76,7 @@ function getFilteredSacrificeOrder(
   }
 
   const result = unitPriority.filter(id => {
-    const { type } = parseVariantId(id)
+    const { type } = parseVariantId(id as UnitType)
     return participatingUnits.has(type)
   })
 
@@ -296,7 +296,7 @@ export class CombatSideState {
         if (
           validTargets.length > 0 &&
           !validTargets.includes(vid) &&
-          !validTargets.includes(parseVariantId(variantId).type)
+          !validTargets.includes(parseVariantId(vid).type)
         )
           continue
 
@@ -344,7 +344,7 @@ export class CombatSideState {
     for (const [key, ids] of Object.entries(this.data.units)) {
       if (ids.length <= 0) continue
       if (filterSet) {
-        const { type } = parseVariantId(key)
+        const { type } = parseVariantId(key as UnitType)
         if (!filterSet.has(type)) continue
       }
       total += ids.length
@@ -412,7 +412,11 @@ export class CombatSideState {
   }
 
   setAbilityParam(abilityKey: string, params: Record<string, unknown>): void {
-    this._combatState.params.setParam(this._side, abilityKey, params)
+    this._combatState.params.setParamWithReconcile(
+      this._side,
+      abilityKey,
+      params,
+    )
     // Force new cs.data reference so React memoization triggers
     this._combatState.data = { ...this._combatState.data }
   }

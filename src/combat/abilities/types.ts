@@ -16,18 +16,14 @@ import type {
 import type { Logger } from '../logger'
 import type { SideApi } from './api/ability-api'
 
-export interface ParamChange {
+export interface SyncSourceConfig<
+  K extends keyof SettingsParams = keyof SettingsParams,
+> {
   key: string
-  value: unknown
-}
-
-export interface SyncSourceConfig {
-  key: string
-  group: string
+  group: K
   side: 'own' | 'opponent'
   sort: 'asc' | 'desc'
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  compute?: (value: any) => unknown
+  compute?: (value: SettingsParams[K]) => unknown
   filter?: (value: string) => boolean
 }
 
@@ -37,18 +33,25 @@ export interface DeclaredSubtype {
 }
 
 export type SettingsParams = {
-  nonFighterShips: UnitType[]
-  ships: UnitType[]
-  groundForces: UnitType[]
-  structures: UnitType[]
-  spaceCombatParticipating: UnitType[]
-  groundCombatParticipating: UnitType[]
-  validTargetsSpaceCannonOffense: UnitType[]
-  validTargetsBombardment: UnitType[]
-  validTargetsSpaceCannonDefense: UnitType[]
-  validTargetsAntiFighterBarrage: UnitType[]
+  nonFighterShips: UnitBaseType[]
+  ships: UnitBaseType[]
+  groundForces: UnitBaseType[]
+  structures: UnitBaseType[]
+  spaceCombatParticipating: UnitBaseType[]
+  groundCombatParticipating: UnitBaseType[]
+  validTargetsSpaceCannonOffense: UnitBaseType[]
+  validTargetsBombardment: UnitBaseType[]
+  validTargetsSpaceCannonDefense: UnitBaseType[]
+  validTargetsAntiFighterBarrage: UnitBaseType[]
   subtypes: DeclaredSubtype[]
 }
+
+export type ParamChange = {
+  [K in keyof SettingsParams]: {
+    key: K
+    value: SettingsParams[K] extends (infer E)[] ? E : SettingsParams[K]
+  }
+}[keyof SettingsParams]
 
 // Sided context (external API - attacker/defender perspective)
 export interface SidedContext<T> {
@@ -108,9 +111,9 @@ export interface TimingContextMap {
   AFTER_ASSIGN_HITS_STEP: void
   WHEN_SUSTAIN_DAMAGE_USE: UnitId
   AFTER_SUSTAIN_DAMAGE_USE: UnitId
-  DESTROY: SidedContext<Record<string, UnitId[]>>
-  WHEN_DESTROY: SidedContext<Record<string, UnitId[]>>
-  AFTER_DESTROY: SidedContext<Record<string, UnitId[]>>
+  DESTROY: SidedContext<Record<UnitType, UnitId[]>>
+  WHEN_DESTROY: SidedContext<Record<UnitType, UnitId[]>>
+  AFTER_DESTROY: SidedContext<Record<UnitType, UnitId[]>>
   END_OF_COMBAT_ROUND: void
   END_OF_COMBAT: void
   CLEANUP_ROUND: void

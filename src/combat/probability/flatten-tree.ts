@@ -51,7 +51,7 @@ function formatCompactSideKey(
   for (const key of keys) {
     const ids = units[key]
     if (!ids || ids.length <= 0) continue
-    const { type } = parseVariantId(key)
+    const { type } = parseVariantId(key as UnitType)
     if (!participating.has(type)) continue
 
     if (result) result += ','
@@ -83,7 +83,7 @@ export function extractSurvivors(
     const ids = sideState.units[key as UnitType]
     if (!ids || ids.length <= 0) continue
 
-    const { type, subtypes } = parseVariantId(key)
+    const { type, subtypes } = parseVariantId(key as UnitType)
     if (!participatingUnits.has(type)) continue
 
     if (!survivors[type]) {
@@ -128,7 +128,7 @@ function hasParticipatingUnits(
 ): boolean {
   for (const key in units) {
     if (!units[key] || units[key].length <= 0) continue
-    const { type } = parseVariantId(key)
+    const { type } = parseVariantId(key as UnitType)
     if (participating.has(type)) return true
   }
   return false

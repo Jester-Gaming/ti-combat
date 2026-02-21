@@ -799,7 +799,7 @@ function hasParticipatingUnits(
 ): boolean {
   for (const key in units) {
     if (units[key].length <= 0) continue
-    const { type } = parseVariantId(key)
+    const { type } = parseVariantId(key as UnitType)
     if (participatingUnits.has(type)) return true
   }
   return false

@@ -1,11 +1,10 @@
-import { GROUND_FORCES, SHIPS, UNIT_PRICE } from '@/constants/units'
+import { GROUND_FORCES, SHIPS } from '@/constants/units'
 import type {
   CombatSide,
   FactionKey,
   UnitBaseType,
   UnitId,
   UnitType,
-  UnitVariantId,
 } from '@/types'
 
 import { TIMING_GROUPS } from '../../data/abilities/general/ability-order'
@@ -18,7 +17,7 @@ import type {
 } from '../combat-state/types'
 import { Logger } from '../logger'
 import { resolveUnitStats } from '../utils/compact-units'
-import { makeVariantId, parseVariantId } from '../utils/unit-variant'
+import { parseVariantId } from '../utils/unit-variant'
 import { AbilityContext } from './api/ability-api'
 import { buildDiceApi, buildDiceReadApi } from './api/dice-api'
 import { extractDefaults, extractSyncSources } from './declare-param'
@@ -26,6 +25,12 @@ import {
   getAvailableAbilities,
   getUnitDefinitionAbilityKeys,
 } from './get-available-abilities'
+import {
+  expandWithSubtypes,
+  reconcileArrayParam,
+  reconcileStringParam,
+  sortByPrice,
+} from './reconcile-helpers'
 import type {
   Ability,
   AbilityInvoke,
@@ -37,6 +42,7 @@ import type {
   InternalTimingContextMap,
   OwnOpponentContext,
   ParamChange,
+  SettingsParams,
   SidedContext,
   SyncSourceConfig,
   TimingContextMap,
@@ -114,13 +120,13 @@ function countAllUnits(units: Record<string, unknown[]>): number {
 function resolveSettings(
   abilities: Ability[],
   config: SideConfig,
-): { settings: Record<string, unknown>; subtypes: DeclaredSubtype[] } {
+): { settings: SettingsParams; subtypes: DeclaredSubtype[] } {
   const settingsAbility = abilities.find(a => a.key === 'SETTINGS')
   const settings = {
     ...(settingsAbility ? extractDefaults(settingsAbility) : undefined),
     ...config['SETTINGS'],
-  }
-  const subtypes = (settings.subtypes ?? []) as DeclaredSubtype[]
+  } as SettingsParams
+  const subtypes = settings.subtypes ?? []
   return { settings, subtypes }
 }
 
@@ -161,112 +167,18 @@ function isDiceTiming(timing: AbilityTiming | AbilityTiming[]): boolean {
 
 // ── Sync-source reconciliation helpers ────────────────────────────────────
 
-function sortByPrice(
-  types: UnitBaseType[],
-  direction: 'asc' | 'desc',
-): UnitBaseType[] {
-  const sorted = [...types].sort((a, b) => UNIT_PRICE[a] - UNIT_PRICE[b])
-  return direction === 'desc' ? sorted.reverse() : sorted
-}
-
-function expandWithSubtypes(
-  sortedTypes: UnitBaseType[],
-  subtypes: DeclaredSubtype[],
-): string[] {
-  const simpleByType = new Map<UnitBaseType, DeclaredSubtype[]>()
-  const compound: DeclaredSubtype[] = []
-
-  for (const st of subtypes) {
-    const { type, subtypes: parentSubs } = parseVariantId(st.unitType)
-    if (parentSubs.length === 0) {
-      const list = simpleByType.get(type)
-      if (list) list.push(st)
-      else simpleByType.set(type, [st])
-    } else {
-      compound.push(st)
-    }
-  }
-
-  const result: string[] = []
-  const seen = new Set<string>()
-  for (const unitType of sortedTypes) {
-    if (!seen.has(unitType)) {
-      result.push(unitType)
-      seen.add(unitType)
-    }
-    const subs = simpleByType.get(unitType)
-    if (subs) {
-      for (const sub of subs) {
-        const variantId = makeVariantId(sub.unitType, [
-          sub.name as UnitVariantId,
-        ])
-        if (!seen.has(variantId)) {
-          result.push(variantId)
-          seen.add(variantId)
-        }
-      }
-    }
-  }
-
-  for (const sub of compound) {
-    if (!seen.has(sub.unitType)) continue
-    const { type, subtypes: parentSubs } = parseVariantId(sub.unitType)
-    const variantId = makeVariantId(type, [
-      ...parentSubs,
-      sub.name as UnitVariantId,
-    ])
-    if (!seen.has(variantId)) {
-      const parentIndex = result.indexOf(sub.unitType)
-      result.splice(parentIndex + 1, 0, variantId)
-      seen.add(variantId)
-    }
-  }
-
-  return result
-}
-
 function buildValidList(
   config: SyncSourceConfig,
-  ownSettings: Record<string, unknown>,
-  opponentSettings: Record<string, unknown>,
+  ownSettings: SettingsParams,
+  opponentSettings: SettingsParams,
   ownSubtypes: DeclaredSubtype[],
   opponentSubtypes: DeclaredSubtype[],
 ): string[] {
   const settings = config.side === 'own' ? ownSettings : opponentSettings
   const subtypes = config.side === 'own' ? ownSubtypes : opponentSubtypes
-  const group = (settings[config.group] as UnitBaseType[]) ?? []
+  const group = settings[config.group] as UnitBaseType[]
   const sorted = sortByPrice(group, config.sort)
   return expandWithSubtypes(sorted, subtypes)
-}
-
-function reconcileArrayParam(current: string[], validList: string[]): string[] {
-  const validSet = new Set(validList)
-  const currentSet = new Set(current)
-
-  const kept = current.filter(item => validSet.has(item))
-  const newItems = validList.filter(item => !currentSet.has(item))
-
-  if (newItems.length === 0) return kept
-
-  const result = [...kept]
-  for (const newItem of newItems) {
-    const validIndex = validList.indexOf(newItem)
-    let insertAt = 0
-    for (let i = 0; i < result.length; i++) {
-      const resultItemValidIndex = validList.indexOf(result[i])
-      if (resultItemValidIndex < validIndex) {
-        insertAt = i + 1
-      }
-    }
-    result.splice(insertAt, 0, newItem)
-  }
-
-  return result
-}
-
-function reconcileStringParam(current: string, validList: string[]): string {
-  if (validList.includes(current)) return current
-  return validList[0] ?? current
 }
 
 // ── Tracker types ────────────────────────────────────────────────────────
@@ -436,9 +348,9 @@ export class AbilitiesParams {
    * Create from existing config data (engine initialization path).
    *
    * Unlike the constructor (UI path), group additions are NOT applied
-   * here — they come from runtime invokes (START_OF_COMBAT, etc.).
-   * Only SETTINGS base groups are reset to defaults and derived values
-   * are recomputed. Consumer params are trusted as-is from config.
+   * in the final SETTINGS — they come from runtime invokes
+   * (START_OF_COMBAT, etc.). Consumer params are synced from enriched
+   * groups, then user ordering/selection is restored.
    */
   static fromConfig(combatState: CombatState): AbilitiesParams {
     const instance = Object.create(AbilitiesParams.prototype) as AbilitiesParams
@@ -451,15 +363,18 @@ export class AbilitiesParams {
     )
     instance._attackerCtx = new AbilityContext('attacker', instance)
     instance._defenderCtx = new AbilityContext('defender', instance)
-    // Phase 1: Enrich consumers from full SETTINGS (with group additions).
-    // Consumer params (e.g. AC targetPriority) sync from enriched groups,
-    // so they include all possible targets (e.g. Infantry via Alastor).
-    instance.reconcile({ applyGroupAdditions: true, preserveUserParams: true })
 
-    // Phase 2: Reset SETTINGS to base (no group additions), don't touch
-    // consumers. Abilities must update SETTINGS at runtime to affect
-    // participation — findUnitByPriority filters by participation.
-    instance.reconcile({ applyGroupAdditions: false, settingsOnly: true })
+    // Snapshot user-configured consumer params (ordering, selection)
+    const savedParams = instance.snapshotConsumerParams()
+
+    // Full reconcile (resets SETTINGS with group additions, syncs consumers)
+    instance.reconcile()
+
+    // Restore user ordering/selection that reconcile overwrote
+    instance.restoreConsumerParams(savedParams)
+
+    // Strip group additions from SETTINGS — abilities add at runtime
+    instance.resetSettingsToBase()
 
     instance.buildInvokes()
     return instance
@@ -566,8 +481,6 @@ export class AbilitiesParams {
     params: Record<string, unknown>,
   ): void {
     const ability = this._abilities[side].find(a => a.key === abilityKey)
-    const oldIsEnabled = this.config[side][abilityKey]?.isEnabled
-    const oldUses = this.config[side][abilityKey]?.uses
 
     let finalParams = params
     if (ability?.onParamSet) {
@@ -611,15 +524,15 @@ export class AbilitiesParams {
         [abilityKey]: finalParams,
       }
     }
+  }
 
-    if (ability?.declareParamChange) {
-      this.reconcile()
-    } else if (
-      finalParams.isEnabled !== oldIsEnabled ||
-      finalParams.uses !== oldUses
-    ) {
-      this.reconcile({ resetBaseGroups: false })
-    }
+  setParamWithReconcile(
+    side: CombatSide,
+    abilityKey: string,
+    params: Record<string, unknown>,
+  ): void {
+    this.setParam(side, abilityKey, params)
+    this.reconcile()
   }
 
   // ── Ability execution engine ──────────────────────────────────────
@@ -1095,7 +1008,7 @@ export class AbilitiesParams {
     this._combatState.ensureOwnInvokes()
     const sideConfig = this.state.abilities[side]
     const sideMap = this._combatState._invokes[side]
-    const { type: unitType } = parseVariantId(variantKey)
+    const { type: unitType } = parseVariantId(variantKey as UnitType)
 
     // Remove existing unit-invoke entries for these unitIds
     const idSet = new Set<UnitId>(unitIds)
@@ -1215,25 +1128,21 @@ export class AbilitiesParams {
   }
 
   /**
-   * Reconcile SETTINGS computed params directly on an Immer draft.
-   * Called from updateAbilityConfig when SETTINGS is modified during produce.
+   * Invoke onParamSet for a specific ability key on a draft.
+   * Called from updateAbilityConfig when ability params are modified during produce.
    */
-  reconcileSettingsOnDraft(draft: CombatStateData): void {
-    for (const side of ['attacker', 'defender'] as const) {
-      const sideAbilities = this._abilities[side]
-      const { settings, subtypes } = resolveSettings(
-        sideAbilities,
-        draft.abilities[side],
-      )
-      this.reconcileSyncSources(
-        side,
-        sideAbilities.filter(a => a.key === 'SETTINGS'),
-        draft.abilities[side],
-        settings,
-        settings,
-        subtypes,
-        subtypes,
-      )
+  invokeOnParamSet(
+    side: CombatSide,
+    targetKey: string,
+    changedKeys: string[],
+    draft: CombatStateData,
+  ): void {
+    const ability = this._abilities[side].find(a => a.key === targetKey)
+    if (!ability?.onParamSet) return
+    const params = draft.abilities[side][targetKey]
+    if (!params) return
+    for (const key of changedKeys) {
+      ability.onParamSet(params, key, params[key])
     }
   }
 
@@ -1315,130 +1224,167 @@ export class AbilitiesParams {
     }
   }
 
-  /**
-   * Unified reconciliation pipeline.
-   *
-   * @param resetBaseGroups    Reset ships/groundForces/subtypes to defaults
-   *   and recompute from declareParamChange. (default: true)
-   * @param applyGroupAdditions  Apply non-subtype group additions from
-   *   declareParamChange (e.g. adding MECH to ships). Only relevant when
-   *   resetBaseGroups is true. (default: true)
-   * @param preserveUserParams   Merge back user-provided consumer params
-   *   after sync — used by the engine init path. (default: false)
-   */
-  private reconcile(
-    options: {
-      resetBaseGroups?: boolean
-      applyGroupAdditions?: boolean
-      preserveUserParams?: boolean
-      settingsOnly?: boolean
-    } = {},
-  ): void {
-    const {
-      resetBaseGroups = true,
-      applyGroupAdditions = true,
-      preserveUserParams = false,
-      settingsOnly = false,
-    } = options
-
+  private reconcile(): void {
     const config = this.config
+    this.resetBaseGroups(config)
+    this.ensureConsumerDefaults(config)
+    this.reconcileSyncAll(config)
+    this.reconcileAbilityOrder(config)
+  }
 
-    if (resetBaseGroups) {
-      for (const side of ['attacker', 'defender'] as const) {
-        const abilities = this._abilities[side]
+  /**
+   * Reset SETTINGS ships/groundForces/subtypes to base constants,
+   * apply group additions from declareParamChange, and recompute
+   * derived params via onParamSet.
+   */
+  private resetBaseGroups(config: AbilitiesConfig): void {
+    for (const side of ['attacker', 'defender'] as const) {
+      const abilities = this._abilities[side]
 
-        if (!config[side]['SETTINGS']) config[side]['SETTINGS'] = {}
-        const settings = config[side]['SETTINGS']
+      if (!config[side]['SETTINGS']) config[side]['SETTINGS'] = {}
+      const settingsAbility = abilities.find(a => a.key === 'SETTINGS')
 
-        settings.ships = [...SHIPS]
-        settings.groundForces = [...GROUND_FORCES]
-        settings.subtypes = []
+      // Ensure all SETTINGS defaults are present (e.g. validTargetsSpaceCannonOffense)
+      if (settingsAbility) {
+        const defaults = extractDefaults(settingsAbility)
+        for (const key of Object.keys(defaults)) {
+          if (!(key in config[side]['SETTINGS']))
+            config[side]['SETTINGS'][key] = defaults[key]
+        }
+      }
 
-        // Two passes: first builds groups (groundForces, etc.),
-        // second resolves cross-group deps (e.g. Alastor copies groundForces → ships)
-        for (let pass = 0; pass < 2; pass++) {
-          const changes = this.collectParamChanges(
-            abilities,
-            config[side],
-            settings,
-          )
-          for (const change of changes) {
-            if (change.key === 'subtypes') {
-              const subtypes = settings.subtypes as DeclaredSubtype[]
-              const sub = change.value as DeclaredSubtype
-              if (
-                !subtypes.some(
-                  s => s.name === sub.name && s.unitType === sub.unitType,
-                )
-              ) {
-                subtypes.push(sub)
-              }
-            } else if (applyGroupAdditions) {
-              const group = settings[change.key] as UnitBaseType[]
-              if (group && !group.includes(change.value as UnitBaseType)) {
-                group.push(change.value as UnitBaseType)
-              }
+      const settings = config[side]['SETTINGS'] as SettingsParams
+      settings.ships = [...SHIPS]
+      settings.groundForces = [...GROUND_FORCES]
+      settings.subtypes = []
+
+      // Two passes: first builds groups (groundForces, etc.),
+      // second resolves cross-group deps (e.g. Alastor copies groundForces → ships)
+      for (let pass = 0; pass < 2; pass++) {
+        const changes = this.collectParamChanges(
+          abilities,
+          config[side],
+          settings,
+        )
+        for (const change of changes) {
+          if (change.key === 'subtypes') {
+            if (
+              !settings.subtypes.some(
+                s =>
+                  s.name === change.value.name &&
+                  s.unitType === change.value.unitType,
+              )
+            ) {
+              settings.subtypes.push(change.value)
+            }
+          } else {
+            const group = settings[change.key]
+            if (!group.includes(change.value)) {
+              group.push(change.value)
             }
           }
         }
       }
-    }
 
-    if (settingsOnly) {
-      // Only reconcile SETTINGS computed params, skip consumers
-      for (const side of ['attacker', 'defender'] as const) {
-        const sideAbilities = this._abilities[side]
-        const { settings, subtypes } = resolveSettings(
-          sideAbilities,
-          config[side],
-        )
-        this.reconcileSyncSources(
-          side,
-          sideAbilities.filter(a => a.key === 'SETTINGS'),
-          config[side],
+      // Compute SETTINGS derived params via onParamSet
+      if (settingsAbility?.onParamSet) {
+        settingsAbility.onParamSet(settings, 'ships', settings.ships)
+        settingsAbility.onParamSet(
           settings,
-          settings,
-          subtypes,
-          subtypes,
+          'groundForces',
+          settings.groundForces,
         )
       }
-      return
     }
+  }
 
-    // Snapshot user params before reconcile overwrites them
-    let savedUserParams:
-      | Record<CombatSide, Record<string, Record<string, unknown>>>
-      | undefined
-    if (preserveUserParams) {
-      savedUserParams = { attacker: {}, defender: {} }
-      for (const side of ['attacker', 'defender'] as const) {
-        for (const ability of this._abilities[side]) {
-          if (ability.key === 'SETTINGS') continue
-          const params = config[side][ability.key]
-          if (params) {
-            savedUserParams[side][ability.key] = { ...params }
+  /** Snapshot consumer params (everything except SETTINGS) for later restore */
+  private snapshotConsumerParams(): Record<
+    CombatSide,
+    Record<string, Record<string, unknown>>
+  > {
+    const saved: Record<CombatSide, Record<string, Record<string, unknown>>> = {
+      attacker: {},
+      defender: {},
+    }
+    const config = this.config
+    for (const side of ['attacker', 'defender'] as const) {
+      for (const ability of this._abilities[side]) {
+        if (ability.key === 'SETTINGS') continue
+        const params = config[side][ability.key]
+        if (params) {
+          saved[side][ability.key] = { ...params }
+        }
+      }
+    }
+    return saved
+  }
+
+  /** Restore consumer params that reconcile overwrote */
+  private restoreConsumerParams(
+    saved: Record<CombatSide, Record<string, Record<string, unknown>>>,
+  ): void {
+    const config = this.config
+    for (const side of ['attacker', 'defender'] as const) {
+      for (const ability of this._abilities[side]) {
+        if (ability.key === 'SETTINGS') continue
+        const userParams = saved[side][ability.key]
+        if (!userParams) continue
+        const synced = config[side][ability.key]
+        if (!synced) continue
+        Object.assign(synced, userParams)
+      }
+    }
+  }
+
+  /**
+   * Reset SETTINGS to base groups (no group additions) and recompute
+   * derived params. Subtypes from declareParamChange are preserved.
+   * Does not touch consumer params.
+   */
+  private resetSettingsToBase(): void {
+    const config = this.config
+    for (const side of ['attacker', 'defender'] as const) {
+      const abilities = this._abilities[side]
+      const settings = config[side]['SETTINGS'] as SettingsParams
+
+      settings.ships = [...SHIPS]
+      settings.groundForces = [...GROUND_FORCES]
+      settings.subtypes = []
+
+      // Collect subtypes only (no group additions) — abilities add at runtime
+      for (let pass = 0; pass < 2; pass++) {
+        const changes = this.collectParamChanges(
+          abilities,
+          config[side],
+          settings,
+        )
+        for (const change of changes) {
+          if (change.key === 'subtypes') {
+            if (
+              !settings.subtypes.some(
+                s =>
+                  s.name === change.value.name &&
+                  s.unitType === change.value.unitType,
+              )
+            ) {
+              settings.subtypes.push(change.value)
+            }
           }
         }
       }
-    }
 
-    this.ensureConsumerDefaults(config)
-    this.reconcileSyncAll(config)
-
-    if (savedUserParams) {
-      for (const side of ['attacker', 'defender'] as const) {
-        for (const ability of this._abilities[side]) {
-          if (ability.key === 'SETTINGS') continue
-          const userParams = savedUserParams[side][ability.key]
-          if (!userParams) continue
-          const synced = config[side][ability.key]
-          if (!synced) continue
-          Object.assign(synced, userParams)
-        }
+      // Compute SETTINGS derived params via onParamSet
+      const settingsAbility = abilities.find(a => a.key === 'SETTINGS')
+      if (settingsAbility?.onParamSet) {
+        settingsAbility.onParamSet(settings, 'ships', settings.ships)
+        settingsAbility.onParamSet(
+          settings,
+          'groundForces',
+          settings.groundForces,
+        )
       }
     }
-
-    this.reconcileAbilityOrder(config)
   }
 
   /**
@@ -1565,7 +1511,7 @@ export class AbilitiesParams {
   private collectParamChanges(
     abilities: readonly Ability[],
     params: Record<string, Record<string, unknown>>,
-    settings: Readonly<Record<string, unknown>>,
+    settings: SettingsParams,
   ): ParamChange[] {
     const result: ParamChange[] = []
 
@@ -1593,8 +1539,8 @@ export class AbilitiesParams {
     _side: CombatSide,
     abilities: readonly Ability[],
     params: Record<string, Record<string, unknown>>,
-    ownSettings: Record<string, unknown>,
-    opponentSettings: Record<string, unknown>,
+    ownSettings: SettingsParams,
+    opponentSettings: SettingsParams,
     ownSubtypes: DeclaredSubtype[],
     opponentSubtypes: DeclaredSubtype[],
   ): void {

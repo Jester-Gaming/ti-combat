@@ -1,5 +1,5 @@
 import { parseVariantId } from '@/combat/utils/unit-variant'
-import type { DiceGroup, UnitBaseType } from '@/types'
+import type { DiceGroup, UnitBaseType, UnitType } from '@/types'
 
 import type { SideApi } from '../../../combat/abilities/api/ability-api'
 import type { Ability } from '../../../combat/abilities/types'
@@ -25,7 +25,7 @@ function findBestSpaceCannon(
   let best: { key: string; sc: DiceGroup } | null = null
   for (const [key, count] of Object.entries(params.structures)) {
     if (count <= 0) continue
-    const { type } = parseVariantId(key)
+    const { type } = parseVariantId(key as UnitType)
     const sc = api.getUnitStats(type)?.UNIT_ABILITIES?.SPACE_CANNON
     if (sc && (!best || expectedHits(sc) > expectedHits(best.sc))) {
       best = { key, sc: [...sc] as DiceGroup }

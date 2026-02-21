@@ -1,3 +1,5 @@
+import type { UnitType } from '@/types'
+
 import type {
   Ability,
   AbilityCallContext,
@@ -199,7 +201,7 @@ export const technologicalSingularity: Ability<Params> = {
       isCallable: (params, _ctx, units) => {
         if (params.opponentDestroyed) return false
         for (const key in units.opponent) {
-          if (units.opponent[key]?.length > 0) return true
+          if (units.opponent[key as UnitType]?.length > 0) return true
         }
         return false
       },

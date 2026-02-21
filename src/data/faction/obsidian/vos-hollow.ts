@@ -3,19 +3,20 @@ import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
 import { parseVariantId } from '@/combat/utils/unit-variant'
 import { SHIPS } from '@/constants/units'
-import type { UnitBaseType, UnitId } from '@/types'
+import type { UnitBaseType, UnitId, UnitType } from '@/types'
 
 type Params = {
-  targetPriority: string[]
+  targetPriority: UnitType[]
 }
 
 const SHIPS_SET = new Set<UnitBaseType>(SHIPS)
 
 function findDestroyedShipTypes(
-  destroyed: Record<string, UnitId[]>,
+  destroyed: Record<UnitType, UnitId[]>,
 ): Set<UnitBaseType> {
   const types = new Set<UnitBaseType>()
-  for (const key in destroyed) {
+  for (const k in destroyed) {
+    const key = k as UnitType
     if (destroyed[key]?.length > 0) {
       const { type } = parseVariantId(key)
       if (SHIPS_SET.has(type)) types.add(type)

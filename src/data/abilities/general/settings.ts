@@ -6,7 +6,6 @@ import {
 } from '@/constants/units'
 import type { UnitBaseType } from '@/types'
 
-import { declareParam } from '../../../combat/abilities/declare-param'
 import type { Ability, SettingsParams } from '../../../combat/abilities/types'
 
 export const settings: Ability<SettingsParams> = {
@@ -17,40 +16,31 @@ export const settings: Ability<SettingsParams> = {
     isEnabled: true,
     uses: Infinity,
     ships: SHIPS,
-    nonFighterShips: declareParam({
-      default: NON_FIGHTER_SHIPS,
-      source: 'ships',
-      compute: (ships: UnitBaseType[]) => ships.filter(u => u !== 'FIGHTER'),
-    }),
+    nonFighterShips: NON_FIGHTER_SHIPS,
     groundForces: GROUND_FORCES,
     structures: STRUCTURES,
-    spaceCombatParticipating: declareParam({
-      default: [],
-      source: 'ships',
-    }),
-    groundCombatParticipating: declareParam({
-      default: [],
-      source: 'groundForces',
-    }),
-    validTargetsSpaceCannonOffense: [
-      'FLAGSHIP',
-      'WAR_SUN',
-      'DREADNOUGHT',
-      'CARRIER',
-      'CRUISER',
-      'DESTROYER',
-      'FIGHTER',
-    ],
-    validTargetsBombardment: declareParam({
-      default: [],
-      source: 'groundForces',
-    }),
-    validTargetsSpaceCannonDefense: declareParam({
-      default: [],
-      source: 'groundForces',
-    }),
+    spaceCombatParticipating: [],
+    groundCombatParticipating: [],
+    validTargetsSpaceCannonOffense: SHIPS,
+    validTargetsBombardment: [],
+    validTargetsSpaceCannonDefense: [],
     validTargetsAntiFighterBarrage: ['FIGHTER'],
     subtypes: [],
+  },
+  onParamSet(params, key) {
+    if (key === 'ships') {
+      params.nonFighterShips = (params.ships as UnitBaseType[]).filter(
+        u => u !== 'FIGHTER',
+      )
+      params.spaceCombatParticipating = params.ships
+    } else if (key === 'groundForces') {
+      params.groundCombatParticipating = params.groundForces
+      params.validTargetsBombardment = params.groundForces
+      params.validTargetsSpaceCannonDefense = params.groundForces
+    } else {
+      return
+    }
+    return params
   },
   invoke: [],
 }

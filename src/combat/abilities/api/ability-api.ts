@@ -101,7 +101,7 @@ function isRestricted(
 ): boolean {
   const entries = sideState.unitAbilityRestrictions?.[layer]?.[ability]
   if (!entries) return false
-  const { type: baseType } = parseVariantId(unitType)
+  const { type: baseType } = parseVariantId(unitType as UnitType)
   return entries.some(
     e => !e.unitType || e.unitType === unitType || e.unitType === baseType,
   )
@@ -395,7 +395,7 @@ export class SideApi {
     if (typeof unitTypeOrId === 'string') {
       const stats = resolveUnitStats(sideState, unitTypeOrId as UnitType)
       if (stats) return stats
-      const { type } = parseVariantId(unitTypeOrId)
+      const { type } = parseVariantId(unitTypeOrId as UnitType)
       if (type !== unitTypeOrId) {
         return resolveUnitStats(sideState, type)
       }
@@ -774,9 +774,12 @@ export class SideApi {
         abilitiesParams.syncInvokesForKey(this._side, targetKey, state)
       }
 
-      if (targetKey === 'SETTINGS') {
-        abilitiesParams.reconcileSettingsOnDraft(state)
-      }
+      abilitiesParams.invokeOnParamSet(
+        this._side,
+        targetKey,
+        Object.keys(updates),
+        state,
+      )
     }
   }
 

@@ -43,7 +43,7 @@ export function totalCountForType(
 ): number {
   let total = 0
   for (const key of Object.keys(units)) {
-    const { type } = parseVariantId(key)
+    const { type } = parseVariantId(key as UnitType)
     if (type === baseType) total += units[key].length
   }
   return total

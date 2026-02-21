@@ -23,7 +23,7 @@ const parseCache = new Map<
   { type: UnitBaseType; subtypes: UnitVariantId[] }
 >()
 
-export function parseVariantId(id: string): {
+export function parseVariantId(id: UnitType): {
   type: UnitBaseType
   subtypes: UnitVariantId[]
 } {
@@ -44,7 +44,7 @@ export function parseVariantId(id: string): {
   return result
 }
 
-export function getVariantDisplayName(id: string): string {
+export function getVariantDisplayName(id: UnitType): string {
   const { type, subtypes } = parseVariantId(id)
   const base = UNIT_DISPLAY_NAMES[type]
   if (subtypes.length === 0) return base
