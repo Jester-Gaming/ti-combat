@@ -1,7 +1,6 @@
 // Types
 export type {
   CombatOutcome,
-  LogEntry,
   ProbabilityNode,
   SurvivorSide,
   SurvivorUnit,

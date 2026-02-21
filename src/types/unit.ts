@@ -41,11 +41,6 @@ export interface UnitState {
   usedSustainThisRound?: boolean
 }
 
-export const UNIT_STATE_KEYS = new Set<string>([
-  'isDamaged',
-  'usedSustainThisRound',
-])
-
 export type Unit = UnitStats &
   UnitState & {
     subtypes?: string[]

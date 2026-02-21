@@ -17,4 +17,3 @@ export type {
   UnitStats,
   UnitVariant,
 } from './unit'
-export { UNIT_STATE_KEYS } from './unit'

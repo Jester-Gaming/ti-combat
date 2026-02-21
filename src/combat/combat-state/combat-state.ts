@@ -352,65 +352,7 @@ export class CombatState {
   }
 
   isFinished(): boolean {
-    return CombatState.isDataFinished(this.data)
-  }
-
-  /** Check if combat is finished directly from data (no CombatState allocation needed) */
-  static isDataFinished(
-    data: CombatStateData,
-    phaseOverride?: PhaseIdentifier,
-  ): boolean {
-    const { meta, micro } = phaseOverride ?? data.currentPhase
-
-    if (meta === 'COMPLETE') {
-      return true
-    }
-
-    // END micro-phase must always process so END_OF_COMBAT_ROUND/END_OF_COMBAT abilities fire
-    if (
-      micro === 'END' &&
-      (meta === 'SPACE_COMBAT' || meta === 'GROUND_COMBAT')
-    ) {
-      return false
-    }
-
-    // Check if either side has NO units at all — combat is finished
-    // unless we're in a unit ability phase where abilities can still inject dice
-    if (
-      !hasAnyUnits(data.attacker.units) ||
-      !hasAnyUnits(data.defender.units)
-    ) {
-      if (
-        meta !== 'SPACE_CANNON_OFFENSE' &&
-        meta !== 'SPACE_CANNON_DEFENSE' &&
-        meta !== 'BOMBARDMENT' &&
-        meta !== 'AFB' &&
-        meta !== 'COMMIT_UNITS'
-      ) {
-        return true
-      }
-    }
-
-    // During combat phases, check if either side has no participating units
-    if (meta === 'SPACE_COMBAT' || meta === 'GROUND_COMBAT') {
-      const attackerParticipating = getParticipatingUnitsFromData(
-        data,
-        'attacker',
-      )
-      const defenderParticipating = getParticipatingUnitsFromData(
-        data,
-        'defender',
-      )
-
-      if (
-        !hasParticipatingUnits(data.attacker.units, attackerParticipating) ||
-        !hasParticipatingUnits(data.defender.units, defenderParticipating)
-      ) {
-        return true
-      }
-    }
-
-    return false
+    return this.data.currentPhase.meta === 'COMPLETE'
   }
 
   getHash(): string {
@@ -590,38 +532,51 @@ export class CombatState {
     data: CombatStateData,
     log?: LogEntry[],
   ): StateWithProbability[] {
-    // At last micro-phase, transition to next meta-phase
     if (isLastMicroPhase(this.currentPhase)) {
       const phase = getNextMetaPhase(this.currentPhase, this.combatMode)
-
-      // Check if we should skip to COMPLETE — uses phase override to avoid temp object
-      // knownFinished allows callers to skip the redundant isDataFinished check
-      let finalPhase = phase
-      const shouldComplete = CombatState.isDataFinished(data, phase)
-      if (shouldComplete) {
-        finalPhase = {
-          meta: 'COMPLETE',
-          micro: getLastMicroPhase('COMPLETE'),
-        }
-      }
-
-      const nextState = CombatState.fromData(
+      return [
         {
-          ...data,
-          currentPhase: finalPhase,
+          state: CombatState.fromData(
+            { ...data, currentPhase: phase },
+            this._params,
+          ),
+          probability: 1,
+          log,
         },
-        this._params,
-      )
-      return [{ state: nextState, probability: 1, log }]
+      ]
     }
 
-    // Otherwise, transition to next micro-phase
     const phase = getNextMicroPhase(this.currentPhase)
-    const nextState = CombatState.fromData(
-      { ...data, currentPhase: phase },
-      this._params,
-    )
-    return [{ state: nextState, probability: 1, log }]
+    return [
+      {
+        state: CombatState.fromData(
+          { ...data, currentPhase: phase },
+          this._params,
+        ),
+        probability: 1,
+        log,
+      },
+    ]
+  }
+
+  private completeTransition(
+    data: CombatStateData,
+    log?: LogEntry[],
+  ): StateWithProbability[] {
+    const phase = {
+      meta: 'COMPLETE' as const,
+      micro: getLastMicroPhase('COMPLETE'),
+    }
+    return [
+      {
+        state: CombatState.fromData(
+          { ...data, currentPhase: phase },
+          this._params,
+        ),
+        probability: 1,
+        log,
+      },
+    ]
   }
 
   // ===========================================================================
@@ -727,6 +682,11 @@ export class CombatState {
    * In round 1 of SPACE_COMBAT, transitions to AFB meta-phase instead of DICE_ROLL.
    */
   private processStartOfRound(round: number): StateWithProbability[] {
+    // Check that both sides have participating units before entering combat round
+    if (noParticipatingUnits(this.data)) {
+      return this.completeTransition(this.data)
+    }
+
     const timings =
       round === 1
         ? (['START_OF_COMBAT_ROUND', 'START_OF_COMBAT'] as const)
@@ -734,6 +694,11 @@ export class CombatState {
     const { state: newData, log } = this.runAbilities([...timings])
 
     const resultLog = this._enableLog && log.length > 0 ? log : undefined
+
+    // Re-check after abilities (e.g. Assault Cannon may destroy last ship)
+    if (noParticipatingUnits(newData)) {
+      return this.completeTransition(newData, resultLog)
+    }
 
     // In round 1 of SPACE_COMBAT, transition to AFB meta-phase
     if (round === 1 && this.currentPhase.meta === 'SPACE_COMBAT') {
@@ -757,6 +722,11 @@ export class CombatState {
   }
 
   private processDiceRoll(): StateWithProbability[] {
+    // Check participating units (e.g. AFB may have destroyed last ship)
+    if (noParticipatingUnits(this.data)) {
+      return this.completeTransition(this.data)
+    }
+
     const attackerDice = this.side('attacker').collectDice('COMBAT')
     const defenderDice = this.side('defender').collectDice('COMBAT')
 
@@ -822,6 +792,17 @@ export class CombatState {
       undefined,
       afterAssign.data,
     )
+
+    // If either side is completely wiped, go directly to COMPLETE
+    if (
+      !hasAnyUnits(afterStep.attacker.units) ||
+      !hasAnyUnits(afterStep.defender.units)
+    ) {
+      return this.completeTransition(
+        afterStep,
+        this._enableLog ? mergeLog(log, stepLog) : undefined,
+      )
+    }
 
     if (!this._enableLog) {
       return this.transitionPhaseWithData(afterStep)
@@ -956,6 +937,26 @@ function addHitsToDataWithPhase(
     combatMode: data.combatMode,
     currentPhase: nextPhase,
   }
+}
+
+/** Merge two log arrays, returning undefined if both are empty */
+function mergeLog(a: LogEntry[], b: LogEntry[]): LogEntry[] | undefined {
+  const merged = [...a, ...b]
+  return merged.length > 0 ? merged : undefined
+}
+
+/** Check if either side lacks participating units for the current combat mode */
+function noParticipatingUnits(data: CombatStateData): boolean {
+  return (
+    !hasParticipatingUnits(
+      data.attacker.units,
+      getParticipatingUnitsFromData(data, 'attacker'),
+    ) ||
+    !hasParticipatingUnits(
+      data.defender.units,
+      getParticipatingUnitsFromData(data, 'defender'),
+    )
+  )
 }
 
 /** Check if units record has any units at all (no type filtering) */

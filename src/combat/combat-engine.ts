@@ -46,37 +46,21 @@ export class CombatEngine {
     const expandNode = (
       state: CombatState,
       round: number,
-      skipFinishedCheck: boolean,
       node: ProbabilityNode | null,
     ): OutcomeRecord | null => {
       let cacheKey: string | null = null
 
       while (true) {
-        if (skipFinishedCheck) {
-          skipFinishedCheck = false
-          if (
-            state.currentPhase.meta === 'COMPLETE' ||
-            round > this.maxRounds
-          ) {
-            const leaf = makeLeafOutcome(state)
-            if (cacheKey) {
-              subtreeCache.set(cacheKey, leaf)
-              inProgress.delete(cacheKey)
-            }
-            return leaf
+        if (round > this.maxRounds) {
+          console.warn(`Exceed ${this.maxRounds} rounds`)
+        }
+        if (state.isFinished() || round > this.maxRounds) {
+          const leaf = makeLeafOutcome(state)
+          if (cacheKey) {
+            subtreeCache.set(cacheKey, leaf)
+            inProgress.delete(cacheKey)
           }
-        } else {
-          if (round > this.maxRounds) {
-            console.warn(`Exceed ${this.maxRounds} rounds`)
-          }
-          if (state.isFinished() || round > this.maxRounds) {
-            const leaf = makeLeafOutcome(state)
-            if (cacheKey) {
-              subtreeCache.set(cacheKey, leaf)
-              inProgress.delete(cacheKey)
-            }
-            return leaf
-          }
+          return leaf
         }
 
         // Cache check at START of combat rounds
@@ -106,9 +90,6 @@ export class CombatEngine {
           inProgress.add(key)
         }
 
-        const prevAttackerUnits = state.data.attacker.units
-        const prevDefenderUnits = state.data.defender.units
-
         const outcomes = state.advance(round, debug)
 
         // Deterministic advance — inline into loop
@@ -121,9 +102,6 @@ export class CombatEngine {
             node.round = round
             node.log = [...(node.log ?? []), ...outcome.log]
           }
-          skipFinishedCheck =
-            state.data.attacker.units === prevAttackerUnits &&
-            state.data.defender.units === prevDefenderUnits
           continue
         }
 
@@ -156,17 +134,9 @@ export class CombatEngine {
         for (let i = 0; i < outcomes.length; i++) {
           const child = outcomes[i]
           const childRound = getNextRound(round, child.state)
-          const childSkip =
-            child.state.data.attacker.units === prevAttackerUnits &&
-            child.state.data.defender.units === prevDefenderUnits
           const childNode = children ? children[i] : null
 
-          const childOutcomes = expandNode(
-            child.state,
-            childRound,
-            childSkip,
-            childNode,
-          )
+          const childOutcomes = expandNode(child.state, childRound, childNode)
 
           if (childOutcomes === null) {
             cycleProb += child.probability
@@ -262,7 +232,7 @@ export class CombatEngine {
     if (initialState.isFinished()) {
       outcomes = makeLeafOutcome(initialState)
     } else {
-      outcomes = expandNode(initialState, 0, false, root)
+      outcomes = expandNode(initialState, 0, root)
     }
 
     if (root) this.lastTree = root
