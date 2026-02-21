@@ -12,6 +12,7 @@ const reconstructCache = new WeakMap<SideStateData, Map<string, Unit[]>>()
 /** Clear the reconstruction cache for a given side state (call after mutations) */
 export function clearReconstructCache(sideState: SideStateData): void {
   reconstructCache.delete(sideState)
+  variantKeysCache.delete(sideState.units)
 }
 
 /** Reusable descriptor for symbol properties (not enumerable) */

@@ -93,7 +93,7 @@ export class CombatTest {
 
       const best = pickOutcomeByHits(outcomes, hits)
       this._state = best.state.data
-      if (best.log) this._log.push(...best.log)
+      if (best.state.log) this._log.push(...best.state.log)
 
       // Track round transitions (END -> START means new round)
       if (
@@ -124,7 +124,7 @@ export class CombatTest {
 
       const best = pickOutcomeByHits(outcomes, hits)
       this._state = best.state.data
-      if (best.log) this._log.push(...best.log)
+      if (best.state.log) this._log.push(...best.state.log)
 
       // Detect when we process END
       if (

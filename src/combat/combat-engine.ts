@@ -97,10 +97,10 @@ export class CombatEngine {
           const outcome = outcomes[0]
           state = outcome.state
           round = getNextRound(round, outcome.state)
-          if (node && outcome.log) {
+          if (node && state.log) {
             node.state = state
             node.round = round
-            node.log = [...(node.log ?? []), ...outcome.log]
+            node.log = [...(node.log ?? []), ...state.log]
           }
           continue
         }
@@ -113,7 +113,7 @@ export class CombatEngine {
               probability: o.probability,
               round: getNextRound(round, o.state),
               children: [] as ProbabilityNode[],
-              log: o.log ?? [],
+              log: o.state.log ?? [],
             }))
           : null
 

@@ -16,7 +16,7 @@ import type {
   HitSource,
   SideStateData,
 } from '../combat-state/types'
-import { resolveUnitStats } from '../utils/compact-units'
+import { clearReconstructCache, resolveUnitStats } from '../utils/compact-units'
 import { parseVariantId } from '../utils/unit-variant'
 import { getSettingsValidTargets } from './utils/get-settings-valid-targets'
 
@@ -261,16 +261,19 @@ export class CombatSideState {
     return unitPriority[key] as string[]
   }
 
-  /** Assign hits to this side, returning new SideStateData and destroyed UnitIds.
-   * Batches all hit pools into a single pass to minimize object spreads.
-   * When trackDestroyed is false, skips building the destroyed record. */
+  /** Assign hits to this side. Replaces sideData.units with a new record
+   *  (does NOT mutate the original arrays — safe for shared branch data).
+   *  Returns destroyed UnitIds record.
+   *  When trackDestroyed is false, skips building the destroyed record. */
   assignHits(
     stateData: CombatStateData,
     trackDestroyed?: boolean,
-  ): { state: SideStateData; destroyed: Record<string, UnitId[]> } {
+  ): Record<string, UnitId[]> {
     const sideData = stateData[this._side]
-    if (sideData.hitPools.length === 0)
-      return { state: sideData, destroyed: EMPTY_DESTROYED }
+    if (sideData.hitPools.length === 0) return EMPTY_DESTROYED
+
+    // Clear caches — units reference will change
+    clearReconstructCache(sideData)
 
     const participatingUnits = this.getParticipatingUnitsFromData(stateData)
     const unitPriority = this.getUnitPriorityFromData(stateData)
@@ -279,10 +282,9 @@ export class CombatSideState {
       participatingUnits,
     )
 
-    // Spread once, then mutate in-place across all pools
-    const newUnits = { ...sideData.units }
     let destroyed: Record<string, UnitId[]> | undefined
-    let changed = false
+    // Build new units record — original arrays are never mutated
+    let units = sideData.units
 
     for (const pool of sideData.hitPools) {
       let remaining = pool.hits
@@ -298,50 +300,38 @@ export class CombatSideState {
         )
           continue
 
-        const origIds = newUnits[variantId]
-        if (!origIds || origIds.length <= 0) continue
+        const ids = units[variantId]
+        if (!ids || ids.length <= 0) continue
 
-        const toDestroy = Math.min(origIds.length, remaining)
-        changed = true
-
-        // Clone the array before mutating (newUnits is shallow-spread, arrays are shared)
-        const ids = origIds.slice(0, origIds.length - toDestroy)
+        const toDestroy = Math.min(ids.length, remaining)
 
         // Track destroyed UnitIds (only when destroy abilities or logging need it)
         if (trackDestroyed) {
           if (!destroyed) destroyed = {}
           if (!destroyed[variantId]) destroyed[variantId] = []
-          for (let i = origIds.length - toDestroy; i < origIds.length; i++) {
-            destroyed[variantId].push(origIds[i])
+          for (let i = ids.length - toDestroy; i < ids.length; i++) {
+            destroyed[variantId].push(ids[i])
           }
         }
 
-        if (ids.length <= 0) {
-          delete newUnits[variantId]
+        // Create new array/record — never mutate shared originals
+        const kept = ids.length - toDestroy
+        if (kept <= 0) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { [variantId]: _removed, ...rest } = units
+          units = rest
         } else {
-          newUnits[variantId] = ids
+          units = { ...units, [variantId]: ids.slice(0, kept) }
         }
 
         remaining -= toDestroy
       }
     }
 
-    // Always clear hitPools — even when no units were destroyed,
-    // stale pools must not leak into subsequent phases
-    if (!changed)
-      return {
-        state: { ...sideData, hitPools: [] },
-        destroyed: EMPTY_DESTROYED,
-      }
+    sideData.units = units
+    sideData.hitPools = []
 
-    return {
-      state: {
-        ...sideData,
-        units: newUnits,
-        hitPools: [],
-      },
-      destroyed: destroyed ?? EMPTY_DESTROYED,
-    }
+    return destroyed ?? EMPTY_DESTROYED
   }
 
   countUnits(filter?: UnitBaseType | UnitBaseType[]): number {

@@ -1,5 +1,3 @@
-import { create } from 'mutative'
-
 import { GROUND_FORCES, SHIPS, UNIT_PRICE } from '@/constants/units'
 import type { CombatSide, FactionKey, UnitBaseType, UnitId } from '@/types'
 
@@ -101,42 +99,35 @@ interface TimingInvokeEntry {
   source: AbilitySource
 }
 
+/** Count total units across all variant keys */
+function countAllUnits(units: Record<string, unknown[]>): number {
+  let n = 0
+  for (const key in units) n += units[key].length
+  return n
+}
+
 /**
  * Adjust tracker after units are destroyed during trigger/AFTER_DESTROY.
- * Find UnitIds that disappeared between old/new state, remove their tracker entries.
+ * Uses the destroyed record instead of comparing old/new state.
  */
-function adjustTrackerForDestroyedUnits(
+function adjustTrackerForDestroyed(
   tracker: InvocationTracker,
-  oldState: CombatStateData,
-  newState: CombatStateData,
+  destroyed: {
+    attacker: Record<string, UnitId[]>
+    defender: Record<string, UnitId[]>
+  },
 ): void {
   for (const side of ['attacker', 'defender'] as const) {
     const sideTracker = tracker[side]
-    const oldUnits = oldState[side].units
-    const newUnits = newState[side].units
-
-    // Collect UnitIds that were removed
+    const sideDestroyed = destroyed[side]
     const removedIds = new Set<UnitId>()
-    for (const key of Object.keys(oldUnits)) {
-      const oldIds = oldUnits[key]
-      const newIds = newUnits[key]
-      if (!oldIds) continue
-      if (!newIds || newIds.length < oldIds.length) {
-        const newIdSet = newIds ? new Set(newIds) : new Set<UnitId>()
-        for (const id of oldIds) {
-          if (!newIdSet.has(id)) removedIds.add(id)
-        }
-      }
+    for (const ids of Object.values(sideDestroyed)) {
+      for (const id of ids) removedIds.add(id)
     }
-
     if (removedIds.size === 0) continue
-
-    // Clear tracked entries for removed UnitIds
     for (const [, ids] of sideTracker.unitAbilities) {
       for (const id of ids) {
-        if (removedIds.has(id)) {
-          ids.delete(id)
-        }
+        if (removedIds.has(id)) ids.delete(id)
       }
     }
   }
@@ -314,7 +305,6 @@ interface SideInvocationTracker {
 type InvocationTracker = Record<CombatSide, SideInvocationTracker>
 
 interface AbilityResult {
-  state: CombatStateData
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context?: any
   unitsChanged?: boolean
@@ -330,8 +320,8 @@ export interface RunAbilitiesOptions {
  * Mutable controller for ability params.
  *
  * Has a direct bidirectional link with CombatState — reads and writes
- * ability config through CombatState.data.abilities. During ability
- * execution, updates CombatState.data directly after each Immer produce.
+ * ability config through CombatState.data.abilities. Abilities mutate
+ * the shared Mutative draft on CombatState.data directly.
  */
 export interface InvokeCollections {
   attacker: Map<AbilityTiming, TimingInvokeEntry[]>
@@ -371,7 +361,7 @@ export class AbilitiesParams {
     defender: new Set(),
   }
 
-  /** Deferred invoke registrations — flushed after Immer produce completes */
+  /** Deferred invoke registrations — flushed after ability call completes */
   _pendingUnitInvokes: {
     side: CombatSide
     variantKey: string
@@ -723,12 +713,11 @@ export class AbilitiesParams {
         unitAbilities: new Map(),
       },
     }
-    // Point CombatState at the current state data
+    // Point CombatState at the current state data (set once — draft is mutated in place)
     this._combatState.data = state
 
     let consecutiveSkips = 0
     let currentSide: CombatSide = options?.triggerSide ?? 'attacker'
-    let currentState = state
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let workingContext: any = context
 
@@ -742,7 +731,7 @@ export class AbilitiesParams {
       const result = this.tryResolveOne(
         timing,
         currentSide,
-        currentState,
+        state,
         workingContext,
         tracker,
         options?.triggerSide,
@@ -750,8 +739,6 @@ export class AbilitiesParams {
       )
 
       if (result) {
-        currentState = result.state
-        this._combatState.data = currentState
         if (result.context !== undefined) {
           workingContext = result.context
         }
@@ -775,7 +762,7 @@ export class AbilitiesParams {
     }
 
     return {
-      state: currentState,
+      state,
       context: workingContext as TimingContextMap[T],
       log: activeLogger.entries.slice(startIndex) as LogEntry[],
     }
@@ -794,7 +781,7 @@ export class AbilitiesParams {
     },
     state: CombatStateData,
     logger?: Logger,
-  ): CombatStateData {
+  ): void {
     // Save previous _destroyedIds and derive this cycle's scope from the Record.
     // Each runDestroyAbilities call gets its own _destroyedIds so nested calls
     // (from AFTER_DESTROY abilities that destroy additional units) don't leak
@@ -805,31 +792,12 @@ export class AbilitiesParams {
       defender: new Set(Object.values(destroyed.defender).flat()),
     }
 
-    const { state: afterDestroy } = this.runAbilities(
-      'DESTROY',
-      state,
-      destroyed,
-      undefined,
-      logger,
-    )
-    const { state: afterWhenDestroy } = this.runAbilities(
-      'WHEN_DESTROY',
-      afterDestroy,
-      destroyed,
-      undefined,
-      logger,
-    )
-    const { state: final } = this.runAbilities(
-      'AFTER_DESTROY',
-      afterWhenDestroy,
-      destroyed,
-      undefined,
-      logger,
-    )
+    this.runAbilities('DESTROY', state, destroyed, undefined, logger)
+    this.runAbilities('WHEN_DESTROY', state, destroyed, undefined, logger)
+    this.runAbilities('AFTER_DESTROY', state, destroyed, undefined, logger)
 
     // Restore previous _destroyedIds for the outer scope
     this._destroyedIds = savedDestroyedIds
-    return final
   }
 
   // ── Private execution engine methods ──────────────────────────────
@@ -960,49 +928,48 @@ export class AbilitiesParams {
           logData.push(...data)
         }
 
-        // Collect trigger events emitted during produce
+        // Collect trigger events emitted during the call
         const triggerEvents: TriggerEvent[] = []
         const triggerCallback = (event: TriggerEvent) => {
           triggerEvents.push(event)
         }
 
-        // Reset per-ability destroyed tracking for this produce cycle.
-        // destroyUnit populates _destroyed during produce; runDestroyAbilities
+        // Reset per-ability destroyed tracking for this call cycle.
+        // destroyUnit populates _destroyed during the call; runDestroyAbilities
         // derives _destroyedIds from it for the DESTROY timing window.
         const timingArray = Array.isArray(timing) ? timing : [timing]
         this._destroyed = { attacker: {}, defender: {} }
         const prevDestroyCount = this._destroyCount
 
-        // Wrap call in Immer produce
-        let resultState: CombatStateData
+        // Snapshot unit counts before the call for change detection
+        const prevAttackerUnitCount = countAllUnits(state.attacker.units)
+        const prevDefenderUnitCount = countAllUnits(state.defender.units)
+
+        // State IS now a Mutative draft — abilities mutate it directly
         if (diceTiming && internalContext) {
           const rawDice = internalContext as OwnOpponentContext<DicePool>
           const diceCallCtx: DiceContext = {
             own: buildDiceApi(rawDice.own),
             opponent: buildDiceApi(rawDice.opponent),
           }
-          resultState = create(state, draft => {
-            ctx.upgradeForCall(draft, ability.key, logCallback, triggerCallback)
-            inv.call(ctx, freshParams, diceCallCtx)
-            decrementUses(draft, side, ability.key, freshParams, this)
-          })
+          ctx.upgradeForCall(state, ability.key, logCallback, triggerCallback)
+          inv.call(ctx, freshParams, diceCallCtx)
+          decrementUses(state, side, ability.key, freshParams, this)
           ctx.resetAfterCall()
           resultContext = {
             own: diceCallCtx.own.getAll(),
             opponent: diceCallCtx.opponent.getAll(),
           }
         } else {
-          resultState = create(state, draft => {
-            ctx.upgradeForCall(draft, ability.key, logCallback, triggerCallback)
-            const result = inv.call(ctx, freshParams, internalContext)
-            if (result !== undefined) resultContext = result
-            decrementUses(draft, side, ability.key, freshParams, this)
-          })
+          ctx.upgradeForCall(state, ability.key, logCallback, triggerCallback)
+          const result = inv.call(ctx, freshParams, internalContext)
+          if (result !== undefined) resultContext = result
+          decrementUses(state, side, ability.key, freshParams, this)
           ctx.resetAfterCall()
         }
 
-        // Flush deferred invoke registrations (from placeUnits/modifyUnitType inside produce)
-        this.flushPendingUnitInvokes(resultState)
+        // Flush deferred invoke registrations (from placeUnits/modifyUnitType)
+        this.flushPendingUnitInvokes(state)
 
         // Single structured log entry per ability
         const childLogger = logger?.child(invoke.timing).child(ability.key)
@@ -1026,16 +993,15 @@ export class AbilitiesParams {
           sideTracker.unitAbilities.set(key, invokedIds)
         }
 
-        // Process trigger events emitted during produce
+        // Process trigger events emitted during the call
         for (const event of triggerEvents) {
-          const triggerResult = this.runAbilities(
+          this.runAbilities(
             event.name,
-            resultState,
+            state,
             event.context,
             { triggerSide: event.side },
             childLogger,
           )
-          resultState = triggerResult.state
         }
 
         // Trigger DESTROY → WHEN_DESTROY → AFTER_DESTROY if units were destroyed.
@@ -1046,11 +1012,7 @@ export class AbilitiesParams {
             Object.keys(this._destroyed.defender).length > 0
 
           if (hasDestroyed) {
-            resultState = this.runDestroyAbilities(
-              this._destroyed,
-              resultState,
-              childLogger,
-            )
+            this.runDestroyAbilities(this._destroyed, state, childLogger)
           }
         }
 
@@ -1061,22 +1023,51 @@ export class AbilitiesParams {
           !timingArray.some(t => t === 'BEFORE_ASSIGN_HITS') &&
           state.currentPhase.micro !== 'DICE_ROLL' &&
           state.currentPhase.micro !== 'ASSIGN_HITS' &&
-          (resultState.attacker.hitPools.length > 0 ||
-            resultState.defender.hitPools.length > 0)
+          (state.attacker.hitPools.length > 0 ||
+            state.defender.hitPools.length > 0)
         ) {
-          const cs = CombatState.fromData(resultState, this)
-          const { state: afterAssign } = cs.assignHits(childLogger)
-          resultState = afterAssign.data
+          // Run BEFORE_ASSIGN_HITS (e.g. SUSTAIN_DAMAGE) before assigning hits
+          this.runAbilities(
+            'BEFORE_ASSIGN_HITS',
+            state,
+            undefined,
+            undefined,
+            childLogger,
+          )
+
+          // Now assign remaining hits
+          const attDestroyed = this._combatState
+            .side('attacker')
+            .assignHits(state, true)
+          const defDestroyed = this._combatState
+            .side('defender')
+            .assignHits(state, true)
+
+          // Log ASSIGN_HITS entry (matches CombatState.assignHits behavior)
+          const destroyedCtx = {
+            attacker: attDestroyed,
+            defender: defDestroyed,
+          }
+          if (childLogger) {
+            childLogger.child('ASSIGN_HITS').log(destroyedCtx)
+          }
+
+          const hasDestroyed =
+            Object.keys(attDestroyed).length > 0 ||
+            Object.keys(defDestroyed).length > 0
+          if (hasDestroyed) {
+            this.runDestroyAbilities(destroyedCtx, state, childLogger)
+          }
         }
 
         const unitsDestroyed = this._destroyCount > prevDestroyCount
         const unitsChanged =
-          state.attacker.units !== resultState.attacker.units ||
-          state.defender.units !== resultState.defender.units
+          countAllUnits(state.attacker.units) !== prevAttackerUnitCount ||
+          countAllUnits(state.defender.units) !== prevDefenderUnitCount
 
         // Adjust tracker indices when units were destroyed by triggers/AFTER_DESTROY
         if (unitsDestroyed) {
-          adjustTrackerForDestroyedUnits(tracker, state, resultState)
+          adjustTrackerForDestroyed(tracker, this._destroyed)
         }
 
         // Transform own/opponent context back to sided
@@ -1092,7 +1083,6 @@ export class AbilitiesParams {
         }
 
         return {
-          state: resultState,
           context: resultContext,
           unitsChanged,
         }
@@ -1187,7 +1177,7 @@ export class AbilitiesParams {
    * config doesn't change (no ability fires), repeated checks for the
    * same timing are O(1).
    */
-  private hasCallableInvoke(timing: AbilityTiming): boolean {
+  hasCallableInvoke(timing: AbilityTiming): boolean {
     const invokes = this._combatState._invokes
     const attackerEntries = invokes.attacker.get(timing)
     if (attackerEntries && attackerEntries.length > 0) return true
@@ -1196,7 +1186,7 @@ export class AbilitiesParams {
   }
 
   /**
-   * Queue invoke registration for after Immer produce completes.
+   * Queue invoke registration for after ability call completes.
    * Called from placeUnits/modifyUnitType inside the produce — draft proxies
    * would be revoked if we registered immediately.
    */
@@ -1216,7 +1206,7 @@ export class AbilitiesParams {
 
   /**
    * Flush pending invoke registrations using finalized (non-draft) state.
-   * Called after Immer produce completes in tryResolveOne.
+   * Called after ability call completes in tryResolveOne.
    */
   flushPendingUnitInvokes(state: CombatStateData): void {
     if (this._pendingUnitInvokes.length === 0) return
@@ -1324,7 +1314,7 @@ export class AbilitiesParams {
 
   /**
    * Sync _invokes for a single ability key on one side.
-   * Called from within Immer produce (updateAbilityConfig / decrementUses)
+   * Called from within ability call (updateAbilityConfig / decrementUses)
    * so it operates on the draft state.
    */
   syncInvokesForKey(
@@ -1439,10 +1429,7 @@ export class AbilitiesParams {
    * yet have entries in the config.
    */
   private initializeDefaults(): void {
-    const config: AbilitiesConfig = {
-      attacker: { ...this.config.attacker },
-      defender: { ...this.config.defender },
-    }
+    const config = this.config
 
     for (const side of ['attacker', 'defender'] as const) {
       for (const ability of this._abilities[side]) {
@@ -1452,8 +1439,6 @@ export class AbilitiesParams {
         }
       }
     }
-
-    this._combatState.data = { ...this._combatState.data, abilities: config }
   }
 
   /**
@@ -1482,10 +1467,7 @@ export class AbilitiesParams {
       settingsOnly = false,
     } = options
 
-    const config: AbilitiesConfig = {
-      attacker: { ...this.config.attacker },
-      defender: { ...this.config.defender },
-    }
+    const config = this.config
 
     if (resetBaseGroups) {
       for (const side of ['attacker', 'defender'] as const) {
@@ -1546,29 +1528,43 @@ export class AbilitiesParams {
           subtypes,
         )
       }
-      this._combatState.data = { ...this._combatState.data, abilities: config }
       return
+    }
+
+    // Snapshot user params before reconcile overwrites them
+    let savedUserParams:
+      | Record<CombatSide, Record<string, Record<string, unknown>>>
+      | undefined
+    if (preserveUserParams) {
+      savedUserParams = { attacker: {}, defender: {} }
+      for (const side of ['attacker', 'defender'] as const) {
+        for (const ability of this._abilities[side]) {
+          if (ability.key === 'SETTINGS') continue
+          const params = config[side][ability.key]
+          if (params) {
+            savedUserParams[side][ability.key] = { ...params }
+          }
+        }
+      }
     }
 
     this.ensureConsumerDefaults(config)
     this.reconcileSyncAll(config)
 
-    if (preserveUserParams) {
+    if (savedUserParams) {
       for (const side of ['attacker', 'defender'] as const) {
         for (const ability of this._abilities[side]) {
           if (ability.key === 'SETTINGS') continue
-          const userParams = this.config[side][ability.key]
+          const userParams = savedUserParams[side][ability.key]
           if (!userParams) continue
           const synced = config[side][ability.key]
           if (!synced) continue
-          config[side][ability.key] = { ...synced, ...userParams }
+          Object.assign(synced, userParams)
         }
       }
     }
 
     this.reconcileAbilityOrder(config)
-
-    this._combatState.data = { ...this._combatState.data, abilities: config }
   }
 
   /**

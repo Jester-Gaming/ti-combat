@@ -41,13 +41,6 @@ export function parseVariantId(id: string): {
   return result
 }
 
-export function getUnitVariantId(
-  type: UnitBaseType,
-  unit: Unit,
-): UnitBaseType | UnitVariant {
-  return makeVariantId(type, unit.subtypes)
-}
-
 export function unitMatchesVariant(unit: Unit, variantId: string): boolean {
   const { subtypes } = parseVariantId(variantId)
   if (subtypes.length === 0) {
