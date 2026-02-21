@@ -1,4 +1,4 @@
-import type { FactionKey, UnitSelection, UnitType } from '@/types'
+import type { FactionKey, UnitBaseType, UnitSelection } from '@/types'
 import { getSimulationUnits } from '@/utils/get-simulation-units'
 
 import { CombatEngine } from './combat-engine'
@@ -12,15 +12,15 @@ import type {
 export interface SimulationInput {
   attackerFaction: FactionKey
   defenderFaction: FactionKey
-  attackerSelections: Record<UnitType, UnitSelection>
-  defenderSelections: Record<UnitType, UnitSelection>
+  attackerSelections: Record<UnitBaseType, UnitSelection>
+  defenderSelections: Record<UnitBaseType, UnitSelection>
   combatMode: CombatMode
   abilities: AbilitiesConfig
 }
 
 function buildSideState(
   faction: FactionKey,
-  selections: Record<UnitType, UnitSelection>,
+  selections: Record<UnitBaseType, UnitSelection>,
 ): SideStateData {
   const { units, unitState, unitStats } = getSimulationUnits(
     faction,

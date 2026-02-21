@@ -1,5 +1,5 @@
 import type { Ability } from '@/combat/abilities/types'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 export const helTitan: Ability = {
   key: 'HEL_TITAN',
@@ -19,7 +19,7 @@ export const helTitan: Ability = {
       timing: 'PREPARE',
       call: ctx => {
         ctx.api.own.updateAbilityConfig('SETTINGS', {
-          groundForces: (current: UnitType[]) => [...current, 'PDS'],
+          groundForces: (current: UnitBaseType[]) => [...current, 'PDS'],
         })
       },
     },

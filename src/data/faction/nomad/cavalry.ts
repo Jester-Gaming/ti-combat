@@ -1,6 +1,6 @@
 import nomadIcon from '@/assets/faction/nomad.svg?raw'
 import { declareParam } from '@/combat/abilities/declare-param'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 import { getEffectiveStats } from '@/utils/get-simulation-units'
 
 import type { Ability } from '../../../combat/abilities/types'
@@ -8,7 +8,7 @@ import { nomad } from './index'
 
 type Params = {
   memoria2: boolean
-  unitType: UnitType
+  unitType: UnitBaseType
 }
 
 export const cavalry: Ability<Params> = {
@@ -21,7 +21,7 @@ export const cavalry: Ability<Params> = {
     isEnabled: false,
     uses: 1,
     memoria2: false,
-    unitType: declareParam<UnitType>({
+    unitType: declareParam<UnitBaseType>({
       default: 'DESTROYER',
       source: 'nonFighterShips',
     }),

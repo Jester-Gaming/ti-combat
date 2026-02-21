@@ -1,8 +1,8 @@
 import type {
   DiceGroup,
   SourcedDiceGroup,
+  UnitBaseType,
   UnitLocator,
-  UnitType,
 } from '@/types'
 
 import type { DiceApi, DicePool, DiceReadApi } from '../types'
@@ -27,7 +27,7 @@ function clonePool(pool: DicePool): DicePool {
   const result: DicePool = {}
   for (const [type, dice] of Object.entries(pool)) {
     if (dice) {
-      result[type as UnitType] = dice.map(
+      result[type as UnitBaseType] = dice.map(
         d => [d[0], d[1], d[2]] as SourcedDiceGroup,
       )
     }
@@ -45,7 +45,7 @@ export function buildDiceApi(pool: DicePool): DiceApi {
 
     addDiceCount: (
       count: number,
-      strategyOrSourceOrUnit?: 'BEST' | 'WORST' | UnitType | object,
+      strategyOrSourceOrUnit?: 'BEST' | 'WORST' | UnitBaseType | object,
     ) => {
       if (countPool(data) === 0) return
 
@@ -76,7 +76,7 @@ export function buildDiceApi(pool: DicePool): DiceApi {
         const isBest =
           strategyOrSourceOrUnit === undefined ||
           strategyOrSourceOrUnit === 'BEST'
-        let bestType: UnitType | undefined
+        let bestType: UnitBaseType | undefined
         let bestIndex = -1
         let bestHitValue = isBest ? Infinity : -Infinity
 
@@ -89,7 +89,7 @@ export function buildDiceApi(pool: DicePool): DiceApi {
               : hitValue > bestHitValue
             if (better) {
               bestHitValue = hitValue
-              bestType = type as UnitType
+              bestType = type as UnitBaseType
               bestIndex = i
             }
           }

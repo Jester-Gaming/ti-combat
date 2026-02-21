@@ -1,8 +1,8 @@
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
-const NON_FIGHTER_SHIPS: UnitType[] = [
+const NON_FIGHTER_SHIPS: UnitBaseType[] = [
   'FLAGSHIP',
   'WAR_SUN',
   'DREADNOUGHT',

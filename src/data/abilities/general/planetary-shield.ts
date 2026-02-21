@@ -1,4 +1,4 @@
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 import type { Ability, SideReadApi } from '../../../combat/abilities/types'
 
@@ -7,7 +7,7 @@ function hasPlanetaryShield(api: SideReadApi): boolean {
   const units = api.getUnits()
   for (const [type, typeUnits] of Object.entries(units)) {
     if (!typeUnits || typeUnits.length === 0) continue
-    const unitType = type as UnitType
+    const unitType = type as UnitBaseType
 
     if (
       api.isUnitAbilityLost('PLANETARY_SHIELD', unitType) ||

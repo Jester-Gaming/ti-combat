@@ -1,7 +1,7 @@
 import type { Ability } from '@/combat/abilities'
 import factions from '@/data/faction'
 
-import type { UnitDefinition, UnitType } from './unit'
+import type { UnitBaseType, UnitDefinition } from './unit'
 
 interface FactionAbilities {
   faction?: readonly Ability[]
@@ -18,7 +18,7 @@ interface FactionAbilities {
 export interface Faction {
   name: string
   icon?: string
-  units: Partial<Record<UnitType, UnitDefinition>>
+  units: Partial<Record<UnitBaseType, UnitDefinition>>
   abilities?: FactionAbilities
 }
 

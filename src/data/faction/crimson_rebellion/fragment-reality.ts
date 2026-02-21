@@ -7,7 +7,7 @@ import {
   UNIT_DISPLAY_NAMES,
   UNIT_LIMITS,
 } from '@/constants/units'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 type Params = {
   isEnabled: boolean
@@ -17,7 +17,7 @@ type Params = {
   shipPriority: string[]
 }
 
-const NON_FIGHTER_SET = new Set<UnitType>(NON_FIGHTER_SHIPS)
+const NON_FIGHTER_SET = new Set<UnitBaseType>(NON_FIGHTER_SHIPS)
 
 export const fragmentReality: Ability<Params> = {
   key: 'FRAGMENT_REALITY',
@@ -45,21 +45,23 @@ export const fragmentReality: Ability<Params> = {
       isCallable: params =>
         Object.values(params.ships).some(count => count > 0),
       call: (ctx, params) => {
-        const toPlace: Partial<Record<UnitType, number>> = {}
+        const toPlace: Partial<Record<UnitBaseType, number>> = {}
         for (const [type, count] of Object.entries(params.ships)) {
-          if (count > 0) toPlace[type as UnitType] = count
+          if (count > 0) toPlace[type as UnitBaseType] = count
         }
-        ctx.api.own.addUnit(toPlace)
+        ctx.api.own.placeUnits(toPlace)
 
         // Enforce fleet pool limit (fighters don't count)
-        const totalNonFighter = ctx.api.own.countUnits(NON_FIGHTER_SET)
+        const totalNonFighter = ctx.api.own.countUnits(NON_FIGHTER_SHIPS)
         const excess = totalNonFighter - params.fleetPool
         if (excess <= 0) return
 
         // Remove lowest-priority ships first
         // Ships not in priority list are removed before listed ones
         const prioritySet = new Set(params.shipPriority)
-        const allUnitTypes = Object.keys(ctx.api.own.getUnits()) as UnitType[]
+        const allUnitTypes = Object.keys(
+          ctx.api.own.getUnits(),
+        ) as UnitBaseType[]
         const unlisted = allUnitTypes.filter(
           t => NON_FIGHTER_SET.has(t) && !prioritySet.has(t),
         )
@@ -71,8 +73,8 @@ export const fragmentReality: Ability<Params> = {
         let remaining = excess
         for (const type of removalOrder) {
           if (remaining <= 0) break
-          if (!NON_FIGHTER_SET.has(type as UnitType)) continue
-          const unitType = type as UnitType
+          if (!NON_FIGHTER_SET.has(type as UnitBaseType)) continue
+          const unitType = type as UnitBaseType
           const unitList = ctx.api.own.getUnits(unitType)
           const toRemove = Math.min(remaining, unitList.length)
           for (let i = 0; i < toRemove; i++) {

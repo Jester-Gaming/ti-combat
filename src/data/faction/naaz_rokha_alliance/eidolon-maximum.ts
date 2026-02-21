@@ -1,6 +1,6 @@
 import type { Ability } from '@/combat/abilities/types'
 import { getUnitLocator } from '@/combat/utils/compact-units'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 export const eidolonMaximum: Ability = {
   key: 'EIDOLON_MAXIMUM',
@@ -22,19 +22,16 @@ export const eidolonMaximum: Ability = {
 
         ctx.api.own.updateAbilityConfig('SETTINGS', {
           // Add MECH to ships for space combat participation
-          ships: (current: UnitType[]) =>
+          ships: (current: UnitBaseType[]) =>
             current.includes('MECH') ? current : [...current, 'MECH'],
           // Remove MECH from groundForces so derived valid targets
           // (bombardment, SCD) exclude it — unit ability hit immunity
-          groundForces: (current: UnitType[]) =>
+          groundForces: (current: UnitBaseType[]) =>
             current.filter(u => u !== 'MECH'),
         })
 
         // Modify all mechs to Eidolon Maximum form: combat [4, 4]
-        const mechs = ctx.api.own.getUnits('MECH')
-        for (const mech of mechs) {
-          ctx.api.own.modifyUnit(getUnitLocator(mech)!, { COMBAT: [4, 4] })
-        }
+        ctx.api.own.modifyUnitType('MECH', { COMBAT: [4, 4] })
       },
     },
     {
@@ -46,16 +43,16 @@ export const eidolonMaximum: Ability = {
       isCallable: (_params, ctx) => {
         const settings = ctx.api.own.getAbilityConfig('SETTINGS')
         const afb =
-          (settings?.validTargetsAntiFighterBarrage as UnitType[]) ?? []
+          (settings?.validTargetsAntiFighterBarrage as UnitBaseType[]) ?? []
         const sco =
-          (settings?.validTargetsSpaceCannonOffense as UnitType[]) ?? []
+          (settings?.validTargetsSpaceCannonOffense as UnitBaseType[]) ?? []
         return afb.includes('MECH') || sco.includes('MECH')
       },
       call: ctx => {
         ctx.api.own.updateAbilityConfig('SETTINGS', {
-          validTargetsAntiFighterBarrage: (current: UnitType[]) =>
+          validTargetsAntiFighterBarrage: (current: UnitBaseType[]) =>
             current.filter(u => u !== 'MECH'),
-          validTargetsSpaceCannonOffense: (current: UnitType[]) =>
+          validTargetsSpaceCannonOffense: (current: UnitBaseType[]) =>
             current.filter(u => u !== 'MECH'),
         })
       },
@@ -66,7 +63,7 @@ export const eidolonMaximum: Ability = {
         // Restore MECH to groundForces for ground combat participation
         // (bombardment/SCD are done by this point)
         ctx.api.own.updateAbilityConfig('SETTINGS', {
-          groundForces: (current: UnitType[]) =>
+          groundForces: (current: UnitBaseType[]) =>
             current.includes('MECH') ? current : [...current, 'MECH'],
         })
 
@@ -74,7 +71,9 @@ export const eidolonMaximum: Ability = {
         const mechs = ctx.api.own.getUnits('MECH')
         for (const mech of mechs) {
           if (mech.isDamaged) {
-            ctx.api.own.modifyUnit(getUnitLocator(mech)!, { isDamaged: false })
+            ctx.api.own.modifyUnitState(getUnitLocator(mech)!, {
+              isDamaged: false,
+            })
           }
         }
       },

@@ -1,6 +1,5 @@
 import type { Ability } from '@/combat/abilities/types'
-import { getUnitLocator } from '@/combat/utils/compact-units'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 export const eidolon: Ability = {
   key: 'EIDOLON',
@@ -20,17 +19,14 @@ export const eidolon: Ability = {
       timing: 'START_OF_COMBAT',
       call: ctx => {
         ctx.api.own.updateAbilityConfig('SETTINGS', {
-          ships: (current: UnitType[]) => [...current, 'MECH'],
+          ships: (current: UnitBaseType[]) => [...current, 'MECH'],
         })
 
         // Z-Grav form loses Sustain Damage
         ctx.api.own.setUnitAbilityLost('SUSTAIN_DAMAGE', 'EIDOLON', 'MECH')
 
         // Modify all mechs to Z-Grav form: combat [8, 2]
-        const mechs = ctx.api.own.getUnits('MECH')
-        for (let i = 0; i < mechs.length; i++) {
-          ctx.api.own.modifyUnit(getUnitLocator(mechs[i])!, { COMBAT: [8, 2] })
-        }
+        ctx.api.own.modifyUnitType('MECH', { COMBAT: [8, 2] })
       },
     },
   ],

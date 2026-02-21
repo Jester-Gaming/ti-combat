@@ -1,10 +1,10 @@
 import type {
   FactionKey,
   UnitAbility,
+  UnitBaseType,
   UnitSelection,
   UnitState,
   UnitStats,
-  UnitType,
 } from '@/types'
 
 // ============================================================================
@@ -88,13 +88,13 @@ export interface PhaseIdentifier {
 /** A pool of unassigned hits with valid targets */
 export interface HitPool {
   hits: number
-  validTargets: UnitType[]
+  validTargets: UnitBaseType[]
 }
 
 /** A single restriction entry explaining why an ability is restricted */
 export interface RestrictionEntry {
   reason: string
-  unitType?: UnitType
+  unitType?: UnitBaseType
 }
 
 /** Two-layer restriction system for unit abilities */
@@ -126,7 +126,7 @@ export interface SideStateData {
   unitStats: Record<string, UnitStatsEntry>
   hitPools: HitPool[]
   unitAbilityRestrictions?: UnitAbilityRestrictions
-  unitSelections?: Record<UnitType, UnitSelection>
+  unitSelections?: Record<UnitBaseType, UnitSelection>
   /** Stored hit-value modifiers from abilities, applied to dice after BEFORE_DICE_ROLL */
   hitValueModifiers?: HitValueModifier[]
 }

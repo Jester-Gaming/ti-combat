@@ -2,10 +2,10 @@ import { declareParam } from '@/combat/abilities/declare-param'
 import { getUnitLocator } from '@/combat/utils/compact-units'
 
 import type { Ability } from '../../../combat/abilities/types'
-import type { UnitType } from '../../../types'
+import type { UnitBaseType } from '../../../types'
 
 type Params = {
-  shipPriority: UnitType[]
+  shipPriority: UnitBaseType[]
 }
 
 export const gravleashManeuvers: Ability<Params> = {

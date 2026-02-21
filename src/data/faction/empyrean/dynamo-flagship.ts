@@ -21,7 +21,7 @@ export const dynamoFlagship: Ability = {
         return ctx.api.own.getUnits(type).length > 0
       },
       call: (ctx, _params, unit: UnitLocator) => {
-        ctx.api.own.modifyUnit(unit, { isDamaged: false })
+        ctx.api.own.modifyUnitState(unit, { isDamaged: false })
       },
     },
     {

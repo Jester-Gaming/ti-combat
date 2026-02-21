@@ -1,10 +1,10 @@
 import { UNIT_TYPES } from '@/constants/units'
 import type {
   FactionKey,
+  UnitBaseType,
   UnitSelection,
   UnitState,
   UnitStats,
-  UnitType,
 } from '@/types'
 
 import { getFactionUnitConfig } from './get-faction-unit-config'
@@ -15,7 +15,7 @@ import { getFactionUnitConfig } from './get-faction-unit-config'
  */
 export function getSimulationUnits(
   faction: FactionKey,
-  selections: Record<UnitType, UnitSelection>,
+  selections: Record<UnitBaseType, UnitSelection>,
 ): {
   units: Record<string, number>
   unitState: Record<string, UnitState[]>
@@ -53,12 +53,12 @@ export function getSimulationUnits(
 
 /**
  * Builds a map of original unit stats templates for all unit types
- * that have valid definitions. Used by addUnit to initialize new units
+ * that have valid definitions. Used by placeUnits to initialize new units
  * with correct (unmodified) stats.
  */
 export function buildUnitStatsMap(
   faction: FactionKey,
-  upgrades?: ReadonlySet<UnitType>,
+  upgrades?: ReadonlySet<UnitBaseType>,
 ): Record<string, UnitStats> {
   const factionConfig = getFactionUnitConfig(faction)
   const result: Record<string, UnitStats> = {}

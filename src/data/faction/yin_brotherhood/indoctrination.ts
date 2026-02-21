@@ -25,7 +25,7 @@ export const indoctrination: Ability<Params> = {
       call: (ctx, params) => {
         ctx.api.opponent.removeUnit('INFANTRY')
         const unit = params.deployMech ? 'MECH' : 'INFANTRY'
-        ctx.api.own.addUnit({ [unit]: 1 })
+        ctx.api.own.placeUnits({ [unit]: 1 })
       },
     },
   ],

@@ -2,7 +2,7 @@ import { create } from 'mutative'
 
 import { GROUND_FORCES, STRUCTURES } from '@/constants/units'
 import factions from '@/data/faction'
-import type { CombatSide, DiceGroup, FactionKey, UnitType } from '@/types'
+import type { CombatSide, DiceGroup, FactionKey, UnitBaseType } from '@/types'
 import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 
 import {
@@ -13,7 +13,6 @@ import {
   type RunAbilitiesResult,
   type SidedDiceData,
 } from '../abilities'
-import { buildReadContext } from '../abilities/api/ability-api'
 import type {
   AbilityTiming,
   DicePool,
@@ -61,7 +60,7 @@ export interface StateWithProbability {
 interface UnitAbilityPhaseConfig {
   firing: CombatSide[]
   hitSource: HitSource
-  allowedUnitTypes?: ReadonlySet<UnitType>
+  allowedUnitTypes?: ReadonlySet<UnitBaseType>
 }
 
 /** Flatten a DicePool into DiceGroup[] for probability calculation */
@@ -86,7 +85,10 @@ function flattenDicePool(pool: DicePool): DiceGroup[] {
 }
 
 // Cache for getParticipatingUnits: source array → Set
-const participatingUnitsCache = new WeakMap<UnitType[], ReadonlySet<UnitType>>()
+const participatingUnitsCache = new WeakMap<
+  UnitBaseType[],
+  ReadonlySet<UnitBaseType>
+>()
 
 /** Main combat state class */
 export class CombatState {
@@ -254,19 +256,14 @@ export class CombatState {
 
   /** Build a read context for ability UI panels */
   getReadContext(side: CombatSide): AbilityReadContext {
-    return buildReadContext(
-      side,
-      this.data,
-      undefined,
-      this._params.getAbilities(side),
-    )
+    return this._params.context(side) as unknown as AbilityReadContext
   }
 
   /** Collect dice for a side and source */
   collectDice(
     side: CombatSide,
     source: HitSource,
-    allowedUnitTypes?: ReadonlySet<UnitType>,
+    allowedUnitTypes?: ReadonlySet<UnitBaseType>,
   ): DicePool {
     const participatingUnits = this.getParticipatingUnits(side)
     return this.side(side).collectDice(
@@ -277,7 +274,7 @@ export class CombatState {
   }
 
   /** Get participating units from SETTINGS ability */
-  getParticipatingUnits(side: CombatSide): ReadonlySet<UnitType> {
+  getParticipatingUnits(side: CombatSide): ReadonlySet<UnitBaseType> {
     const settings = this.data.abilities[side]['SETTINGS']
 
     if (!settings) {
@@ -286,8 +283,8 @@ export class CombatState {
 
     const units =
       this.data.combatMode === 'GROUND'
-        ? (settings.groundCombatParticipating as UnitType[])
-        : (settings.spaceCombatParticipating as UnitType[])
+        ? (settings.groundCombatParticipating as UnitBaseType[])
+        : (settings.spaceCombatParticipating as UnitBaseType[])
 
     // Cache Set on the source array to avoid re-creating identical Sets
     let cached = participatingUnitsCache.get(units)
@@ -302,7 +299,7 @@ export class CombatState {
   private getValidTargetsForPhase(
     side: CombatSide,
     stateData: CombatStateData = this.data,
-  ): UnitType[] {
+  ): UnitBaseType[] {
     const settings = stateData.abilities[side]['SETTINGS']
 
     if (!settings) {
@@ -565,7 +562,7 @@ export class CombatState {
   private rollDiceOutcomes(
     stateData: CombatStateData,
     modifiedDice: SidedDiceData,
-    validTargets: { attacker: UnitType[]; defender: UnitType[] },
+    validTargets: { attacker: UnitBaseType[]; defender: UnitBaseType[] },
     prependLog?: LogEntry[],
     afterRollTiming?: AbilityTiming,
   ): StateWithProbability[] {
@@ -986,7 +983,7 @@ function addHitsToDataWithPhase(
   data: CombatStateData,
   attackerHits: number,
   defenderHits: number,
-  validTargets: { attacker: UnitType[]; defender: UnitType[] },
+  validTargets: { attacker: UnitBaseType[]; defender: UnitBaseType[] },
   nextPhase: PhaseIdentifier,
 ): CombatStateData {
   return {
@@ -1049,7 +1046,7 @@ function hasAnyUnits(units: Record<string, number>): boolean {
 /** Check if units record has any units of participating types (early exit) */
 function hasParticipatingUnits(
   units: Record<string, number>,
-  participatingUnits: ReadonlySet<UnitType>,
+  participatingUnits: ReadonlySet<UnitBaseType>,
 ): boolean {
   for (const key in units) {
     if (units[key] <= 0) continue
@@ -1063,14 +1060,14 @@ function hasParticipatingUnits(
 function getParticipatingUnitsFromData(
   data: CombatStateData,
   side: CombatSide,
-): ReadonlySet<UnitType> {
+): ReadonlySet<UnitBaseType> {
   const settings = data.abilities[side]['SETTINGS']
   if (!settings) throw new Error('No SETTINGS in getParticipatingUnitsFromData')
 
   const units =
     data.combatMode === 'GROUND'
-      ? (settings.groundCombatParticipating as UnitType[])
-      : (settings.spaceCombatParticipating as UnitType[])
+      ? (settings.groundCombatParticipating as UnitBaseType[])
+      : (settings.spaceCombatParticipating as UnitBaseType[])
 
   let cached = participatingUnitsCache.get(units)
   if (!cached) {
@@ -1097,12 +1094,12 @@ function getUnitPriorityFromData(
 // Cache for filtered sacrifice order: unitPriority array → (participatingSet → filtered order)
 const sacrificeOrderCache = new WeakMap<
   string[],
-  Map<ReadonlySet<UnitType>, string[]>
+  Map<ReadonlySet<UnitBaseType>, string[]>
 >()
 
 function getFilteredSacrificeOrder(
   unitPriority: string[],
-  participatingUnits: ReadonlySet<UnitType>,
+  participatingUnits: ReadonlySet<UnitBaseType>,
 ): string[] {
   let map = sacrificeOrderCache.get(unitPriority)
   if (map) {
@@ -1127,7 +1124,7 @@ function getFilteredSacrificeOrder(
  * Batches all hit pools into a single pass to minimize object spreads. */
 function assignHitsToSide(
   sideData: SideStateData,
-  participatingUnits: ReadonlySet<UnitType>,
+  participatingUnits: ReadonlySet<UnitBaseType>,
   unitPriority: string[],
 ): SideStateData {
   if (sideData.hitPools.length === 0) return sideData

@@ -20,7 +20,7 @@ export const salaiSaiCorian: Ability = {
         let nonFighterCount = 0
         for (const type of ctx.api.opponent.getParticipatingUnitTypes()) {
           if (type === 'FIGHTER') continue
-          nonFighterCount += ctx.api.opponent.getUnits(type).length
+          nonFighterCount += ctx.api.opponent.countUnits(type)
         }
 
         // Set dice count to number of non-fighter ships

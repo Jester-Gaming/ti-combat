@@ -22,7 +22,7 @@ export const alarum: Ability<Params> = {
       isCallable: params => params.infantryAvailable > 0,
       call: (ctx, params) => {
         const count = Math.min(2, params.infantryAvailable)
-        ctx.api.own.addUnit({ INFANTRY: count })
+        ctx.api.own.placeUnits({ INFANTRY: count })
         ctx.api.own.updateAbilityConfig({
           infantryAvailable: params.infantryAvailable - count,
         })

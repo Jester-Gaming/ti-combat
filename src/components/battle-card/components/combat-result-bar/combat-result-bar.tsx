@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 import type { CombatOutcome, SurvivorSide } from '@/combat/types'
 import { UNIT_SHORT_NAMES } from '@/constants/units'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 import styles from './combat-result-bar.module.css'
 
@@ -165,7 +165,7 @@ function SurvivorList({
     <>
       {entries.map(([unitType, units], i) => {
         if (!units) return null
-        const name = UNIT_SHORT_NAMES[unitType as UnitType] ?? unitType
+        const name = UNIT_SHORT_NAMES[unitType as UnitBaseType] ?? unitType
         const damaged = units.filter(u => u.isDamaged).length
         const healthy = units.length - damaged
         const subtypes = units[0]?.subtypes

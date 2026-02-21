@@ -1,7 +1,7 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
 import { NON_FIGHTER_SHIPS, UNIT_DISPLAY_NAMES } from '@/constants/units'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 type Params = {
   strategy: 'IMMEDIATELY' | 'ENOUGH_FLEET_POOL'
@@ -10,12 +10,12 @@ type Params = {
   shipPriority: string[]
 }
 
-const ALLOWED_TYPES: UnitType[] = ['FLAGSHIP', 'CRUISER', 'DESTROYER']
+const ALLOWED_TYPES: UnitBaseType[] = ['FLAGSHIP', 'CRUISER', 'DESTROYER']
 
-const NON_FIGHTER_SET = new Set<UnitType>(NON_FIGHTER_SHIPS)
+const NON_FIGHTER_SET = new Set<UnitBaseType>(NON_FIGHTER_SHIPS)
 
 function getShipsToPlace(ships: Record<string, number>) {
-  const toPlace: Partial<Record<UnitType, number>> = {}
+  const toPlace: Partial<Record<UnitBaseType, number>> = {}
   const flagship = Math.min(ships.FLAGSHIP ?? 0, 1)
   if (flagship > 0) toPlace.FLAGSHIP = flagship
 
@@ -32,10 +32,10 @@ function getShipsToPlace(ships: Record<string, number>) {
   return toPlace
 }
 
-function countToPlace(toPlace: Partial<Record<UnitType, number>>) {
+function countToPlace(toPlace: Partial<Record<UnitBaseType, number>>) {
   let count = 0
   for (const [type, n] of Object.entries(toPlace)) {
-    if (NON_FIGHTER_SET.has(type as UnitType)) count += n
+    if (NON_FIGHTER_SET.has(type as UnitBaseType)) count += n
   }
   return count
 }
@@ -68,7 +68,7 @@ export const overwingZeta: Ability<Params> = {
         if (Object.keys(toPlace).length === 0) return false
 
         if (params.strategy === 'ENOUGH_FLEET_POOL') {
-          const currentNonFighter = ctx.api.own.countUnits(NON_FIGHTER_SET)
+          const currentNonFighter = ctx.api.own.countUnits(NON_FIGHTER_SHIPS)
           const adding = countToPlace(toPlace)
           return currentNonFighter + adding <= params.fleetPool
         }
@@ -77,17 +77,19 @@ export const overwingZeta: Ability<Params> = {
       },
       call: (ctx, params) => {
         const toPlace = getShipsToPlace(params.ships)
-        ctx.api.own.addUnit(toPlace)
+        ctx.api.own.placeUnits(toPlace)
 
         if (params.strategy !== 'IMMEDIATELY') return
 
         // Enforce fleet pool limit (same as Fragment Reality)
-        const totalNonFighter = ctx.api.own.countUnits(NON_FIGHTER_SET)
+        const totalNonFighter = ctx.api.own.countUnits(NON_FIGHTER_SHIPS)
         const excess = totalNonFighter - params.fleetPool
         if (excess <= 0) return
 
         const prioritySet = new Set(params.shipPriority)
-        const allUnitTypes = Object.keys(ctx.api.own.getUnits()) as UnitType[]
+        const allUnitTypes = Object.keys(
+          ctx.api.own.getUnits(),
+        ) as UnitBaseType[]
         const unlisted = allUnitTypes.filter(
           t => NON_FIGHTER_SET.has(t) && !prioritySet.has(t),
         )
@@ -99,8 +101,8 @@ export const overwingZeta: Ability<Params> = {
         let remaining = excess
         for (const type of removalOrder) {
           if (remaining <= 0) break
-          if (!NON_FIGHTER_SET.has(type as UnitType)) continue
-          const unitType = type as UnitType
+          if (!NON_FIGHTER_SET.has(type as UnitBaseType)) continue
+          const unitType = type as UnitBaseType
           const unitList = ctx.api.own.getUnits(unitType)
           const toRemove = Math.min(remaining, unitList.length)
           for (let i = 0; i < toRemove; i++) {

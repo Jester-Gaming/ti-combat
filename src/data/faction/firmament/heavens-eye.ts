@@ -14,7 +14,7 @@ export const heavensEye: Ability = {
     {
       timing: 'END_OF_COMBAT_ROUND',
       call: ctx => {
-        ctx.api.own.modifyUnit(ctx.getUnit(), { isDamaged: false })
+        ctx.api.own.modifyUnitState(ctx.getUnit(), { isDamaged: false })
       },
     },
   ],

@@ -1,6 +1,6 @@
 import type { Ability } from '@/combat/abilities/types'
 import { GROUND_FORCES } from '@/constants/units'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 export const theAlastor: Ability = {
   key: 'THE_ALASTOR',
@@ -14,7 +14,7 @@ export const theAlastor: Ability = {
   },
   headerUI: 'isEnabled',
   declareParamChange: (_params, settings) =>
-    ((settings.groundForces as UnitType[]) ?? GROUND_FORCES).map(u => ({
+    ((settings.groundForces as UnitBaseType[]) ?? GROUND_FORCES).map(u => ({
       key: 'ships',
       value: u,
     })),
@@ -24,10 +24,11 @@ export const theAlastor: Ability = {
       call: ctx => {
         const settings = ctx.api.own.getAbilityConfig('SETTINGS')
         const groundForces =
-          (settings?.groundForces as UnitType[] | undefined) ?? GROUND_FORCES
+          (settings?.groundForces as UnitBaseType[] | undefined) ??
+          GROUND_FORCES
 
         ctx.api.own.updateAbilityConfig('SETTINGS', {
-          ships: (current: UnitType[]) => [
+          ships: (current: UnitBaseType[]) => [
             ...current,
             ...groundForces.filter(u => !current.includes(u)),
           ],

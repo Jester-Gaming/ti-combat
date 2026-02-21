@@ -1,11 +1,11 @@
 import { getUnitLocator } from '@/combat/utils/compact-units'
-import { type UnitType } from '@/types'
+import { type UnitBaseType } from '@/types'
 
 import { declareParam } from '../../../combat/abilities/declare-param'
 import type { Ability, SideReadApi } from '../../../combat/abilities/types'
 
 type Params = {
-  targetPriority: UnitType[]
+  targetPriority: UnitBaseType[]
 }
 
 /** Count non-fighter ships on a side */

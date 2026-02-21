@@ -1,9 +1,9 @@
 import { parseVariantId } from '@/combat/utils/unit-variant'
-import type { DiceGroup, UnitType } from '@/types'
+import type { DiceGroup, UnitBaseType } from '@/types'
 
 import type { Ability, SideReadApi } from '../../../combat/abilities/types'
 
-const STRUCTURE_TYPES: UnitType[] = ['PDS', 'SPACE_DOCK']
+const STRUCTURE_TYPES: UnitBaseType[] = ['PDS', 'SPACE_DOCK']
 
 type Params = {
   structures: Record<string, number>

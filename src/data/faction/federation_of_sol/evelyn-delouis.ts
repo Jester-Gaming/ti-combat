@@ -2,12 +2,12 @@ import federationOfSolIcon from '@/assets/faction/federation_of_sol.svg?raw'
 import { declareParam } from '@/combat/abilities/declare-param'
 import { getUnitLocator } from '@/combat/utils/compact-units'
 import { makeVariantId, parseVariantId } from '@/combat/utils/unit-variant'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
 type Params = {
-  unitType: UnitType
+  unitType: UnitBaseType
 }
 
 export const evelynDelouis: Ability<Params> = {
@@ -19,7 +19,7 @@ export const evelynDelouis: Ability<Params> = {
   params: {
     isEnabled: false,
     uses: 2,
-    unitType: declareParam<UnitType>({
+    unitType: declareParam<UnitBaseType>({
       default: 'INFANTRY',
       source: 'groundForces',
     }),

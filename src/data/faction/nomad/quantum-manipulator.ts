@@ -29,7 +29,7 @@ export const quantumManipulator: Ability = {
       },
       call: ctx => {
         const locator = ctx.getUnit()
-        ctx.api.own.modifyUnit(locator, { isDamaged: true })
+        ctx.api.own.modifyUnitState(locator, { isDamaged: true })
         ctx.api.own.reduceHits(1)
         ctx.log(ctx.getUnitType())
         ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', locator)

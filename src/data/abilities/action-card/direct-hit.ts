@@ -1,6 +1,6 @@
 import { getUnitLocator } from '@/combat/utils/compact-units'
 import { parseVariantId } from '@/combat/utils/unit-variant'
-import type { UnitLocator, UnitType } from '@/types'
+import type { UnitBaseType, UnitLocator } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
@@ -22,7 +22,7 @@ export const directHit: Ability = {
         const { type: unitType } = parseVariantId(unit.key)
         // Only target ships — not mechs or ground forces
         const settings = ctx.api.opponent.getAbilityConfig('SETTINGS')
-        const ships = (settings?.ships as UnitType[]) ?? []
+        const ships = (settings?.ships as UnitBaseType[]) ?? []
         if (!ships.includes(unitType)) return false
         // Check DIRECT_HIT_IMMUNE on the specific unit
         const units = ctx.api.opponent.getUnits(unitType)

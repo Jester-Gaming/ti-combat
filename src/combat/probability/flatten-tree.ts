@@ -1,4 +1,4 @@
-import type { CombatSide, UnitState, UnitType } from '@/types'
+import type { CombatSide, UnitBaseType, UnitState } from '@/types'
 
 import type { SideStateData } from '../combat-state/types'
 import type { SurvivorSide } from '../types'
@@ -12,8 +12,8 @@ import { parseVariantId } from '../utils/unit-variant'
 export interface RelativeOutcome {
   attackerData: SideStateData
   defenderData: SideStateData
-  attackerParticipating: ReadonlySet<UnitType>
-  defenderParticipating: ReadonlySet<UnitType>
+  attackerParticipating: ReadonlySet<UnitBaseType>
+  defenderParticipating: ReadonlySet<UnitBaseType>
   probability: number
 }
 
@@ -26,8 +26,8 @@ export type OutcomeRecord = Map<string, RelativeOutcome>
 export function generateCompactOutcomeKey(
   attackerData: SideStateData,
   defenderData: SideStateData,
-  attackerParticipating: ReadonlySet<UnitType>,
-  defenderParticipating: ReadonlySet<UnitType>,
+  attackerParticipating: ReadonlySet<UnitBaseType>,
+  defenderParticipating: ReadonlySet<UnitBaseType>,
 ): string {
   return `${formatCompactSideKey(attackerData.units, attackerData.unitState, attackerParticipating)}|${formatCompactSideKey(defenderData.units, defenderData.unitState, defenderParticipating)}`
 }
@@ -35,7 +35,7 @@ export function generateCompactOutcomeKey(
 function formatCompactSideKey(
   units: Record<string, number>,
   unitState: Record<string, UnitState[]>,
-  participating: ReadonlySet<UnitType>,
+  participating: ReadonlySet<UnitBaseType>,
 ): string {
   const keys = Object.keys(units)
   if (keys.length === 0) return ''
@@ -74,7 +74,7 @@ function formatCompactSideKey(
  */
 export function extractSurvivors(
   sideState: SideStateData,
-  participatingUnits: ReadonlySet<UnitType>,
+  participatingUnits: ReadonlySet<UnitBaseType>,
 ): SurvivorSide {
   const survivors: SurvivorSide = {}
 
@@ -124,7 +124,7 @@ export function determineWinner(outcome: RelativeOutcome): CombatSide | 'draw' {
 
 function hasParticipatingUnits(
   units: Record<string, number>,
-  participating: ReadonlySet<UnitType>,
+  participating: ReadonlySet<UnitBaseType>,
 ): boolean {
   for (const key in units) {
     if (units[key] <= 0) continue

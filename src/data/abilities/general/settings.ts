@@ -4,22 +4,22 @@ import {
   SHIPS,
   STRUCTURES,
 } from '@/constants/units'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 import { declareParam } from '../../../combat/abilities/declare-param'
 import type { Ability, DeclaredSubtype } from '../../../combat/abilities/types'
 
 type Params = {
-  nonFighterShips: UnitType[]
-  ships: UnitType[]
-  groundForces: UnitType[]
-  structures: UnitType[]
-  spaceCombatParticipating: UnitType[]
-  groundCombatParticipating: UnitType[]
-  validTargetsSpaceCannonOffense: UnitType[]
-  validTargetsBombardment: UnitType[]
-  validTargetsSpaceCannonDefense: UnitType[]
-  validTargetsAntiFighterBarrage: UnitType[]
+  nonFighterShips: UnitBaseType[]
+  ships: UnitBaseType[]
+  groundForces: UnitBaseType[]
+  structures: UnitBaseType[]
+  spaceCombatParticipating: UnitBaseType[]
+  groundCombatParticipating: UnitBaseType[]
+  validTargetsSpaceCannonOffense: UnitBaseType[]
+  validTargetsBombardment: UnitBaseType[]
+  validTargetsSpaceCannonDefense: UnitBaseType[]
+  validTargetsAntiFighterBarrage: UnitBaseType[]
   subtypes: DeclaredSubtype[]
 }
 
@@ -34,7 +34,7 @@ export const settings: Ability<Params> = {
     nonFighterShips: declareParam({
       default: NON_FIGHTER_SHIPS,
       source: 'ships',
-      compute: (ships: UnitType[]) => ships.filter(u => u !== 'FIGHTER'),
+      compute: (ships: UnitBaseType[]) => ships.filter(u => u !== 'FIGHTER'),
     }),
     groundForces: GROUND_FORCES,
     structures: STRUCTURES,

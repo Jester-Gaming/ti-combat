@@ -6,7 +6,7 @@ import type {
 } from '@/combat/abilities/types'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import baseUnits from '@/data/base-units'
-import type { Faction, UnitDefinition, UnitType } from '@/types'
+import type { Faction, UnitBaseType, UnitDefinition } from '@/types'
 import { getEffectiveStats } from '@/utils/get-simulation-units'
 
 import { otherFactions } from '../other-factions'
@@ -49,7 +49,7 @@ const EXCLUDED_UNIT_TYPES = new Set(['FLAGSHIP', 'MECH', 'SPACE_DOCK'])
 function createFactionUnitAbility(
   factionKey: string,
   faction: Faction,
-  unitType: UnitType,
+  unitType: UnitBaseType,
   unitDef: UnitDefinition,
 ): Ability {
   const key = `NEKRO_UNIT_${factionKey}_${unitType}`
@@ -85,13 +85,13 @@ function createFactionUnitAbility(
       {
         timing: 'PREPARE' as const,
         call: (ctx: AbilityCallContext) => {
-          ctx.api.own.modifyUnit(unitType, stats)
+          ctx.api.own.modifyUnitType(unitType, stats)
         },
       },
       {
         timing: 'CLEANUP' as const,
         call: (ctx: AbilityCallContext) => {
-          ctx.api.own.modifyUnit(unitType, defaultStats)
+          ctx.api.own.modifyUnitType(unitType, defaultStats)
         },
       },
     ],
@@ -101,7 +101,7 @@ function createFactionUnitAbility(
 const unitAbilities = Object.entries(otherFactions)
   .filter(([factionKey]) => factionKey !== 'NEUTRAL')
   .flatMap(([factionKey, faction]) =>
-    (Object.entries(faction.units) as [UnitType, UnitDefinition][])
+    (Object.entries(faction.units) as [UnitBaseType, UnitDefinition][])
       .filter(([unitType]) => !EXCLUDED_UNIT_TYPES.has(unitType))
       .map(([unitType, unitDef]) => {
         const ability = createFactionUnitAbility(

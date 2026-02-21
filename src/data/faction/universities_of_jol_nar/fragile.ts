@@ -1,11 +1,11 @@
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
 type Params = {
   isEnabled: boolean
   uses: number
-  excludeUnits: UnitType[]
+  excludeUnits: UnitBaseType[]
 }
 
 export const fragile: Ability<Params> = {

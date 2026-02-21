@@ -1,10 +1,10 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
 import { parseVariantId, unitMatchesVariant } from '@/combat/utils/unit-variant'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 type Params = {
-  targetPriority: UnitType[]
+  targetPriority: UnitBaseType[]
 }
 
 export const dimensionalSplicer: Ability<Params> = {

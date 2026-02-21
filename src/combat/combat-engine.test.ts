@@ -1,7 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
 import baseUnits from '@/data/base-units'
-import type { FactionKey, UnitDefinition, UnitStats, UnitType } from '@/types'
+import type {
+  FactionKey,
+  UnitBaseType,
+  UnitDefinition,
+  UnitStats,
+} from '@/types'
 
 import { CombatEngine } from './combat-engine'
 import { CombatState } from './combat-state/combat-state'
@@ -15,16 +20,16 @@ const TEST_FACTION: FactionKey = 'ARBOREC'
  * @param upgrades - Record of which units are upgraded
  */
 function getUnitDataStats(
-  upgrades: Partial<Record<UnitType, boolean>> = {},
-): Record<UnitType, UnitStats> {
-  const result = {} as Record<UnitType, UnitStats>
+  upgrades: Partial<Record<UnitBaseType, boolean>> = {},
+): Record<UnitBaseType, UnitStats> {
+  const result = {} as Record<UnitBaseType, UnitStats>
 
   for (const [unitType, unitDef] of Object.entries(baseUnits)) {
     const def = unitDef as UnitDefinition
-    const isUpgraded = upgrades[unitType as UnitType] ?? false
+    const isUpgraded = upgrades[unitType as UnitBaseType] ?? false
 
     if (isUpgraded && def.UPGRADED) {
-      result[unitType as UnitType] = {
+      result[unitType as UnitBaseType] = {
         ...def.BASE,
         ...def.UPGRADED,
         UNIT_ABILITIES: {
@@ -33,9 +38,9 @@ function getUnitDataStats(
         },
       } as UnitStats
     } else if (def.BASE) {
-      result[unitType as UnitType] = { ...def.BASE } as UnitStats
+      result[unitType as UnitBaseType] = { ...def.BASE } as UnitStats
     } else if (def.UPGRADED) {
-      result[unitType as UnitType] = { ...def.UPGRADED } as UnitStats
+      result[unitType as UnitBaseType] = { ...def.UPGRADED } as UnitStats
     }
   }
 
@@ -46,9 +51,9 @@ function getUnitDataStats(
  * Create SideStateData in compact format.
  */
 function createSideState(
-  counts: Partial<Record<UnitType, number>>,
-  customStats?: Partial<Record<UnitType, UnitStats>>,
-  defaultStats?: Record<UnitType, UnitStats>,
+  counts: Partial<Record<UnitBaseType, number>>,
+  customStats?: Partial<Record<UnitBaseType, UnitStats>>,
+  defaultStats?: Record<UnitBaseType, UnitStats>,
 ): SideStateData {
   const allStats = defaultStats ?? getUnitDataStats()
   const units: Record<string, number> = {}
@@ -56,7 +61,7 @@ function createSideState(
 
   for (const [type, count] of Object.entries(counts)) {
     if (count && count > 0) {
-      const unitType = type as UnitType
+      const unitType = type as UnitBaseType
       units[unitType] = count
       unitStats[unitType] = customStats?.[unitType] ?? allStats[unitType]
     }

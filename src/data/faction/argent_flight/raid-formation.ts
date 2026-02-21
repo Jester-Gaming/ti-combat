@@ -1,5 +1,6 @@
 import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
+import { getUnitLocator } from '@/combat/utils/compact-units'
 import { parseVariantId } from '@/combat/utils/unit-variant'
 
 type Params = {
@@ -69,7 +70,7 @@ export const raidFormation: Ability<Params> = {
             )
 
             if (index >= 0) {
-              ctx.api.opponent.modifyUnit(unitType, index, {
+              ctx.api.opponent.modifyUnitState(getUnitLocator(units[index])!, {
                 isDamaged: true,
               })
               damaged++

@@ -22,9 +22,9 @@ export const brotherMilor: Ability = {
       },
       call: ctx => {
         if (ctx.state.combatMode === 'SPACE') {
-          ctx.api.own.addUnit({ FIGHTER: 2 })
+          ctx.api.own.placeUnits({ FIGHTER: 2 })
         } else {
-          ctx.api.own.addUnit({ INFANTRY: 2 })
+          ctx.api.own.placeUnits({ INFANTRY: 2 })
         }
       },
     },

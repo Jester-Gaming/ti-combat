@@ -3,13 +3,13 @@ import {
   UNIT_SHORT_NAMES,
   UNIT_TYPES,
 } from '@/constants/units'
-import { type FactionKey, type UnitType } from '@/types'
+import { type FactionKey, type UnitBaseType } from '@/types'
 
 import { getFactionUnitConfig } from './get-faction-unit-config'
 
 export interface UnitListItem {
   label: string
-  value: UnitType
+  value: UnitBaseType
 }
 
 const unitList: UnitListItem[] = UNIT_TYPES.map(value => ({
@@ -18,13 +18,15 @@ const unitList: UnitListItem[] = UNIT_TYPES.map(value => ({
 }))
 
 /** Get unit list items for specific unit types */
-export function getUnitListItems(units: readonly UnitType[]): UnitListItem[] {
+export function getUnitListItems(
+  units: readonly UnitBaseType[],
+): UnitListItem[] {
   return unitList.filter(unit => units.includes(unit.value))
 }
 
 /** Get display name for a unit type with optional subtypes */
 export function getUnitVariantDisplayName(
-  unitType: UnitType,
+  unitType: UnitBaseType,
   subtypes?: string[],
 ): string {
   const base = UNIT_DISPLAY_NAMES[unitType]
@@ -40,9 +42,9 @@ export interface UnitConfig {
 
 export function getUnitConfig(
   factionKey: FactionKey,
-): Record<UnitType, UnitConfig> {
+): Record<UnitBaseType, UnitConfig> {
   const factionUnitConfig = getFactionUnitConfig(factionKey)
-  const result = {} as Record<UnitType, UnitConfig>
+  const result = {} as Record<UnitBaseType, UnitConfig>
 
   for (const unitType of UNIT_TYPES) {
     const unitDef = factionUnitConfig[unitType]

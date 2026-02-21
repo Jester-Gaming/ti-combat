@@ -1,16 +1,16 @@
 import { UNIT_DISPLAY_NAMES } from '@/constants/units'
-import type { Unit, UnitType, UnitVariant } from '@/types'
+import type { Unit, UnitBaseType, UnitVariant } from '@/types'
 
 /**
- * A variant ID is a UnitType optionally suffixed with sorted subtypes.
+ * A variant ID is a UnitBaseType optionally suffixed with sorted subtypes.
  * Examples: "CRUISER", "CRUISER:Cavalry", "CRUISER:Cavalry,Galvanize"
- * A plain UnitType string is a valid UnitVariantId (variant with no subtypes).
+ * A plain UnitBaseType string is a valid UnitVariantId (variant with no subtypes).
  */
 
 export function makeVariantId(
   variantId: string,
   subtypes?: string[],
-): UnitType | UnitVariant {
+): UnitBaseType | UnitVariant {
   const { type, subtypes: currentSubtypes } = parseVariantId(variantId)
   if (!subtypes || subtypes.length === 0) return type
   const sorted = [...subtypes, ...currentSubtypes].sort()
@@ -18,22 +18,22 @@ export function makeVariantId(
 }
 
 const EMPTY_SUBTYPES: string[] = []
-const parseCache = new Map<string, { type: UnitType; subtypes: string[] }>()
+const parseCache = new Map<string, { type: UnitBaseType; subtypes: string[] }>()
 
 export function parseVariantId(id: string): {
-  type: UnitType
+  type: UnitBaseType
   subtypes: string[]
 } {
   const cached = parseCache.get(id)
   if (cached) return cached
 
   const colonIndex = id.indexOf(':')
-  let result: { type: UnitType; subtypes: string[] }
+  let result: { type: UnitBaseType; subtypes: string[] }
   if (colonIndex === -1) {
-    result = { type: id as UnitType, subtypes: EMPTY_SUBTYPES }
+    result = { type: id as UnitBaseType, subtypes: EMPTY_SUBTYPES }
   } else {
     result = {
-      type: id.slice(0, colonIndex) as UnitType,
+      type: id.slice(0, colonIndex) as UnitBaseType,
       subtypes: id.slice(colonIndex + 1).split(','),
     }
   }
@@ -42,9 +42,9 @@ export function parseVariantId(id: string): {
 }
 
 export function getUnitVariantId(
-  type: UnitType,
+  type: UnitBaseType,
   unit: Unit,
-): UnitType | UnitVariant {
+): UnitBaseType | UnitVariant {
   return makeVariantId(type, unit.subtypes)
 }
 

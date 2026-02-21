@@ -2,12 +2,10 @@ import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
 import { parseVariantId, unitMatchesVariant } from '@/combat/utils/unit-variant'
 import { STRUCTURES } from '@/constants/units'
-import type { UnitType } from '@/types'
-
-const STRUCTURE_SET = new Set(STRUCTURES)
+import type { UnitBaseType } from '@/types'
 
 type Params = {
-  targetPriority: UnitType[]
+  targetPriority: UnitBaseType[]
 }
 
 export const magenDefenseGrid: Ability<Params> = {
@@ -30,7 +28,7 @@ export const magenDefenseGrid: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT',
       isCallable: (params, ctx) => {
-        const hasStructure = ctx.api.own.countUnits(STRUCTURE_SET) > 0
+        const hasStructure = ctx.api.own.countUnits(STRUCTURES) > 0
         if (!hasStructure) return false
         return (
           ctx.api.opponent.findUnitByPriority(params.targetPriority) !==

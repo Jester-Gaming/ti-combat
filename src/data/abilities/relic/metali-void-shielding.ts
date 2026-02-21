@@ -62,7 +62,7 @@ export const metaliVoidShielding: Ability = {
         if (!target) return
 
         const locator = getUnitLocator(target.unit)!
-        ctx.api.own.modifyUnit(locator, { isDamaged: true })
+        ctx.api.own.modifyUnitState(locator, { isDamaged: true })
         ctx.api.own.reduceHits(1)
         ctx.log(target.unitType)
         ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', locator)

@@ -1,5 +1,5 @@
 import { parseVariantId } from '@/combat/utils/unit-variant'
-import type { UnitLocator, UnitType } from '@/types'
+import type { UnitBaseType, UnitLocator } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
@@ -21,7 +21,7 @@ export const reflectiveShielding: Ability = {
         // Only trigger for ships — not mechs or ground forces
         const { type: unitType } = parseVariantId(unit.key)
         const settings = ctx.api.own.getAbilityConfig('SETTINGS')
-        const ships = (settings?.ships as UnitType[]) ?? []
+        const ships = (settings?.ships as UnitBaseType[]) ?? []
         return ships.includes(unitType)
       },
       call: ctx => {

@@ -1,5 +1,6 @@
+import { getUnitLocator } from '@/combat/utils/compact-units'
 import { UNIT_DISPLAY_NAMES } from '@/constants/units'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
@@ -18,18 +19,19 @@ export const preDamaged: Ability<Params> = {
   },
   uiConfig: ctx => {
     const settings = ctx.api.own.getAbilityConfig('SETTINGS')
-    const nonFighterShips = (settings?.nonFighterShips ?? []) as UnitType[]
-    const groundForces = (settings?.groundForces ?? []) as UnitType[]
+    const nonFighterShips = (settings?.nonFighterShips ?? []) as UnitBaseType[]
+    const groundForces = (settings?.groundForces ?? []) as UnitBaseType[]
     const items: { label: string; value: string; max: number }[] = []
 
     const unitTypes = [...new Set([...nonFighterShips, ...groundForces])]
 
     for (const type of unitTypes) {
-      const typeUnits = ctx.api.own.getUnits(type)
+      const unitAmount = ctx.api.own.countUnits(type)
+
       items.push({
         label: UNIT_DISPLAY_NAMES[type],
         value: type,
-        max: typeUnits.length,
+        max: unitAmount,
       })
     }
 
@@ -49,10 +51,10 @@ export const preDamaged: Ability<Params> = {
       timing: 'PREPARE',
       call: (ctx, params) => {
         for (const [unitType, count] of Object.entries(params.damagedUnits)) {
-          const units = ctx.api.own.getUnits(unitType as UnitType)
+          const units = ctx.api.own.getUnits(unitType as UnitBaseType)
           const max = Math.min(count, units.length)
           for (let i = 0; i < max; i++) {
-            ctx.api.own.modifyUnit(unitType as UnitType, i, {
+            ctx.api.own.modifyUnitState(getUnitLocator(units[i])!, {
               isDamaged: true,
             })
           }

@@ -10,11 +10,11 @@ export type { Faction, FactionKey } from './faction'
 export type {
   Unit,
   UnitAbility,
+  UnitBaseType,
   UnitDefinition,
   UnitLocator,
   UnitState,
   UnitStats,
-  UnitType,
   UnitVariant,
 } from './unit'
 export { UNIT_STATE_KEYS } from './unit'

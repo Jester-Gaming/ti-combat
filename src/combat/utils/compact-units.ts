@@ -1,4 +1,10 @@
-import type { Unit, UnitLocator, UnitState, UnitStats, UnitType } from '@/types'
+import type {
+  Unit,
+  UnitBaseType,
+  UnitLocator,
+  UnitState,
+  UnitStats,
+} from '@/types'
 
 import type { SideStateData } from '../combat-state/types'
 import { makeVariantId, parseVariantId } from './unit-variant'
@@ -118,7 +124,7 @@ const variantKeysCache = new WeakMap<
 /** Get sorted variant keys for a base type from units record */
 export function getVariantKeysForType(
   units: Record<string, number>,
-  baseType: UnitType,
+  baseType: UnitBaseType,
 ): string[] {
   let cacheMap = variantKeysCache.get(units)
   if (cacheMap) {
@@ -146,7 +152,7 @@ export function getVariantKeysForType(
 /** Total count across all variants of a base type */
 export function totalCountForType(
   units: Record<string, number>,
-  baseType: UnitType,
+  baseType: UnitBaseType,
 ): number {
   let total = 0
   for (const key of Object.keys(units)) {
@@ -164,7 +170,7 @@ export function totalCountForType(
  */
 export function resolveGlobalIndex(
   sideState: SideStateData,
-  baseType: UnitType,
+  baseType: UnitBaseType,
   globalIndex: number,
 ): { key: string; subIndex: number } {
   const keys = getVariantKeysForType(sideState.units, baseType)
@@ -202,7 +208,7 @@ export function toGlobalIndex(
  */
 export function reconstructUnitsForType(
   sideState: SideStateData,
-  baseType: UnitType,
+  baseType: UnitBaseType,
 ): Unit[] {
   let cacheMap = reconstructCache.get(sideState)
   if (cacheMap) {
@@ -237,14 +243,14 @@ export function reconstructUnitsForType(
 }
 
 /**
- * Reconstruct all units across all types as Record<UnitType, Unit[]>.
+ * Reconstruct all units across all types as Record<UnitBaseType, Unit[]>.
  * Used for API compatibility (getUnits() with no args).
  */
 export function reconstructAllUnits(
   sideState: SideStateData,
-): Partial<Record<UnitType, Unit[]>> {
-  const result: Partial<Record<UnitType, Unit[]>> = {}
-  const seenTypes = new Set<UnitType>()
+): Partial<Record<UnitBaseType, Unit[]>> {
+  const result: Partial<Record<UnitBaseType, Unit[]>> = {}
+  const seenTypes = new Set<UnitBaseType>()
 
   for (const key of Object.keys(sideState.units)) {
     if (sideState.units[key] <= 0) continue

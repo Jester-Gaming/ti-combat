@@ -2,7 +2,7 @@ import { declareParam } from '@/combat/abilities/declare-param'
 import type { Ability } from '@/combat/abilities/types'
 import { parseVariantId } from '@/combat/utils/unit-variant'
 import { NON_FIGHTER_SHIPS, SHIPS, UNIT_LIMITS } from '@/constants/units'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 type Params = {
   isActive: boolean
@@ -10,13 +10,13 @@ type Params = {
   shipPriority: string[]
 }
 
-const SHIPS_SET = new Set<UnitType>(SHIPS)
-const NON_FIGHTER_SET = new Set<UnitType>(NON_FIGHTER_SHIPS)
+const SHIPS_SET = new Set<UnitBaseType>(SHIPS)
+const NON_FIGHTER_SET = new Set<UnitBaseType>(NON_FIGHTER_SHIPS)
 
 function collectDestroyedShips(
   destroyed: Record<string, number>,
-): Partial<Record<UnitType, number>> {
-  const counts: Partial<Record<UnitType, number>> = {}
+): Partial<Record<UnitBaseType, number>> {
+  const counts: Partial<Record<UnitBaseType, number>> = {}
   for (const key in destroyed) {
     const { type } = parseVariantId(key)
     if (SHIPS_SET.has(type)) {
@@ -68,24 +68,26 @@ export const sleeperCell: Ability<Params> = {
         const destroyed = collectDestroyedShips(units.opponent)
 
         // Cap placement at unit limits
-        const toPlace: Partial<Record<UnitType, number>> = {}
+        const toPlace: Partial<Record<UnitBaseType, number>> = {}
         for (const [type, count] of Object.entries(destroyed)) {
-          const unitType = type as UnitType
-          const existing = ctx.api.own.getUnits(unitType).length
+          const unitType = type as UnitBaseType
+          const existing = ctx.api.own.countUnits(unitType)
           const canPlace = Math.max(0, UNIT_LIMITS[unitType] - existing)
           if (canPlace > 0) toPlace[unitType] = Math.min(count, canPlace)
         }
-        ctx.api.own.addUnit(toPlace)
+        ctx.api.own.placeUnits(toPlace)
 
         // Enforce fleet pool limit (fighters don't count)
-        const totalNonFighter = ctx.api.own.countUnits(NON_FIGHTER_SET)
+        const totalNonFighter = ctx.api.own.countUnits(NON_FIGHTER_SHIPS)
         const excess = totalNonFighter - params.fleetPool
         if (excess <= 0) return
 
         // Build removal order: reverse of shipPriority (remove lowest priority first)
         // Non-fighter ships not in priority list are removed before listed ones
         const prioritySet = new Set(params.shipPriority)
-        const allUnitTypes = Object.keys(ctx.api.own.getUnits()) as UnitType[]
+        const allUnitTypes = Object.keys(
+          ctx.api.own.getUnits(),
+        ) as UnitBaseType[]
         const unlisted = allUnitTypes.filter(
           t => NON_FIGHTER_SET.has(t) && !prioritySet.has(t),
         )
@@ -97,10 +99,10 @@ export const sleeperCell: Ability<Params> = {
         let remaining = excess
         for (const type of removalOrder) {
           if (remaining <= 0) break
-          if (!NON_FIGHTER_SET.has(type as UnitType)) continue
-          const unitType = type as UnitType
-          const unitList = ctx.api.own.getUnits(unitType)
-          const toRemove = Math.min(remaining, unitList.length)
+          if (!NON_FIGHTER_SET.has(type as UnitBaseType)) continue
+          const unitType = type as UnitBaseType
+          const unitAmount = ctx.api.own.countUnits(unitType)
+          const toRemove = Math.min(remaining, unitAmount)
           for (let i = 0; i < toRemove; i++) {
             ctx.api.own.removeUnit(unitType)
             remaining--

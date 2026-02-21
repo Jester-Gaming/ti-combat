@@ -8,7 +8,12 @@ import type { CombatOutcome } from '@/combat/types'
 import { GlassCard } from '@/components/ui/glass-card'
 import { GlowText } from '@/components/ui/glow-text'
 import { UNIT_LIMITS, UNIT_TYPES } from '@/constants/units'
-import type { CombatSide, FactionKey, UnitSelection, UnitType } from '@/types'
+import type {
+  CombatSide,
+  FactionKey,
+  UnitBaseType,
+  UnitSelection,
+} from '@/types'
 import type { UnitConfig } from '@/utils/get-unit-config'
 
 import styles from './battle-card.module.css'
@@ -22,10 +27,10 @@ import { UnitRowDual } from './components/unit-row-dual'
 interface BattleCardProps {
   attackerFaction: FactionKey
   defenderFaction: FactionKey
-  attackerSelections: Record<UnitType, UnitSelection>
-  defenderSelections: Record<UnitType, UnitSelection>
-  attackerConfig: Record<UnitType, UnitConfig>
-  defenderConfig: Record<UnitType, UnitConfig>
+  attackerSelections: Record<UnitBaseType, UnitSelection>
+  defenderSelections: Record<UnitBaseType, UnitSelection>
+  attackerConfig: Record<UnitBaseType, UnitConfig>
+  defenderConfig: Record<UnitBaseType, UnitConfig>
   combatResult: CombatResult | null
   outcomes: CombatOutcome[] | null
   unitPriority: { attacker: string[]; defender: string[] }
@@ -34,8 +39,12 @@ interface BattleCardProps {
   onCombatModeChange: (mode: CombatMode) => void
   onFactionChange: (side: CombatSide, faction: FactionKey) => void
   onSwap: () => void
-  onUnitCountChange: (side: CombatSide, unit: UnitType, count: number) => void
-  onUpgradeToggle: (side: CombatSide, unit: UnitType) => void
+  onUnitCountChange: (
+    side: CombatSide,
+    unit: UnitBaseType,
+    count: number,
+  ) => void
+  onUpgradeToggle: (side: CombatSide, unit: UnitBaseType) => void
   attackerActions?: ReactNode
   defenderActions?: ReactNode
   className?: string

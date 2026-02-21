@@ -3,8 +3,8 @@ import type {
   CombatSide,
   FactionKey,
   UnitAbility,
+  UnitBaseType,
   UnitSelection,
-  UnitType,
 } from '@/types'
 import { getSimulationUnits } from '@/utils/get-simulation-units'
 
@@ -14,13 +14,16 @@ import type { HitSource, SideStateData } from '../combat-state/types'
 import { resolveUnitStats } from '../utils/compact-units'
 import { parseVariantId } from '../utils/unit-variant'
 
-export function createDefaultUnitSelections(): Record<UnitType, UnitSelection> {
+export function createDefaultUnitSelections(): Record<
+  UnitBaseType,
+  UnitSelection
+> {
   return UNIT_TYPES.reduce(
     (acc, unitType) => {
       acc[unitType] = { count: 0, upgraded: false }
       return acc
     },
-    {} as Record<UnitType, UnitSelection>,
+    {} as Record<UnitBaseType, UnitSelection>,
   )
 }
 
@@ -32,7 +35,7 @@ export function getOpponentSide(side: CombatSide): CombatSide {
 export function destroyUnitsFromPool(
   sideState: SideStateData,
   hits: number,
-  validTargets: UnitType[],
+  validTargets: UnitBaseType[],
   sacrificeOrder: string[],
 ): SideStateData {
   if (hits <= 0) return sideState
@@ -81,7 +84,7 @@ function isRestricted(
   sideState: SideStateData,
   layer: 'lost' | 'cannotBeUsed',
   ability: UnitAbility,
-  unitType: UnitType,
+  unitType: UnitBaseType,
 ): boolean {
   const entries = sideState.unitAbilityRestrictions?.[layer]?.[ability]
   if (!entries) return false
@@ -126,7 +129,7 @@ export class CombatSideState {
     return this.data.unitAbilityRestrictions
   }
 
-  get unitSelections(): Record<UnitType, UnitSelection> {
+  get unitSelections(): Record<UnitBaseType, UnitSelection> {
     return this.data.unitSelections ?? createDefaultUnitSelections()
   }
 
@@ -136,8 +139,8 @@ export class CombatSideState {
 
   collectDice(
     source: HitSource,
-    participatingUnits: ReadonlySet<UnitType>,
-    allowedUnitTypes?: ReadonlySet<UnitType>,
+    participatingUnits: ReadonlySet<UnitBaseType>,
+    allowedUnitTypes?: ReadonlySet<UnitBaseType>,
   ): DicePool {
     const result: DicePool = {}
     const data = this.data
@@ -147,7 +150,7 @@ export class CombatSideState {
       source === 'SPACE_CANNON' || source === 'BOMBARDMENT'
 
     // Track which base types had restrictions checked
-    const restrictionChecked = new Map<UnitType, boolean>()
+    const restrictionChecked = new Map<UnitBaseType, boolean>()
 
     for (const key of Object.keys(units)) {
       const count = units[key]
@@ -190,32 +193,40 @@ export class CombatSideState {
     return result
   }
 
-  countUnits(participatingUnits?: ReadonlySet<UnitType>): number {
+  countUnits(filter?: UnitBaseType | UnitBaseType[]): number {
     let total = 0
+    const filterSet = filter
+      ? typeof filter === 'string'
+        ? new Set([filter])
+        : new Set(filter)
+      : undefined
     for (const [key, count] of Object.entries(this.data.units)) {
       if (count <= 0) continue
-      if (participatingUnits) {
+      if (filterSet) {
         const { type } = parseVariantId(key)
-        if (!participatingUnits.has(type)) continue
+        if (!filterSet.has(type)) continue
       }
       total += count
     }
     return total
   }
 
-  isUnitAbilityLost(ability: UnitAbility, unitType: UnitType): boolean {
+  isUnitAbilityLost(ability: UnitAbility, unitType: UnitBaseType): boolean {
     return isRestricted(this.data, 'lost', ability, unitType)
   }
 
-  isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: UnitType): boolean {
+  isUnitAbilityCannotBeUsed(
+    ability: UnitAbility,
+    unitType: UnitBaseType,
+  ): boolean {
     return isRestricted(this.data, 'cannotBeUsed', ability, unitType)
   }
 
-  isUpgraded(unitType: UnitType): boolean {
+  isUpgraded(unitType: UnitBaseType): boolean {
     return this.unitSelections[unitType].upgraded
   }
 
-  addHits(hits: number, validTargets: UnitType[]): void {
+  addHits(hits: number, validTargets: UnitBaseType[]): void {
     if (hits === 0) return
     this.updateSideData({
       hitPools: [...this.data.hitPools, { hits, validTargets }],
@@ -223,7 +234,7 @@ export class CombatSideState {
   }
 
   assignHits(
-    participatingUnits: ReadonlySet<UnitType>,
+    participatingUnits: ReadonlySet<UnitBaseType>,
     unitPriority: string[],
   ): void {
     if (this.data.hitPools.length === 0) return
@@ -263,7 +274,7 @@ export class CombatSideState {
   }
 
   private updateSelection(
-    unitType: UnitType,
+    unitType: UnitBaseType,
     update: Partial<UnitSelection>,
   ): void {
     const selections = {
@@ -282,7 +293,7 @@ export class CombatSideState {
     })
   }
 
-  setUnitCount(unitType: UnitType, count: number): void {
+  setUnitCount(unitType: UnitBaseType, count: number): void {
     const limit = UNIT_LIMITS[unitType]
     if (count > limit) {
       console.warn(`Unit limit exceeded: ${unitType} has a maximum of ${limit}`)
@@ -291,7 +302,7 @@ export class CombatSideState {
     this.updateSelection(unitType, { count })
   }
 
-  setUpgraded(unitType: UnitType, upgraded: boolean): void {
+  setUpgraded(unitType: UnitBaseType, upgraded: boolean): void {
     this.updateSelection(unitType, { upgraded })
   }
 

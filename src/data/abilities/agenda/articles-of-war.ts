@@ -12,14 +12,11 @@ function stripMechAbilities(api: SideApi) {
   api.setUnitAbilityLost('PLANETARY_SHIELD', 'ARTICLES_OF_WAR', 'MECH')
 
   // Remove printed Ability objects from mech units (keep only Sustain Damage)
-  const mechs = api.getUnits('MECH')
-  for (let i = 0; i < mechs.length; i++) {
-    const mech = mechs[i]
-    if (mech.ABILITIES) {
-      api.modifyUnit('MECH', i, {
-        ABILITIES: mech.ABILITIES.filter(a => a.key === 'SUSTAIN_DAMAGE'),
-      })
-    }
+  const mechStats = api.getUnitStats('MECH')
+  if (mechStats?.ABILITIES) {
+    api.modifyUnitType('MECH', {
+      ABILITIES: mechStats.ABILITIES.filter(a => a.key === 'SUSTAIN_DAMAGE'),
+    })
   }
 }
 

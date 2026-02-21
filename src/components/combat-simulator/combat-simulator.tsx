@@ -17,7 +17,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { useSimulation } from '@/hooks/use-simulation'
-import type { CombatSide, FactionKey, UnitType } from '@/types'
+import type { CombatSide, FactionKey, UnitBaseType } from '@/types'
 import { getUnitConfig } from '@/utils/get-unit-config'
 
 import styles from './combat-simulator.module.css'
@@ -133,14 +133,14 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
 
   const handleUnitCountChange = (
     side: CombatSide,
-    unit: UnitType,
+    unit: UnitBaseType,
     count: number,
   ) => {
     cs.side(side).setUnitCount(unit, count)
     forceRender()
   }
 
-  const handleUpgradeToggle = (side: CombatSide, unit: UnitType) => {
+  const handleUpgradeToggle = (side: CombatSide, unit: UnitBaseType) => {
     const ss = cs.side(side)
     ss.setUpgraded(unit, !ss.isUpgraded(unit))
     forceRender()

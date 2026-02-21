@@ -5,7 +5,7 @@ import {
   UNIT_DISPLAY_NAMES,
   UNIT_LIMITS,
 } from '@/constants/units'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 type Params = {
   isEnabled: boolean
@@ -31,11 +31,11 @@ export const ghomSekkus: Ability<Params> = {
       isCallable: params =>
         Object.values(params.units).some(count => count > 0),
       call: (ctx, params) => {
-        const toPlace: Partial<Record<UnitType, number>> = {}
+        const toPlace: Partial<Record<UnitBaseType, number>> = {}
         for (const [type, count] of Object.entries(params.units)) {
-          if (count > 0) toPlace[type as UnitType] = count
+          if (count > 0) toPlace[type as UnitBaseType] = count
         }
-        ctx.api.own.addUnit(toPlace)
+        ctx.api.own.placeUnits(toPlace)
       },
     },
   ],

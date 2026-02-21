@@ -1,24 +1,24 @@
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 import type { MetaPhase } from '../../combat-state/types'
 
 export function getSettingsValidTargets(
   params: Record<string, unknown>,
   meta: MetaPhase,
-): UnitType[] {
+): UnitBaseType[] {
   switch (meta) {
     case 'SPACE_CANNON_OFFENSE':
-      return (params.validTargetsSpaceCannonOffense as UnitType[]) ?? []
+      return (params.validTargetsSpaceCannonOffense as UnitBaseType[]) ?? []
     case 'AFB':
-      return (params.validTargetsAntiFighterBarrage as UnitType[]) ?? []
+      return (params.validTargetsAntiFighterBarrage as UnitBaseType[]) ?? []
     case 'BOMBARDMENT':
-      return (params.validTargetsBombardment as UnitType[]) ?? []
+      return (params.validTargetsBombardment as UnitBaseType[]) ?? []
     case 'SPACE_CANNON_DEFENSE':
-      return (params.validTargetsSpaceCannonDefense as UnitType[]) ?? []
+      return (params.validTargetsSpaceCannonDefense as UnitBaseType[]) ?? []
     case 'SPACE_COMBAT':
-      return (params.spaceCombatParticipating as UnitType[]) ?? []
+      return (params.spaceCombatParticipating as UnitBaseType[]) ?? []
     case 'GROUND_COMBAT':
-      return (params.groundCombatParticipating as UnitType[]) ?? []
+      return (params.groundCombatParticipating as UnitBaseType[]) ?? []
     default:
       return []
   }

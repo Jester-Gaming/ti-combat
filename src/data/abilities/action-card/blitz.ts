@@ -22,7 +22,7 @@ export const blitz: Ability = {
           const hasBombardment = stats.UNIT_ABILITIES?.BOMBARDMENT
 
           if (!hasBombardment) {
-            ctx.api.own.modifyUnit(unitType, {
+            ctx.api.own.modifyUnitType(unitType, {
               UNIT_ABILITIES: {
                 BOMBARDMENT: [6, 1],
               },

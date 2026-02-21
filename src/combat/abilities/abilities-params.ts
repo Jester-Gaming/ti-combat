@@ -1,7 +1,7 @@
 import { create } from 'mutative'
 
 import { GROUND_FORCES, SHIPS, UNIT_PRICE } from '@/constants/units'
-import type { CombatSide, FactionKey, UnitType } from '@/types'
+import type { CombatSide, FactionKey, UnitBaseType } from '@/types'
 
 import { TIMING_GROUPS } from '../../data/abilities/general/ability-order'
 import { getOpponentSide } from '../combat-side-state/combat-side-state'
@@ -50,7 +50,7 @@ type SideConfig = Record<string, Record<string, unknown>>
 /** Source of an ability - either from config or a unit */
 type AbilitySource =
   | { type: 'config' }
-  | { type: 'unit'; unitType: UnitType; unitIndex: number }
+  | { type: 'unit'; unitType: UnitBaseType; unitIndex: number }
 
 // Type guard to detect sided objects (attacker/defender)
 function isSidedContext<T>(ctx: unknown): ctx is SidedContext<T> {
@@ -93,7 +93,7 @@ function toSided<T>(
 
 interface UnitAbilityEntry {
   ability: Ability
-  unitType: UnitType
+  unitType: UnitBaseType
   unitIndex: number
 }
 
@@ -191,16 +191,19 @@ function isDiceTiming(timing: AbilityTiming | AbilityTiming[]): boolean {
 
 // ── Sync-source reconciliation helpers ────────────────────────────────────
 
-function sortByPrice(types: UnitType[], direction: 'asc' | 'desc'): UnitType[] {
+function sortByPrice(
+  types: UnitBaseType[],
+  direction: 'asc' | 'desc',
+): UnitBaseType[] {
   const sorted = [...types].sort((a, b) => UNIT_PRICE[a] - UNIT_PRICE[b])
   return direction === 'desc' ? sorted.reverse() : sorted
 }
 
 function expandWithSubtypes(
-  sortedTypes: UnitType[],
+  sortedTypes: UnitBaseType[],
   subtypes: DeclaredSubtype[],
 ): string[] {
-  const simpleByType = new Map<UnitType, DeclaredSubtype[]>()
+  const simpleByType = new Map<UnitBaseType, DeclaredSubtype[]>()
   const compound: DeclaredSubtype[] = []
 
   for (const st of subtypes) {
@@ -256,7 +259,7 @@ function buildValidList(
 ): string[] {
   const settings = config.side === 'own' ? ownSettings : opponentSettings
   const subtypes = config.side === 'own' ? ownSubtypes : opponentSubtypes
-  const group = (settings[config.group] as UnitType[]) ?? []
+  const group = (settings[config.group] as UnitBaseType[]) ?? []
   const sorted = sortByPrice(group, config.sort)
   return expandWithSubtypes(sorted, subtypes)
 }
@@ -343,6 +346,8 @@ export function cloneInvokes(invokes: InvokeCollections): InvokeCollections {
 export class AbilitiesParams {
   private _combatState: CombatState
   private _abilities: Record<CombatSide, Ability[]>
+  private _attackerCtx!: AbilityContext
+  private _defenderCtx!: AbilityContext
 
   /** Destroyed units collected at source by destroyUnit */
   _destroyed: {
@@ -406,6 +411,30 @@ export class AbilitiesParams {
     return this._abilities[side]
   }
 
+  context(side: CombatSide): AbilityContext {
+    return side === 'attacker' ? this._attackerCtx : this._defenderCtx
+  }
+
+  getAbilityKeysForTiming(
+    side: CombatSide,
+    timing: AbilityTiming | AbilityTiming[],
+  ): { key: string; name: string }[] {
+    const timings = Array.isArray(timing) ? timing : [timing]
+    const sideMap = this._combatState._invokes[side]
+    const seen = new Set<string>()
+    const results: { key: string; name: string }[] = []
+    for (const t of timings) {
+      const entries = sideMap.get(t)
+      if (!entries) continue
+      for (const entry of entries) {
+        if (seen.has(entry.ability.key)) continue
+        seen.add(entry.ability.key)
+        results.push({ key: entry.ability.key, name: entry.ability.name })
+      }
+    }
+    return results
+  }
+
   // ── Constructor: takes CombatState ────────────────────────────────
 
   constructor(combatState: CombatState) {
@@ -414,6 +443,10 @@ export class AbilitiesParams {
       combatState.data.attacker.faction,
       combatState.data.defender.faction,
     )
+    this._attackerCtx = new AbilityContext('attacker')
+    this._attackerCtx._abilitiesParams = this
+    this._defenderCtx = new AbilityContext('defender')
+    this._defenderCtx._abilitiesParams = this
 
     this.initializeDefaults()
     this.reconcile()
@@ -440,6 +473,10 @@ export class AbilitiesParams {
       combatState.data.attacker.faction,
       combatState.data.defender.faction,
     )
+    instance._attackerCtx = new AbilityContext('attacker')
+    instance._attackerCtx._abilitiesParams = instance
+    instance._defenderCtx = new AbilityContext('defender')
+    instance._defenderCtx._abilitiesParams = instance
     // Phase 1: Enrich consumers from full SETTINGS (with group additions).
     // Consumer params (e.g. AC targetPriority) sync from enriched groups,
     // so they include all possible targets (e.g. Infantry via Alastor).
@@ -469,6 +506,10 @@ export class AbilitiesParams {
       combatState.data.attacker.faction,
       combatState.data.defender.faction,
     )
+    instance._attackerCtx = new AbilityContext('attacker')
+    instance._attackerCtx._abilitiesParams = instance
+    instance._defenderCtx = new AbilityContext('defender')
+    instance._defenderCtx._abilitiesParams = instance
     instance.buildInvokes()
     return instance
   }
@@ -495,7 +536,7 @@ export class AbilitiesParams {
     // Iterate unitStats entries (which contain ABILITIES) and multiply by count.
     // Global index is computed across all variant keys of a base type,
     // sorted alphabetically.
-    const keysByType = new Map<UnitType, string[]>()
+    const keysByType = new Map<UnitBaseType, string[]>()
     for (const key of Object.keys(sideState.units)) {
       if (sideState.units[key] <= 0) continue
       const { type } = parseVariantId(key)
@@ -867,7 +908,8 @@ export class AbilitiesParams {
       )
         continue
 
-      const ctx = new AbilityContext(side, state, unitSource)
+      const ctx = this.context(side)
+      ctx.unitSource = unitSource
 
       let canCall: boolean
       if (inv.isCallable) {
@@ -917,36 +959,26 @@ export class AbilitiesParams {
             opponent: buildDiceApi(rawDice.opponent),
           }
           resultState = create(state, draft => {
-            ctx.upgradeForCall(
-              draft,
-              ability.key,
-              logCallback,
-              triggerCallback,
-              this,
-            )
+            ctx.upgradeForCall(draft, ability.key, logCallback, triggerCallback)
             inv.call(ctx, freshParams, diceCallCtx)
             decrementUses(draft, side, ability.key, freshParams, this)
           })
+          ctx.resetAfterCall()
           resultContext = {
             own: diceCallCtx.own.getAll(),
             opponent: diceCallCtx.opponent.getAll(),
           }
         } else {
           resultState = create(state, draft => {
-            ctx.upgradeForCall(
-              draft,
-              ability.key,
-              logCallback,
-              triggerCallback,
-              this,
-            )
+            ctx.upgradeForCall(draft, ability.key, logCallback, triggerCallback)
             const result = inv.call(ctx, freshParams, internalContext)
             if (result !== undefined) resultContext = result
             decrementUses(draft, side, ability.key, freshParams, this)
           })
+          ctx.resetAfterCall()
         }
 
-        // Flush deferred invoke registrations (from addUnit/modifyUnit inside produce)
+        // Flush deferred invoke registrations (from placeUnits/modifyUnitType inside produce)
         this.flushPendingUnitInvokes(resultState)
 
         // Single structured log entry per ability
@@ -1141,7 +1173,7 @@ export class AbilitiesParams {
 
   /**
    * Queue invoke registration for after Immer produce completes.
-   * Called from addUnit/modifyUnit inside the produce — draft proxies
+   * Called from placeUnits/modifyUnitType inside the produce — draft proxies
    * would be revoked if we registered immediately.
    */
   queueUnitInvokes(
@@ -1174,7 +1206,7 @@ export class AbilitiesParams {
 
   /**
    * Append invoke entries for units that just gained abilities.
-   * Called from addUnit (new units) and modifyUnit (existing units gain ABILITIES).
+   * Called from placeUnits (new units) and modifyUnitType (existing units gain ABILITIES).
    */
   appendUnitInvokes(
     side: CombatSide,
@@ -1211,7 +1243,7 @@ export class AbilitiesParams {
             params: mergedParams,
             source: {
               type: 'unit',
-              unitType: unitType as UnitType,
+              unitType: unitType as UnitBaseType,
               unitIndex: baseGlobalIndex + i,
             },
           }
@@ -1469,9 +1501,9 @@ export class AbilitiesParams {
                 subtypes.push(sub)
               }
             } else if (applyGroupAdditions) {
-              const group = settings[change.key] as UnitType[]
-              if (group && !group.includes(change.value as UnitType)) {
-                group.push(change.value as UnitType)
+              const group = settings[change.key] as UnitBaseType[]
+              if (group && !group.includes(change.value as UnitBaseType)) {
+                group.push(change.value as UnitBaseType)
               }
             }
           }

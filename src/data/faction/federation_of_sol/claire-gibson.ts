@@ -19,7 +19,7 @@ export const claireGibson: Ability = {
       timing: 'START_OF_COMBAT',
       context: 'GROUND_COMBAT',
       call: ctx => {
-        ctx.api.own.addUnit({ INFANTRY: 1 })
+        ctx.api.own.placeUnits({ INFANTRY: 1 })
       },
     },
   ],

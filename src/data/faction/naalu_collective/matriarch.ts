@@ -1,5 +1,5 @@
 import type { Ability } from '@/combat/abilities/types'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 export const matriarch: Ability = {
   key: 'MATRIARCH',
@@ -19,7 +19,7 @@ export const matriarch: Ability = {
       isCallable: (_params, ctx) => ctx.api.own.hasUnit('FLAGSHIP'),
       call: ctx => {
         ctx.api.own.updateAbilityConfig('SETTINGS', {
-          groundForces: (current: UnitType[]) => [...current, 'FIGHTER'],
+          groundForces: (current: UnitBaseType[]) => [...current, 'FIGHTER'],
         })
       },
     },

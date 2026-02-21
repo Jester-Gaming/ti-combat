@@ -1,4 +1,4 @@
-import type { FactionKey, UnitState, UnitStats, UnitType } from '@/types'
+import type { FactionKey, UnitBaseType, UnitState, UnitStats } from '@/types'
 import { getFactionUnitConfig } from '@/utils/get-faction-unit-config'
 import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 
@@ -15,8 +15,8 @@ import type {
 
 export interface SideConfig {
   faction: FactionKey
-  units: Partial<Record<UnitType, number>>
-  upgrades?: UnitType[]
+  units: Partial<Record<UnitBaseType, number>>
+  upgrades?: UnitBaseType[]
   abilities?: Record<string, true | Record<string, unknown>>
 }
 
@@ -39,7 +39,7 @@ function buildSideState(config: SideConfig): SideStateData {
   const factionConfig = getFactionUnitConfig(config.faction)
 
   for (const [type, count] of Object.entries(config.units)) {
-    const unitType = type as UnitType
+    const unitType = type as UnitBaseType
     if (!count || count <= 0) continue
 
     const def = factionConfig[unitType]

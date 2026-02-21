@@ -5,10 +5,10 @@ import type {
   SourcedDiceGroup,
   Unit,
   UnitAbility,
+  UnitBaseType,
   UnitLocator,
   UnitState,
   UnitStats,
-  UnitType,
 } from '@/types'
 
 import type {
@@ -34,7 +34,7 @@ export interface SyncSourceConfig {
 
 export interface DeclaredSubtype {
   name: string
-  unitType: UnitType
+  unitType: UnitBaseType
 }
 
 // Sided context (external API - attacker/defender perspective)
@@ -70,7 +70,7 @@ export interface DiceReadApi {
 export interface DiceApi extends DiceReadApi {
   addDiceCount(count: number): void
   addDiceCount(count: number, strategy: 'BEST' | 'WORST'): void
-  addDiceCount(count: number, source: UnitType): void
+  addDiceCount(count: number, source: UnitBaseType): void
   addDiceCount(count: number, unit: UnitLocator): void
 
   addDiceGroup(source: string, unit: UnitLocator, diceGroup: DiceGroup): void
@@ -127,45 +127,46 @@ export type AbilityTiming = keyof TimingContextMap
 /** Read-only API for querying one side's state */
 export interface SideReadApi {
   getFaction(): FactionKey
-  getUnits(): Partial<Record<UnitType, Unit[]>>
-  getUnits(unitType: UnitType): Unit[]
-  hasUnit(unitType: UnitType): boolean
-  countUnits(filter?: ReadonlySet<UnitType>): number
+  getUnits(): Partial<Record<UnitBaseType, Unit[]>>
+  getUnits(unitType: UnitBaseType): Unit[]
+  hasUnit(unitType: UnitBaseType): boolean
+  countUnits(filter?: UnitBaseType | UnitBaseType[]): number
   getPendingHits(): number
-  getHitPoolValidTargets(): UnitType[]
+  getHitPoolValidTargets(): UnitBaseType[]
   /** Get participating base unit types from SETTINGS, filtered to units present on this side.
    *  Pass `combatMode` to override the current combat mode (e.g., for abilities with a fixed context). */
-  getParticipatingUnitTypes(options?: { combatMode?: CombatMode }): UnitType[]
+  getParticipatingUnitTypes(options?: {
+    combatMode?: CombatMode
+  }): UnitBaseType[]
   /** Get unit types + variant IDs from declared subtypes.
    *  By default returns only participating units. Pass `includeNonParticipating: true` to include all unit types on this side.
    *  Pass `combatMode` in filter to override the current combat mode.
    *  `include`/`exclude` filter base unit types; `excludeSubtypes` removes variants that contain a given subtype name. */
   getUnitVariants(filter?: {
-    include?: UnitType[]
-    exclude?: UnitType[]
+    include?: UnitBaseType[]
+    exclude?: UnitBaseType[]
     excludeSubtypes?: string[]
     combatMode?: CombatMode
     includeNonParticipating?: boolean
   }): string[]
   /** Same as getUnitVariants but returns { label, value } items for UI config. */
   getUnitVariantsOptions(filter?: {
-    include?: UnitType[]
-    exclude?: UnitType[]
+    include?: UnitBaseType[]
+    exclude?: UnitBaseType[]
     excludeSubtypes?: string[]
     combatMode?: CombatMode
     includeNonParticipating?: boolean
   }): { label: string; value: string }[]
-  findUnit(
-    unitType: UnitType,
-    predicate: Partial<UnitState>,
-  ): { unit: Unit; index: number } | undefined
   /** Find the first unit matching a priority list of variant IDs.
-   *  A plain UnitType matches only units with no subtypes. */
+   *  A plain UnitBaseType matches only units with no subtypes. */
   findUnitByPriority(priority: string[]): Unit | undefined
   /** Get the unit stats template for a given type. Returns post-PREPARE values even if no units of this type are in the battle. */
-  getUnitStats(unitType: UnitType): Readonly<UnitStats> | undefined
-  isUnitAbilityLost(ability: UnitAbility, unitType: UnitType): boolean
-  isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: UnitType): boolean
+  getUnitStats(unitType: UnitBaseType): Readonly<UnitStats> | undefined
+  isUnitAbilityLost(ability: UnitAbility, unitType: UnitBaseType): boolean
+  isUnitAbilityCannotBeUsed(
+    ability: UnitAbility,
+    unitType: UnitBaseType,
+  ): boolean
 
   // Ability config reads
   getAbilityConfig(key: string): Readonly<Record<string, unknown>> | undefined
@@ -175,46 +176,41 @@ export interface SideReadApi {
 export interface SideApi extends SideReadApi {
   // Unit operations
   destroyUnit(unit: UnitLocator): void
-  destroyUnit(unitType: UnitType): void
-  destroyUnit(unitType: UnitType, index: number): void
-  destroyUnit(unitTypes: UnitType[]): void
+  destroyUnit(unitType: UnitBaseType): void
   /** Remove a unit without triggering AFTER_DESTROY */
   removeUnit(unit: UnitLocator): void
-  removeUnit(unitType: UnitType): void
-  removeUnit(unitType: UnitType, index: number): void
-  addUnit(units: Partial<Record<UnitType, number>>): void
-  modifyUnit(
+  removeUnit(unitType: UnitBaseType): void
+  placeUnits(units: Partial<Record<UnitBaseType, number>>): void
+  modifyUnitType(
     unitTypeOrVariantKey: string,
-    index: number,
-    updates: Partial<Unit>,
+    updates: Partial<UnitStats>,
   ): void
-  modifyUnit(unitTypeOrVariantKey: string, updates: Partial<Unit>): void
-  modifyUnit(unit: UnitLocator, updates: Partial<Unit>): void
+  modifyUnitState(unit: UnitLocator, updates: Partial<UnitState>): void
 
   // Hit operations
   reduceHits(amount: number): void
-  addHits(hits: number, validTargets: UnitType[]): void
+  addHits(hits: number, validTargets: UnitBaseType[]): void
 
   // Ability restrictions
   setUnitAbilityLost(
     ability: UnitAbility,
     reason: string,
-    unitType?: UnitType,
+    unitType?: UnitBaseType,
   ): void
   removeUnitAbilityLost(
     ability: UnitAbility,
     reason: string,
-    unitType?: UnitType,
+    unitType?: UnitBaseType,
   ): void
   setUnitAbilityCannotBeUsed(
     ability: UnitAbility,
     reason: string,
-    unitType?: UnitType,
+    unitType?: UnitBaseType,
   ): void
   removeUnitAbilityCannotBeUsed(
     ability: UnitAbility,
     reason: string,
-    unitType?: UnitType,
+    unitType?: UnitBaseType,
   ): void
 
   // Subtype operations
@@ -254,7 +250,7 @@ export interface AbilityReadContext {
   /** Get the shared stats for the unit variant. Throws if called from a non-unit ability. */
   getUnitStats(): Readonly<UnitStats>
   /** Get the unit type this ability is attached to. Throws if called from a non-unit ability. */
-  getUnitType(): UnitType
+  getUnitType(): UnitBaseType
   /** Get the unit index this ability is attached to. Throws if called from a non-unit ability. */
   getUnitIndex(): number
   /** Get enabled config abilities matching the given timing(s) for the current side. */
@@ -291,7 +287,7 @@ export interface AbilityCallContext {
   /** Get the shared stats for the unit variant. Throws if called from a non-unit ability. */
   getUnitStats(): Readonly<UnitStats>
   /** Get the unit type this ability is attached to. Throws if called from a non-unit ability. */
-  getUnitType(): UnitType
+  getUnitType(): UnitBaseType
   /** Get the unit index this ability is attached to. Throws if called from a non-unit ability. */
   getUnitIndex(): number
   /** Get enabled config abilities matching the given timing(s) for the current side. */

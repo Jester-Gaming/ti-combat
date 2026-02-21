@@ -1,6 +1,6 @@
-import type { UnitType } from '../types/unit'
+import type { UnitBaseType } from '../types/unit'
 
-export const NON_FIGHTER_SHIPS: UnitType[] = [
+export const NON_FIGHTER_SHIPS: UnitBaseType[] = [
   'FLAGSHIP',
   'WAR_SUN',
   'DREADNOUGHT',
@@ -9,19 +9,19 @@ export const NON_FIGHTER_SHIPS: UnitType[] = [
   'DESTROYER',
 ]
 
-export const SHIPS: UnitType[] = [...NON_FIGHTER_SHIPS, 'FIGHTER']
+export const SHIPS: UnitBaseType[] = [...NON_FIGHTER_SHIPS, 'FIGHTER']
 
-export const GROUND_FORCES: UnitType[] = ['MECH', 'INFANTRY']
+export const GROUND_FORCES: UnitBaseType[] = ['MECH', 'INFANTRY']
 
-export const STRUCTURES: UnitType[] = ['PDS', 'SPACE_DOCK']
+export const STRUCTURES: UnitBaseType[] = ['PDS', 'SPACE_DOCK']
 
-export const UNIT_TYPES: UnitType[] = [
+export const UNIT_TYPES: UnitBaseType[] = [
   ...SHIPS,
   ...GROUND_FORCES,
   ...STRUCTURES,
 ]
 
-export const UNIT_PRICE: Record<UnitType, number> = {
+export const UNIT_PRICE: Record<UnitBaseType, number> = {
   WAR_SUN: 12,
   FLAGSHIP: 8,
   DREADNOUGHT: 4,
@@ -35,7 +35,7 @@ export const UNIT_PRICE: Record<UnitType, number> = {
   SPACE_DOCK: 0,
 }
 
-export const UNIT_LIMITS: Record<UnitType, number> = {
+export const UNIT_LIMITS: Record<UnitBaseType, number> = {
   FLAGSHIP: 1,
   WAR_SUN: 2,
   DREADNOUGHT: 5,
@@ -49,7 +49,7 @@ export const UNIT_LIMITS: Record<UnitType, number> = {
   SPACE_DOCK: 3,
 }
 
-export const UNIT_DISPLAY_NAMES: Record<UnitType, string> = {
+export const UNIT_DISPLAY_NAMES: Record<UnitBaseType, string> = {
   FLAGSHIP: 'Flagship',
   WAR_SUN: 'War Sun',
   DREADNOUGHT: 'Dreadnought',
@@ -63,7 +63,7 @@ export const UNIT_DISPLAY_NAMES: Record<UnitType, string> = {
   SPACE_DOCK: 'Space Dock',
 }
 
-export const UNIT_SHORT_NAMES: Record<UnitType, string> = {
+export const UNIT_SHORT_NAMES: Record<UnitBaseType, string> = {
   FLAGSHIP: 'Fl',
   WAR_SUN: 'W',
   DREADNOUGHT: 'D',

@@ -1,4 +1,4 @@
-import type { CombatSide, Unit, UnitType } from '@/types'
+import type { CombatSide, Unit, UnitBaseType } from '@/types'
 
 import type { DicePool } from '../../combat/abilities/types'
 import {
@@ -33,7 +33,7 @@ export type HitsSpec = number | { attacker?: number; defender?: number }
 // ============================================================================
 
 type SideView = Omit<SideStateData, 'units' | 'unitState' | 'unitStats'> & {
-  units: Partial<Record<UnitType, Unit[]>>
+  units: Partial<Record<UnitBaseType, Unit[]>>
 }
 
 function buildSideView(data: SideStateData): SideView {

@@ -1,4 +1,4 @@
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
@@ -19,7 +19,10 @@ export const shieldPaling: Ability = {
       timing: 'PREPARE',
       call: ctx => {
         ctx.api.own.updateAbilityConfig('FRAGILE', {
-          excludeUnits: (current: UnitType[] = []) => [...current, 'INFANTRY'],
+          excludeUnits: (current: UnitBaseType[] = []) => [
+            ...current,
+            'INFANTRY',
+          ],
         })
       },
     },
@@ -28,7 +31,7 @@ export const shieldPaling: Ability = {
       isCallable: (_params, ctx) => !ctx.api.own.hasUnit('MECH'),
       call: ctx => {
         ctx.api.own.updateAbilityConfig('FRAGILE', {
-          excludeUnits: (current: UnitType[] = []) =>
+          excludeUnits: (current: UnitBaseType[] = []) =>
             current.filter(u => u !== 'INFANTRY'),
         })
       },

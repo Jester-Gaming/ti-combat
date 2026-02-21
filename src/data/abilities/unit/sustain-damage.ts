@@ -106,7 +106,7 @@ export const sustainDamage: Ability<Params> = {
         return isHighestPrioritySustainTarget(params, ctx)
       },
       call: ctx => {
-        ctx.api.own.modifyUnit(ctx.getUnit(), { isDamaged: true })
+        ctx.api.own.modifyUnitState(ctx.getUnit(), { isDamaged: true })
         ctx.api.own.reduceHits(1)
         ctx.log(ctx.getUnitType())
         ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', ctx.getUnit())

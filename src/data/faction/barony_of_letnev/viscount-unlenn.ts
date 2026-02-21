@@ -2,12 +2,12 @@ import baronyOfLetnevIcon from '@/assets/faction/barony_of_letnev.svg?raw'
 import { declareParam } from '@/combat/abilities/declare-param'
 import { getUnitLocator } from '@/combat/utils/compact-units'
 import { makeVariantId, parseVariantId } from '@/combat/utils/unit-variant'
-import type { UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 import type { Ability } from '../../../combat/abilities/types'
 
 type Params = {
-  unitType: UnitType
+  unitType: UnitBaseType
 }
 
 export const viscountUnlenn: Ability<Params> = {
@@ -19,7 +19,7 @@ export const viscountUnlenn: Ability<Params> = {
   params: {
     isEnabled: false,
     uses: 2,
-    unitType: declareParam<UnitType>({
+    unitType: declareParam<UnitBaseType>({
       default: 'DESTROYER',
       source: 'nonFighterShips',
     }),

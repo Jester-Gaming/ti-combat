@@ -1,5 +1,5 @@
 import { getUnitLocator } from '@/combat/utils/compact-units'
-import type { UnitLocator, UnitType } from '@/types'
+import type { UnitLocator } from '@/types'
 
 import { declareParam } from '../../../combat/abilities/declare-param'
 import type {
@@ -60,7 +60,7 @@ export const duraniumArmor: Ability<Params> = {
       timing: 'WHEN_SUSTAIN_DAMAGE_USE',
       side: 'OWN',
       call: (ctx, _params, unit: UnitLocator) => {
-        ctx.api.own.modifyUnit(unit, { usedSustainThisRound: true })
+        ctx.api.own.modifyUnitState(unit, { usedSustainThisRound: true })
       },
     },
     {
@@ -70,7 +70,9 @@ export const duraniumArmor: Ability<Params> = {
       call: (ctx, params) => {
         const target = findRepairTarget(params, ctx)
         if (!target) return
-        ctx.api.own.modifyUnit(getUnitLocator(target)!, { isDamaged: false })
+        ctx.api.own.modifyUnitState(getUnitLocator(target)!, {
+          isDamaged: false,
+        })
       },
     },
     {
@@ -82,10 +84,10 @@ export const duraniumArmor: Ability<Params> = {
         return false
       },
       call: ctx => {
-        for (const [type, units] of Object.entries(ctx.api.own.getUnits())) {
+        for (const units of Object.values(ctx.api.own.getUnits())) {
           for (const unit of units!) {
             if (unit.usedSustainThisRound) {
-              ctx.api.own.modifyUnit(type as UnitType, units!.indexOf(unit), {
+              ctx.api.own.modifyUnitState(getUnitLocator(unit)!, {
                 usedSustainThisRound: false,
               })
             }
