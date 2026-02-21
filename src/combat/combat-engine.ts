@@ -272,8 +272,8 @@ export class CombatEngine {
 }
 
 function makeLeafOutcome(state: CombatState): OutcomeRecord {
-  const attackerParticipating = state.getParticipatingUnits('attacker')
-  const defenderParticipating = state.getParticipatingUnits('defender')
+  const attackerParticipating = state.side('attacker').getParticipatingUnits()
+  const defenderParticipating = state.side('defender').getParticipatingUnits()
   const key = generateCompactOutcomeKey(
     state.data.attacker,
     state.data.defender,

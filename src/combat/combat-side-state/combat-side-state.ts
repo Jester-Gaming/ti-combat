@@ -4,15 +4,21 @@ import type {
   FactionKey,
   UnitAbility,
   UnitBaseType,
+  UnitId,
   UnitSelection,
 } from '@/types'
 import { getSimulationUnits } from '@/utils/get-simulation-units'
 
 import type { DicePool } from '../abilities/types'
 import type { CombatState } from '../combat-state/combat-state'
-import type { HitSource, SideStateData } from '../combat-state/types'
+import type {
+  CombatStateData,
+  HitSource,
+  SideStateData,
+} from '../combat-state/types'
 import { resolveUnitStats } from '../utils/compact-units'
 import { parseVariantId } from '../utils/unit-variant'
+import { getSettingsValidTargets } from './utils/get-settings-valid-targets'
 
 export function createDefaultUnitSelections(): Record<
   UnitBaseType,
@@ -30,6 +36,55 @@ export function createDefaultUnitSelections(): Record<
 /** Get the opposite side */
 export function getOpponentSide(side: CombatSide): CombatSide {
   return side === 'attacker' ? 'defender' : 'attacker'
+}
+
+// Cache for getParticipatingUnits: source array → Set
+const participatingUnitsCache = new WeakMap<
+  UnitBaseType[],
+  ReadonlySet<UnitBaseType>
+>()
+
+export function getParticipatingUnitsSet(
+  units: UnitBaseType[],
+): ReadonlySet<UnitBaseType> {
+  let cached = participatingUnitsCache.get(units)
+  if (!cached) {
+    cached = new Set(units)
+    participatingUnitsCache.set(units, cached)
+  }
+  return cached
+}
+
+/** Shared empty destroyed record to avoid per-call {} allocation */
+const EMPTY_DESTROYED: Record<string, UnitId[]> = {}
+
+// Cache for filtered sacrifice order: unitPriority array → (participatingSet → filtered order)
+const sacrificeOrderCache = new WeakMap<
+  string[],
+  Map<ReadonlySet<UnitBaseType>, string[]>
+>()
+
+function getFilteredSacrificeOrder(
+  unitPriority: string[],
+  participatingUnits: ReadonlySet<UnitBaseType>,
+): string[] {
+  let map = sacrificeOrderCache.get(unitPriority)
+  if (map) {
+    const cached = map.get(participatingUnits)
+    if (cached) return cached
+  }
+
+  const result = unitPriority.filter(id => {
+    const { type } = parseVariantId(id)
+    return participatingUnits.has(type)
+  })
+
+  if (!map) {
+    map = new Map()
+    sacrificeOrderCache.set(unitPriority, map)
+  }
+  map.set(participatingUnits, result)
+  return result
 }
 
 function isRestricted(
@@ -89,11 +144,43 @@ export class CombatSideState {
     return this._side
   }
 
+  /** Get participating units from SETTINGS ability */
+  getParticipatingUnits(): ReadonlySet<UnitBaseType> {
+    const settings = this._combatState.data.abilities[this._side]['SETTINGS']
+
+    if (!settings) {
+      throw new Error('No SETTINGS in getParticipatingUnits')
+    }
+
+    const units =
+      this._combatState.data.combatMode === 'GROUND'
+        ? (settings.groundCombatParticipating as UnitBaseType[])
+        : (settings.spaceCombatParticipating as UnitBaseType[])
+
+    return getParticipatingUnitsSet(units)
+  }
+
+  /** Get valid targets for the current phase from SETTINGS ability */
+  getValidTargetsForPhase(
+    stateData: CombatStateData = this._combatState.data,
+  ): UnitBaseType[] {
+    const settings = stateData.abilities[this._side]['SETTINGS']
+
+    if (!settings) {
+      throw new Error('No SETTINGS in getValidTargetsForPhase')
+    }
+
+    return getSettingsValidTargets(
+      settings,
+      this._combatState.currentPhase.meta,
+    )
+  }
+
   collectDice(
     source: HitSource,
-    participatingUnits: ReadonlySet<UnitBaseType>,
     allowedUnitTypes?: ReadonlySet<UnitBaseType>,
   ): DicePool {
+    const participatingUnits = this.getParticipatingUnits()
     const result: DicePool = {}
     const data = this.data
     const { units } = data
@@ -143,6 +230,118 @@ export class CombatSideState {
     }
 
     return result
+  }
+
+  /** Get participating units from a (potentially modified) state data snapshot */
+  private getParticipatingUnitsFromData(
+    stateData: CombatStateData,
+  ): ReadonlySet<UnitBaseType> {
+    const settings = stateData.abilities[this._side]['SETTINGS']
+    if (!settings)
+      throw new Error('No SETTINGS in getParticipatingUnitsFromData')
+
+    const units =
+      stateData.combatMode === 'GROUND'
+        ? (settings.groundCombatParticipating as UnitBaseType[])
+        : (settings.spaceCombatParticipating as UnitBaseType[])
+
+    return getParticipatingUnitsSet(units)
+  }
+
+  /** Get unit priority from a (potentially modified) state data snapshot */
+  private getUnitPriorityFromData(stateData: CombatStateData): string[] {
+    const unitPriority = stateData.abilities[this._side]['UNIT_PRIORITY']
+    if (!unitPriority)
+      throw new Error('No UNIT_PRIORITY in getUnitPriorityFromData')
+
+    const key =
+      stateData.combatMode === 'GROUND'
+        ? 'groundUnitPriority'
+        : 'spaceUnitPriority'
+    return unitPriority[key] as string[]
+  }
+
+  /** Assign hits to this side, returning new SideStateData and destroyed UnitIds.
+   * Batches all hit pools into a single pass to minimize object spreads.
+   * When trackDestroyed is false, skips building the destroyed record. */
+  assignHits(
+    stateData: CombatStateData,
+    trackDestroyed?: boolean,
+  ): { state: SideStateData; destroyed: Record<string, UnitId[]> } {
+    const sideData = stateData[this._side]
+    if (sideData.hitPools.length === 0)
+      return { state: sideData, destroyed: EMPTY_DESTROYED }
+
+    const participatingUnits = this.getParticipatingUnitsFromData(stateData)
+    const unitPriority = this.getUnitPriorityFromData(stateData)
+    const sacrificeOrder = getFilteredSacrificeOrder(
+      unitPriority,
+      participatingUnits,
+    )
+
+    // Spread once, then mutate in-place across all pools
+    const newUnits = { ...sideData.units }
+    let destroyed: Record<string, UnitId[]> | undefined
+    let changed = false
+
+    for (const pool of sideData.hitPools) {
+      let remaining = pool.hits
+      if (remaining <= 0) continue
+
+      const validTargets = pool.validTargets
+
+      for (const variantId of sacrificeOrder) {
+        if (remaining <= 0) break
+        if (
+          validTargets.length > 0 &&
+          !validTargets.includes(parseVariantId(variantId).type)
+        )
+          continue
+
+        const origIds = newUnits[variantId]
+        if (!origIds || origIds.length <= 0) continue
+
+        const toDestroy = Math.min(origIds.length, remaining)
+        changed = true
+
+        // Clone the array before mutating (newUnits is shallow-spread, arrays are shared)
+        const ids = origIds.slice(0, origIds.length - toDestroy)
+
+        // Track destroyed UnitIds (only when destroy abilities or logging need it)
+        if (trackDestroyed) {
+          if (!destroyed) destroyed = {}
+          if (!destroyed[variantId]) destroyed[variantId] = []
+          for (let i = origIds.length - toDestroy; i < origIds.length; i++) {
+            destroyed[variantId].push(origIds[i])
+          }
+        }
+
+        if (ids.length <= 0) {
+          delete newUnits[variantId]
+        } else {
+          newUnits[variantId] = ids
+        }
+
+        remaining -= toDestroy
+      }
+    }
+
+    // Always clear hitPools — even when no units were destroyed,
+    // stale pools must not leak into subsequent phases
+    if (!changed)
+      return {
+        state: { ...sideData, hitPools: [] },
+        destroyed: EMPTY_DESTROYED,
+      }
+
+    return {
+      state: {
+        ...sideData,
+        units: newUnits,
+        hitPools: [],
+      },
+      destroyed: destroyed ?? EMPTY_DESTROYED,
+    }
   }
 
   countUnits(filter?: UnitBaseType | UnitBaseType[]): number {

@@ -30,7 +30,7 @@ describe('Two-tier phase system', () => {
         micro: 'DICE_ROLL',
       }
       const result = getNextMicroPhase(current)
-      expect(result.phase.micro).toBe('ASSIGN_HITS')
+      expect(result.micro).toBe('ASSIGN_HITS')
     })
 
     it('transitions ASSIGN_HITS -> END', () => {
@@ -39,19 +39,19 @@ describe('Two-tier phase system', () => {
         micro: 'ASSIGN_HITS',
       }
       const result = getNextMicroPhase(current)
-      expect(result.phase.micro).toBe('END')
+      expect(result.micro).toBe('END')
     })
 
     it('stays at END when already at END', () => {
       const current: PhaseIdentifier = { meta: 'SPACE_COMBAT', micro: 'END' }
       const result = getNextMicroPhase(current)
-      expect(result.phase.micro).toBe('END')
+      expect(result.micro).toBe('END')
     })
 
     it('transitions START -> DICE_ROLL in SPACE_COMBAT', () => {
       const current: PhaseIdentifier = { meta: 'SPACE_COMBAT', micro: 'START' }
       const result = getNextMicroPhase(current)
-      expect(result.phase.micro).toBe('DICE_ROLL')
+      expect(result.micro).toBe('DICE_ROLL')
     })
   })
 
@@ -59,22 +59,21 @@ describe('Two-tier phase system', () => {
     it('AFB starts at DICE_ROLL (first micro-phase)', () => {
       const current: PhaseIdentifier = { meta: 'AFB', micro: 'DICE_ROLL' }
       const result = getNextMicroPhase(current)
-      expect(result.phase.micro).toBe('ASSIGN_HITS')
+      expect(result.micro).toBe('ASSIGN_HITS')
     })
 
     it('AFB stays at ASSIGN_HITS (last micro-phase)', () => {
       const current: PhaseIdentifier = { meta: 'AFB', micro: 'ASSIGN_HITS' }
       const result = getNextMicroPhase(current)
       // At last micro-phase, getNextMicroPhase returns same phase
-      expect(result.phase.micro).toBe('ASSIGN_HITS')
+      expect(result.micro).toBe('ASSIGN_HITS')
     })
 
     it('AFB:ASSIGN_HITS transitions to SPACE_COMBAT:DICE_ROLL via getNextMetaPhase', () => {
       const current: PhaseIdentifier = { meta: 'AFB', micro: 'ASSIGN_HITS' }
       const result = getNextMetaPhase(current, 'SPACE')
-      expect(result.phase.meta).toBe('SPACE_COMBAT')
-      expect(result.phase.micro).toBe('DICE_ROLL')
-      expect(result.incrementRound).toBe(false)
+      expect(result.meta).toBe('SPACE_COMBAT')
+      expect(result.micro).toBe('DICE_ROLL')
     })
   })
 
@@ -86,16 +85,15 @@ describe('Two-tier phase system', () => {
           micro: 'ASSIGN_HITS', // Last micro-phase for unit abilities
         }
         const result = getNextMetaPhase(current, 'SPACE')
-        expect(result.phase.meta).toBe('SPACE_COMBAT')
-        expect(result.phase.micro).toBe('START')
+        expect(result.meta).toBe('SPACE_COMBAT')
+        expect(result.micro).toBe('START')
       })
 
-      it('SPACE_COMBAT loops back with round increment', () => {
+      it('SPACE_COMBAT loops back to START', () => {
         const current: PhaseIdentifier = { meta: 'SPACE_COMBAT', micro: 'END' }
         const result = getNextMetaPhase(current, 'SPACE')
-        expect(result.phase.meta).toBe('SPACE_COMBAT')
-        expect(result.phase.micro).toBe('START')
-        expect(result.incrementRound).toBe(true)
+        expect(result.meta).toBe('SPACE_COMBAT')
+        expect(result.micro).toBe('START')
       })
     })
 
@@ -106,8 +104,8 @@ describe('Two-tier phase system', () => {
           micro: 'ASSIGN_HITS', // Last micro-phase for unit abilities
         }
         const result = getNextMetaPhase(current, 'GROUND')
-        expect(result.phase.meta).toBe('COMMIT_UNITS')
-        expect(result.phase.micro).toBe('END') // Single pass-through micro-phase
+        expect(result.meta).toBe('COMMIT_UNITS')
+        expect(result.micro).toBe('END') // Single pass-through micro-phase
       })
 
       it('transitions COMMIT_UNITS -> SPACE_CANNON_DEFENSE', () => {
@@ -116,8 +114,8 @@ describe('Two-tier phase system', () => {
           micro: 'END',
         }
         const result = getNextMetaPhase(current, 'GROUND')
-        expect(result.phase.meta).toBe('SPACE_CANNON_DEFENSE')
-        expect(result.phase.micro).toBe('DICE_ROLL') // First micro-phase for unit abilities
+        expect(result.meta).toBe('SPACE_CANNON_DEFENSE')
+        expect(result.micro).toBe('DICE_ROLL') // First micro-phase for unit abilities
       })
 
       it('transitions SPACE_CANNON_DEFENSE -> GROUND_COMBAT', () => {
@@ -126,16 +124,15 @@ describe('Two-tier phase system', () => {
           micro: 'ASSIGN_HITS', // Last micro-phase for unit abilities
         }
         const result = getNextMetaPhase(current, 'GROUND')
-        expect(result.phase.meta).toBe('GROUND_COMBAT')
-        expect(result.phase.micro).toBe('START')
+        expect(result.meta).toBe('GROUND_COMBAT')
+        expect(result.micro).toBe('START')
       })
 
-      it('GROUND_COMBAT loops back with round increment', () => {
+      it('GROUND_COMBAT loops back to START', () => {
         const current: PhaseIdentifier = { meta: 'GROUND_COMBAT', micro: 'END' }
         const result = getNextMetaPhase(current, 'GROUND')
-        expect(result.phase.meta).toBe('GROUND_COMBAT')
-        expect(result.phase.micro).toBe('START')
-        expect(result.incrementRound).toBe(true)
+        expect(result.meta).toBe('GROUND_COMBAT')
+        expect(result.micro).toBe('START')
       })
     })
 
@@ -143,9 +140,8 @@ describe('Two-tier phase system', () => {
       it('returns COMPLETE when already at COMPLETE', () => {
         const current: PhaseIdentifier = { meta: 'COMPLETE', micro: 'END' }
         const result = getNextMetaPhase(current, 'SPACE')
-        expect(result.phase.meta).toBe('COMPLETE')
-        expect(result.phase.micro).toBe('END')
-        expect(result.incrementRound).toBe(false)
+        expect(result.meta).toBe('COMPLETE')
+        expect(result.micro).toBe('END')
       })
     })
   })

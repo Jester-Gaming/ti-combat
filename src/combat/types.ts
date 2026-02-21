@@ -1,8 +1,6 @@
 import type { CombatState } from './combat-state/combat-state'
 import type { LogEntry } from './logger'
 
-export type { LogEntry } from './logger'
-
 /** A node in the probability tree */
 export interface ProbabilityNode {
   id: number

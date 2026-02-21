@@ -11,8 +11,7 @@ import type {
   CombatStateData,
   SideStateData,
 } from '../combat-state/types'
-import { Logger } from '../logger'
-import type { LogEntry } from '../types'
+import { type LogEntry, Logger } from '../logger'
 import { resolveUnitStats } from '../utils/compact-units'
 import { makeVariantId, parseVariantId } from '../utils/unit-variant'
 import { AbilityContext } from './api/ability-api'

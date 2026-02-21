@@ -1,3 +1,4 @@
+import type { LogEntry } from '@/combat'
 import type { CombatSide, Unit, UnitBaseType } from '@/types'
 
 import type { DicePool } from '../../combat/abilities/types'
@@ -16,7 +17,6 @@ import type {
   MicroPhase,
   SideStateData,
 } from '../../combat/combat-state/types'
-import type { LogEntry } from '../../combat/types'
 import { reconstructAllUnits } from '../../combat/utils/compact-units'
 
 export type { SideConfig }

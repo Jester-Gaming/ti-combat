@@ -2,13 +2,7 @@ import { create } from 'mutative'
 
 import { GROUND_FORCES, STRUCTURES } from '@/constants/units'
 import factions from '@/data/faction'
-import type {
-  CombatSide,
-  DiceGroup,
-  FactionKey,
-  UnitBaseType,
-  UnitId,
-} from '@/types'
+import type { CombatSide, DiceGroup, FactionKey, UnitBaseType } from '@/types'
 import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 
 import {
@@ -27,10 +21,9 @@ import type {
 import {
   CombatSideState,
   createDefaultUnitSelections,
+  getParticipatingUnitsSet,
 } from '../combat-side-state/combat-side-state'
-import { getSettingsValidTargets } from '../combat-side-state/utils/get-settings-valid-targets'
-import { Logger } from '../logger'
-import type { LogEntry } from '../types'
+import { type LogEntry, Logger } from '../logger'
 import { getCombinedDiceDistribution } from '../utils'
 import { parseVariantId } from '../utils/unit-variant'
 import {
@@ -54,9 +47,6 @@ import type {
 
 /** Shared empty array to avoid allocating new [] on every disabled-abilities call */
 const EMPTY_LOG: LogEntry[] = []
-
-/** Shared empty destroyed record to avoid per-call {} allocation */
-const EMPTY_DESTROYED: Record<string, UnitId[]> = {}
 
 /** A state with its probability and log entries */
 export interface StateWithProbability {
@@ -91,12 +81,6 @@ function flattenDicePool(pool: DicePool): DiceGroup[] {
 
   return result
 }
-
-// Cache for getParticipatingUnits: source array → Set
-const participatingUnitsCache = new WeakMap<
-  UnitBaseType[],
-  ReadonlySet<UnitBaseType>
->()
 
 /** Main combat state class */
 export class CombatState {
@@ -267,56 +251,6 @@ export class CombatState {
     return this._params.context(side) as unknown as AbilityReadContext
   }
 
-  /** Collect dice for a side and source */
-  collectDice(
-    side: CombatSide,
-    source: HitSource,
-    allowedUnitTypes?: ReadonlySet<UnitBaseType>,
-  ): DicePool {
-    const participatingUnits = this.getParticipatingUnits(side)
-    return this.side(side).collectDice(
-      source,
-      participatingUnits,
-      allowedUnitTypes,
-    )
-  }
-
-  /** Get participating units from SETTINGS ability */
-  getParticipatingUnits(side: CombatSide): ReadonlySet<UnitBaseType> {
-    const settings = this.data.abilities[side]['SETTINGS']
-
-    if (!settings) {
-      throw new Error('No SETTINGS in getParticipatingUnits')
-    }
-
-    const units =
-      this.data.combatMode === 'GROUND'
-        ? (settings.groundCombatParticipating as UnitBaseType[])
-        : (settings.spaceCombatParticipating as UnitBaseType[])
-
-    // Cache Set on the source array to avoid re-creating identical Sets
-    let cached = participatingUnitsCache.get(units)
-    if (!cached) {
-      cached = new Set(units)
-      participatingUnitsCache.set(units, cached)
-    }
-    return cached
-  }
-
-  /** Get valid targets for the current phase from SETTINGS ability for a specific side */
-  private getValidTargetsForPhase(
-    side: CombatSide,
-    stateData: CombatStateData = this.data,
-  ): UnitBaseType[] {
-    const settings = stateData.abilities[side]['SETTINGS']
-
-    if (!settings) {
-      throw new Error('No SETTINGS in getValidTargetsForPhase')
-    }
-
-    return getSettingsValidTargets(settings, this.currentPhase.meta)
-  }
-
   private runAbilities<T extends AbilityTiming>(
     timing: T | T[],
     context?: TimingContextMap[T],
@@ -363,31 +297,12 @@ export class CombatState {
       logger,
     )
 
-    const attackerParticipating = getParticipatingUnitsFromData(
-      afterAbilities,
+    const { state: newAttacker, destroyed: attackerDestroyed } = this.side(
       'attacker',
-    )
-    const defenderParticipating = getParticipatingUnitsFromData(
-      afterAbilities,
+    ).assignHits(afterAbilities, trackDestroyed)
+    const { state: newDefender, destroyed: defenderDestroyed } = this.side(
       'defender',
-    )
-    const attackerPriority = getUnitPriorityFromData(afterAbilities, 'attacker')
-    const defenderPriority = getUnitPriorityFromData(afterAbilities, 'defender')
-
-    const { state: newAttacker, destroyed: attackerDestroyed } =
-      assignHitsToSide(
-        afterAbilities.attacker,
-        attackerParticipating,
-        attackerPriority,
-        trackDestroyed,
-      )
-    const { state: newDefender, destroyed: defenderDestroyed } =
-      assignHitsToSide(
-        afterAbilities.defender,
-        defenderParticipating,
-        defenderPriority,
-        trackDestroyed,
-      )
+    ).assignHits(afterAbilities, trackDestroyed)
 
     const resultData: CombatStateData = {
       ...afterAbilities,
@@ -584,10 +499,8 @@ export class CombatState {
       flattenDicePool(modifiedDice.defender),
     )
 
-    const { meta: metaPhase } = this.currentPhase
-
     // Pre-compute next phase (DICE_ROLL is never last micro-phase)
-    const { phase: nextPhase } = getNextMicroPhase(this.currentPhase)
+    const nextPhase = getNextMicroPhase(this.currentPhase)
 
     const results: StateWithProbability[] = []
 
@@ -614,6 +527,7 @@ export class CombatState {
 
         let log: LogEntry[] | undefined
         if (this._enableLog) {
+          const { meta: metaPhase } = this.currentPhase
           const diceRollEntry: LogEntry = {
             path: [metaPhase, 'DICE_ROLL'],
             data: [{ attacker: attOutcome.hits, defender: defOutcome.hits }],
@@ -678,7 +592,7 @@ export class CombatState {
   ): StateWithProbability[] {
     // At last micro-phase, transition to next meta-phase
     if (isLastMicroPhase(this.currentPhase)) {
-      const { phase } = getNextMetaPhase(this.currentPhase, this.combatMode)
+      const phase = getNextMetaPhase(this.currentPhase, this.combatMode)
 
       // Check if we should skip to COMPLETE — uses phase override to avoid temp object
       // knownFinished allows callers to skip the redundant isDataFinished check
@@ -702,7 +616,7 @@ export class CombatState {
     }
 
     // Otherwise, transition to next micro-phase
-    const { phase } = getNextMicroPhase(this.currentPhase)
+    const phase = getNextMicroPhase(this.currentPhase)
     const nextState = CombatState.fromData(
       { ...data, currentPhase: phase },
       this._params,
@@ -737,10 +651,10 @@ export class CombatState {
 
     // Collect dice based on firing configuration
     const attackerDice = firing.includes('attacker')
-      ? this.collectDice('attacker', hitSource, allowedUnitTypes)
+      ? this.side('attacker').collectDice(hitSource, allowedUnitTypes)
       : {}
     const defenderDice = firing.includes('defender')
-      ? this.collectDice('defender', hitSource, allowedUnitTypes)
+      ? this.side('defender').collectDice(hitSource, allowedUnitTypes)
       : {}
 
     const sidedDiceData: SidedDiceData = {
@@ -795,8 +709,8 @@ export class CombatState {
       afterWhen,
       modifiedDice,
       {
-        attacker: this.getValidTargetsForPhase('attacker', afterWhen),
-        defender: this.getValidTargetsForPhase('defender', afterWhen),
+        attacker: this.side('attacker').getValidTargetsForPhase(afterWhen),
+        defender: this.side('defender').getValidTargetsForPhase(afterWhen),
       },
       prependLog,
       'AFTER_UNIT_ABILITY_ROLL',
@@ -843,8 +757,8 @@ export class CombatState {
   }
 
   private processDiceRoll(): StateWithProbability[] {
-    const attackerDice = this.collectDice('attacker', 'COMBAT')
-    const defenderDice = this.collectDice('defender', 'COMBAT')
+    const attackerDice = this.side('attacker').collectDice('COMBAT')
+    const defenderDice = this.side('defender').collectDice('COMBAT')
 
     const sidedDiceData: SidedDiceData = {
       attacker: attackerDice,
@@ -892,8 +806,8 @@ export class CombatState {
       afterWhen,
       modifiedDice,
       {
-        attacker: this.getValidTargetsForPhase('attacker', afterWhen),
-        defender: this.getValidTargetsForPhase('defender', afterWhen),
+        attacker: this.side('attacker').getValidTargetsForPhase(afterWhen),
+        defender: this.side('defender').getValidTargetsForPhase(afterWhen),
       },
       prependLog,
       'AFTER_DICE_ROLL',
@@ -1078,134 +992,7 @@ function getParticipatingUnitsFromData(
       ? (settings.groundCombatParticipating as UnitBaseType[])
       : (settings.spaceCombatParticipating as UnitBaseType[])
 
-  let cached = participatingUnitsCache.get(units)
-  if (!cached) {
-    cached = new Set(units)
-    participatingUnitsCache.set(units, cached)
-  }
-  return cached
-}
-
-/** Get unit priority directly from data */
-function getUnitPriorityFromData(
-  data: CombatStateData,
-  side: CombatSide,
-): string[] {
-  const unitPriority = data.abilities[side]['UNIT_PRIORITY']
-  if (!unitPriority)
-    throw new Error('No UNIT_PRIORITY in getUnitPriorityFromData')
-
-  const key =
-    data.combatMode === 'GROUND' ? 'groundUnitPriority' : 'spaceUnitPriority'
-  return unitPriority[key] as string[]
-}
-
-// Cache for filtered sacrifice order: unitPriority array → (participatingSet → filtered order)
-const sacrificeOrderCache = new WeakMap<
-  string[],
-  Map<ReadonlySet<UnitBaseType>, string[]>
->()
-
-function getFilteredSacrificeOrder(
-  unitPriority: string[],
-  participatingUnits: ReadonlySet<UnitBaseType>,
-): string[] {
-  let map = sacrificeOrderCache.get(unitPriority)
-  if (map) {
-    const cached = map.get(participatingUnits)
-    if (cached) return cached
-  }
-
-  const result = unitPriority.filter(id => {
-    const { type } = parseVariantId(id)
-    return participatingUnits.has(type)
-  })
-
-  if (!map) {
-    map = new Map()
-    sacrificeOrderCache.set(unitPriority, map)
-  }
-  map.set(participatingUnits, result)
-  return result
-}
-
-/** Assign hits to a side directly on data, returning new SideStateData and destroyed UnitIds.
- * Batches all hit pools into a single pass to minimize object spreads.
- * When trackDestroyed is false, skips building the destroyed record (no destroy abilities). */
-function assignHitsToSide(
-  sideData: SideStateData,
-  participatingUnits: ReadonlySet<UnitBaseType>,
-  unitPriority: string[],
-  trackDestroyed?: boolean,
-): { state: SideStateData; destroyed: Record<string, UnitId[]> } {
-  if (sideData.hitPools.length === 0)
-    return { state: sideData, destroyed: EMPTY_DESTROYED }
-
-  const sacrificeOrder = getFilteredSacrificeOrder(
-    unitPriority,
-    participatingUnits,
-  )
-
-  // Spread once, then mutate in-place across all pools
-  const newUnits = { ...sideData.units }
-  let destroyed: Record<string, UnitId[]> | undefined
-  let changed = false
-
-  for (const pool of sideData.hitPools) {
-    let remaining = pool.hits
-    if (remaining <= 0) continue
-
-    const validTargets = pool.validTargets
-
-    for (const variantId of sacrificeOrder) {
-      if (remaining <= 0) break
-      if (
-        validTargets.length > 0 &&
-        !validTargets.includes(parseVariantId(variantId).type)
-      )
-        continue
-
-      const origIds = newUnits[variantId]
-      if (!origIds || origIds.length <= 0) continue
-
-      const toDestroy = Math.min(origIds.length, remaining)
-      changed = true
-
-      // Clone the array before mutating (newUnits is shallow-spread, arrays are shared)
-      const ids = origIds.slice(0, origIds.length - toDestroy)
-
-      // Track destroyed UnitIds (only when destroy abilities or logging need it)
-      if (trackDestroyed) {
-        if (!destroyed) destroyed = {}
-        if (!destroyed[variantId]) destroyed[variantId] = []
-        for (let i = origIds.length - toDestroy; i < origIds.length; i++) {
-          destroyed[variantId].push(origIds[i])
-        }
-      }
-
-      if (ids.length <= 0) {
-        delete newUnits[variantId]
-      } else {
-        newUnits[variantId] = ids
-      }
-
-      remaining -= toDestroy
-    }
-  }
-
-  // Always clear hitPools — even when no units were destroyed,
-  // stale pools must not leak into subsequent phases
-  if (!changed)
-    return { state: { ...sideData, hitPools: [] }, destroyed: EMPTY_DESTROYED }
-
-  return {
-    state: {
-      ...sideData,
-      units: newUnits,
-      hitPools: [],
-    },
-    destroyed: destroyed ?? EMPTY_DESTROYED,
-  }
+  return getParticipatingUnitsSet(units)
 }
 
 const abilitiesSideHashCache = new WeakMap<
@@ -1231,12 +1018,7 @@ function getAbilitiesHash(abilities: AbilitiesConfig): string {
   return `a{${a}}d{${d}}`
 }
 
-const sideHashCache = new WeakMap<SideStateData, string>()
-
 function getSideHash(side: SideStateData): string {
-  const cached = sideHashCache.get(side)
-  if (cached !== undefined) return cached
-
   // Build hash via string concatenation — avoids intermediate arrays
   let result = ''
   const keys = Object.keys(side.units)
@@ -1245,14 +1027,15 @@ function getSideHash(side: SideStateData): string {
   for (const key of keys) {
     const ids = side.units[key]
     const count = ids.length
-    if (count <= 0) continue
 
     if (result) result += ','
 
     // Count damaged units by looking up each UnitId's state
     let damaged = 0
-    for (const id of ids) {
-      if (side.unitState[id]?.isDamaged) damaged++
+    if (key !== 'FIGHTER') {
+      for (const id of ids) {
+        if (side.unitState[id]?.isDamaged) damaged++
+      }
     }
     const undamaged = count - damaged
     if (damaged === 0) {
@@ -1265,6 +1048,5 @@ function getSideHash(side: SideStateData): string {
     }
   }
 
-  sideHashCache.set(side, result)
   return result
 }

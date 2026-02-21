@@ -65,36 +65,23 @@ export function isLastMicroPhase(phase: PhaseIdentifier): boolean {
   return phase.micro === getLastMicroPhase(phase.meta)
 }
 
-interface MicroPhaseTransition {
-  phase: PhaseIdentifier
-  incrementRound: boolean
-}
-
 /**
  * Get the next micro-phase within the current meta-phase.
  * Returns current phase if already at the last micro-phase.
  *
  * @param current Current phase identifier
  */
-export function getNextMicroPhase(
-  current: PhaseIdentifier,
-): MicroPhaseTransition {
+export function getNextMicroPhase(current: PhaseIdentifier): PhaseIdentifier {
   if (isLastMicroPhase(current)) {
     // Caller should use getNextMetaPhase instead
-    return {
-      phase: current,
-      incrementRound: false,
-    }
+    return current
   }
 
   const order = MICRO_PHASE_ORDERS[current.meta]
   const currentIndex = order.indexOf(current.micro)
   const nextMicro = order[currentIndex + 1]
 
-  return {
-    phase: { meta: current.meta, micro: nextMicro },
-    incrementRound: false,
-  }
+  return { meta: current.meta, micro: nextMicro }
 }
 
 /**
@@ -107,42 +94,30 @@ export function getNextMicroPhase(
 export function getNextMetaPhase(
   current: PhaseIdentifier,
   mode: CombatMode,
-): MicroPhaseTransition {
+): PhaseIdentifier {
   const flow = mode === 'SPACE' ? SPACE_FLOW : GROUND_FLOW
   const currentMetaIndex = flow.indexOf(current.meta)
 
   // Special case: AFB ends by returning to SPACE_COMBAT:DICE_ROLL (skipping START)
   if (current.meta === 'AFB') {
-    return {
-      phase: { meta: 'SPACE_COMBAT', micro: 'DICE_ROLL' },
-      incrementRound: false,
-    }
+    return { meta: 'SPACE_COMBAT', micro: 'DICE_ROLL' }
   }
 
   if (currentMetaIndex === -1 || current.meta === 'COMPLETE') {
     // Already complete or invalid state
-    return {
-      phase: { meta: 'COMPLETE', micro: getLastMicroPhase('COMPLETE') },
-      incrementRound: false,
-    }
+    return { meta: 'COMPLETE', micro: getLastMicroPhase('COMPLETE') }
   }
 
   // Handle round-based transitions for combat phases
-  // SPACE_COMBAT and GROUND_COMBAT loop back to first micro-phase with round increment
+  // SPACE_COMBAT and GROUND_COMBAT loop back to first micro-phase of same meta-phase
   if (current.meta === 'SPACE_COMBAT' || current.meta === 'GROUND_COMBAT') {
     // Combat continues - loop back to first micro-phase of same meta-phase
-    return {
-      phase: { meta: current.meta, micro: getFirstMicroPhase(current.meta) },
-      incrementRound: true,
-    }
+    return { meta: current.meta, micro: getFirstMicroPhase(current.meta) }
   }
 
   // Pre-combat phases (Space Cannon, Bombardment) move to next meta-phase
   const nextMeta = flow[currentMetaIndex + 1]
-  return {
-    phase: { meta: nextMeta, micro: getFirstMicroPhase(nextMeta) },
-    incrementRound: false,
-  }
+  return { meta: nextMeta, micro: getFirstMicroPhase(nextMeta) }
 }
 
 /**
@@ -152,8 +127,4 @@ export function getInitialPhaseIdentifier(mode: CombatMode): PhaseIdentifier {
   const flow = mode === 'SPACE' ? SPACE_FLOW : GROUND_FLOW
   const firstMeta = flow[0]
   return { meta: firstMeta, micro: getFirstMicroPhase(firstMeta) }
-}
-
-export function getPhaseKey(phase: PhaseIdentifier): string {
-  return `${phase.meta}:${phase.micro}`
 }
