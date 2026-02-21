@@ -14,7 +14,6 @@ import {
   type AbilityReadContext,
   cloneInvokes,
   type InvokeCollections,
-  type RunAbilitiesResult,
   type SidedDiceData,
 } from '../abilities'
 import type {
@@ -85,8 +84,7 @@ function flattenDicePool(pool: DicePool): DiceGroup[] {
 /** Main combat state class */
 export class CombatState {
   data: CombatStateData
-  private _enableLog = false
-  private _log?: LogEntry[]
+  _logger?: Logger
   private _params!: AbilitiesParams
   private _attacker: CombatSideState | undefined
   private _defender: CombatSideState | undefined
@@ -94,16 +92,11 @@ export class CombatState {
   public _invokesOwned = true
 
   get log(): LogEntry[] | undefined {
-    return this._log
+    return this._logger?.entries as LogEntry[] | undefined
   }
 
-  private appendLog(entries: LogEntry[]): void {
-    if (!this._enableLog || entries.length === 0) return
-    if (this._log) {
-      this._log.push(...entries)
-    } else {
-      this._log = [...entries]
-    }
+  get currentPhase(): PhaseIdentifier {
+    return this.data.currentPhase
   }
 
   ensureOwnInvokes(): void {
@@ -131,10 +124,6 @@ export class CombatState {
 
   get combatMode(): CombatMode {
     return this.data.combatMode
-  }
-
-  get currentPhase(): PhaseIdentifier {
-    return this.data.currentPhase
   }
 
   get params(): AbilitiesParams {
@@ -257,29 +246,20 @@ export class CombatState {
   private runAbilities<T extends AbilityTiming>(
     timing: T | T[],
     context?: TimingContextMap[T],
-    logger?: Logger,
-  ): RunAbilitiesResult<T> {
-    this._params.setCombatState(this)
-    // Only create Logger when logging is enabled — avoids allocations
-    // on every call when abilities short-circuit during simulation
-    const activeLogger =
-      logger ??
-      (this._enableLog
-        ? Logger.create().child(this.currentPhase.meta)
-        : undefined)
-    return this._params.runAbilities(timing, context, undefined, activeLogger)
+  ): TimingContextMap[T] {
+    this._params.setCombatState(this, this._logger)
+    return this._params.runAbilities(
+      timing,
+      context,
+      undefined,
+      this._logger?.child(this.data.currentPhase.meta),
+    )
   }
 
-  assignHits(parentLogger?: Logger): void {
-    const logger =
-      parentLogger ??
-      (this._enableLog
-        ? Logger.create().child(this.currentPhase.meta)
-        : undefined)
-    const startIndex = logger ? logger.entries.length : 0
-    const trackDestroyed = !!logger || this._params.hasDestroyAbilities()
+  assignHits(): void {
+    const trackDestroyed = !!this._logger || this._params.hasDestroyAbilities()
 
-    this.runAbilities('BEFORE_ASSIGN_HITS', undefined, logger)
+    this.runAbilities('BEFORE_ASSIGN_HITS')
 
     const attackerDestroyed = this.side('attacker').assignHits(
       this.data,
@@ -298,9 +278,10 @@ export class CombatState {
       defender: defenderDestroyed,
     }
 
-    if (logger) {
-      logger.child('ASSIGN_HITS').log(destroyedContext)
-    }
+    this._logger
+      ?.child(this.data.currentPhase.meta)
+      .child('ASSIGN_HITS')
+      .log(destroyedContext)
 
     const hasDestroyed =
       Object.keys(destroyedContext.attacker).length > 0 ||
@@ -308,11 +289,7 @@ export class CombatState {
 
     if (hasDestroyed) {
       // Run DESTROY → WHEN_DESTROY → AFTER_DESTROY sequence
-      this._params.runDestroyAbilities(destroyedContext, logger)
-    }
-
-    if (logger) {
-      this.appendLog(logger.entries.slice(startIndex))
+      this._params.runDestroyAbilities(destroyedContext)
     }
   }
 
@@ -329,8 +306,10 @@ export class CombatState {
    * Handles meta-phase routing to appropriate processing methods.
    */
   public advance(round: number, enableLog = false): StateWithProbability[] {
-    this._enableLog = enableLog
-    const { meta } = this.currentPhase
+    if (enableLog && !this._logger) {
+      this._logger = Logger.create()
+    }
+    const { meta } = this.data.currentPhase
 
     if (meta === 'COMPLETE') {
       return [{ state: this, probability: 1 }]
@@ -360,8 +339,7 @@ export class CombatState {
         })
 
       case 'COMMIT_UNITS': {
-        const { log } = this.runAbilities('COMMIT_UNITS')
-        this.appendLog(log)
+        this.runAbilities('COMMIT_UNITS')
         return this.transitionPhase()
       }
 
@@ -375,7 +353,7 @@ export class CombatState {
   }
 
   private advanceCombatPhase(round: number): StateWithProbability[] {
-    const micro = this.currentPhase.micro
+    const micro = this.data.currentPhase.micro
 
     switch (micro) {
       case 'START':
@@ -403,8 +381,8 @@ export class CombatState {
       flattenDicePool(modifiedDice.defender),
     )
 
-    const nextPhase = getNextMicroPhase(this.currentPhase)
-    const { meta: metaPhase } = this.currentPhase
+    const nextPhase = getNextMicroPhase(this.data.currentPhase)
+    const { meta: metaPhase } = this.data.currentPhase
 
     const results: StateWithProbability[] = []
 
@@ -439,34 +417,25 @@ export class CombatState {
           validTargets,
         )
 
-        let branchLog: LogEntry[] | undefined
-        if (this._enableLog) {
-          const diceRollEntry: LogEntry = {
-            path: [metaPhase, 'DICE_ROLL'],
-            data: [{ attacker: attOutcome.hits, defender: defOutcome.hits }],
-          }
-          branchLog = this._log
-            ? [...this._log, diceRollEntry]
-            : [diceRollEntry]
+        const branchLogger = this._logger?.fork()
+        branchLogger?.child(metaPhase).child('DICE_ROLL').log({
+          attacker: attOutcome.hits,
+          defender: defOutcome.hits,
+        })
 
-          if (runAfterRoll) {
-            const afterRollLogger = Logger.create().child(metaPhase)
-            this.data = branchData
-            const { log: afterRollLog } = this._params.runAbilities(
-              afterRollTiming!,
-              undefined,
-              undefined,
-              afterRollLogger,
-            )
-            if (afterRollLog.length > 0) branchLog.push(...afterRollLog)
-          }
-        } else if (runAfterRoll) {
+        if (runAfterRoll) {
           this.data = branchData
-          this._params.runAbilities(afterRollTiming!)
+          this._params.setCombatState(this, branchLogger)
+          this._params.runAbilities(
+            afterRollTiming!,
+            undefined,
+            undefined,
+            branchLogger?.child(metaPhase),
+          )
         }
 
         const branchState = CombatState.fromData(branchData, this._params)
-        branchState._log = branchLog
+        branchState._logger = branchLogger
         results.push({ state: branchState, probability })
       }
     }
@@ -479,12 +448,12 @@ export class CombatState {
   }
 
   private transitionPhase(): StateWithProbability[] {
-    this.data.currentPhase = isLastMicroPhase(this.currentPhase)
-      ? getNextMetaPhase(this.currentPhase, this.combatMode)
-      : getNextMicroPhase(this.currentPhase)
+    this.data.currentPhase = isLastMicroPhase(this.data.currentPhase)
+      ? getNextMetaPhase(this.data.currentPhase, this.combatMode)
+      : getNextMicroPhase(this.data.currentPhase)
 
     const state = CombatState.fromData(this.data, this._params)
-    state._log = this._log
+    state._logger = this._logger
     return [{ state, probability: 1 }]
   }
 
@@ -495,7 +464,7 @@ export class CombatState {
     }
 
     const state = CombatState.fromData(this.data, this._params)
-    state._log = this._log
+    state._logger = this._logger
     return [{ state, probability: 1 }]
   }
 
@@ -506,7 +475,7 @@ export class CombatState {
   private advanceUnitAbilityPhase(
     config: UnitAbilityPhaseConfig,
   ): StateWithProbability[] {
-    const micro = this.currentPhase.micro
+    const micro = this.data.currentPhase.micro
 
     switch (micro) {
       case 'DICE_ROLL':
@@ -538,13 +507,13 @@ export class CombatState {
     }
 
     // All unit ability timings use SidedDiceData context
-    const { context: modifiedDice, log: abilityLog } = this.runAbilities(
+    const modifiedDice = this.runAbilities(
       'BEFORE_UNIT_ABILITY_ROLL',
       sidedDiceData,
     )
 
     // Apply stored hit-value modifiers
-    const meta = this.currentPhase.meta
+    const meta = this.data.currentPhase.meta
     if (this.data.attacker.hitValueModifiers?.length) {
       applyStoredHitValueModifiers(
         modifiedDice.attacker,
@@ -565,20 +534,10 @@ export class CombatState {
     if (!firing.includes('attacker')) modifiedDice.attacker = {}
     if (!firing.includes('defender')) modifiedDice.defender = {}
 
-    if (this._enableLog) {
-      this.appendLog(abilityLog)
-      this.appendLog([
-        {
-          path: [this.currentPhase.meta, 'DICE_POOL'],
-          data: [
-            {
-              attacker: modifiedDice.attacker,
-              defender: modifiedDice.defender,
-            },
-          ],
-        },
-      ])
-    }
+    this._logger?.child(this.data.currentPhase.meta).child('DICE_POOL').log({
+      attacker: modifiedDice.attacker,
+      defender: modifiedDice.defender,
+    })
 
     return this.rollDiceOutcomes(
       modifiedDice,
@@ -609,8 +568,7 @@ export class CombatState {
       round === 1
         ? (['START_OF_COMBAT_ROUND', 'START_OF_COMBAT'] as const)
         : (['START_OF_COMBAT_ROUND'] as const)
-    const { log } = this.runAbilities([...timings])
-    this.appendLog(log)
+    this.runAbilities([...timings])
 
     // Re-check after abilities (e.g. Assault Cannon may destroy last ship)
     if (noParticipatingUnits(this.data)) {
@@ -618,13 +576,13 @@ export class CombatState {
     }
 
     // In round 1 of SPACE_COMBAT, transition to AFB meta-phase
-    if (round === 1 && this.currentPhase.meta === 'SPACE_COMBAT') {
+    if (round === 1 && this.data.currentPhase.meta === 'SPACE_COMBAT') {
       this.data.currentPhase = {
         meta: 'AFB',
         micro: getFirstMicroPhase('AFB'),
       }
       const state = CombatState.fromData(this.data, this._params)
-      state._log = this._log
+      state._logger = this._logger
       return [{ state, probability: 1 }]
     }
 
@@ -645,13 +603,10 @@ export class CombatState {
       defender: defenderDice,
     }
 
-    const { context: modifiedDice, log: abilityLog } = this.runAbilities(
-      'BEFORE_DICE_ROLL',
-      sidedDiceData,
-    )
+    const modifiedDice = this.runAbilities('BEFORE_DICE_ROLL', sidedDiceData)
 
     // Apply stored hit-value modifiers (from ctx.api.own.modifyHitValue)
-    const meta = this.currentPhase.meta
+    const meta = this.data.currentPhase.meta
     if (this.data.attacker.hitValueModifiers?.length) {
       applyStoredHitValueModifiers(
         modifiedDice.attacker,
@@ -667,20 +622,10 @@ export class CombatState {
       )
     }
 
-    if (this._enableLog) {
-      this.appendLog(abilityLog)
-      this.appendLog([
-        {
-          path: [this.currentPhase.meta, 'DICE_POOL'],
-          data: [
-            {
-              attacker: modifiedDice.attacker,
-              defender: modifiedDice.defender,
-            },
-          ],
-        },
-      ])
-    }
+    this._logger?.child(this.data.currentPhase.meta).child('DICE_POOL').log({
+      attacker: modifiedDice.attacker,
+      defender: modifiedDice.defender,
+    })
 
     return this.rollDiceOutcomes(
       modifiedDice,
@@ -695,8 +640,7 @@ export class CombatState {
   private processAssignHits(): StateWithProbability[] {
     this.assignHits()
 
-    const { log: stepLog } = this.runAbilities('AFTER_ASSIGN_HITS_STEP')
-    this.appendLog(stepLog)
+    this.runAbilities('AFTER_ASSIGN_HITS_STEP')
 
     // If either side is completely wiped, go directly to COMPLETE
     if (
@@ -710,9 +654,7 @@ export class CombatState {
   }
 
   private processEndOfRound(): StateWithProbability[] {
-    const { log } = this.runAbilities(['END_OF_COMBAT_ROUND'])
-    this.appendLog(log)
-
+    this.runAbilities('END_OF_COMBAT_ROUND')
     this.runAbilities('CLEANUP_ROUND')
 
     // Clear stored hit-value modifiers

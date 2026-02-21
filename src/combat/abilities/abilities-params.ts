@@ -16,7 +16,7 @@ import type {
   CombatStateData,
   SideStateData,
 } from '../combat-state/types'
-import { type LogEntry, Logger } from '../logger'
+import { Logger } from '../logger'
 import { resolveUnitStats } from '../utils/compact-units'
 import { makeVariantId, parseVariantId } from '../utils/unit-variant'
 import { AbilityContext } from './api/ability-api'
@@ -95,8 +95,6 @@ interface UnitAbilityEntry {
   unitType: UnitBaseType
   unitId: UnitId
 }
-
-const EMPTY_LOG: LogEntry[] = []
 
 interface TimingInvokeEntry {
   ability: Ability
@@ -273,11 +271,6 @@ function reconcileStringParam(current: string, validList: string[]): string {
 
 // ── Tracker types ────────────────────────────────────────────────────────
 
-export interface RunAbilitiesResult<T extends AbilityTiming> {
-  context: TimingContextMap[T]
-  log: LogEntry[]
-}
-
 /** Invocation tracker for a single side's abilities */
 interface SideInvocationTracker {
   configAbilities: Set<AbilityInvoke>
@@ -340,6 +333,8 @@ export class AbilitiesParams {
     unitIds: UnitId[]
   }[] = []
 
+  _logger?: Logger
+
   private static loadAbilities(
     attackerFaction: FactionKey,
     defenderFaction: FactionKey,
@@ -358,8 +353,9 @@ export class AbilitiesParams {
     return this._combatState
   }
 
-  setCombatState(cs: CombatState): void {
+  setCombatState(cs: CombatState, logger?: Logger): void {
     this._combatState = cs
+    this._logger = logger
     this._destroyedIds = { attacker: new Set(), defender: new Set() }
     this._pendingUnitInvokes = []
   }
@@ -639,7 +635,7 @@ export class AbilitiesParams {
     context?: TimingContextMap[T],
     options?: RunAbilitiesOptions,
     logger?: Logger,
-  ): RunAbilitiesResult<T> {
+  ): TimingContextMap[T] {
     // Short-circuit: if none of the requested timings have any callable
     // invokes (enabled config abilities, unit abilities, or destroyed-unit
     // abilities), skip the expensive resolution loop entirely.
@@ -656,11 +652,10 @@ export class AbilitiesParams {
     }
 
     if (!hasAnyInvokes) {
-      return { context: context as TimingContextMap[T], log: EMPTY_LOG }
+      return context as TimingContextMap[T]
     }
 
-    const activeLogger = logger ?? Logger.create()
-    const startIndex = activeLogger.entries.length
+    const activeLogger = logger ?? this._logger
 
     const tracker: InvocationTracker = {
       attacker: {
@@ -717,10 +712,7 @@ export class AbilitiesParams {
       currentSide = getOpponentSide(currentSide)
     }
 
-    return {
-      context: workingContext as TimingContextMap[T],
-      log: activeLogger.entries.slice(startIndex) as LogEntry[],
-    }
+    return workingContext as TimingContextMap[T]
   }
 
   /**
@@ -729,13 +721,10 @@ export class AbilitiesParams {
    * If a WHEN_DESTROY ability destroys additional units, tryResolveOne
    * triggers a nested runDestroyAbilities for those automatically.
    */
-  runDestroyAbilities(
-    destroyed: {
-      attacker: Record<string, UnitId[]>
-      defender: Record<string, UnitId[]>
-    },
-    logger?: Logger,
-  ): void {
+  runDestroyAbilities(destroyed: {
+    attacker: Record<string, UnitId[]>
+    defender: Record<string, UnitId[]>
+  }): void {
     // Save previous _destroyedIds and derive this cycle's scope from the Record.
     // Each runDestroyAbilities call gets its own _destroyedIds so nested calls
     // (from AFTER_DESTROY abilities that destroy additional units) don't leak
@@ -746,9 +735,9 @@ export class AbilitiesParams {
       defender: new Set(Object.values(destroyed.defender).flat()),
     }
 
-    this.runAbilities('DESTROY', destroyed, undefined, logger)
-    this.runAbilities('WHEN_DESTROY', destroyed, undefined, logger)
-    this.runAbilities('AFTER_DESTROY', destroyed, undefined, logger)
+    this.runAbilities('DESTROY', destroyed)
+    this.runAbilities('WHEN_DESTROY', destroyed)
+    this.runAbilities('AFTER_DESTROY', destroyed)
 
     // Restore previous _destroyedIds for the outer scope
     this._destroyedIds = savedDestroyedIds
@@ -874,12 +863,6 @@ export class AbilitiesParams {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         let resultContext: any
 
-        // Extra data appended to the auto log entry via ctx.log() calls
-        const logData: unknown[] = []
-        const logCallback = (...data: unknown[]) => {
-          logData.push(...data)
-        }
-
         const timingArray = Array.isArray(timing) ? timing : [timing]
 
         // Snapshot unit counts before the call for change detection
@@ -896,7 +879,7 @@ export class AbilitiesParams {
             own: buildDiceApi(rawDice.own),
             opponent: buildDiceApi(rawDice.opponent),
           }
-          ctx.upgradeForCall(state, ability.key, logCallback, childLogger)
+          ctx.upgradeForCall(state, ability.key, childLogger?.forSide(side))
           inv.call(ctx, freshParams, diceCallCtx)
           decrementUses(state, side, ability.key, freshParams, this)
           ctx.resetAfterCall()
@@ -905,7 +888,7 @@ export class AbilitiesParams {
             opponent: diceCallCtx.opponent.getAll(),
           }
         } else {
-          ctx.upgradeForCall(state, ability.key, logCallback, childLogger)
+          ctx.upgradeForCall(state, ability.key, childLogger?.forSide(side))
           const result = inv.call(ctx, freshParams, internalContext)
           if (result !== undefined) resultContext = result
           decrementUses(state, side, ability.key, freshParams, this)
@@ -915,15 +898,8 @@ export class AbilitiesParams {
         // Flush deferred invoke registrations (from placeUnits/modifyUnitType)
         this.flushPendingUnitInvokes()
 
-        // Single structured log entry per ability
-        if (childLogger) {
-          const sideLogger = childLogger.forSide(side)
-          if (logData.length > 0) {
-            sideLogger.log(...logData)
-          } else {
-            sideLogger.log()
-          }
-        }
+        // Always record that this ability fired (auto log entry)
+        childLogger?.forSide(side).log()
 
         // Mark as invoked
         if (source.type === 'config') {
@@ -947,7 +923,7 @@ export class AbilitiesParams {
             state.defender.hitPools.length > 0)
         ) {
           // Run BEFORE_ASSIGN_HITS (e.g. SUSTAIN_DAMAGE) before assigning hits
-          this._combatState.assignHits(childLogger)
+          this._combatState.assignHits()
         }
 
         const unitsChanged =

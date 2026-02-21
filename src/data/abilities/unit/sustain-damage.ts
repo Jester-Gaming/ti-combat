@@ -109,7 +109,7 @@ export const sustainDamage: Ability<Params> = {
       call: ctx => {
         ctx.api.own.modifyUnitState(ctx.getUnit(), { isDamaged: true })
         ctx.api.own.reduceHits(1)
-        ctx.log(ctx.api.own.getUnitBaseType(ctx.getUnit()))
+        ctx.logger?.log(ctx.api.own.getUnitBaseType(ctx.getUnit()))
         ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', ctx.getUnit())
         ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', ctx.getUnit())
       },

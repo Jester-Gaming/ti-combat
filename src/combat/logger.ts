@@ -29,6 +29,10 @@ export class Logger {
     return new Logger(this._entries, this._path, side)
   }
 
+  fork(): Logger {
+    return new Logger([...this._entries], [...this._path], this._side)
+  }
+
   log(...data: unknown[]): void {
     const entry: LogEntry = { path: [...this._path] }
     if (this._side) entry.side = this._side
@@ -36,20 +40,7 @@ export class Logger {
     this._entries.push(entry)
   }
 
-  addEntries(entries: LogEntry[]): void {
-    this._entries.push(...entries)
-  }
-
   get entries(): readonly LogEntry[] {
     return this._entries
-  }
-
-  branch(): Logger {
-    return new Logger([], [...this._path], this._side)
-  }
-
-  flush(): LogEntry[] {
-    const flushed = this._entries.splice(0)
-    return flushed
   }
 }

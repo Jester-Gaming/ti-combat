@@ -3,7 +3,6 @@ export {
   cloneInvokes,
   type InvokeCollections,
   type RunAbilitiesOptions,
-  type RunAbilitiesResult,
 } from './abilities-params'
 export { SideApi } from './api/ability-api'
 export { declareParam, isDeclaredParam } from './declare-param'

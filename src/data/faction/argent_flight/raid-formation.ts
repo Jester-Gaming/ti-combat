@@ -84,7 +84,7 @@ export const raidFormation: Ability<Params> = {
         }
 
         if (damaged > 0) {
-          ctx.log(`${damaged} ship(s) damaged`)
+          ctx.logger?.log(`${damaged} ship(s) damaged`)
         }
       },
     },

@@ -4,6 +4,8 @@ import type {
   SourcedDiceGroup,
   UnitBaseType,
   UnitId,
+  UnitType,
+  UnitVariantId,
 } from '@/types'
 
 import type {
@@ -11,6 +13,7 @@ import type {
   CombatStateData,
   MetaPhase,
 } from '../combat-state/types'
+import type { Logger } from '../logger'
 import type { SideApi } from './api/ability-api'
 
 export interface ParamChange {
@@ -29,21 +32,21 @@ export interface SyncSourceConfig {
 }
 
 export interface DeclaredSubtype {
-  name: string
-  unitType: UnitBaseType
+  name: UnitVariantId
+  unitType: UnitType
 }
 
 export type SettingsParams = {
-  nonFighterShips: UnitBaseType[]
-  ships: UnitBaseType[]
-  groundForces: UnitBaseType[]
-  structures: UnitBaseType[]
-  spaceCombatParticipating: UnitBaseType[]
-  groundCombatParticipating: UnitBaseType[]
-  validTargetsSpaceCannonOffense: UnitBaseType[]
-  validTargetsBombardment: UnitBaseType[]
-  validTargetsSpaceCannonDefense: UnitBaseType[]
-  validTargetsAntiFighterBarrage: UnitBaseType[]
+  nonFighterShips: UnitType[]
+  ships: UnitType[]
+  groundForces: UnitType[]
+  structures: UnitType[]
+  spaceCombatParticipating: UnitType[]
+  groundCombatParticipating: UnitType[]
+  validTargetsSpaceCannonOffense: UnitType[]
+  validTargetsBombardment: UnitType[]
+  validTargetsSpaceCannonDefense: UnitType[]
+  validTargetsAntiFighterBarrage: UnitType[]
   subtypes: DeclaredSubtype[]
 }
 
@@ -150,7 +153,7 @@ export interface AbilityCallContext {
     own: SideApi
     opponent: SideApi
   }
-  log(...data: unknown[]): void
+  logger?: Logger
   /** Run abilities for the given timing inline during this call */
   trigger<K extends AbilityTiming>(name: K, context: TimingContextMap[K]): void
   /** Get the UnitId this ability is attached to. Throws if called from a non-unit ability. */
@@ -328,7 +331,7 @@ export interface Ability<Params extends Record<string, unknown> = any> {
    *  `settings` contains the current SETTINGS values (ships, groundForces, etc.) during reconciliation. */
   declareParamChange?: (
     params: AbilityBaseParams & Params,
-    settings: Readonly<Record<string, unknown>>,
+    settings: SettingsParams,
   ) => ParamChange[]
   invoke: AbilityInvoke<AbilityBaseParams & Params>[]
 }

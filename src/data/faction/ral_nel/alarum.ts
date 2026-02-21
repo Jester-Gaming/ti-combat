@@ -26,7 +26,7 @@ export const alarum: Ability<Params> = {
         ctx.api.own.updateAbilityConfig({
           infantryAvailable: params.infantryAvailable - count,
         })
-        ctx.log(`Moved ${count} infantry from adjacent systems`)
+        ctx.logger?.log(`Moved ${count} infantry from adjacent systems`)
       },
     },
   ],

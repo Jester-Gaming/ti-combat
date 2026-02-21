@@ -813,8 +813,6 @@ export class SideApi {
 // CONTEXT BUILDERS (used by abilities-tracker)
 // ============================================================================
 
-const noop = () => {}
-
 /** Find the first UnitId for a base type (used by destroyUnit/removeUnit string overloads) */
 function findFirstUnitId(
   sideState: SideStateData,
@@ -841,19 +839,17 @@ function findVariantKeyContaining(
 }
 
 export class AbilityContext {
-  log: (...data: unknown[]) => void
+  logger?: Logger
   unitSource?: UnitId
 
   private _abilitiesParams: AbilitiesParams
   private _side: CombatSide
-  private _logger?: Logger
   private _draftState?: CombatStateData
   private _api: { own: SideApi; opponent: SideApi }
 
   constructor(side: CombatSide, abilitiesParams: AbilitiesParams) {
     this._side = side
     this._abilitiesParams = abilitiesParams
-    this.log = noop
     this._api = {
       own: new SideApi(side, this),
       opponent: new SideApi(getOpponentSide(side), this),
@@ -868,15 +864,9 @@ export class AbilityContext {
     return this._api
   }
 
-  upgradeForCall(
-    draft: CombatStateData,
-    abilityKey: string,
-    log: (...data: unknown[]) => void,
-    logger?: Logger,
-  ) {
+  upgradeForCall(draft: CombatStateData, abilityKey: string, logger?: Logger) {
     this._draftState = draft
-    this.log = log
-    this._logger = logger
+    this.logger = logger
     this._api.own._abilityKey = abilityKey
     this._api.own._abilitiesParams = this._abilitiesParams
     this._api.opponent._abilityKey = abilityKey
@@ -885,8 +875,7 @@ export class AbilityContext {
 
   resetAfterCall() {
     this._draftState = undefined
-    this.log = noop
-    this._logger = undefined
+    this.logger = undefined
     this._api.own._abilityKey = undefined
     this._api.own._abilitiesParams = undefined
     this._api.opponent._abilityKey = undefined
@@ -897,8 +886,7 @@ export class AbilityContext {
   private nested(fn: () => void): void {
     const saved = {
       unitSource: this.unitSource,
-      log: this.log,
-      logger: this._logger,
+      logger: this.logger,
       ownAbilityKey: this._api.own._abilityKey,
       ownAbilitiesParams: this._api.own._abilitiesParams,
       opponentAbilityKey: this._api.opponent._abilityKey,
@@ -906,8 +894,7 @@ export class AbilityContext {
     }
     fn()
     this.unitSource = saved.unitSource
-    this.log = saved.log
-    this._logger = saved.logger
+    this.logger = saved.logger
     this._api.own._abilityKey = saved.ownAbilityKey
     this._api.own._abilitiesParams = saved.ownAbilitiesParams
     this._api.opponent._abilityKey = saved.opponentAbilityKey
@@ -923,7 +910,7 @@ export class AbilityContext {
         name,
         context,
         { triggerSide: this._side },
-        this._logger,
+        this.logger,
       )
     })
   }
@@ -933,7 +920,7 @@ export class AbilityContext {
     defender: Record<string, UnitId[]>
   }): void {
     this.nested(() => {
-      this._abilitiesParams.runDestroyAbilities(destroyed, this._logger)
+      this._abilitiesParams.runDestroyAbilities(destroyed)
     })
   }
 

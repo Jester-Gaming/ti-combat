@@ -54,9 +54,6 @@ describe('ALASTOR + VAN_HAUGE', () => {
     // Round 2: destroyed → Van Hauge
     t.advanceRound({ attacker: 1 })
 
-    const vanHaugeLog = t.abilityLog('VAN_HAUGE')
-    // 2 entries: first fires meaningfully (destroys cruiser),
-    // second fires in the nested destroy chain (no-op, all ships already gone)
-    expect(vanHaugeLog).toHaveLength(2)
+    expect(t.abilityLog('VAN_HAUGE')).toHaveLength(1)
   })
 })
