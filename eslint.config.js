@@ -9,7 +9,7 @@ import prettierConfig from 'eslint-config-prettier'
 import checkFile from 'eslint-plugin-check-file'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', '.worktrees']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

@@ -1,5 +1,6 @@
 /** @type {import('stylelint').Config} */
 export default {
+  ignoreFiles: ['.worktrees/**'],
   plugins: ['stylelint-order'],
   extends: ['stylelint-config-standard'],
   rules: {

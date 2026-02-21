@@ -22,5 +22,6 @@ export default defineConfig({
     environment: 'jsdom',
     css: true,
     setupFiles: ['src/tests/utils/expect.ts'],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/.worktrees/**'],
   },
 })
