@@ -11,7 +11,7 @@ type Params = {
   unitType: UnitType
 }
 
-export const VISCOUNT = 'Viscount' as UnitVariantId
+const VISCOUNT = 'Viscount' as UnitVariantId
 
 export const viscountUnlenn: Ability<Params> = {
   key: 'VISCOUNT_UNLENN',

@@ -12,7 +12,7 @@ export interface ProbabilityNode {
 }
 
 /** State of a single surviving unit */
-export interface SurvivorUnit {
+interface SurvivorUnit {
   isDamaged?: boolean
   subtypes?: string[]
 }

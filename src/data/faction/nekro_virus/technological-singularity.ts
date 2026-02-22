@@ -31,7 +31,7 @@ function isOpponentDestroyed(ctx: AbilityReadContext) {
     ?.opponentDestroyed
 }
 
-export function registerDeferredPrepare(
+function registerDeferredPrepare(
   ctx: AbilityCallContext,
   abilityKey: string,
   prepareFn: DeferredFn,

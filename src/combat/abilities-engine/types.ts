@@ -298,7 +298,7 @@ type UIConfig<Params = Record<string, unknown>> =
   | ((ctx: AbilityReadContext, params: Params) => UIConfigItem<Params>[])
 
 /** Base params present on every ability. Managed by the tracker — abilities don't check these themselves. */
-export interface AbilityBaseParams {
+interface AbilityBaseParams {
   isEnabled: boolean
   uses: number
 }

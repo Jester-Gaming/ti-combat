@@ -60,7 +60,7 @@ function SortableItem({
   )
 }
 
-export interface OrderListItem {
+interface OrderListItem {
   label: string
   value: string
 }

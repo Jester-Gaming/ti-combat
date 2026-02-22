@@ -6,11 +6,11 @@ import type { DiceGroup } from './die'
 export type UnitVariantId = string & { readonly __brand: 'UnitVariantId' }
 
 export type UnitBaseType = keyof typeof baseUnits | 'FLAGSHIP' | 'MECH'
-export type UnitVariant = `${UnitBaseType}:${UnitVariantId}`
+type UnitVariant = `${UnitBaseType}:${UnitVariantId}`
 export type UnitType = UnitBaseType | UnitVariant
 
 // Unit abilities
-export interface UnitAbilities {
+interface UnitAbilities {
   SUSTAIN_DAMAGE?: boolean
   BOMBARDMENT?: DiceGroup
   AFB?: DiceGroup

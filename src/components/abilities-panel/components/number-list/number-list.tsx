@@ -2,7 +2,7 @@ import { clsx } from 'clsx'
 
 import styles from './number-list.module.css'
 
-export interface NumberListItem {
+interface NumberListItem {
   label: string
   value: string
   max?: number

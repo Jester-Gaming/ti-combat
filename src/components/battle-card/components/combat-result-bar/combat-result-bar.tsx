@@ -13,7 +13,7 @@ export interface CombatResult {
   defenderWin: number
 }
 
-export interface UnitPriority {
+interface UnitPriority {
   attacker: string[]
   defender: string[]
 }

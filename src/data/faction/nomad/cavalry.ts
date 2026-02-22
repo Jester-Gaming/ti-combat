@@ -10,7 +10,7 @@ type Params = {
   unitType: UnitType
 }
 
-export const CAVALRY = 'Cavalry' as UnitVariantId
+const CAVALRY = 'Cavalry' as UnitVariantId
 
 export const cavalry: Ability<Params> = {
   key: 'CAVALRY',

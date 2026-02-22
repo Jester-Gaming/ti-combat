@@ -50,4 +50,4 @@ async function main() {
   await runProfile(mod.default, profilePath)
 }
 
-main()
+await main()

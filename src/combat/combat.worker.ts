@@ -1,23 +1,11 @@
 import { prepareSimulationConfig } from '@/hooks/combat-setup'
+import type { SimulationInput } from '@/hooks/combat-setup/types'
 import type { FactionKey, UnitBaseType, UnitSelection } from '@/types'
 import { getSimulationUnits } from '@/utils/get-simulation-units'
 
 import { CombatEngine } from './combat-engine'
 import { CombatState } from './combat-state'
-import type {
-  AbilitiesConfig,
-  CombatMode,
-  SideStateData,
-} from './combat-state/types'
-
-export interface SimulationInput {
-  attackerFaction: FactionKey
-  defenderFaction: FactionKey
-  attackerSelections: Record<UnitBaseType, UnitSelection>
-  defenderSelections: Record<UnitBaseType, UnitSelection>
-  combatMode: CombatMode
-  abilities: AbilitiesConfig
-}
+import type { SideStateData } from './combat-state/types'
 
 function buildSideState(
   faction: FactionKey,

@@ -21,7 +21,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 
 import styles from './priority-list.module.css'
 
-export interface PriorityListItem {
+interface PriorityListItem {
   label: string
   value: string
 }

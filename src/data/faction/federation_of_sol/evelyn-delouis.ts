@@ -11,7 +11,7 @@ type Params = {
   unitType: UnitType
 }
 
-export const EVELYN = 'Evelyn' as UnitVariantId
+const EVELYN = 'Evelyn' as UnitVariantId
 
 export const evelynDelouis: Ability<Params> = {
   key: 'EVELYN_DELOUIS',

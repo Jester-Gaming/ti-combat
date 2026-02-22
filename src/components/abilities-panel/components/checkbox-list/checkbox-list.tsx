@@ -4,7 +4,7 @@ import { Checkbox } from '@/components/ui/checkbox'
 
 import styles from './checkbox-list.module.css'
 
-export interface CheckboxListItem {
+interface CheckboxListItem {
   label: string
   value: string
 }

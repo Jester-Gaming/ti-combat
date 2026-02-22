@@ -92,7 +92,7 @@ export function reconcileAbilitiesConfig(
  * apply group additions from declareParamChange, and recompute
  * derived params via onParamSet.
  */
-export function resetBaseGroups(
+function resetBaseGroups(
   config: AbilitiesConfig,
   abilities: Record<CombatSide, Ability[]>,
 ): void {
@@ -156,7 +156,7 @@ export function resetBaseGroups(
  * Ensure consumer abilities (those with sync-sources) have params
  * initialized from defaults. Also initializes SETTINGS defaults.
  */
-export function ensureConsumerDefaults(
+function ensureConsumerDefaults(
   config: AbilitiesConfig,
   abilities: Record<CombatSide, Ability[]>,
 ): void {
@@ -178,7 +178,7 @@ export function ensureConsumerDefaults(
  * Shared sync logic: reconcile SETTINGS computed params for both sides,
  * then reconcile consumer params with cross-side access.
  */
-export function reconcileSyncAll(
+function reconcileSyncAll(
   config: AbilitiesConfig,
   abilities: Record<CombatSide, Ability[]>,
 ): void {
@@ -226,7 +226,7 @@ export function reconcileSyncAll(
  * Reconcile ABILITY_ORDER params: keep only keys for abilities that are
  * enabled and have matching invokes, preserving user-chosen order.
  */
-export function reconcileAbilityOrder(
+function reconcileAbilityOrder(
   config: AbilitiesConfig,
   abilities: Record<CombatSide, Ability[]>,
   combatMode: CombatMode,
@@ -272,7 +272,7 @@ export function reconcileAbilityOrder(
   }
 }
 
-export function collectParamChanges(
+function collectParamChanges(
   abilities: readonly Ability[],
   params: Record<string, Record<string, unknown>>,
   settings: SettingsParams,
@@ -299,7 +299,7 @@ export function collectParamChanges(
   return result
 }
 
-export function reconcileSyncSources(
+function reconcileSyncSources(
   abilities: readonly Ability[],
   params: Record<string, Record<string, unknown>>,
   ownSettings: SettingsParams,

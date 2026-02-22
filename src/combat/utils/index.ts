@@ -1,4 +1,4 @@
-export { nextUnitId, nextUnitIds } from './unit-id'
+export { nextUnitIds } from './unit-id'
 export {
   getVariantDisplayName,
   makeVariantId,

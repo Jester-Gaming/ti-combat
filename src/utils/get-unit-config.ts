@@ -7,33 +7,6 @@ import { type FactionKey, type UnitBaseType } from '@/types'
 
 import { getFactionUnitConfig } from './get-faction-unit-config'
 
-export interface UnitListItem {
-  label: string
-  value: UnitBaseType
-}
-
-const unitList: UnitListItem[] = UNIT_TYPES.map(value => ({
-  value,
-  label: UNIT_DISPLAY_NAMES[value],
-}))
-
-/** Get unit list items for specific unit types */
-export function getUnitListItems(
-  units: readonly UnitBaseType[],
-): UnitListItem[] {
-  return unitList.filter(unit => units.includes(unit.value))
-}
-
-/** Get display name for a unit type with optional subtypes */
-export function getUnitVariantDisplayName(
-  unitType: UnitBaseType,
-  subtypes?: string[],
-): string {
-  const base = UNIT_DISPLAY_NAMES[unitType]
-  if (!subtypes || subtypes.length === 0) return base
-  return `${base} (${subtypes.join(', ')})`
-}
-
 export interface UnitConfig {
   name: string
   shortName: string

@@ -1,2 +1,4 @@
+tsc -b
 npx lint-staged
 npm run test:run
+npm run test:snapshots:run

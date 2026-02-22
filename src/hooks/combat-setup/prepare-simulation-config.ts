@@ -26,7 +26,7 @@ import {
  * Returns the computed abilities so callers can pass them to CombatState
  * factories (avoiding a redundant second call to getAvailableAbilities).
  */
-export interface SideAbilitiesData {
+interface SideAbilitiesData {
   abilities: Ability[]
   unitAbilityKeys: ReadonlySet<string>
 }

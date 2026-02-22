@@ -2,10 +2,6 @@ import type { UnitId } from '@/types'
 
 let _nextId = 1
 
-export function nextUnitId(): UnitId {
-  return _nextId++ as UnitId
-}
-
 /** Generate an array of N consecutive UnitIds */
 export function nextUnitIds(count: number): UnitId[] {
   const result: UnitId[] = []

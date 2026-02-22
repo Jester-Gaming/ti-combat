@@ -28,11 +28,6 @@ export {
   UNIT_ABILITY_PHASES,
 } from './combat-state'
 export type { LogEntry } from './logger'
-export type {
-  CombatOutcome,
-  ProbabilityNode,
-  SurvivorSide,
-  SurvivorUnit,
-} from './types'
+export type { CombatOutcome, SurvivorSide } from './types'
 export { nextUnitIds } from './utils/unit-id'
 export { makeVariantId, parseVariantId } from './utils/unit-variant'

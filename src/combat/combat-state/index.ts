@@ -4,7 +4,6 @@ export {
   type AbilitiesConfig,
   type CombatMode,
   type CombatStateData,
-  type HitPool,
   type MetaPhase,
   type MicroPhase,
   type SideStateData,
