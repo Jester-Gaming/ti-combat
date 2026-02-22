@@ -35,12 +35,12 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     css: true,
-    setupFiles: ['src/tests/utils/expect.ts'],
+    setupFiles: ['tests/utils/expect.ts'],
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
       '**/.worktrees/**',
-      'snapshots',
+      'tests/snapshots',
     ],
   },
 })

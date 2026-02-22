@@ -15,10 +15,10 @@
     "format:check": "prettier --check .",
     "test": "vitest --no-isolate --pool=threads",
     "test:run": "vitest run --no-isolate --pool=threads",
-    "test:coverage": "vitest run --coverage",
-    "test:snapshots": "vitest run --config snapshots/vitest.config.ts",
-    "test:snapshots:update": "vitest run --config snapshots/vitest.config.ts --update",
-    "profile": "vite-node profile/run.ts",
+    "test:snapshots": "vitest --config tests/snapshots/vitest.config.ts",
+    "test:snapshots:run": "vitest run --config tests/snapshots/vitest.config.ts",
+    "test:snapshots:update": "vitest run --config tests/snapshots/vitest.config.ts --update",
+    "profile": "vite-node tests/profile/run.ts",
     "prepare": "husky"
   },
   "lint-staged": {

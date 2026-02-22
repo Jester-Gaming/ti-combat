@@ -1,0 +1,183 @@
+import { describe, expect, it } from 'vitest'
+
+import { combatTest } from '../utils/combat-test'
+
+describe('SLEEPER_CELL', () => {
+  it('places a copy of each destroyed opponent ship', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'MENTAK_COALITION',
+        units: { CRUISER: 3 },
+        abilities: { SLEEPER_CELL: true },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT', 'START')
+    // Defender receives 1 hit → 1 cruiser destroyed
+    t.advanceRound({ defender: 1 })
+
+    // START_OF_COMBAT activation + AFTER_DESTROY placement
+    expect(t.abilityLog('SLEEPER_CELL')).not.toHaveLength(0)
+    // Attacker: 3 original + 1 copied = 4
+    expect(t.attacker.units.CRUISER).toHaveLength(4)
+  })
+
+  it('places copies of multiple destroyed ship types', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'MENTAK_COALITION',
+        units: { CRUISER: 3 },
+        abilities: { SLEEPER_CELL: true },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        // No destroyers (AFB causes extra branching)
+        units: { CRUISER: 1, FIGHTER: 1 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT', 'START')
+    // Defender receives 2 hits → both cruiser and fighter destroyed
+    t.advanceRound({ defender: 2 })
+
+    expect(t.defender.units.CRUISER).toBeUndefined()
+    expect(t.defender.units.FIGHTER).toBeUndefined()
+    // Attacker gains 1 cruiser + 1 fighter
+    expect(t.attacker.units.CRUISER).toHaveLength(4) // 3 + 1
+    expect(t.attacker.units.FIGHTER).toHaveLength(1)
+  })
+
+  it('does not place copies of ground forces', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'MENTAK_COALITION',
+        units: { CRUISER: 3 },
+        abilities: { SLEEPER_CELL: true },
+      },
+      defender: {
+        faction: 'NEKRO_VIRUS',
+        // Alastor makes ground forces participate as ships
+        units: { FLAGSHIP: 1, INFANTRY: 2 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT', 'START')
+    // Defender receives 2 hits — infantry destroyed via Alastor
+    t.advanceRound({ defender: 2 })
+
+    // Attacker should NOT gain infantry — Sleeper Cell only copies ships
+    expect(t.attacker.units.INFANTRY).toBeUndefined()
+  })
+
+  it('does not fire when not enabled', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'MENTAK_COALITION',
+        units: { CRUISER: 3 },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound({ defender: 1 })
+
+    expect(t.abilityLog('SLEEPER_CELL')).toHaveLength(0)
+    expect(t.attacker.units.CRUISER).toHaveLength(3)
+  })
+
+  it('enforces fleet pool limit by removing lowest priority non-fighter ships', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'MENTAK_COALITION',
+        // 2 cruisers + 1 carrier = 3 non-fighter ships, fleetPool: 3
+        units: { CRUISER: 2, CARRIER: 1, FIGHTER: 2 },
+        abilities: {
+          SLEEPER_CELL: {
+            isEnabled: true,
+            fleetPool: 3,
+            // Keep cruisers over carriers
+            shipPriority: ['CRUISER', 'CARRIER'],
+          },
+        },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT', 'START')
+    // Defender receives 1 hit → 1 cruiser destroyed
+    // Attacker gains 1 cruiser → 3 cruisers + 1 carrier = 4 non-fighters → excess 1
+    // Fighters not counted, not removed
+    // Remove lowest priority non-fighter (CARRIER) first
+    t.advanceRound({ defender: 1 })
+
+    expect(t.attacker.units.CRUISER).toHaveLength(3) // 2 + 1 gained
+    expect(t.attacker.units.CARRIER).toBeUndefined() // removed (lowest priority)
+    expect(t.attacker.units.FIGHTER).toHaveLength(2) // untouched
+  })
+
+  it('respects unit limits when placing copies', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'MENTAK_COALITION',
+        // Cruiser limit is 8; attacker has 7
+        units: { CRUISER: 7 },
+        abilities: {
+          SLEEPER_CELL: { isEnabled: true, fleetPool: 20 },
+        },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT', 'START')
+    // Defender receives 2 hits → 2 cruisers destroyed
+    // Attacker has 7 cruisers, limit 8 → can only place 1
+    t.advanceRound({ defender: 2 })
+
+    expect(t.attacker.units.CRUISER).toHaveLength(8) // 7 + 1 (not 7 + 2)
+  })
+
+  it('works across multiple rounds', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'MENTAK_COALITION',
+        units: { CRUISER: 2 },
+        abilities: {
+          SLEEPER_CELL: { isEnabled: true, fleetPool: 20 },
+        },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 3 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT', 'START')
+    // Round 1: defender loses 1 cruiser
+    t.advanceRound({ defender: 1 })
+    expect(t.attacker.units.CRUISER).toHaveLength(3) // 2 + 1
+
+    // Round 2: defender loses 1 more cruiser
+    t.advanceRound({ defender: 1 })
+    expect(t.attacker.units.CRUISER).toHaveLength(4) // 3 + 1
+  })
+})
