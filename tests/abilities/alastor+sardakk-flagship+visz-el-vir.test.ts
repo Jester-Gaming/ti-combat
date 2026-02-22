@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('ALASTOR + SARDAKK_FLAGSHIP + VISZ_EL_VIR', () => {
+describe.forEachSide('ALASTOR + SARDAKK_FLAGSHIP + VISZ_EL_VIR', () => {
   it('aura modifier applies to mech dice including added ones', () => {
     const t = combatTest({
       mode: 'SPACE',

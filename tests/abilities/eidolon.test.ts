@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('EIDOLON', () => {
+describe.forEachSide('EIDOLON', () => {
   it('mech participates in space combat with [8, 2] stats', () => {
     const t = combatTest({
       mode: 'SPACE',

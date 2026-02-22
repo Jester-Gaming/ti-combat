@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('BUNKER + CONVENTIONS_OF_WAR', () => {
+describe.forEachSide('BUNKER + CONVENTIONS_OF_WAR', () => {
   it('Conventions disables bombardment entirely, Bunker is irrelevant', () => {
     const t = combatTest({
       mode: 'GROUND',

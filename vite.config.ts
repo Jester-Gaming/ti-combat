@@ -35,7 +35,7 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     css: true,
-    setupFiles: ['tests/utils/expect.ts'],
+    setupFiles: ['tests/utils/expect.ts', 'tests/utils/for-each-side.ts'],
     exclude: [
       '**/node_modules/**',
       '**/dist/**',

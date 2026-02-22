@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('IMPULSE_CORE', () => {
+describe.forEachSide('IMPULSE_CORE', () => {
   it('destroys own destroyer to hit opponent non-fighter ship', () => {
     const t = combatTest({
       mode: 'SPACE',

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('INDOCTRINATION', () => {
+describe.forEachSide('INDOCTRINATION', () => {
   it('replaces 1 opponent infantry with own infantry', () => {
     const t = combatTest({
       mode: 'GROUND',

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('EIDOLON_MAXIMUM + WAYLAY', () => {
+describe.forEachSide('EIDOLON_MAXIMUM + WAYLAY', () => {
   it('mech is immune to AFB even when Waylay expands targets', () => {
     const t = combatTest({
       mode: 'SPACE',

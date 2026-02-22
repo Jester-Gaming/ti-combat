@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('Shields Holding', () => {
+describe.forEachSide('Shields Holding', () => {
   it('cancels up to 2 hits during space combat', () => {
     const t = combatTest({
       mode: 'SPACE',

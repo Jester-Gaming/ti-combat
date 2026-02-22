@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('Non-Euclidean Shielding', () => {
+describe.forEachSide('Non-Euclidean Shielding', () => {
   it('cancels 2 hits when sustaining damage', () => {
     const t = combatTest({
       mode: 'SPACE',

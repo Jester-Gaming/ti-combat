@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('ENTROPIC_SCAR + SUSTAIN_DAMAGE', () => {
+describe.forEachSide('ENTROPIC_SCAR + SUSTAIN_DAMAGE', () => {
   it('disables sustain for both sides', () => {
     const t = combatTest({
       mode: 'SPACE',

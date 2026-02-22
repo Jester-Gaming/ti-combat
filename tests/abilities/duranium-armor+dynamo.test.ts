@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('DURANIUM_ARMOR + DYNAMO', () => {
+describe.forEachSide('DURANIUM_ARMOR + DYNAMO', () => {
   it('Dynamo repairs before Duranium Armor, leaving nothing for it to repair', () => {
     const t = combatTest({
       mode: 'SPACE',

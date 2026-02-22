@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('OVERWING_ZETA', () => {
+describe.forEachSide('OVERWING_ZETA', () => {
   it('places flagship and cruisers at start of combat (IMMEDIATELY)', () => {
     const t = combatTest({
       mode: 'SPACE',

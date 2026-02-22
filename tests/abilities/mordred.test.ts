@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('MORDRED', () => {
+describe.forEachSide('MORDRED', () => {
   it('+2 applies by default', () => {
     const t = combatTest({
       mode: 'GROUND',

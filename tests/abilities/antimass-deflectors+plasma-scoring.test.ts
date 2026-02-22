@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('ANTIMASS_DEFLECTORS + PLASMA_SCORING', () => {
+describe.forEachSide('ANTIMASS_DEFLECTORS + PLASMA_SCORING', () => {
   it('extra die also gets hit value penalty', () => {
     const t = combatTest({
       mode: 'SPACE',

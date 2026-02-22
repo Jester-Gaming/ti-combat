@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('CAVALRY + DEVOTION', () => {
+describe.forEachSide('CAVALRY + DEVOTION', () => {
   it('sacrifices Cavalry destroyer when DESTROYER:Cavalry is in priority', () => {
     const t = combatTest({
       mode: 'SPACE',

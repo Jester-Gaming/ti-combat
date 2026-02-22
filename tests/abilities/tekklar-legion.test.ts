@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('TEKKLAR_LEGION', () => {
+describe.forEachSide('TEKKLAR_LEGION', () => {
   it('improves own dice and worsens Sardakk opponent dice', () => {
     const t = combatTest({
       mode: 'GROUND',

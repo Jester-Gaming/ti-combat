@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('FRAGMENT_REALITY', () => {
+describe.forEachSide('FRAGMENT_REALITY', () => {
   it('places configured ships at start of space combat', () => {
     const t = combatTest({
       mode: 'SPACE',

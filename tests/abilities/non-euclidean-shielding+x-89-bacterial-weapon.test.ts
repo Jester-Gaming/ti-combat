@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('NON_EUCLIDEAN_SHIELDING + X_89_BACTERIAL_WEAPON', () => {
+describe.forEachSide('NON_EUCLIDEAN_SHIELDING + X_89_BACTERIAL_WEAPON', () => {
   it('NES cancels 2 of the doubled ground combat hits with a single sustain', () => {
     const t = combatTest({
       mode: 'GROUND',

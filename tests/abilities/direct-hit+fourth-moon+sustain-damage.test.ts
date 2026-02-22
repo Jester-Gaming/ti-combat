@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('DIRECT_HIT + FOURTH_MOON + SUSTAIN_DAMAGE', () => {
+describe.forEachSide('DIRECT_HIT + FOURTH_MOON + SUSTAIN_DAMAGE', () => {
   it('re-enables sustain after Fourth Moon flagship is destroyed by Direct Hit', () => {
     const t = combatTest({
       mode: 'SPACE',

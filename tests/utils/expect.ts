@@ -7,7 +7,6 @@ import type { DicePool } from '@/combat'
 // ============================================================================
 // CUSTOM MATCHERS
 // ============================================================================
-
 expect.extend({
   toContainDice(
     received: DicePool,
@@ -49,14 +48,3 @@ expect.extend({
     }
   },
 })
-
-interface CustomMatchers<R = unknown> {
-  toContainDice(source: string, ...expected: [number, number][]): R
-}
-
-declare module 'vitest' {
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-  interface Assertion extends CustomMatchers {}
-  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-  interface AsymmetricMatchersContaining extends CustomMatchers {}
-}

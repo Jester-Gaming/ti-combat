@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('HEAVENS_EYE', () => {
+describe.forEachSide('HEAVENS_EYE', () => {
   it('repairs flagship at end of combat round when enabled', () => {
     const t = combatTest({
       mode: 'SPACE',

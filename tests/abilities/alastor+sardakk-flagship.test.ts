@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('ALASTOR + SARDAKK_FLAGSHIP', () => {
+describe.forEachSide('ALASTOR + SARDAKK_FLAGSHIP', () => {
   it('applies -1 aura to infantry and mech participating via Alastor', () => {
     const t = combatTest({
       mode: 'SPACE',

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('DIRECT_HIT', () => {
+describe.forEachSide('DIRECT_HIT', () => {
   it('destroys opponent ship that used sustain damage', () => {
     const t = combatTest({
       mode: 'SPACE',

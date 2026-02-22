@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('DIMENSIONAL_SPLICER + METALI_VOID_SHIELDING', () => {
+describe.forEachSide('DIMENSIONAL_SPLICER + METALI_VOID_SHIELDING', () => {
   it('absorbs Dimensional Splicer hit on a non-sustain ship', () => {
     const t = combatTest({
       mode: 'SPACE',

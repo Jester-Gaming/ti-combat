@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('ALASTOR + QUETZECOATL', () => {
+describe.forEachSide('ALASTOR + QUETZECOATL', () => {
   it('disables opponent space cannon', () => {
     const t = combatTest({
       mode: 'SPACE',

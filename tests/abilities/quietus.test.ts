@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('QUIETUS', () => {
+describe.forEachSide('QUIETUS', () => {
   describe('environment (no Crimson player)', () => {
     it('disables sustain for both sides', () => {
       const t = combatTest({

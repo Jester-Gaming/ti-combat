@@ -1,0 +1,23 @@
+import type { SuiteAPI, TestAPI } from 'vitest'
+
+declare module 'vitest' {
+  interface ForEachSideIt {
+    forEachSide(name: string, fn: () => void | Promise<void>): void
+  }
+
+  interface ForEachSideDescribe {
+    forEachSide(name: string, fn: () => void): void
+  }
+
+  export const it: TestAPI & ForEachSideIt
+  export const describe: SuiteAPI & ForEachSideDescribe
+
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  interface Assertion extends CustomMatchers {}
+  // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+  interface AsymmetricMatchersContaining extends CustomMatchers {}
+}
+
+interface CustomMatchers<R = unknown> {
+  toContainDice(source: string, ...expected: [number, number][]): R
+}

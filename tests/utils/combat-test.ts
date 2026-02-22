@@ -21,6 +21,19 @@ export type { SideConfig }
 export type CombatTestConfig = CombatStateConfig
 
 // ============================================================================
+// REVERSED MODE (for forEachSide tests)
+// ============================================================================
+
+let _reversed = false
+
+export function setReversed(value: boolean) {
+  _reversed = value
+}
+
+const swapSide = (s: CombatSide): CombatSide =>
+  s === 'attacker' ? 'defender' : 'attacker'
+
+// ============================================================================
 // HITS SPEC
 // ============================================================================
 
@@ -67,28 +80,50 @@ export class CombatTest {
   private _unitAbilityKeys: Record<CombatSide, ReadonlySet<string>>
   private _log: LogEntry[] = []
   private _round = 1
+  private _reversed: boolean
 
-  constructor(combatState: CombatState) {
+  constructor(combatState: CombatState, reversed = false) {
     this._state = combatState.data
     this._abilities = {
       attacker: combatState.params.getAbilities('attacker'),
       defender: combatState.params.getAbilities('defender'),
     }
     this._unitAbilityKeys = combatState.params.unitAbilityKeys
+    this._reversed = reversed
+  }
+
+  // --- Reversed mode helpers ---
+
+  private _side(side: CombatSide): CombatSide {
+    return this._reversed ? swapSide(side) : side
+  }
+
+  private _mapHits(hits: HitsSpec): HitsSpec {
+    if (!this._reversed || typeof hits === 'number') return hits
+    return { attacker: hits.defender, defender: hits.attacker }
   }
 
   // --- State access ---
 
   get state(): CombatStateData {
-    return this._state
+    if (!this._reversed) return this._state
+    return {
+      ...this._state,
+      attacker: this._state.defender,
+      defender: this._state.attacker,
+      abilities: {
+        attacker: this._state.abilities.defender,
+        defender: this._state.abilities.attacker,
+      },
+    }
   }
 
   get attacker(): SideView {
-    return buildSideView(this._state.attacker)
+    return buildSideView(this._state[this._side('attacker')])
   }
 
   get defender(): SideView {
-    return buildSideView(this._state.defender)
+    return buildSideView(this._state[this._side('defender')])
   }
 
   get log(): LogEntry[] {
@@ -117,7 +152,7 @@ export class CombatTest {
       )
       const outcomes = cs.advance(this._round, true)
 
-      const best = pickOutcomeByHits(outcomes, hits)
+      const best = pickOutcomeByHits(outcomes, this._mapHits(hits))
       this._state = best.state.data
       if (best.state.log) this._log.push(...best.state.log)
 
@@ -152,7 +187,7 @@ export class CombatTest {
       )
       const outcomes = cs.advance(this._round, true)
 
-      const best = pickOutcomeByHits(outcomes, hits)
+      const best = pickOutcomeByHits(outcomes, this._mapHits(hits))
       this._state = best.state.data
       if (best.state.log) this._log.push(...best.state.log)
 
@@ -181,9 +216,11 @@ export class CombatTest {
   // --- Log query methods ---
 
   abilityLog(key: string, side?: CombatSide): LogEntry[] {
+    const mappedSide =
+      side !== undefined && this._reversed ? swapSide(side) : side
     return this._log.filter(entry => {
       if (!entry.path.includes(key)) return false
-      if (side !== undefined && entry.side !== side) return false
+      if (mappedSide !== undefined && entry.side !== mappedSide) return false
       return true
     })
   }
@@ -196,6 +233,9 @@ export class CombatTest {
         const data = entry.data[0] as {
           attacker: DicePool
           defender: DicePool
+        }
+        if (this._reversed) {
+          return { attacker: data.defender, defender: data.attacker }
         }
         return { attacker: data.attacker, defender: data.defender }
       }
@@ -263,5 +303,9 @@ function pickOutcomeByHits(
 // ============================================================================
 
 export function combatTest(config: CombatTestConfig): CombatTest {
-  return new CombatTest(buildCombatState(config))
+  const reversed = _reversed
+  const effectiveConfig = reversed
+    ? { ...config, attacker: config.defender, defender: config.attacker }
+    : config
+  return new CombatTest(buildCombatState(effectiveConfig), reversed)
 }

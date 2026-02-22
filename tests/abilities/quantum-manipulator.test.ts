@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('QUANTUM_MANIPULATOR', () => {
+describe.forEachSide('QUANTUM_MANIPULATOR', () => {
   it('mech absorbs a hit produced against ships in space', () => {
     const t = combatTest({
       mode: 'SPACE',

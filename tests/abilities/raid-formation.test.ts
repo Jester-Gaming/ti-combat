@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('RAID_FORMATION', () => {
+describe.forEachSide('RAID_FORMATION', () => {
   it('damages ships with sustain for excess AFB hits', () => {
     const t = combatTest({
       mode: 'SPACE',

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('MORALE_BOOST', () => {
+describe.forEachSide('MORALE_BOOST', () => {
   it('applies -1 hit value to all combat dice', () => {
     const t = combatTest({
       mode: 'SPACE',

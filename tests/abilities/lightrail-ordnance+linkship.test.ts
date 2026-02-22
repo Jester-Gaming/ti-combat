@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('LIGHTRAIL_ORDNANCE + LINKSHIP', () => {
+describe.forEachSide('LIGHTRAIL_ORDNANCE + LINKSHIP', () => {
   it('linkship uses enhanced Space Dock SC from Lightrail Ordnance', () => {
     const t = combatTest({
       mode: 'SPACE',

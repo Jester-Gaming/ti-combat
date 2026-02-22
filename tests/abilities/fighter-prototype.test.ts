@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('FIGHTER_PROTOTYPE', () => {
+describe.forEachSide('FIGHTER_PROTOTYPE', () => {
   it('applies -2 hit value to FIGHTER combat dice', () => {
     const t = combatTest({
       mode: 'SPACE',

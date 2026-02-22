@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('RAID_FORMATION + THE_ALASTOR', () => {
+describe.forEachSide('RAID_FORMATION + THE_ALASTOR', () => {
   it('damages Nekro mechs participating as ships', () => {
     const t = combatTest({
       mode: 'SPACE',

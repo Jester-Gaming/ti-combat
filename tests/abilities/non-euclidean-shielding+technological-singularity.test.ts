@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { combatTest } from '../utils/combat-test'
 
 describe.skip('NON_EUCLIDEAN_SHIELDING + TECHNOLOGICAL_SINGULARITY', () => {
-  describe('enableBySingularity', () => {
+  describe.forEachSide('enableBySingularity', () => {
     it('sustain cancels only 1 hit before kill', () => {
       const t = combatTest({
         mode: 'SPACE',

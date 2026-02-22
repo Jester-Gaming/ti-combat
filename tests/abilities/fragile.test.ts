@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('FRAGILE', () => {
+describe.forEachSide('FRAGILE', () => {
   it('applies +1 to all combat dice', () => {
     const t = combatTest({
       mode: 'GROUND',

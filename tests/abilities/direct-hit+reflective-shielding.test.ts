@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('DIRECT_HIT + REFLECTIVE_SHIELDING', () => {
+describe.forEachSide('DIRECT_HIT + REFLECTIVE_SHIELDING', () => {
   it('Reflective Shielding fires before Direct Hit (WHEN before AFTER)', () => {
     const t = combatTest({
       mode: 'SPACE',

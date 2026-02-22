@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('ARTICLES_OF_WAR', () => {
+describe.forEachSide('ARTICLES_OF_WAR', () => {
   it('mech Sustain Damage is preserved', () => {
     const t = combatTest({
       mode: 'GROUND',

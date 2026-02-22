@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('SARDAKK_FLAGSHIP + UNRELENTING', () => {
+describe.forEachSide('SARDAKK_FLAGSHIP + UNRELENTING', () => {
   it('applies Unrelenting to all and flagship aura to non-flagship', () => {
     const t = combatTest({
       mode: 'SPACE',

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('METALI_VOID_SHIELDING + REFLECTIVE_SHIELDING', () => {
+describe.forEachSide('METALI_VOID_SHIELDING + REFLECTIVE_SHIELDING', () => {
   it('triggers sustain damage events for Reflective Shielding', () => {
     const t = combatTest({
       mode: 'SPACE',

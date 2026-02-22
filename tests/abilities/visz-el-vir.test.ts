@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('VISZ_EL_VIR', () => {
+describe.forEachSide('VISZ_EL_VIR', () => {
   it('mechs roll 1 additional die in space combat', () => {
     const t = combatTest({
       mode: 'SPACE',

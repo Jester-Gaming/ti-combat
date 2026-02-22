@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('VALKYRIE_EXOSKELETON', () => {
+describe.forEachSide('VALKYRIE_EXOSKELETON', () => {
   it('produces 1 hit when mech sustains during ground combat', () => {
     const t = combatTest({
       mode: 'GROUND',

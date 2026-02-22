@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('EIDOLON_MAXIMUM + GRAVITON_LASER_SYSTEM', () => {
+describe.forEachSide('EIDOLON_MAXIMUM + GRAVITON_LASER_SYSTEM', () => {
   it('mech is immune to SCO even when Graviton Laser restricts targets', () => {
     const t = combatTest({
       mode: 'SPACE',

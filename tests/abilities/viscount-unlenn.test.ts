@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('VISCOUNT_UNLENN', () => {
+describe.forEachSide('VISCOUNT_UNLENN', () => {
   it('adds 1 die to chosen ship', () => {
     const t = combatTest({
       mode: 'SPACE',

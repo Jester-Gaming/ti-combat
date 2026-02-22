@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('HEL_TITAN', () => {
+describe.forEachSide('HEL_TITAN', () => {
   it('PDS participates in ground combat', () => {
     const t = combatTest({
       mode: 'GROUND',

@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('ANTIMASS_DEFLECTORS + MYRU_VOS', () => {
+describe.forEachSide('ANTIMASS_DEFLECTORS + MYRU_VOS', () => {
   it('Myru Vos disables space cannon, Antimass Deflectors has no effect', () => {
     const t = combatTest({
       mode: 'SPACE',

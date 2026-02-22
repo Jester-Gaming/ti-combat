@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('SUSTAIN_DAMAGE', () => {
+describe.forEachSide('SUSTAIN_DAMAGE', () => {
   it('absorbs 1 hit and marks unit as damaged', () => {
     const t = combatTest({
       mode: 'SPACE',

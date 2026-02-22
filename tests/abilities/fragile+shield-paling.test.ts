@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('FRAGILE + SHIELD_PALING', () => {
+describe.forEachSide('FRAGILE + SHIELD_PALING', () => {
   it('prevents Fragile from affecting infantry dice', () => {
     const t = combatTest({
       mode: 'GROUND',

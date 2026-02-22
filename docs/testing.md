@@ -3,14 +3,14 @@
 ## Test Framework
 
 - **Vitest 4** with globals enabled (`describe`, `it`, `expect` auto-available)
-- Custom matchers loaded from `src/tests/utils/expect.ts` (setup file)
+- Custom matchers and `forEachSide` helpers loaded automatically via setup files
 - Run tests: `npm run test:run` (single run) or `npm run test` (watch mode)
 
 ## File Naming
 
 - Single ability: `ability-name.test.ts` (kebab-case of the ability key)
 - Multiple abilities: names joined with `+`, sorted alphabetically. Example: `bunker+plasma-scoring.test.ts`
-- All test files go in `src/tests/`
+- All test files go in `tests/abilities/`
 - Never include `ABILITY_ORDER` in test filenames, even if the test configures it to control resolution order
 
 ## Imports
@@ -19,7 +19,7 @@ Every test file needs at minimum:
 
 ```typescript
 import { describe, expect, it } from 'vitest'
-import { combatTest } from './utils/combat-test'
+import { combatTest } from '../utils/combat-test'
 ```
 
 ## The `combatTest()` Factory
@@ -51,12 +51,14 @@ const t = combatTest({
 
 ### State Access
 
-| Property     | Returns           | Description                 |
-| ------------ | ----------------- | --------------------------- |
-| `t.state`    | `CombatStateData` | Full combat state           |
-| `t.attacker` | `SideState`       | Attacker's side state       |
-| `t.defender` | `SideState`       | Defender's side state       |
-| `t.log`      | `LogEntry[]`      | All accumulated log entries |
+| Property     | Returns           | Description                                  |
+| ------------ | ----------------- | -------------------------------------------- |
+| `t.state`    | `CombatStateData` | Full combat state                            |
+| `t.attacker` | `SideView`        | Attacker's reconstructed units and side data |
+| `t.defender` | `SideView`        | Defender's reconstructed units and side data |
+| `t.log`      | `LogEntry[]`      | All accumulated log entries                  |
+
+`SideView` reconstructs units into `Partial<Record<UnitBaseType, TestUnit[]>>` where each `TestUnit` has `isDamaged`, `subtypes?`, etc.
 
 ### Phase Control
 
@@ -95,7 +97,47 @@ For phase system, ability timings, unit stats, factions, and ability keys — se
 expect(dicePool).toContainDice(unitType, [hitValue, diceCount])
 ```
 
-Checks that the dice pool for `unitType` contains a dice group matching `[hitValue, diceCount]`. Requires `import './utils/expect'`.
+Checks that the dice pool for `unitType` contains a dice group matching `[hitValue, diceCount]`. Auto-loaded via setup file — no explicit import needed.
+
+## Side-Reversal Testing (`forEachSide`)
+
+`describe.forEachSide` and `it.forEachSide` run tests twice — once normally, once with attacker/defender swapped. This verifies abilities work identically regardless of which side they're assigned to.
+
+```typescript
+// Runs every `it` inside twice (normal + reversed)
+describe.forEachSide('ABILITY_NAME', () => {
+  it('test one', () => { ... })
+  it('test two', () => { ... })
+})
+
+// Or per-test
+it.forEachSide('adds infantry at end of round', () => { ... })
+```
+
+Labels in test output: `"ABILITY_NAME > test"` and `"[reversed] ABILITY_NAME > test"`.
+
+### How it works
+
+In reversed mode, `combatTest()` swaps `config.attacker` and `config.defender` before building state. The `CombatTest` instance then transparently maps all accessors:
+
+- `t.attacker` / `t.defender` — read from the swapped internal side
+- `t.state` — returns state with swapped `attacker`/`defender` and `abilities`
+- `advanceTo` / `advanceRound` — swap HitsSpec keys before outcome selection
+- `abilityLog(key, side)` — map the `side` parameter
+- `dicePool()` — swap keys in returned object
+
+The test body is 100% identical in both runs.
+
+### When to use `forEachSide`
+
+Use `describe.forEachSide` for abilities that are **symmetric** — they work the same regardless of which side has them (e.g., sustain damage, direct hit, combat modifiers).
+
+Use plain `describe` for abilities tied to a specific side:
+
+- **Bombardment** abilities (attacker-only phase): Blitz, X-89 Bacterial Weapon
+- **Space Cannon Defense** abilities (defender-only phase): Custodia Vigilia, Lightrail Ordnance
+- **Side-restricted abilities**: Claire Gibson (`side: 'defender'`), Magen Defense Grid (`side: 'defender'`)
+- **Tests that depend on alternation order**: attacker abilities resolve before defender abilities in START_OF_COMBAT
 
 ## Test Patterns by Ability Type
 
@@ -252,7 +294,7 @@ it('creates subtype and modifies dice', () => {
   t.advanceRound()
 
   // Verify ability fired
-  expect(t.abilityLog('CAVALRY')).toHaveLength(1)
+  expect(t.abilityLog('CAVALRY')).not.toHaveLength(0)
 
   // Check dice pool from log
   const pool = t.dicePool()!
@@ -281,7 +323,7 @@ it('cancels hits', () => {
   // 3 hits received, Shields Holding cancels 2 → 1 effective hit
   t.advanceRound({ attacker: 3 })
 
-  expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(1)
+  expect(t.abilityLog('SHIELDS_HOLDING')).not.toHaveLength(0)
   expect(t.attacker.units.CRUISER).toHaveLength(2)
 })
 ```
@@ -341,11 +383,14 @@ expect(pool.attacker).toContainDice('CRUISER', [7, 1])
 // No dice for a unit type
 expect(pool.defender.PDS).toBeUndefined()
 
-// Ability fired
-expect(t.abilityLog('MY_ABILITY')).toHaveLength(1)
+// Ability fired (don't assert exact count)
+expect(t.abilityLog('MY_ABILITY')).not.toHaveLength(0)
 
 // Ability did not fire
 expect(t.abilityLog('MY_ABILITY')).toHaveLength(0)
+
+// Ability uses remaining
+expect(t.state.abilities.attacker.ABILITY_KEY.uses).toBe(1)
 ```
 
 ## Tips
@@ -359,3 +404,5 @@ expect(t.abilityLog('MY_ABILITY')).toHaveLength(0)
 - Comment dice calculations inline: `// Cruiser: 7 - 1(ability) = 6`
 - Test both positive cases (ability works) and edge cases (ability doesn't trigger when conditions aren't met)
 - For abilities with `uses` parameter, test both when uses > 0 and when uses === 0
+- Don't assert exact `abilityLog` length — the number of log entries per ability call is an implementation detail. Use `.not.toHaveLength(0)` to verify it fired and `.toHaveLength(0)` to verify it didn't
+- Prefer `describe.forEachSide` for new symmetric ability tests — it catches side-specific bugs automatically

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('LINKSHIP', () => {
+describe.forEachSide('LINKSHIP', () => {
   describe('Linkship I (base)', () => {
     it('adds SC dice for each linkship up to structures count', () => {
       const t = combatTest({

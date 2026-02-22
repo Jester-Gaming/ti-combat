@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('DIMENSIONAL_SPLICER', () => {
+describe.forEachSide('DIMENSIONAL_SPLICER', () => {
   it('destroys a ship that cannot sustain', () => {
     const t = combatTest({
       mode: 'SPACE',

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('DURANIUM_ARMOR + QUANTUM_MANIPULATOR', () => {
+describe.forEachSide('DURANIUM_ARMOR + QUANTUM_MANIPULATOR', () => {
   it('Duranium Armor does not repair the mech (not in repair priority)', () => {
     const t = combatTest({
       mode: 'SPACE',

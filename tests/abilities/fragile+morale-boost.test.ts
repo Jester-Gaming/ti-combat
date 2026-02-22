@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('FRAGILE + MORALE_BOOST', () => {
+describe.forEachSide('FRAGILE + MORALE_BOOST', () => {
   it('cancel out while Morale Boost has uses', () => {
     const t = combatTest({
       mode: 'SPACE',

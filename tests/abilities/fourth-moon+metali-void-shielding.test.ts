@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('FOURTH_MOON + METALI_VOID_SHIELDING', () => {
+describe.forEachSide('FOURTH_MOON + METALI_VOID_SHIELDING', () => {
   it('blocks Void Shielding when sustain cannot be used', () => {
     const t = combatTest({
       mode: 'SPACE',

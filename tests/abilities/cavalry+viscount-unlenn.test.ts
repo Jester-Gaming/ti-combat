@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('CAVALRY + VISCOUNT_UNLENN', () => {
+describe.forEachSide('CAVALRY + VISCOUNT_UNLENN', () => {
   it('both select plain Cruiser — affect two different units', () => {
     const t = combatTest({
       mode: 'SPACE',

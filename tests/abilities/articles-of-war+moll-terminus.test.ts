@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('ARTICLES_OF_WAR + MOLL_TERMINUS', () => {
+describe.forEachSide('ARTICLES_OF_WAR + MOLL_TERMINUS', () => {
   it('Moll Terminus sustain block is disabled', () => {
     const t = combatTest({
       mode: 'GROUND',

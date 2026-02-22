@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('DIMENSIONAL_SPLICER + REFLECTIVE_SHIELDING', () => {
+describe.forEachSide('DIMENSIONAL_SPLICER + REFLECTIVE_SHIELDING', () => {
   it('full chain: Dimensional Splicer → sustain → Reflective Shielding → attacker sustains', () => {
     const t = combatTest({
       mode: 'SPACE',

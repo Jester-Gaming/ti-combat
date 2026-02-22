@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('SHIELDS_HOLDING + VAN_HAUGE', () => {
+describe.forEachSide('SHIELDS_HOLDING + VAN_HAUGE', () => {
   it('does not trigger when hits are cancelled by Shields Holding', () => {
     const t = combatTest({
       mode: 'SPACE',

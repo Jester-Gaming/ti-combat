@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('DUNLAIN_REAPER', () => {
+describe.forEachSide('DUNLAIN_REAPER', () => {
   it('replaces infantry with mech at start of combat round', () => {
     const t = combatTest({
       mode: 'GROUND',

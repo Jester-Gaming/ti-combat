@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('CAVALRY + SUSTAIN_DAMAGE', () => {
+describe.forEachSide('CAVALRY + SUSTAIN_DAMAGE', () => {
   it('dynamically added sustain works on Cavalry unit', () => {
     const t = combatTest({
       mode: 'SPACE',

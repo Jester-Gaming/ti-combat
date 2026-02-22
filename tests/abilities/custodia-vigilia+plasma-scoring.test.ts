@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('Custodia Vigilia + Plasma Scoring', () => {
+describe.forEachSide('Custodia Vigilia + Plasma Scoring', () => {
   it('adds extra die to Custodia Vigilia dice pool during SCO', () => {
     const t = combatTest({
       mode: 'SPACE',

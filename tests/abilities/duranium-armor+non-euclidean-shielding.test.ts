@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('DURANIUM_ARMOR + NON_EUCLIDEAN_SHIELDING', () => {
+describe.forEachSide('DURANIUM_ARMOR + NON_EUCLIDEAN_SHIELDING', () => {
   it('does not repair a unit that sustained this round even with NES', () => {
     const t = combatTest({
       mode: 'SPACE',

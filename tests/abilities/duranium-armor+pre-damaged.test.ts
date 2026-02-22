@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('DURANIUM_ARMOR + PRE_DAMAGED', () => {
+describe.forEachSide('DURANIUM_ARMOR + PRE_DAMAGED', () => {
   it('does not repair during SCO phase', () => {
     const t = combatTest({
       mode: 'SPACE',

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('ALASTOR + ARVICON_REX + SALAI_SAI_CORIAN', () => {
+describe.forEachSide('ALASTOR + ARVICON_REX + SALAI_SAI_CORIAN', () => {
   it('modifier applies to all dice including added ones', () => {
     const t = combatTest({
       mode: 'SPACE',

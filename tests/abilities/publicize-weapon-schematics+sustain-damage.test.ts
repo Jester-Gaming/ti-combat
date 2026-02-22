@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('PUBLICIZE_WEAPON_SCHEMATICS + SUSTAIN_DAMAGE', () => {
+describe.forEachSide('PUBLICIZE_WEAPON_SCHEMATICS + SUSTAIN_DAMAGE', () => {
   it('War Sun loses sustain but Dreadnought keeps it', () => {
     const t = combatTest({
       mode: 'SPACE',

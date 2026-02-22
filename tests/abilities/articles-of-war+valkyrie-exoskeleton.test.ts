@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('ARTICLES_OF_WAR + VALKYRIE_EXOSKELETON', () => {
+describe.forEachSide('ARTICLES_OF_WAR + VALKYRIE_EXOSKELETON', () => {
   it('Valkyrie Exoskeleton retaliatory hit is disabled', () => {
     const t = combatTest({
       mode: 'GROUND',

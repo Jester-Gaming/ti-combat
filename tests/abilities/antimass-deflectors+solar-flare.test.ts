@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('ANTIMASS_DEFLECTORS + SOLAR_FLARE', () => {
+describe.forEachSide('ANTIMASS_DEFLECTORS + SOLAR_FLARE', () => {
   it('Solar Flare disables space cannon entirely', () => {
     const t = combatTest({
       mode: 'SPACE',

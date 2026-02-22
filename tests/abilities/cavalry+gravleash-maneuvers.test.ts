@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('CAVALRY + GRAVLEASH_MANEUVERS', () => {
+describe.forEachSide('CAVALRY + GRAVLEASH_MANEUVERS', () => {
   it('Gravleash does not count subtype as a separate type', () => {
     const t = combatTest({
       mode: 'SPACE',

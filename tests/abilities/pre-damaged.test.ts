@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('PRE_DAMAGED', () => {
+describe.forEachSide('PRE_DAMAGED', () => {
   it('marks configured units as damaged at start', () => {
     const t = combatTest({
       mode: 'SPACE',

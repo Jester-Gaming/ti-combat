@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('DIRECT_HIT + DURANIUM_ARMOR', () => {
+describe.forEachSide('DIRECT_HIT + DURANIUM_ARMOR', () => {
   it('cannot repair a unit destroyed by Direct Hit after sustain', () => {
     const t = combatTest({
       mode: 'SPACE',

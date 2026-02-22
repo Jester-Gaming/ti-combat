@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('BROTHER_MILOR', () => {
+describe.forEachSide('BROTHER_MILOR', () => {
   it('places 2 fighters when own ship is destroyed in space combat', () => {
     const t = combatTest({
       mode: 'SPACE',

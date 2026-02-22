@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('SUSTAIN_DAMAGE + TELLURIAN', () => {
+describe.forEachSide('SUSTAIN_DAMAGE + TELLURIAN', () => {
   it('both abilities absorb hits independently', () => {
     const t = combatTest({
       mode: 'SPACE',

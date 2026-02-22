@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('DIRECT_HIT + QUANTUM_MANIPULATOR', () => {
+describe.forEachSide('DIRECT_HIT + QUANTUM_MANIPULATOR', () => {
   it('Direct Hit does not trigger when mech sustains via Quantum Manipulator', () => {
     const t = combatTest({
       mode: 'SPACE',

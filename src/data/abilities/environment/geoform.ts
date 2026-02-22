@@ -6,7 +6,6 @@ export const geoform: Ability = {
   key: 'GEOFORM',
   name: 'Geoform',
   category: 'ENVIRONMENT',
-  side: 'defender',
   params: {
     isEnabled: false,
     uses: Infinity,

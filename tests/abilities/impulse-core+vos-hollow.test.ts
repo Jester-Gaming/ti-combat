@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('IMPULSE_CORE + VOS_HOLLOW', () => {
+describe.forEachSide('IMPULSE_CORE + VOS_HOLLOW', () => {
   it('triggers when Impulse Core sacrifices own ship', () => {
     const t = combatTest({
       mode: 'SPACE',

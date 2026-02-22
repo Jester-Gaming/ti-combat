@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('METALI_VOID_ARMAMENTS', () => {
+describe.forEachSide('METALI_VOID_ARMAMENTS', () => {
   it('adds [6, 3] dice to AFB for attacker', () => {
     const t = combatTest({
       mode: 'SPACE',

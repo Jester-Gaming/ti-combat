@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('METALI_VOID_SHIELDING', () => {
+describe.forEachSide('METALI_VOID_SHIELDING', () => {
   it('lets a non-sustain ship absorb a hit', () => {
     const t = combatTest({
       mode: 'SPACE',

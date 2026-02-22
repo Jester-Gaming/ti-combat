@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('ASSAULT_CANNON + SLEEPER_CELL', () => {
+describe.forEachSide('ASSAULT_CANNON + SLEEPER_CELL', () => {
   it('Assault Cannon fires before Sleeper Cell activates — kill not copied', () => {
     const t = combatTest({
       mode: 'SPACE',

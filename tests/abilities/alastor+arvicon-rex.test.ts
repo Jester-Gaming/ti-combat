@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('ALASTOR + ARVICON_REX', () => {
+describe.forEachSide('ALASTOR + ARVICON_REX', () => {
   it('applies -2 hit value to Nekro flagship', () => {
     const t = combatTest({
       mode: 'SPACE',

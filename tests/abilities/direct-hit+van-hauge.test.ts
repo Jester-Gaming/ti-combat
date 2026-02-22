@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('DIRECT_HIT + VAN_HAUGE', () => {
+describe.forEachSide('DIRECT_HIT + VAN_HAUGE', () => {
   it('triggers when flagship is destroyed by Direct Hit after sustaining', () => {
     const t = combatTest({
       mode: 'SPACE',

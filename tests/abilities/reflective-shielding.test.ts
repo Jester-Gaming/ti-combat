@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('REFLECTIVE_SHIELDING', () => {
+describe.forEachSide('REFLECTIVE_SHIELDING', () => {
   it('produces 2 hits when own ship sustains', () => {
     const t = combatTest({
       mode: 'SPACE',

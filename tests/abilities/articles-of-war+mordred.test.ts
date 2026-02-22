@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('ARTICLES_OF_WAR + MORDRED', () => {
+describe.forEachSide('ARTICLES_OF_WAR + MORDRED', () => {
   it('Mordred combat bonus is disabled', () => {
     const t = combatTest({
       mode: 'GROUND',

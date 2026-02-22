@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('THE_ALASTOR + HEL_TITAN', () => {
+describe.forEachSide('THE_ALASTOR + HEL_TITAN', () => {
   it('PDS participates in space combat when Nekro has Hel-Titan', () => {
     const t = combatTest({
       mode: 'SPACE',

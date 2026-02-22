@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('VALKYRIE_PARTICLE_WEAVE', () => {
+describe.forEachSide('VALKYRIE_PARTICLE_WEAVE', () => {
   it('produces 1 additional hit when opponent produces hits', () => {
     const t = combatTest({
       mode: 'GROUND',

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('QUANTUM_MANIPULATOR + REFLECTIVE_SHIELDING', () => {
+describe.forEachSide('QUANTUM_MANIPULATOR + REFLECTIVE_SHIELDING', () => {
   it('Reflective Shielding does not trigger when mech sustains via Quantum Manipulator', () => {
     const t = combatTest({
       mode: 'SPACE',

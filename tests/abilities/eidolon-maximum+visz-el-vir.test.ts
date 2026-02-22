@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('EIDOLON_MAXIMUM + VISZ_EL_VIR', () => {
+describe.forEachSide('EIDOLON_MAXIMUM + VISZ_EL_VIR', () => {
   it('flagship adds 1 die to mech in space combat', () => {
     const t = combatTest({
       mode: 'SPACE',

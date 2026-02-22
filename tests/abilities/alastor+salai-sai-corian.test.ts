@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe('ALASTOR + SALAI_SAI_CORIAN', () => {
+describe.forEachSide('ALASTOR + SALAI_SAI_CORIAN', () => {
   it('adds extra dice to Alastor based on opponent non-fighter ships', () => {
     const t = combatTest({
       mode: 'SPACE',
