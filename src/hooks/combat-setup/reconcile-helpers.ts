@@ -1,8 +1,7 @@
+import type { DeclaredSubtype } from '@/combat/abilities-engine/types'
+import { makeVariantId, parseVariantId } from '@/combat/utils/unit-variant'
 import { UNIT_PRICE } from '@/constants/units'
 import type { UnitBaseType, UnitVariantId } from '@/types'
-
-import { makeVariantId, parseVariantId } from '../utils/unit-variant'
-import type { DeclaredSubtype } from './types'
 
 export function sortByPrice(
   types: UnitBaseType[],

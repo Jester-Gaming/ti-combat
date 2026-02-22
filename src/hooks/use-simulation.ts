@@ -1,17 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 
-import type { AbilitiesConfig, CombatMode } from '@/combat/combat-state/types'
 import type { CombatOutcome } from '@/combat/types'
-import type { FactionKey, UnitBaseType, UnitSelection } from '@/types'
-
-export interface SimulationInput {
-  attackerFaction: FactionKey
-  defenderFaction: FactionKey
-  attackerSelections: Record<UnitBaseType, UnitSelection>
-  defenderSelections: Record<UnitBaseType, UnitSelection>
-  combatMode: CombatMode
-  abilities: AbilitiesConfig
-}
+import type { SimulationInput } from '@/hooks/combat-setup'
 
 const DEBOUNCE_MS = 0
 

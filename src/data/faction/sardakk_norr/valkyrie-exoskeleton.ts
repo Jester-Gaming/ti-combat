@@ -1,4 +1,4 @@
-import type { Ability } from '@/combat/abilities/types'
+import type { Ability } from '@/combat/abilities-engine/types'
 
 export const valkyrieExoskeleton: Ability = {
   key: 'VALKYRIE_EXOSKELETON',

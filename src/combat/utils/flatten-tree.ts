@@ -8,7 +8,7 @@ import type {
 
 import type { SideStateData } from '../combat-state/types'
 import type { SurvivorSide } from '../types'
-import { parseVariantId } from '../utils/unit-variant'
+import { parseVariantId } from './unit-variant'
 
 /**
  * Outcome with probability relative to reaching the node.

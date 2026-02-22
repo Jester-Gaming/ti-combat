@@ -1,4 +1,4 @@
-import type { Ability } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 export const maneuveringJets: Ability = {
   key: 'MANEUVERING_JETS',

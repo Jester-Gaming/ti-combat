@@ -1,4 +1,5 @@
-import type { Ability, SideApi } from '../../../combat/abilities/types'
+import type { SideApi } from '../../../combat/abilities-engine/api/ability-api'
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
   isEnabled: boolean
@@ -26,6 +27,7 @@ export const articlesOfWar: Ability<Params> = {
   category: 'AGENDA',
   params: {
     isEnabled: false,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
   invoke: [

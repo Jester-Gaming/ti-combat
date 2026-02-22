@@ -4,7 +4,7 @@ import type {
   Ability,
   AbilityCallContext,
   AbilityReadContext,
-} from '../../../combat/abilities/types'
+} from '../../../combat/abilities-engine/types'
 
 type DeferredFn = (ctx: AbilityCallContext) => void
 

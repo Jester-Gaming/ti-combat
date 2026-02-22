@@ -1,6 +1,6 @@
 import obsidianIcon from '@/assets/faction/obsidian.svg?raw'
-import { declareParam } from '@/combat/abilities/declare-param'
-import type { Ability } from '@/combat/abilities/types'
+import { declareParam } from '@/combat/abilities-engine/declare-param'
+import type { Ability } from '@/combat/abilities-engine/types'
 import { parseVariantId } from '@/combat/utils/unit-variant'
 import { SHIPS } from '@/constants/units'
 import type { UnitBaseType, UnitId, UnitType } from '@/types'

@@ -1,11 +1,8 @@
 import { GearIcon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
-import { useMemo, useReducer, useRef, useState } from 'react'
+import { useMemo, useState } from 'react'
 
-import { CombatState } from '@/combat'
-import { getAvailableAbilities } from '@/combat/abilities'
-import type { CombatMode } from '@/combat/combat-state/types'
 import { AbilitiesPanel } from '@/components/abilities-panel'
 import { BattleCard } from '@/components/battle-card'
 import { GlassCard } from '@/components/ui/glass-card'
@@ -16,8 +13,9 @@ import {
   SheetDescription,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { useCombatSetup } from '@/hooks/use-combat-setup'
 import { useSimulation } from '@/hooks/use-simulation'
-import type { CombatSide, FactionKey, UnitBaseType } from '@/types'
+import type { CombatSide, UnitBaseType } from '@/types'
 import { getUnitConfig } from '@/utils/get-unit-config'
 
 import styles from './combat-simulator.module.css'
@@ -27,78 +25,73 @@ interface CombatSimulatorProps {
 }
 
 export function CombatSimulator({ className }: CombatSimulatorProps) {
-  const csRef = useRef(new CombatState())
-  const [, forceRender] = useReducer((x: number) => x + 1, 0)
+  const {
+    attackerFaction,
+    defenderFaction,
+    attackerSelections,
+    defenderSelections,
+    combatMode,
+    abilities,
+    stateData,
+    getReadContext,
+    getAvailableAbilities,
+    isUpgraded,
+    simulationInput,
+    setFaction,
+    setUnitCount,
+    setUpgraded,
+    setAbilityParam,
+    setCombatMode,
+    swap,
+  } = useCombatSetup()
+
   const [attackerSheetOpen, setAttackerSheetOpen] = useState(false)
   const [defenderSheetOpen, setDefenderSheetOpen] = useState(false)
 
-  const cs = csRef.current
-
   const attackerConfig = useMemo(
-    () => getUnitConfig(cs.attacker.faction),
-    [cs.attacker.faction],
+    () => getUnitConfig(attackerFaction),
+    [attackerFaction],
   )
   const defenderConfig = useMemo(
-    () => getUnitConfig(cs.defender.faction),
-    [cs.defender.faction],
+    () => getUnitConfig(defenderFaction),
+    [defenderFaction],
   )
 
-  // Get available abilities for each side (derived from faction, safe during render)
   const attackerAbilities = useMemo(
-    () => getAvailableAbilities('attacker', cs.attacker.faction),
-    [cs.attacker.faction],
+    () => getAvailableAbilities('attacker'),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [attackerFaction],
   )
   const defenderAbilities = useMemo(
-    () => getAvailableAbilities('defender', cs.defender.faction),
-    [cs.defender.faction],
+    () => getAvailableAbilities('defender'),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [defenderFaction],
   )
 
-  // Build read contexts for ability UI panels
   const attackerReadContext = useMemo(
-    () => cs.getReadContext('attacker'),
+    () => getReadContext('attacker'),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cs.data],
+    [stateData],
   )
   const defenderReadContext = useMemo(
-    () => cs.getReadContext('defender'),
+    () => getReadContext('defender'),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cs.data],
-  )
-
-  const simulationInput = useMemo(
-    () => {
-      const aSel = cs.attacker.unitSelections
-      const dSel = cs.defender.unitSelections
-      const hasUnits =
-        Object.values(aSel).some(s => s.count > 0) ||
-        Object.values(dSel).some(s => s.count > 0)
-      if (!hasUnits) return null
-      return {
-        attackerFaction: cs.attacker.faction,
-        defenderFaction: cs.defender.faction,
-        attackerSelections: aSel,
-        defenderSelections: dSel,
-        combatMode: cs.combatMode,
-        abilities: cs.data.abilities,
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [cs.data],
+    [stateData],
   )
 
   const { outcomes, isComputing } = useSimulation(simulationInput)
 
   const unitPriority = useMemo(() => {
     const key =
-      cs.combatMode === 'GROUND' ? 'groundUnitPriority' : 'spaceUnitPriority'
-    const a = cs.data.abilities.attacker['UNIT_PRIORITY']
-    const d = cs.data.abilities.defender['UNIT_PRIORITY']
+      combatMode === 'GROUND' ? 'groundUnitPriority' : 'spaceUnitPriority'
+    const a = abilities.attacker['UNIT_PRIORITY']
+    const d = abilities.defender['UNIT_PRIORITY']
     return {
       attacker: (a?.[key] as string[] | undefined) ?? [],
       defender: (d?.[key] as string[] | undefined) ?? [],
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cs.data])
+  }, [stateData])
 
   const combatResult = useMemo(() => {
     if (!outcomes) return null
@@ -121,43 +114,8 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     return { attackerWin, draw, defenderWin }
   }, [outcomes])
 
-  const handleSwap = () => {
-    cs.swap()
-    forceRender()
-  }
-
-  const handleFactionChange = (side: CombatSide, faction: FactionKey) => {
-    cs.side(side).setFaction(faction)
-    forceRender()
-  }
-
-  const handleUnitCountChange = (
-    side: CombatSide,
-    unit: UnitBaseType,
-    count: number,
-  ) => {
-    cs.side(side).setUnitCount(unit, count)
-    forceRender()
-  }
-
   const handleUpgradeToggle = (side: CombatSide, unit: UnitBaseType) => {
-    const ss = cs.side(side)
-    ss.setUpgraded(unit, !ss.isUpgraded(unit))
-    forceRender()
-  }
-
-  const handleAbilityParamsChange = (
-    side: CombatSide,
-    abilityName: string,
-    params: Record<string, unknown>,
-  ) => {
-    cs.side(side).setAbilityParam(abilityName, params)
-    forceRender()
-  }
-
-  const handleCombatModeChange = (mode: CombatMode) => {
-    cs.setCombatMode(mode)
-    forceRender()
+    setUpgraded(side, unit, !isUpgraded(side, unit))
   }
 
   return (
@@ -179,10 +137,10 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
         <AbilitiesPanel
           abilities={attackerAbilities}
           readContext={attackerReadContext}
-          combatMode={cs.combatMode}
-          params={cs.data.abilities.attacker}
+          combatMode={combatMode}
+          params={abilities.attacker}
           onParamsChange={(abilityName, params) =>
-            handleAbilityParamsChange('attacker', abilityName, params)
+            setAbilityParam('attacker', abilityName, params)
           }
         />
       </GlassCard>
@@ -190,21 +148,21 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
       {/* Center column: Battle card */}
       <div className={styles.centerColumn}>
         <BattleCard
-          attackerFaction={cs.attacker.faction}
-          defenderFaction={cs.defender.faction}
-          attackerSelections={cs.attacker.unitSelections}
-          defenderSelections={cs.defender.unitSelections}
+          attackerFaction={attackerFaction}
+          defenderFaction={defenderFaction}
+          attackerSelections={attackerSelections}
+          defenderSelections={defenderSelections}
           attackerConfig={attackerConfig}
           defenderConfig={defenderConfig}
           combatResult={combatResult}
           outcomes={outcomes}
           unitPriority={unitPriority}
           isComputing={isComputing}
-          combatMode={cs.combatMode}
-          onCombatModeChange={handleCombatModeChange}
-          onFactionChange={handleFactionChange}
-          onSwap={handleSwap}
-          onUnitCountChange={handleUnitCountChange}
+          combatMode={combatMode}
+          onCombatModeChange={setCombatMode}
+          onFactionChange={setFaction}
+          onSwap={swap}
+          onUnitCountChange={setUnitCount}
           onUpgradeToggle={handleUpgradeToggle}
           attackerActions={
             <button
@@ -248,10 +206,10 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           <AbilitiesPanel
             abilities={attackerAbilities}
             readContext={attackerReadContext}
-            combatMode={cs.combatMode}
-            params={cs.data.abilities.attacker}
+            combatMode={combatMode}
+            params={abilities.attacker}
             onParamsChange={(abilityName, params) =>
-              handleAbilityParamsChange('attacker', abilityName, params)
+              setAbilityParam('attacker', abilityName, params)
             }
           />
         </SheetContent>
@@ -276,10 +234,10 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           <AbilitiesPanel
             abilities={defenderAbilities}
             readContext={defenderReadContext}
-            combatMode={cs.combatMode}
-            params={cs.data.abilities.defender}
+            combatMode={combatMode}
+            params={abilities.defender}
             onParamsChange={(abilityName, params) =>
-              handleAbilityParamsChange('defender', abilityName, params)
+              setAbilityParam('defender', abilityName, params)
             }
           />
         </SheetContent>
@@ -303,10 +261,10 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           <AbilitiesPanel
             abilities={defenderAbilities}
             readContext={defenderReadContext}
-            combatMode={cs.combatMode}
-            params={cs.data.abilities.defender}
+            combatMode={combatMode}
+            params={abilities.defender}
             onParamsChange={(abilityName, params) =>
-              handleAbilityParamsChange('defender', abilityName, params)
+              setAbilityParam('defender', abilityName, params)
             }
           />
         </div>

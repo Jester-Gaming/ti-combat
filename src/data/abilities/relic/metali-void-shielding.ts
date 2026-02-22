@@ -1,7 +1,7 @@
 import type {
   Ability,
   AbilityReadContext,
-} from '../../../combat/abilities/types'
+} from '../../../combat/abilities-engine/types'
 import { parseVariantId } from '../../../combat/utils/unit-variant'
 import type { UnitId, UnitType } from '../../../types'
 

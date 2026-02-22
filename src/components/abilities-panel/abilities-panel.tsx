@@ -1,6 +1,6 @@
 import { filter, groupBy, pipe } from 'remeda'
 
-import type { Ability, AbilityReadContext } from '@/combat/abilities'
+import type { Ability, AbilityReadContext } from '@/combat/abilities-engine'
 import type { CombatMode } from '@/combat/combat-state/types'
 
 import styles from './abilities-panel.module.css'
@@ -96,9 +96,7 @@ export function AbilitiesPanel({
     groupBy(a => a.category),
   )
 
-  const categories = (
-    Object.keys(groupedAbilities) as Array<keyof typeof groupedAbilities>
-  ).sort(compareCategories)
+  const categories = Object.keys(groupedAbilities).sort(compareCategories)
 
   return (
     <div className={styles.container}>

@@ -1,8 +1,8 @@
-import { declareParam } from '../../../combat/abilities/declare-param'
+import { declareParam } from '../../../combat/abilities-engine/declare-param'
 import type {
   Ability,
   AbilityReadContext,
-} from '../../../combat/abilities/types'
+} from '../../../combat/abilities-engine/types'
 import type { UnitId, UnitType } from '../../../types'
 
 type Params = {

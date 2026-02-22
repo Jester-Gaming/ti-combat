@@ -2,7 +2,7 @@
 // FACTORY FUNCTION
 // ============================================================================
 
-import type { DicePool } from '../../combat/abilities/types'
+import type { DicePool } from '../../combat/abilities-engine/types'
 
 // ============================================================================
 // CUSTOM MATCHERS

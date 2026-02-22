@@ -1,4 +1,4 @@
-import type { Ability } from '@/combat/abilities'
+import type { Ability } from '@/combat/abilities-engine'
 import type baseUnits from '@/data/base-units'
 
 import type { DiceGroup } from './die'

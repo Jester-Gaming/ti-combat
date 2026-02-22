@@ -5,7 +5,7 @@ import type { UnitId, UnitStats } from '@/types'
 import { CombatState } from '../combat-state/combat-state'
 import type { CombatStateData, SideStateData } from '../combat-state/types'
 import { nextUnitIds } from '../utils/unit-id'
-import { AbilitiesParams } from './abilities-params'
+import { AbilitiesEngine } from './abilities-engine'
 import type { Ability, AbilityCallContext, OwnOpponentContext } from './types'
 
 /** Helper to build compact SideStateData from unit specs */
@@ -60,7 +60,7 @@ describe('collectUnitAbilities', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    const result = AbilitiesParams.collectUnitAbilities(state, 'attacker')
+    const result = AbilitiesEngine.collectUnitAbilities(state, 'attacker')
 
     expect(result).toHaveLength(2)
     expect(result[0]).toMatchObject({
@@ -86,7 +86,7 @@ describe('collectUnitAbilities', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    const result = AbilitiesParams.collectUnitAbilities(state, 'attacker')
+    const result = AbilitiesEngine.collectUnitAbilities(state, 'attacker')
 
     expect(result).toHaveLength(0)
   })
@@ -124,7 +124,7 @@ describe('collectUnitAbilities', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    const result = AbilitiesParams.collectUnitAbilities(state, 'attacker')
+    const result = AbilitiesEngine.collectUnitAbilities(state, 'attacker')
 
     expect(result).toHaveLength(2)
     expect(result[0].ability).toBe(ability1)

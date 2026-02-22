@@ -1,6 +1,6 @@
 import winnuIcon from '@/assets/faction/winnu.svg?raw'
 
-import type { Ability } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 export const rickarRickani: Ability = {
   key: 'RICKAR_RICKANI',

@@ -1,6 +1,6 @@
 import sardakkNorrIcon from '@/assets/faction/sardakk_norr.svg?raw'
 
-import type { Ability } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 export const tekklarLegion: Ability = {
   key: 'TEKKLAR_LEGION',

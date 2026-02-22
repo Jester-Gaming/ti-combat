@@ -1,6 +1,6 @@
 import type { UnitBaseType } from '@/types'
 
-import type { Ability } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
   isEnabled: boolean

@@ -1,6 +1,6 @@
 import firmamentIcon from '@/assets/faction/firmament.svg?raw'
 
-import type { Ability } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 export const myruVos: Ability = {
   key: 'MYRU_VOS',

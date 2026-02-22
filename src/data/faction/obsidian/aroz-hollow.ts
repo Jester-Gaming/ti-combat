@@ -1,6 +1,6 @@
 import obsidianIcon from '@/assets/faction/obsidian.svg?raw'
 
-import type { Ability } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 export const arozHollow: Ability = {
   key: 'AROZ_HOLLOW',

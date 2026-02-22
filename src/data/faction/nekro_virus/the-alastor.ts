@@ -1,4 +1,4 @@
-import type { Ability } from '@/combat/abilities/types'
+import type { Ability } from '@/combat/abilities-engine/types'
 import { GROUND_FORCES } from '@/constants/units'
 import type { UnitBaseType } from '@/types'
 

@@ -1,3 +1,4 @@
+import { prepareSimulationConfig } from '@/hooks/combat-setup'
 import type { FactionKey, UnitBaseType, UnitSelection } from '@/types'
 import { getSimulationUnits } from '@/utils/get-simulation-units'
 
@@ -32,7 +33,6 @@ function buildSideState(
     unitState,
     unitStats,
     hitPools: [],
-    unitSelections: selections,
   }
 }
 
@@ -47,6 +47,12 @@ self.onmessage = (e: MessageEvent<SimulationInput>) => {
   } = e.data
 
   console.time('Setup')
+  prepareSimulationConfig(
+    abilities,
+    attackerFaction,
+    defenderFaction,
+    combatMode,
+  )
   const combatState = CombatState.forSimulation(
     buildSideState(attackerFaction, attackerSelections),
     buildSideState(defenderFaction, defenderSelections),

@@ -6,7 +6,10 @@ import {
 } from '@/constants/units'
 import type { UnitBaseType } from '@/types'
 
-import type { Ability, SettingsParams } from '../../../combat/abilities/types'
+import type {
+  Ability,
+  SettingsParams,
+} from '../../../combat/abilities-engine/types'
 
 export const settings: Ability<SettingsParams> = {
   key: 'SETTINGS',

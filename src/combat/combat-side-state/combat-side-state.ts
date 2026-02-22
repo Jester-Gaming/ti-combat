@@ -1,16 +1,12 @@
-import { UNIT_LIMITS, UNIT_TYPES } from '@/constants/units'
 import type {
   CombatSide,
-  FactionKey,
   UnitAbility,
   UnitBaseType,
   UnitId,
-  UnitSelection,
   UnitType,
 } from '@/types'
-import { getSimulationUnits } from '@/utils/get-simulation-units'
 
-import type { DicePool } from '../abilities/types'
+import type { DicePool } from '../abilities-engine/types'
 import type { CombatState } from '../combat-state/combat-state'
 import type {
   CombatStateData,
@@ -20,19 +16,6 @@ import type {
 import { resolveUnitStats } from '../utils/compact-units'
 import { parseVariantId } from '../utils/unit-variant'
 import { getSettingsValidTargets } from './utils/get-settings-valid-targets'
-
-export function createDefaultUnitSelections(): Record<
-  UnitBaseType,
-  UnitSelection
-> {
-  return UNIT_TYPES.reduce(
-    (acc, unitType) => {
-      acc[unitType] = { count: 0, upgraded: false }
-      return acc
-    },
-    {} as Record<UnitBaseType, UnitSelection>,
-  )
-}
 
 /** Get the opposite side */
 export function getOpponentSide(side: CombatSide): CombatSide {
@@ -113,18 +96,6 @@ export class CombatSideState {
     return this._combatState.data[this._side]
   }
 
-  /** Immutably update this side's state data */
-  private updateSideData(updates: Partial<SideStateData>): void {
-    this._combatState.data = {
-      ...this._combatState.data,
-      [this._side]: { ...this.data, ...updates },
-    }
-  }
-
-  get faction(): FactionKey {
-    return this.data.faction
-  }
-
   get units() {
     return this.data.units
   }
@@ -135,10 +106,6 @@ export class CombatSideState {
 
   get unitAbilityRestrictions() {
     return this.data.unitAbilityRestrictions
-  }
-
-  get unitSelections(): Record<UnitBaseType, UnitSelection> {
-    return this.data.unitSelections ?? createDefaultUnitSelections()
   }
 
   get side(): CombatSide {
@@ -361,63 +328,5 @@ export class CombatSideState {
     unitType: UnitBaseType,
   ): boolean {
     return isRestricted(this.data, 'cannotBeUsed', ability, unitType)
-  }
-
-  isUpgraded(unitType: UnitBaseType): boolean {
-    return this.unitSelections[unitType].upgraded
-  }
-
-  // ── UI mutation methods ───────────────────────────────────────────
-
-  setFaction(faction: FactionKey): void {
-    const { units, unitState, unitStats } = getSimulationUnits(
-      faction,
-      this.unitSelections,
-    )
-    this.updateSideData({ faction, units, unitState, unitStats })
-    this._combatState.params.reconcileFaction(this._side, faction)
-  }
-
-  private updateSelection(
-    unitType: UnitBaseType,
-    update: Partial<UnitSelection>,
-  ): void {
-    const selections = {
-      ...this.unitSelections,
-      [unitType]: { ...this.unitSelections[unitType], ...update },
-    }
-    const { units, unitState, unitStats } = getSimulationUnits(
-      this.data.faction,
-      selections,
-    )
-    this.updateSideData({
-      units,
-      unitState,
-      unitStats,
-      unitSelections: selections,
-    })
-  }
-
-  setUnitCount(unitType: UnitBaseType, count: number): void {
-    const limit = UNIT_LIMITS[unitType]
-    if (count > limit) {
-      console.warn(`Unit limit exceeded: ${unitType} has a maximum of ${limit}`)
-      count = limit
-    }
-    this.updateSelection(unitType, { count })
-  }
-
-  setUpgraded(unitType: UnitBaseType, upgraded: boolean): void {
-    this.updateSelection(unitType, { upgraded })
-  }
-
-  setAbilityParam(abilityKey: string, params: Record<string, unknown>): void {
-    this._combatState.params.setParamWithReconcile(
-      this._side,
-      abilityKey,
-      params,
-    )
-    // Force new cs.data reference so React memoization triggers
-    this._combatState.data = { ...this._combatState.data }
   }
 }

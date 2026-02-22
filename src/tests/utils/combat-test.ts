@@ -1,7 +1,7 @@
 import type { LogEntry } from '@/combat/logger'
 import type { CombatSide, UnitBaseType, UnitState } from '@/types'
 
-import type { DicePool } from '../../combat/abilities/types'
+import type { DicePool } from '../../combat/abilities-engine/types'
 import {
   buildCombatState,
   type CombatStateConfig,

@@ -1,6 +1,6 @@
 import l1z1xMindnetIcon from '@/assets/faction/l1z1x_mindnet.svg?raw'
 
-import type { Ability } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 export const twoRam: Ability = {
   key: 'TWO_RAM',

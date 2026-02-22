@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import baseUnits from '@/data/base-units'
+import { prepareSimulationConfig } from '@/hooks/combat-setup'
 import type {
   FactionKey,
   UnitBaseType,
@@ -11,7 +12,11 @@ import type {
 
 import { CombatEngine } from './combat-engine'
 import { CombatState } from './combat-state/combat-state'
-import type { CombatMode, SideStateData } from './combat-state/types'
+import type {
+  AbilitiesConfig,
+  CombatMode,
+  SideStateData,
+} from './combat-state/types'
 import type { CombatOutcome } from './types'
 import { nextUnitIds } from './utils/unit-id'
 
@@ -78,6 +83,12 @@ function createSideState(
   }
 }
 
+function prepareAbilities(combatMode: CombatMode): AbilitiesConfig {
+  const config: AbilitiesConfig = { attacker: {}, defender: {} }
+  prepareSimulationConfig(config, TEST_FACTION, TEST_FACTION, combatMode)
+  return config
+}
+
 /**
  * Sum probabilities by outcome type (win/draw/lose).
  */
@@ -114,6 +125,7 @@ describe('CombatEngine', () => {
         createSideState({ CRUISER: 2 }, undefined, stats),
         createSideState({ CRUISER: 3 }, undefined, stats),
         'SPACE',
+        prepareAbilities('SPACE'),
       )
 
       const outcomes = engine.simulate(state)
@@ -136,6 +148,7 @@ describe('CombatEngine', () => {
         createSideState({ CRUISER: 2 }, undefined, stats),
         createSideState({ DREADNOUGHT: 1, CRUISER: 1 }, undefined, stats),
         'SPACE',
+        prepareAbilities('SPACE'),
       )
 
       const outcomes = engine.simulate(state)
@@ -159,6 +172,7 @@ describe('CombatEngine', () => {
         createSideState({ FIGHTER: 2 }, undefined, stats),
         createSideState({ DESTROYER: 1 }, undefined, defenderStats),
         'SPACE',
+        prepareAbilities('SPACE'),
       )
 
       const outcomes = engine.simulate(state)
@@ -182,6 +196,7 @@ describe('CombatEngine', () => {
         createSideState({ INFANTRY: 1 }, undefined, stats),
         createSideState({ INFANTRY: 1 }, undefined, stats),
         combatMode,
+        prepareAbilities(combatMode),
       )
 
       const outcomes = engine.simulate(state)
@@ -206,6 +221,7 @@ describe('CombatEngine', () => {
         createSideState({ INFANTRY: 2 }, undefined, stats),
         createSideState({ INFANTRY: 1 }, undefined, stats),
         combatMode,
+        prepareAbilities(combatMode),
       )
 
       const outcomes = engine.simulate(state)
@@ -237,6 +253,7 @@ describe('CombatEngine', () => {
         ),
         createSideState({ INFANTRY: 1 }, undefined, stats),
         combatMode,
+        prepareAbilities(combatMode),
       )
 
       const outcomes = engine.simulate(state)
@@ -262,6 +279,7 @@ describe('CombatEngine', () => {
         ),
         createSideState({ INFANTRY: 5 }, undefined, stats),
         combatMode,
+        prepareAbilities(combatMode),
       )
 
       const outcomes = engine.simulate(state)
@@ -293,6 +311,7 @@ describe('CombatEngine', () => {
         ),
         createSideState({ INFANTRY: 1 }, undefined, stats),
         combatMode,
+        prepareAbilities(combatMode),
       )
 
       const outcomes = engine.simulate(state)
@@ -324,6 +343,7 @@ describe('CombatEngine', () => {
         ),
         createSideState({ INFANTRY: 2 }, undefined, stats),
         combatMode,
+        prepareAbilities(combatMode),
       )
 
       // Verify initial phase is BOMBARDMENT

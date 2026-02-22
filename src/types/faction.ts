@@ -1,4 +1,4 @@
-import type { Ability } from '@/combat/abilities'
+import type { Ability } from '@/combat/abilities-engine'
 import factions from '@/data/faction'
 
 import type { UnitBaseType, UnitDefinition } from './unit'

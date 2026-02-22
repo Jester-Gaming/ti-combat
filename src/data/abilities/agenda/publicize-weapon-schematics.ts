@@ -1,4 +1,4 @@
-import type { Ability } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 export const publicizeWeaponSchematics: Ability = {
   key: 'PUBLICIZE_WEAPON_SCHEMATICS',

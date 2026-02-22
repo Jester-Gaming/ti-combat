@@ -1,3 +1,4 @@
+import { prepareSimulationConfig } from '@/hooks/combat-setup'
 import type {
   FactionKey,
   UnitBaseType,
@@ -116,6 +117,13 @@ export function buildCombatState(config: CombatStateConfig): CombatState {
   const attackerSide = buildSideState(config.attacker)
   const defenderSide = buildSideState(config.defender)
   const abilitiesConfig = buildAbilitiesConfig(config.attacker, config.defender)
+
+  prepareSimulationConfig(
+    abilitiesConfig,
+    config.attacker.faction,
+    config.defender.faction,
+    config.mode,
+  )
 
   return CombatState.forSimulation(
     attackerSide,

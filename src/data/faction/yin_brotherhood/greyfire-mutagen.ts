@@ -1,5 +1,5 @@
 import yinBrotherhoodIcon from '@/assets/faction/yin_brotherhood.svg?raw'
-import type { Ability } from '@/combat/abilities/types'
+import type { Ability } from '@/combat/abilities-engine/types'
 import { GROUND_FORCES } from '@/constants/units'
 
 export const greyfireMutagen: Ability = {

@@ -1,4 +1,3 @@
-import { GROUND_FORCES, SHIPS } from '@/constants/units'
 import type {
   CombatSide,
   FactionKey,
@@ -10,45 +9,29 @@ import type {
 import { TIMING_GROUPS } from '../../data/abilities/general/ability-order'
 import { getOpponentSide } from '../combat-side-state/combat-side-state'
 import { CombatState } from '../combat-state/combat-state'
-import type {
-  AbilitiesConfig,
-  CombatStateData,
-  SideStateData,
-} from '../combat-state/types'
+import type { CombatStateData, SideStateData } from '../combat-state/types'
 import { Logger } from '../logger'
 import { resolveUnitStats } from '../utils/compact-units'
 import { parseVariantId } from '../utils/unit-variant'
 import { AbilityContext } from './api/ability-api'
 import { buildDiceApi, buildDiceReadApi } from './api/dice-api'
-import { extractDefaults, extractSyncSources } from './declare-param'
+import { extractDefaults } from './declare-param'
 import {
   getAvailableAbilities,
   getUnitDefinitionAbilityKeys,
 } from './get-available-abilities'
-import {
-  expandWithSubtypes,
-  reconcileArrayParam,
-  reconcileStringParam,
-  sortByPrice,
-} from './reconcile-helpers'
 import type {
   Ability,
   AbilityInvoke,
   AbilityTiming,
-  DeclaredSubtype,
   DiceContext,
   DicePool,
   DiceReadContext,
   InternalTimingContextMap,
   OwnOpponentContext,
-  ParamChange,
-  SettingsParams,
   SidedContext,
-  SyncSourceConfig,
   TimingContextMap,
 } from './types'
-
-type SideConfig = Record<string, Record<string, unknown>>
 
 // ── Ability execution engine (module-private helpers) ────────────────────
 
@@ -116,27 +99,13 @@ function countAllUnits(units: Record<string, unknown[]>): number {
   return n
 }
 
-/** Resolve SETTINGS ability defaults + config into merged settings and subtypes */
-function resolveSettings(
-  abilities: Ability[],
-  config: SideConfig,
-): { settings: SettingsParams; subtypes: DeclaredSubtype[] } {
-  const settingsAbility = abilities.find(a => a.key === 'SETTINGS')
-  const settings = {
-    ...(settingsAbility ? extractDefaults(settingsAbility) : undefined),
-    ...config['SETTINGS'],
-  } as SettingsParams
-  const subtypes = settings.subtypes ?? []
-  return { settings, subtypes }
-}
-
 /** Decrement `uses` in ability config after a successful invocation */
 function decrementUses(
   draft: CombatStateData,
   side: CombatSide,
   abilityKey: string,
   params: Record<string, unknown>,
-  abilitiesParams?: AbilitiesParams,
+  engine?: AbilitiesEngine,
 ): void {
   if (
     'uses' in params &&
@@ -152,8 +121,8 @@ function decrementUses(
     } else {
       draft.abilities[side][abilityKey] = { uses: params.uses - 1 }
     }
-    if (abilitiesParams) {
-      abilitiesParams.syncInvokesForKey(side, abilityKey, draft)
+    if (engine) {
+      engine.syncInvokesForKey(side, abilityKey, draft)
     }
   }
 }
@@ -163,22 +132,6 @@ function isDiceTiming(timing: AbilityTiming | AbilityTiming[]): boolean {
   return timings.some(
     t => t === 'BEFORE_DICE_ROLL' || t === 'BEFORE_UNIT_ABILITY_ROLL',
   )
-}
-
-// ── Sync-source reconciliation helpers ────────────────────────────────────
-
-function buildValidList(
-  config: SyncSourceConfig,
-  ownSettings: SettingsParams,
-  opponentSettings: SettingsParams,
-  ownSubtypes: DeclaredSubtype[],
-  opponentSubtypes: DeclaredSubtype[],
-): string[] {
-  const settings = config.side === 'own' ? ownSettings : opponentSettings
-  const subtypes = config.side === 'own' ? ownSubtypes : opponentSubtypes
-  const group = settings[config.group] as UnitBaseType[]
-  const sorted = sortByPrice(group, config.sort)
-  return expandWithSubtypes(sorted, subtypes)
 }
 
 // ── Tracker types ────────────────────────────────────────────────────────
@@ -204,13 +157,6 @@ export interface RunAbilitiesOptions {
 
 // ── Main class ───────────────────────────────────────────────────────────
 
-/**
- * Mutable controller for ability params.
- *
- * Has a direct bidirectional link with CombatState — reads and writes
- * ability config through CombatState.data.abilities. Abilities mutate
- * the shared Mutative draft on CombatState.data directly.
- */
 export interface InvokeCollections {
   attacker: Map<AbilityTiming, TimingInvokeEntry[]>
   defender: Map<AbilityTiming, TimingInvokeEntry[]>
@@ -223,9 +169,16 @@ export function cloneInvokes(invokes: InvokeCollections): InvokeCollections {
   }
 }
 
-export class AbilitiesParams {
-  private _combatState: CombatState
-  private _abilities: Record<CombatSide, Ability[]>
+/**
+ * Simulation-only ability engine.
+ *
+ * Has a direct bidirectional link with CombatState — reads and writes
+ * ability config through CombatState.data.abilities. Abilities mutate
+ * the shared Mutative draft on CombatState.data directly.
+ */
+export class AbilitiesEngine {
+  private _combatState!: CombatState
+  private _abilities!: Record<CombatSide, Ability[]>
   private _attackerCtx!: AbilityContext
   private _defenderCtx!: AbilityContext
 
@@ -282,7 +235,7 @@ export class AbilitiesParams {
     return this.state.defender.faction
   }
 
-  get config(): AbilitiesConfig {
+  get config() {
     return this.state.abilities
   }
 
@@ -326,56 +279,26 @@ export class AbilitiesParams {
     return false
   }
 
-  // ── Constructor: takes CombatState ────────────────────────────────
-
-  constructor(combatState: CombatState) {
-    this._combatState = combatState
-    this._abilities = AbilitiesParams.loadAbilities(
-      combatState.data.attacker.faction,
-      combatState.data.defender.faction,
-    )
-    this._attackerCtx = new AbilityContext('attacker', this)
-    this._defenderCtx = new AbilityContext('defender', this)
-
-    this.initializeDefaults()
-    this.reconcile()
-    this.buildInvokes()
-  }
-
-  // ── Deserialize: from existing config data ──────────────────────────
+  // ── Factories ──────────────────────────────────────────────────────
 
   /**
-   * Create from existing config data (engine initialization path).
+   * Create from pre-reconciled config data (simulation initialization path).
    *
-   * Unlike the constructor (UI path), group additions are NOT applied
-   * in the final SETTINGS — they come from runtime invokes
-   * (START_OF_COMBAT, etc.). Consumer params are synced from enriched
-   * groups, then user ordering/selection is restored.
+   * Expects the caller to have already run reconciliation
+   * (via prepareSimulationConfig). This factory just loads abilities
+   * and builds invokes from the config as-is.
    */
-  static fromConfig(combatState: CombatState): AbilitiesParams {
-    const instance = Object.create(AbilitiesParams.prototype) as AbilitiesParams
+  static fromConfig(combatState: CombatState): AbilitiesEngine {
+    const instance = Object.create(AbilitiesEngine.prototype) as AbilitiesEngine
     instance._combatState = combatState
     instance._destroyedIds = { attacker: new Set(), defender: new Set() }
     instance._pendingUnitInvokes = []
-    instance._abilities = AbilitiesParams.loadAbilities(
+    instance._abilities = AbilitiesEngine.loadAbilities(
       combatState.data.attacker.faction,
       combatState.data.defender.faction,
     )
     instance._attackerCtx = new AbilityContext('attacker', instance)
     instance._defenderCtx = new AbilityContext('defender', instance)
-
-    // Snapshot user-configured consumer params (ordering, selection)
-    const savedParams = instance.snapshotConsumerParams()
-
-    // Full reconcile (resets SETTINGS with group additions, syncs consumers)
-    instance.reconcile()
-
-    // Restore user ordering/selection that reconcile overwrote
-    instance.restoreConsumerParams(savedParams)
-
-    // Strip group additions from SETTINGS — abilities add at runtime
-    instance.resetSettingsToBase()
-
     instance.buildInvokes()
     return instance
   }
@@ -385,12 +308,12 @@ export class AbilitiesParams {
    * Used for read-only contexts where we only need ability lookups and
    * default merging (CombatState.fromData fallback, etc.).
    */
-  static wrap(combatState: CombatState): AbilitiesParams {
-    const instance = Object.create(AbilitiesParams.prototype) as AbilitiesParams
+  static wrap(combatState: CombatState): AbilitiesEngine {
+    const instance = Object.create(AbilitiesEngine.prototype) as AbilitiesEngine
     instance._combatState = combatState
     instance._destroyedIds = { attacker: new Set(), defender: new Set() }
     instance._pendingUnitInvokes = []
-    instance._abilities = AbilitiesParams.loadAbilities(
+    instance._abilities = AbilitiesEngine.loadAbilities(
       combatState.data.attacker.faction,
       combatState.data.defender.faction,
     )
@@ -407,7 +330,7 @@ export class AbilitiesParams {
   ): UnitAbilityEntry[] {
     const sideState = state[side]
 
-    // Quick check: if no unitStats have ABILITIES, skip the full scan
+    // Quick check: skip if no unit stats have ABILITIES at all
     let hasAnyAbilities = false
     for (const key in sideState.unitStats) {
       if (resolveUnitStats(sideState, key as UnitType)?.ABILITIES) {
@@ -417,141 +340,36 @@ export class AbilitiesParams {
     }
     if (!hasAnyAbilities) return []
 
-    const results: UnitAbilityEntry[] = []
+    const entries: UnitAbilityEntry[] = []
 
     for (const key of Object.keys(sideState.units)) {
       const ids = sideState.units[key]
       if (!ids || ids.length <= 0) continue
-
-      const stats = resolveUnitStats(sideState, key)
+      const stats = resolveUnitStats(sideState, key as UnitType)
       if (!stats?.ABILITIES) continue
+      const { type: unitType } = parseVariantId(key as UnitType)
 
-      const { type: unitType } = parseVariantId(key)
       for (const id of ids) {
         for (const ability of stats.ABILITIES) {
-          results.push({
+          entries.push({
             ability,
-            unitType,
+            unitType: unitType as UnitBaseType,
             unitId: id,
           })
         }
       }
     }
-
-    return results
-  }
-
-  // ── Mutations ───────────────────────────────────────────────────────
-
-  setFaction(side: CombatSide, faction: FactionKey): void {
-    // Update faction in CombatState's data
-    this.state[side].faction = faction
-    this.reconcileFaction(side, faction)
-  }
-
-  /**
-   * Reconcile abilities after a faction change: reload available abilities,
-   * rebuild config for the side, prune removed abilities, run reconcile().
-   */
-  reconcileFaction(side: CombatSide, faction: FactionKey): void {
-    this._abilities[side] = getAvailableAbilities(side, faction)
-
-    // Rebuild side config: keep existing params for surviving abilities,
-    // initialize defaults for new ones
-    const oldSideConfig = this.config[side]
-    const newSideConfig: SideConfig = {}
-
-    for (const ability of this._abilities[side]) {
-      const defaults = extractDefaults(ability)
-      if (oldSideConfig[ability.key]) {
-        newSideConfig[ability.key] = { ...oldSideConfig[ability.key] }
-      } else if (defaults) {
-        newSideConfig[ability.key] = { ...defaults }
-      }
-    }
-
-    this.config[side] = newSideConfig
-
-    this.reconcile()
-  }
-
-  setParam(
-    side: CombatSide,
-    abilityKey: string,
-    params: Record<string, unknown>,
-  ): void {
-    const ability = this._abilities[side].find(a => a.key === abilityKey)
-
-    let finalParams = params
-    if (ability?.onParamSet) {
-      const oldParams = this.config[side][abilityKey]
-      if (oldParams) {
-        for (const key of Object.keys(params)) {
-          if (params[key] !== oldParams[key]) {
-            finalParams =
-              ability.onParamSet(finalParams, key, params[key]) ?? finalParams
-          }
-        }
-      }
-    }
-
-    const newSideConfig = {
-      ...this.config[side],
-      [abilityKey]: finalParams,
-    }
-
-    // Mutual exclusion: disable other abilities in the same exclusive group
-    if (ability?.exclusiveGroup && finalParams.isEnabled) {
-      for (const other of this._abilities[side]) {
-        if (other.key === abilityKey) continue
-        if (other.exclusiveGroup !== ability.exclusiveGroup) continue
-        const otherParams = newSideConfig[other.key]
-        if (otherParams) {
-          newSideConfig[other.key] = {
-            ...otherParams,
-            isEnabled: false,
-          }
-        }
-      }
-    }
-
-    this.config[side] = newSideConfig
-
-    if (ability?.sync) {
-      const otherSide = getOpponentSide(side)
-      this.config[otherSide] = {
-        ...this.config[otherSide],
-        [abilityKey]: finalParams,
-      }
-    }
-  }
-
-  setParamWithReconcile(
-    side: CombatSide,
-    abilityKey: string,
-    params: Record<string, unknown>,
-  ): void {
-    this.setParam(side, abilityKey, params)
-    this.reconcile()
+    return entries
   }
 
   // ── Ability execution engine ──────────────────────────────────────
 
-  /**
-   * Run alternating resolution for abilities at given timing(s).
-   * When multiple timings are provided, they share a single timing window
-   * and abilities from all timings are resolved together.
-   * Returns new state and modified context.
-   */
   runAbilities<T extends AbilityTiming>(
     timing: T | T[],
     context?: TimingContextMap[T],
     options?: RunAbilitiesOptions,
     logger?: Logger,
   ): TimingContextMap[T] {
-    // Short-circuit: if none of the requested timings have any callable
-    // invokes (enabled config abilities, unit abilities, or destroyed-unit
-    // abilities), skip the expensive resolution loop entirely.
     let hasAnyInvokes = false
     if (Array.isArray(timing)) {
       for (const t of timing) {
@@ -586,7 +404,6 @@ export class AbilitiesParams {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let workingContext: any = context
 
-    // Snapshot unit counts to detect elimination during resolution
     const initialUnits = {
       attacker: this._combatState.attacker.countUnits(),
       defender: this._combatState.defender.countUnits(),
@@ -608,7 +425,6 @@ export class AbilitiesParams {
         }
         consecutiveSkips = 0
 
-        // Stop resolving abilities if a side that had units was eliminated
         if (
           result.unitsChanged &&
           ((initialUnits.attacker > 0 &&
@@ -628,20 +444,10 @@ export class AbilitiesParams {
     return workingContext as TimingContextMap[T]
   }
 
-  /**
-   * Run the DESTROY → WHEN_DESTROY → AFTER_DESTROY sequence.
-   * Called after units are destroyed (by ability execution or hit assignment).
-   * If a WHEN_DESTROY ability destroys additional units, tryResolveOne
-   * triggers a nested runDestroyAbilities for those automatically.
-   */
   runDestroyAbilities(destroyed: {
     attacker: Record<string, UnitId[]>
     defender: Record<string, UnitId[]>
   }): void {
-    // Save previous _destroyedIds and derive this cycle's scope from the Record.
-    // Each runDestroyAbilities call gets its own _destroyedIds so nested calls
-    // (from AFTER_DESTROY abilities that destroy additional units) don't leak
-    // IDs into the inner scope.
     const savedDestroyedIds = this._destroyedIds
     this._destroyedIds = {
       attacker: new Set(Object.values(destroyed.attacker).flat()),
@@ -652,7 +458,6 @@ export class AbilitiesParams {
     this.runAbilities('WHEN_DESTROY', destroyed)
     this.runAbilities('AFTER_DESTROY', destroyed)
 
-    // Restore previous _destroyedIds for the outer scope
     this._destroyedIds = savedDestroyedIds
   }
 
@@ -678,7 +483,6 @@ export class AbilitiesParams {
           continue
         }
       } else {
-        // Check if UnitId exists in any variant array for this base type
         const sideUnits = state[side].units
         let unitAlive = false
         for (const key of Object.keys(sideUnits)) {
@@ -696,16 +500,12 @@ export class AbilitiesParams {
           invoke.timing === 'AFTER_DESTROY'
 
         if (isDestroyTiming) {
-          // DESTROY fires for units that are GONE and RECENTLY destroyed
-          if (unitAlive) continue // Unit still alive
-          // Verify the unit was destroyed in this context
+          if (unitAlive) continue
           if (!this._destroyedIds[side].has(source.unitId)) continue
         } else {
-          // Normal abilities fire for units that EXIST
-          if (!unitAlive) continue // Unit destroyed
+          if (!unitAlive) continue
         }
 
-        // Check if this unit instance already invoked this ability
         const key = `${invoke.timing}:${source.unitType}:${ability.key}`
         const invokedIds = sideTracker.unitAbilities.get(key)
         if (invokedIds?.has(source.unitId)) {
@@ -713,13 +513,9 @@ export class AbilitiesParams {
         }
       }
 
-      // Merge pre-merged params with live config so runtime changes
-      // (uses decrement, structures update, isEnabled toggle) are visible
-      // while defaults from extractDefaults remain available.
       const liveConfig = state.abilities[side][ability.key]
       const freshParams = liveConfig ? { ...params, ...liveConfig } : params
 
-      // Transform sided context to own/opponent for the ability
       let internalContext: InternalTimingContextMap[T] | undefined
       if (context !== undefined && isSidedContext(context)) {
         internalContext = toOwnOpponent(
@@ -730,7 +526,6 @@ export class AbilitiesParams {
         internalContext = context as InternalTimingContextMap[T] | undefined
       }
 
-      // Use type assertion since we know the invoke matches the timing
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const inv = invoke as any
       const diceTiming = isDiceTiming(timing)
@@ -742,7 +537,6 @@ export class AbilitiesParams {
       const unitSource =
         source.type === 'unit' && !isDestroyTiming ? source.unitId : undefined
 
-      // Global isEnabled / uses gate
       if ('isEnabled' in freshParams && !freshParams.isEnabled) continue
       if (
         'uses' in freshParams &&
@@ -778,14 +572,11 @@ export class AbilitiesParams {
 
         const timingArray = Array.isArray(timing) ? timing : [timing]
 
-        // Snapshot unit counts before the call for change detection
         const prevAttackerUnitCount = countAllUnits(state.attacker.units)
         const prevDefenderUnitCount = countAllUnits(state.defender.units)
 
-        // Logger scoped to this ability call (used for logging + triggers)
         const childLogger = logger?.child(invoke.timing).child(ability.key)
 
-        // State IS now a Mutative draft — abilities mutate it directly
         if (diceTiming && internalContext) {
           const rawDice = internalContext as OwnOpponentContext<DicePool>
           const diceCallCtx: DiceContext = {
@@ -808,13 +599,10 @@ export class AbilitiesParams {
           ctx.resetAfterCall()
         }
 
-        // Flush deferred invoke registrations (from placeUnits/modifyUnitType)
         this.flushPendingUnitInvokes()
 
-        // Always record that this ability fired (auto log entry)
         childLogger?.forSide(side).log()
 
-        // Mark as invoked
         if (source.type === 'config') {
           sideTracker.configAbilities.add(invoke)
         } else {
@@ -825,9 +613,6 @@ export class AbilitiesParams {
           sideTracker.unitAbilities.set(key, invokedIds)
         }
 
-        // Process pending hit pools produced by the ability.
-        // Skip during BEFORE_ASSIGN_HITS (recursion) and during DICE_ROLL
-        // micro-phase (hits from dice flow are assigned at ASSIGN_HITS).
         if (
           !timingArray.some(t => t === 'BEFORE_ASSIGN_HITS') &&
           state.currentPhase.micro !== 'DICE_ROLL' &&
@@ -835,7 +620,6 @@ export class AbilitiesParams {
           (state.attacker.hitPools.length > 0 ||
             state.defender.hitPools.length > 0)
         ) {
-          // Run BEFORE_ASSIGN_HITS (e.g. SUSTAIN_DAMAGE) before assigning hits
           this._combatState.assignHits()
         }
 
@@ -843,7 +627,6 @@ export class AbilitiesParams {
           countAllUnits(state.attacker.units) !== prevAttackerUnitCount ||
           countAllUnits(state.defender.units) !== prevDefenderUnitCount
 
-        // Transform own/opponent context back to sided
         if (
           context !== undefined &&
           resultContext !== undefined &&
@@ -865,11 +648,6 @@ export class AbilitiesParams {
     return null
   }
 
-  /**
-   * Build unified invoke collection once — config + unit entries.
-   * Called at init; never rebuilt. Stale entries (destroyed units) are
-   * safely skipped by the existence check in tryResolveOne.
-   */
   private buildInvokes(): void {
     const collections: InvokeCollections = {
       attacker: new Map(),
@@ -882,7 +660,6 @@ export class AbilitiesParams {
       const sideConfig = state.abilities[side]
       const factionUnitKeys = getUnitDefinitionAbilityKeys(state[side].faction)
 
-      // 1. Config invokes (non-unit-definition abilities)
       for (const ability of this._abilities[side]) {
         if (factionUnitKeys.has(ability.key)) continue
         if (ability.context && ability.context !== state.combatMode) continue
@@ -892,7 +669,6 @@ export class AbilitiesParams {
           ? { ...extractDefaults(ability), ...configParams }
           : extractDefaults(ability)
 
-        // Filter by isEnabled — syncInvokesForKey handles runtime changes
         if ('isEnabled' in mergedParams && !mergedParams.isEnabled) continue
 
         for (const invoke of ability.invoke) {
@@ -914,8 +690,7 @@ export class AbilitiesParams {
         }
       }
 
-      // 2. Unit invokes from initial state
-      const unitAbilities = AbilitiesParams.collectUnitAbilities(state, side)
+      const unitAbilities = AbilitiesEngine.collectUnitAbilities(state, side)
       for (const { ability, unitType, unitId } of unitAbilities) {
         if (ability.context && ability.context !== state.combatMode) continue
         const configParams = sideConfig[ability.key]
@@ -941,15 +716,6 @@ export class AbilitiesParams {
     this._combatState._invokesOwned = true
   }
 
-  /**
-   * Check if any invoke (config or unit) for the given timing is callable
-   * (isEnabled !== false, uses > 0).
-   * For unit entries, existence check is deferred to tryResolveOne.
-   *
-   * Results are cached per state.abilities reference — when abilities
-   * config doesn't change (no ability fires), repeated checks for the
-   * same timing are O(1).
-   */
   hasCallableInvoke(timing: AbilityTiming): boolean {
     const invokes = this._combatState._invokes
     const attackerEntries = invokes.attacker.get(timing)
@@ -958,18 +724,11 @@ export class AbilitiesParams {
     return defenderEntries !== undefined && defenderEntries.length > 0
   }
 
-  /**
-   * Queue invoke registration for after ability call completes.
-   * Called from placeUnits/modifyUnitType inside the produce — draft proxies
-   * would be revoked if we registered immediately.
-   */
   queueUnitInvokes(
     side: CombatSide,
     variantKey: string,
     unitIds: UnitId[],
   ): void {
-    // Copy the array — callers may pass Mutative draft proxies that get
-    // revoked after produce completes.
     this._pendingUnitInvokes.push({
       side,
       variantKey,
@@ -977,10 +736,6 @@ export class AbilitiesParams {
     })
   }
 
-  /**
-   * Flush pending invoke registrations using finalized (non-draft) state.
-   * Called after ability call completes in tryResolveOne.
-   */
   flushPendingUnitInvokes(): void {
     if (this._pendingUnitInvokes.length === 0) return
     const pending = this._pendingUnitInvokes
@@ -991,11 +746,6 @@ export class AbilitiesParams {
     }
   }
 
-  /**
-   * Register invoke entries for units with abilities.
-   * Idempotent: removes existing entries for the given unitIds before adding new ones.
-   * Called from placeUnits (new units) and modifyUnitType (ABILITIES changed).
-   */
   appendUnitInvokes(
     side: CombatSide,
     sideState: SideStateData,
@@ -1010,7 +760,6 @@ export class AbilitiesParams {
     const sideMap = this._combatState._invokes[side]
     const { type: unitType } = parseVariantId(variantKey as UnitType)
 
-    // Remove existing unit-invoke entries for these unitIds
     const idSet = new Set<UnitId>(unitIds)
     for (const [timing, list] of sideMap) {
       const filtered = list.filter(
@@ -1050,7 +799,6 @@ export class AbilitiesParams {
     }
   }
 
-  /** Remove config-source invoke entries for a given ability key */
   private removeConfigInvokeEntries(
     side: CombatSide,
     abilityKey: string,
@@ -1071,7 +819,6 @@ export class AbilitiesParams {
     }
   }
 
-  /** Add config ability invokes to _invokes (caller must ensure isEnabled check) */
   private addConfigAbilityInvokes(
     side: CombatSide,
     ability: Ability,
@@ -1100,11 +847,6 @@ export class AbilitiesParams {
     }
   }
 
-  /**
-   * Sync _invokes for a single ability key on one side.
-   * Called from within ability call (updateAbilityConfig / decrementUses)
-   * so it operates on the draft state.
-   */
   syncInvokesForKey(
     side: CombatSide,
     key: string,
@@ -1127,10 +869,6 @@ export class AbilitiesParams {
     this.addConfigAbilityInvokes(side, ability, mergedParams, draft)
   }
 
-  /**
-   * Invoke onParamSet for a specific ability key on a draft.
-   * Called from updateAbilityConfig when ability params are modified during produce.
-   */
   invokeOnParamSet(
     side: CombatSide,
     targetKey: string,
@@ -1146,7 +884,6 @@ export class AbilitiesParams {
     }
   }
 
-  /** Get invokes for a timing (or multiple timings) from unified invoke collection. */
   private getInvokesForTiming<T extends AbilityTiming>(
     timing: T | T[],
     side: CombatSide,
@@ -1161,14 +898,12 @@ export class AbilitiesParams {
       const entries = sideMap.get(t as AbilityTiming)
       if (!entries) continue
       for (const entry of entries) {
-        // Filter by invoke.context (MetaPhase) — not pre-filtered
         if (entry.invoke.context) {
           const allowed = Array.isArray(entry.invoke.context)
             ? entry.invoke.context
             : [entry.invoke.context]
           if (!allowed.includes(meta)) continue
         }
-        // Filter by triggerSide
         if (triggerSide && entry.invoke.side) {
           if (entry.invoke.side === 'OWN' && side !== triggerSide) continue
           if (entry.invoke.side === 'OPPONENT' && side === triggerSide) continue
@@ -1177,9 +912,6 @@ export class AbilitiesParams {
       }
     }
 
-    // Apply ABILITY_ORDER sorting across all collected entries (matches old
-    // behavior where entries from different timings in the same group were
-    // interleaved by user-chosen ability order).
     if (results.length > 1) {
       const timingSet = new Set(timings)
       const sideConfig = this._combatState.data.abilities[side]
@@ -1198,398 +930,10 @@ export class AbilitiesParams {
           sortKey.set(entry, oi !== undefined ? oi : nextSlot++)
         }
         results.sort((a, b) => sortKey.get(a)! - sortKey.get(b)!)
-        break // Only one group can match
+        break
       }
     }
 
     return results
-  }
-
-  // ── Private core logic ──────────────────────────────────────────────
-
-  /**
-   * Initialize defaults for abilities that declare params but don't
-   * yet have entries in the config.
-   */
-  private initializeDefaults(): void {
-    const config = this.config
-
-    for (const side of ['attacker', 'defender'] as const) {
-      for (const ability of this._abilities[side]) {
-        const defaults = extractDefaults(ability)
-        if (!config[side][ability.key] && defaults) {
-          config[side][ability.key] = { ...defaults }
-        }
-      }
-    }
-  }
-
-  private reconcile(): void {
-    const config = this.config
-    this.resetBaseGroups(config)
-    this.ensureConsumerDefaults(config)
-    this.reconcileSyncAll(config)
-    this.reconcileAbilityOrder(config)
-  }
-
-  /**
-   * Reset SETTINGS ships/groundForces/subtypes to base constants,
-   * apply group additions from declareParamChange, and recompute
-   * derived params via onParamSet.
-   */
-  private resetBaseGroups(config: AbilitiesConfig): void {
-    for (const side of ['attacker', 'defender'] as const) {
-      const abilities = this._abilities[side]
-
-      if (!config[side]['SETTINGS']) config[side]['SETTINGS'] = {}
-      const settingsAbility = abilities.find(a => a.key === 'SETTINGS')
-
-      // Ensure all SETTINGS defaults are present (e.g. validTargetsSpaceCannonOffense)
-      if (settingsAbility) {
-        const defaults = extractDefaults(settingsAbility)
-        for (const key of Object.keys(defaults)) {
-          if (!(key in config[side]['SETTINGS']))
-            config[side]['SETTINGS'][key] = defaults[key]
-        }
-      }
-
-      const settings = config[side]['SETTINGS'] as SettingsParams
-      settings.ships = [...SHIPS]
-      settings.groundForces = [...GROUND_FORCES]
-      settings.subtypes = []
-
-      // Two passes: first builds groups (groundForces, etc.),
-      // second resolves cross-group deps (e.g. Alastor copies groundForces → ships)
-      for (let pass = 0; pass < 2; pass++) {
-        const changes = this.collectParamChanges(
-          abilities,
-          config[side],
-          settings,
-        )
-        for (const change of changes) {
-          if (change.key === 'subtypes') {
-            if (
-              !settings.subtypes.some(
-                s =>
-                  s.name === change.value.name &&
-                  s.unitType === change.value.unitType,
-              )
-            ) {
-              settings.subtypes.push(change.value)
-            }
-          } else {
-            const group = settings[change.key]
-            if (!group.includes(change.value)) {
-              group.push(change.value)
-            }
-          }
-        }
-      }
-
-      // Compute SETTINGS derived params via onParamSet
-      if (settingsAbility?.onParamSet) {
-        settingsAbility.onParamSet(settings, 'ships', settings.ships)
-        settingsAbility.onParamSet(
-          settings,
-          'groundForces',
-          settings.groundForces,
-        )
-      }
-    }
-  }
-
-  /** Snapshot consumer params (everything except SETTINGS) for later restore */
-  private snapshotConsumerParams(): Record<
-    CombatSide,
-    Record<string, Record<string, unknown>>
-  > {
-    const saved: Record<CombatSide, Record<string, Record<string, unknown>>> = {
-      attacker: {},
-      defender: {},
-    }
-    const config = this.config
-    for (const side of ['attacker', 'defender'] as const) {
-      for (const ability of this._abilities[side]) {
-        if (ability.key === 'SETTINGS') continue
-        const params = config[side][ability.key]
-        if (params) {
-          saved[side][ability.key] = { ...params }
-        }
-      }
-    }
-    return saved
-  }
-
-  /** Restore consumer params that reconcile overwrote */
-  private restoreConsumerParams(
-    saved: Record<CombatSide, Record<string, Record<string, unknown>>>,
-  ): void {
-    const config = this.config
-    for (const side of ['attacker', 'defender'] as const) {
-      for (const ability of this._abilities[side]) {
-        if (ability.key === 'SETTINGS') continue
-        const userParams = saved[side][ability.key]
-        if (!userParams) continue
-        const synced = config[side][ability.key]
-        if (!synced) continue
-        Object.assign(synced, userParams)
-      }
-    }
-  }
-
-  /**
-   * Reset SETTINGS to base groups (no group additions) and recompute
-   * derived params. Subtypes from declareParamChange are preserved.
-   * Does not touch consumer params.
-   */
-  private resetSettingsToBase(): void {
-    const config = this.config
-    for (const side of ['attacker', 'defender'] as const) {
-      const abilities = this._abilities[side]
-      const settings = config[side]['SETTINGS'] as SettingsParams
-
-      settings.ships = [...SHIPS]
-      settings.groundForces = [...GROUND_FORCES]
-      settings.subtypes = []
-
-      // Collect subtypes only (no group additions) — abilities add at runtime
-      for (let pass = 0; pass < 2; pass++) {
-        const changes = this.collectParamChanges(
-          abilities,
-          config[side],
-          settings,
-        )
-        for (const change of changes) {
-          if (change.key === 'subtypes') {
-            if (
-              !settings.subtypes.some(
-                s =>
-                  s.name === change.value.name &&
-                  s.unitType === change.value.unitType,
-              )
-            ) {
-              settings.subtypes.push(change.value)
-            }
-          }
-        }
-      }
-
-      // Compute SETTINGS derived params via onParamSet
-      const settingsAbility = abilities.find(a => a.key === 'SETTINGS')
-      if (settingsAbility?.onParamSet) {
-        settingsAbility.onParamSet(settings, 'ships', settings.ships)
-        settingsAbility.onParamSet(
-          settings,
-          'groundForces',
-          settings.groundForces,
-        )
-      }
-    }
-  }
-
-  /**
-   * Ensure consumer abilities (those with sync-sources) have params
-   * initialized from defaults. Also initializes SETTINGS defaults.
-   */
-  private ensureConsumerDefaults(config: AbilitiesConfig): void {
-    for (const side of ['attacker', 'defender'] as const) {
-      for (const ability of this._abilities[side]) {
-        if (!extractSyncSources(ability)) continue
-        const defaults = extractDefaults(ability)
-        if (defaults) {
-          config[side][ability.key] = {
-            ...defaults,
-            ...config[side][ability.key],
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * Shared sync logic: reconcile SETTINGS computed params for both sides,
-   * then reconcile consumer params with cross-side access.
-   */
-  private reconcileSyncAll(config: AbilitiesConfig): void {
-    // Pass 1: Reconcile SETTINGS computed params for both sides
-    // Must happen before consumers so cross-side sources
-    // (e.g. Raid Formation reading opponent's nonFighterShips) see
-    // computed values.
-    for (const side of ['attacker', 'defender'] as const) {
-      const sideAbilities = this._abilities[side]
-      const { settings, subtypes } = resolveSettings(
-        sideAbilities,
-        config[side],
-      )
-      this.reconcileSyncSources(
-        side,
-        sideAbilities.filter(a => a.key === 'SETTINGS'),
-        config[side],
-        settings,
-        settings,
-        subtypes,
-        subtypes,
-      )
-    }
-
-    // Pass 2: Reconcile consumer abilities with fresh cross-side settings
-    for (const side of ['attacker', 'defender'] as const) {
-      const oppSide = side === 'attacker' ? 'defender' : 'attacker'
-      const sideAbilities = this._abilities[side]
-      const { settings: ownSettings, subtypes: ownSubtypes } = resolveSettings(
-        sideAbilities,
-        config[side],
-      )
-      const { settings: oppSettings, subtypes: oppSubtypes } = resolveSettings(
-        this._abilities[oppSide],
-        config[oppSide],
-      )
-      this.reconcileSyncSources(
-        side,
-        sideAbilities.filter(a => a.key !== 'SETTINGS'),
-        config[side],
-        ownSettings,
-        oppSettings,
-        ownSubtypes,
-        oppSubtypes,
-      )
-    }
-  }
-
-  /**
-   * Reconcile ABILITY_ORDER params: keep only keys for abilities that are
-   * enabled and have matching invokes, preserving user-chosen order.
-   */
-  private reconcileAbilityOrder(config: AbilitiesConfig): void {
-    for (const side of ['attacker', 'defender'] as const) {
-      const abilities = this._abilities[side]
-      const sideConfig = config[side]
-
-      if (!sideConfig['ABILITY_ORDER']) {
-        sideConfig['ABILITY_ORDER'] = { isEnabled: true, uses: Infinity }
-      } else if (Object.isFrozen(sideConfig['ABILITY_ORDER'])) {
-        sideConfig['ABILITY_ORDER'] = { ...sideConfig['ABILITY_ORDER'] }
-      }
-      const orderConfig = sideConfig['ABILITY_ORDER']
-
-      for (const group of TIMING_GROUPS) {
-        const timingSet = new Set(group.timings)
-        const validKeys: string[] = []
-
-        for (const ability of abilities) {
-          if (ability.key === 'ABILITY_ORDER') continue
-          if (ability.context && ability.context !== this.state.combatMode)
-            continue
-          const abilityConfig = sideConfig[ability.key] ?? ability.params
-          if ('isEnabled' in abilityConfig && !abilityConfig.isEnabled) continue
-          if (
-            'uses' in abilityConfig &&
-            typeof abilityConfig.uses === 'number' &&
-            isFinite(abilityConfig.uses) &&
-            abilityConfig.uses <= 0
-          )
-            continue
-          const hasMatchingInvoke = ability.invoke.some(inv =>
-            timingSet.has(inv.timing),
-          )
-          if (hasMatchingInvoke) {
-            validKeys.push(ability.key)
-          }
-        }
-
-        const currentOrder = (orderConfig[group.paramKey] as string[]) ?? []
-        orderConfig[group.paramKey] = reconcileArrayParam(
-          currentOrder,
-          validKeys,
-        )
-      }
-    }
-  }
-
-  // ── Inlined utils ──────────────────────────────────────────────────
-
-  private collectParamChanges(
-    abilities: readonly Ability[],
-    params: Record<string, Record<string, unknown>>,
-    settings: SettingsParams,
-  ): ParamChange[] {
-    const result: ParamChange[] = []
-
-    for (const ability of abilities) {
-      if (!ability.declareParamChange) continue
-
-      const abilityParams = {
-        ...extractDefaults(ability),
-        ...params[ability.key],
-      }
-
-      if (ability.headerUI) {
-        const headerValue = abilityParams[ability.headerUI]
-        if (!headerValue) continue
-      }
-
-      const declared = ability.declareParamChange(abilityParams, settings)
-      result.push(...declared)
-    }
-
-    return result
-  }
-
-  private reconcileSyncSources(
-    _side: CombatSide,
-    abilities: readonly Ability[],
-    params: Record<string, Record<string, unknown>>,
-    ownSettings: SettingsParams,
-    opponentSettings: SettingsParams,
-    ownSubtypes: DeclaredSubtype[],
-    opponentSubtypes: DeclaredSubtype[],
-  ): void {
-    for (const ability of abilities) {
-      const syncSources = extractSyncSources(ability)
-      if (!syncSources) continue
-
-      let abilityParams = params[ability.key]
-      if (!abilityParams) continue
-
-      if (Object.isFrozen(abilityParams)) {
-        abilityParams = { ...abilityParams }
-        params[ability.key] = abilityParams
-      }
-
-      for (const config of syncSources) {
-        if (config.compute) {
-          const settings =
-            config.side === 'own' ? ownSettings : opponentSettings
-          abilityParams[config.key] = config.compute(settings[config.group])
-          continue
-        }
-
-        let validList = buildValidList(
-          config,
-          ownSettings,
-          opponentSettings,
-          ownSubtypes,
-          opponentSubtypes,
-        )
-
-        if (config.filter) {
-          validList = validList.filter(config.filter)
-        }
-
-        const currentValue = abilityParams[config.key]
-
-        if (Array.isArray(currentValue)) {
-          abilityParams[config.key] = reconcileArrayParam(
-            currentValue as string[],
-            validList,
-          )
-        } else if (typeof currentValue === 'string') {
-          abilityParams[config.key] = reconcileStringParam(
-            currentValue,
-            validList,
-          )
-        }
-      }
-    }
   }
 }

@@ -1,4 +1,7 @@
-import type { Ability, AbilityTiming } from '../../../combat/abilities/types'
+import type {
+  Ability,
+  AbilityTiming,
+} from '../../../combat/abilities-engine/types'
 
 type Params = {
   startOfCombat: string[]

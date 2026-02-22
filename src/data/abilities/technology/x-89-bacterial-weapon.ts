@@ -1,4 +1,4 @@
-import type { Ability } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 export const x89BacterialWeapon: Ability = {
   key: 'X_89_BACTERIAL_WEAPON',

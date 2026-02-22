@@ -27,7 +27,7 @@ import {
   makeVariantId,
   parseVariantId,
 } from '../../utils/unit-variant'
-import type { AbilitiesParams } from '../abilities-params'
+import type { AbilitiesEngine } from '../abilities-engine'
 import type {
   AbilityTiming,
   DeclaredSubtype,
@@ -285,7 +285,7 @@ export class SideApi {
   private _side: CombatSide
   private _ctx!: AbilityContext
   _abilityKey?: string
-  _abilitiesParams?: AbilitiesParams
+  _abilitiesParams?: AbilitiesEngine
 
   constructor(side: CombatSide, ctx: AbilityContext) {
     this._side = side
@@ -845,12 +845,12 @@ export class AbilityContext {
   logger?: Logger
   unitSource?: UnitId
 
-  private _abilitiesParams: AbilitiesParams
+  private _abilitiesParams: AbilitiesEngine
   private _side: CombatSide
   private _draftState?: CombatStateData
   private _api: { own: SideApi; opponent: SideApi }
 
-  constructor(side: CombatSide, abilitiesParams: AbilitiesParams) {
+  constructor(side: CombatSide, abilitiesParams: AbilitiesEngine) {
     this._side = side
     this._abilitiesParams = abilitiesParams
     this._api = {
@@ -891,17 +891,17 @@ export class AbilityContext {
       unitSource: this.unitSource,
       logger: this.logger,
       ownAbilityKey: this._api.own._abilityKey,
-      ownAbilitiesParams: this._api.own._abilitiesParams,
+      ownAbilitiesEngine: this._api.own._abilitiesParams,
       opponentAbilityKey: this._api.opponent._abilityKey,
-      opponentAbilitiesParams: this._api.opponent._abilitiesParams,
+      opponentAbilitiesEngine: this._api.opponent._abilitiesParams,
     }
     fn()
     this.unitSource = saved.unitSource
     this.logger = saved.logger
     this._api.own._abilityKey = saved.ownAbilityKey
-    this._api.own._abilitiesParams = saved.ownAbilitiesParams
+    this._api.own._abilitiesParams = saved.ownAbilitiesEngine
     this._api.opponent._abilityKey = saved.opponentAbilityKey
-    this._api.opponent._abilitiesParams = saved.opponentAbilitiesParams
+    this._api.opponent._abilitiesParams = saved.opponentAbilitiesEngine
   }
 
   trigger<T extends AbilityTiming>(

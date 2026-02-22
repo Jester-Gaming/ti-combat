@@ -1,4 +1,4 @@
-import type { Ability } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 export const disablePlanetaryShield: Ability = {
   key: 'DISABLE_PLANETARY_SHIELD',

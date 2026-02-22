@@ -1,6 +1,6 @@
 import federationOfSolIcon from '@/assets/faction/federation_of_sol.svg?raw'
 
-import type { Ability } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 export const claireGibson: Ability = {
   key: 'CLAIRE_GIBSON',

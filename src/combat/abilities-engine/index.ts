@@ -1,9 +1,9 @@
 export {
-  AbilitiesParams,
+  AbilitiesEngine,
   cloneInvokes,
   type InvokeCollections,
   type RunAbilitiesOptions,
-} from './abilities-params'
+} from './abilities-engine'
 export { SideApi } from './api/ability-api'
 export { declareParam, isDeclaredParam } from './declare-param'
 export { getAvailableAbilities } from './get-available-abilities'

@@ -1,8 +1,8 @@
 import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons'
 import { useMemo, useState } from 'react'
 
-import type { Ability, AbilityReadContext } from '@/combat/abilities'
-import { extractDefaults } from '@/combat/abilities/declare-param'
+import type { Ability, AbilityReadContext } from '@/combat/abilities-engine'
+import { extractDefaults } from '@/combat/abilities-engine/declare-param'
 import type { CombatMode } from '@/combat/combat-state/types'
 import { Checkbox } from '@/components/ui/checkbox'
 import {

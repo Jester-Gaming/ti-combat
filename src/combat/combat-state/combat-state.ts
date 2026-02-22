@@ -1,29 +1,19 @@
 import { GROUND_FORCES, STRUCTURES } from '@/constants/units'
-import factions from '@/data/faction'
-import type {
-  CombatSide,
-  DiceGroup,
-  FactionKey,
-  UnitBaseType,
-  UnitType,
-} from '@/types'
-import { buildUnitStatsMap } from '@/utils/get-simulation-units'
+import type { CombatSide, DiceGroup, UnitBaseType, UnitType } from '@/types'
 
 import {
-  AbilitiesParams,
-  type AbilityReadContext,
+  AbilitiesEngine,
   cloneInvokes,
   type InvokeCollections,
   type SidedDiceData,
-} from '../abilities'
+} from '../abilities-engine'
 import type {
   AbilityTiming,
   DicePool,
   TimingContextMap,
-} from '../abilities/types'
+} from '../abilities-engine/types'
 import {
   CombatSideState,
-  createDefaultUnitSelections,
   getParticipatingUnitsSet,
 } from '../combat-side-state/combat-side-state'
 import { type LogEntry, Logger } from '../logger'
@@ -83,9 +73,9 @@ function flattenDicePool(pool: DicePool): DiceGroup[] {
 
 /** Main combat state class */
 export class CombatState {
-  data: CombatStateData
+  data!: CombatStateData
   _logger?: Logger
-  private _params!: AbilitiesParams
+  private _params!: AbilitiesEngine
   private _attacker: CombatSideState | undefined
   private _defender: CombatSideState | undefined
   public _invokes!: InvokeCollections
@@ -126,44 +116,11 @@ export class CombatState {
     return this.data.combatMode
   }
 
-  get params(): AbilitiesParams {
+  get params(): AbilitiesEngine {
     return this._params
   }
 
-  /** No-arg constructor with defaults (for UI state management) */
-  constructor() {
-    const defaultFaction = Object.keys(factions)[0] as FactionKey
-
-    const defaultUnitStats = buildUnitStatsMap(defaultFaction)
-
-    this.data = {
-      attacker: {
-        faction: defaultFaction,
-        units: {} as SideStateData['units'],
-        unitState: {},
-        unitStats: defaultUnitStats,
-        hitPools: [],
-        unitSelections: createDefaultUnitSelections(),
-      },
-      defender: {
-        faction: defaultFaction,
-        units: {} as SideStateData['units'],
-        unitState: {},
-        unitStats: defaultUnitStats,
-        hitPools: [],
-        unitSelections: createDefaultUnitSelections(),
-      },
-      abilities: { attacker: {}, defender: {} },
-      combatMode: 'SPACE',
-      currentPhase: getInitialPhaseIdentifier('SPACE'),
-    }
-
-    this._attacker = new CombatSideState(this, 'attacker')
-    this._defender = new CombatSideState(this, 'defender')
-    this._params = AbilitiesParams.fromConfig(this)
-  }
-
-  /** Create CombatState for simulation (replaces old parameterized constructor) */
+  /** Create CombatState for simulation */
   static forSimulation(
     attacker: SideStateData,
     defender: SideStateData,
@@ -186,7 +143,7 @@ export class CombatState {
     }
 
     instance.data = baseData
-    instance._params = AbilitiesParams.fromConfig(instance)
+    instance._params = AbilitiesEngine.fromConfig(instance)
 
     // PREPARE abilities mutate baseData in-place
     instance._params.runAbilities('PREPARE')
@@ -196,7 +153,7 @@ export class CombatState {
 
   public static fromData(
     data: CombatStateData,
-    params?: AbilitiesParams,
+    params?: AbilitiesEngine,
   ): CombatState {
     const instance = Object.create(CombatState.prototype) as CombatState
     instance.data = data
@@ -208,39 +165,9 @@ export class CombatState {
       instance._invokesOwned = false
       source._invokesOwned = false
     } else {
-      instance._params = AbilitiesParams.wrap(instance)
+      instance._params = AbilitiesEngine.wrap(instance)
     }
     return instance
-  }
-
-  /** Swap attacker and defender sides (for UI) */
-  swap(): void {
-    this.data = {
-      ...this.data,
-      attacker: this.data.defender,
-      defender: this.data.attacker,
-      abilities: {
-        attacker: this.data.abilities.defender,
-        defender: this.data.abilities.attacker,
-      },
-    }
-    this._attacker = new CombatSideState(this, 'attacker')
-    this._defender = new CombatSideState(this, 'defender')
-    this._params = AbilitiesParams.fromConfig(this)
-  }
-
-  /** Set combat mode (for UI) */
-  setCombatMode(mode: CombatMode): void {
-    this.data = {
-      ...this.data,
-      combatMode: mode,
-      currentPhase: getInitialPhaseIdentifier(mode),
-    }
-  }
-
-  /** Build a read context for ability UI panels */
-  getReadContext(side: CombatSide): AbilityReadContext {
-    return this._params.context(side) as unknown as AbilityReadContext
   }
 
   private runAbilities<T extends AbilityTiming>(

@@ -4,7 +4,7 @@ import type {
   AbilityCallContext,
   ParamChange,
   SettingsParams,
-} from '@/combat/abilities/types'
+} from '@/combat/abilities-engine/types'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import baseUnits from '@/data/base-units'
 import type { Faction, UnitBaseType, UnitDefinition } from '@/types'

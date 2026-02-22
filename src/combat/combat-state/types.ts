@@ -3,7 +3,6 @@ import type {
   UnitAbility,
   UnitBaseType,
   UnitId,
-  UnitSelection,
   UnitState,
   UnitStats,
   UnitType,
@@ -128,7 +127,6 @@ export interface SideStateData {
   unitStats: Record<UnitType, UnitStatsEntry>
   hitPools: HitPool[]
   unitAbilityRestrictions?: UnitAbilityRestrictions
-  unitSelections?: Record<UnitBaseType, UnitSelection>
   /** Stored hit-value modifiers from abilities, applied to dice after BEFORE_DICE_ROLL */
   hitValueModifiers?: HitValueModifier[]
 }

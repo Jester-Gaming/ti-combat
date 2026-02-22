@@ -1,6 +1,6 @@
 import type { UnitId } from '@/types'
 
-import type { Ability } from '../../../combat/abilities/types'
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 export const geoform: Ability = {
   key: 'GEOFORM',

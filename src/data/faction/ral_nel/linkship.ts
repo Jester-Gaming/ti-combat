@@ -1,8 +1,8 @@
 import { parseVariantId } from '@/combat/utils/unit-variant'
 import type { DiceGroup, UnitBaseType, UnitType } from '@/types'
 
-import type { SideApi } from '../../../combat/abilities/api/ability-api'
-import type { Ability } from '../../../combat/abilities/types'
+import type { SideApi } from '../../../combat/abilities-engine/api/ability-api'
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 const STRUCTURE_TYPES: UnitBaseType[] = ['PDS', 'SPACE_DOCK']
 

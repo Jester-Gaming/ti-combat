@@ -1,5 +1,5 @@
 import sardakkNorrIcon from '@/assets/faction/sardakk_norr.svg?raw'
-import type { Ability } from '@/combat/abilities/types'
+import type { Ability } from '@/combat/abilities-engine/types'
 import {
   GROUND_FORCES,
   UNIT_DISPLAY_NAMES,
