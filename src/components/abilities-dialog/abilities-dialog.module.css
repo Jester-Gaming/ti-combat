@@ -1,0 +1,159 @@
+@reference "tailwindcss";
+
+/* Override dialog content for wider layout */
+.content {
+  max-width: 640px;
+}
+
+/* Scrollable body */
+.body {
+  @apply overflow-y-auto;
+  max-height: calc(85vh - 80px);
+  overscroll-behavior: contain;
+}
+
+.body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.body::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground) / 15%);
+  border-radius: 2px;
+}
+
+.body::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground) / 30%);
+}
+
+/* Trigger button in settings panel */
+.trigger {
+  @apply flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1.5 text-xs;
+  font-family: var(--font-heading);
+  letter-spacing: 0.05em;
+  color: hsl(var(--muted-foreground));
+  background: transparent;
+  border: 1px solid hsl(var(--border));
+  transition: all 0.15s ease;
+}
+
+.trigger:hover {
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--primary) / 40%);
+  background: hsl(var(--primary) / 5%);
+}
+
+:global(.dark) .trigger:hover {
+  border-color: hsl(186deg 100% 50% / 30%);
+  box-shadow: 0 0 8px hsl(186deg 100% 50% / 10%);
+}
+
+.triggerIcon {
+  @apply h-3.5 w-3.5;
+}
+
+/* Section (Faction, ACTION CARDS, Technology, etc.) */
+.section {
+  @apply py-3;
+}
+
+.section + .section {
+  border-top: 1px solid transparent;
+  background-image: linear-gradient(
+    to right,
+    transparent,
+    hsl(var(--border)),
+    transparent
+  );
+  background-size: 100% 1px;
+  background-position: top;
+  background-repeat: no-repeat;
+}
+
+.sectionTitle {
+  @apply mb-2 text-sm font-bold tracking-wide uppercase;
+  font-family: var(--font-heading);
+  color: hsl(var(--primary));
+}
+
+/* Faction subsection */
+.faction {
+  @apply mb-3;
+}
+
+.factionTitle {
+  @apply mb-1 text-xs font-semibold tracking-wider uppercase;
+  font-family: var(--font-heading);
+  color: hsl(var(--foreground));
+}
+
+/* Ability list */
+.list {
+  @apply list-none space-y-1 pl-0;
+}
+
+/* Ability row — grid for aligned columns */
+.row {
+  @apply grid items-start gap-x-2 text-xs leading-relaxed;
+  grid-template-columns: 14px auto 1fr;
+  grid-template-rows: auto;
+  color: hsl(var(--muted-foreground));
+}
+
+.pending {
+  opacity: 40%;
+}
+
+/* Status icon — column 1, nudged to align with text cap height */
+.iconDone {
+  @apply h-3.5 w-3.5 shrink-0;
+  grid-column: 1;
+  grid-row: 1;
+  margin-top: 2px;
+  color: hsl(var(--primary));
+}
+
+.iconPending {
+  @apply h-3.5 w-3.5 shrink-0;
+  grid-column: 1;
+  grid-row: 1;
+  margin-top: 2px;
+  color: hsl(var(--muted-foreground) / 40%);
+}
+
+/* Name — column 2 */
+.name {
+  grid-column: 2;
+  grid-row: 1;
+  color: hsl(var(--foreground));
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Type badge — column 3 */
+.type {
+  @apply rounded-sm px-1.5 py-px text-[10px] leading-tight;
+  grid-column: 3;
+  grid-row: 1;
+  place-self: center start;
+  font-family: var(--font-heading);
+  letter-spacing: 0.04em;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted));
+}
+
+:global(.dark) .type {
+  background: hsl(222deg 30% 18%);
+}
+
+/* Description — spans full width below */
+.description {
+  grid-column: 2 / -1;
+  grid-row: 2;
+  color: hsl(var(--muted-foreground));
+  line-height: 1.5;
+  white-space: pre-line;
+}

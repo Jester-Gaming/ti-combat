@@ -1,0 +1,134 @@
+@reference "tailwindcss";
+
+.overlay {
+  @apply fixed inset-0 z-50;
+  background: rgb(0 0 0 / 50%);
+}
+
+.overlay[data-state='open'] {
+  animation: fadeIn 0.2s ease-out;
+}
+
+.overlay[data-state='closed'] {
+  animation: fadeOut 0.15s ease-in;
+}
+
+.contentWrapper {
+  @apply pointer-events-none fixed inset-0 z-50 flex items-center justify-center px-4;
+}
+
+.content {
+  @apply pointer-events-auto relative flex w-full max-w-sm flex-col overflow-y-auto rounded-lg p-6;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  box-shadow:
+    0 4px 24px rgb(0 0 0 / 15%),
+    0 1px 3px rgb(0 0 0 / 10%);
+}
+
+/* Top accent edge */
+.content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 12px;
+  right: 12px;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(var(--primary) / 40%),
+    transparent
+  );
+}
+
+:global(.dark) .content {
+  background: hsl(222deg 47% 9% / 90%);
+  border: 1px solid hsl(210deg 40% 96% / 8%);
+  backdrop-filter: blur(16px);
+  box-shadow:
+    0 8px 40px rgb(0 0 0 / 50%),
+    0 0 1px hsl(186deg 100% 50% / 10%);
+}
+
+:global(.dark) .content::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    hsl(186deg 100% 50% / 50%),
+    transparent
+  );
+}
+
+.content[data-state='open'] {
+  animation: scaleIn 0.2s ease-out;
+}
+
+.content[data-state='closed'] {
+  animation: scaleOut 0.15s ease-in;
+}
+
+.title {
+  @apply text-sm font-semibold tracking-widest uppercase;
+  font-family: var(--font-heading);
+  color: hsl(var(--foreground));
+}
+
+:global(.dark) .title {
+  text-shadow: 0 0 12px hsl(186deg 100% 50% / 15%);
+}
+
+.close {
+  @apply absolute top-4 right-4 flex h-6 w-6 cursor-pointer items-center justify-center rounded;
+  color: hsl(var(--muted-foreground));
+  transition: all 0.15s ease;
+}
+
+.close:hover {
+  color: hsl(var(--foreground));
+  background: hsl(var(--muted-foreground) / 10%);
+}
+
+.closeIcon {
+  @apply h-4 w-4;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0%;
+  }
+  to {
+    opacity: 100%;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 100%;
+  }
+  to {
+    opacity: 0%;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0%;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 100%;
+    transform: scale(1);
+  }
+}
+
+@keyframes scaleOut {
+  from {
+    opacity: 100%;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0%;
+    transform: scale(0.96);
+  }
+}

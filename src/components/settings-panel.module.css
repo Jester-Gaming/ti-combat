@@ -1,0 +1,32 @@
+@reference "tailwindcss";
+
+.divider {
+  @apply my-4;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    hsl(var(--border)),
+    hsl(var(--border) / 40%),
+    transparent
+  );
+}
+
+:global(.dark) .divider {
+  background: linear-gradient(
+    90deg,
+    hsl(210deg 40% 96% / 12%),
+    hsl(210deg 40% 96% / 4%),
+    transparent
+  );
+}
+
+.section {
+  @apply flex items-center justify-between;
+}
+
+.label {
+  @apply text-sm font-medium;
+  font-family: var(--font-heading);
+  color: hsl(var(--muted-foreground));
+  letter-spacing: 0.05em;
+}

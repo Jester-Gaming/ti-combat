@@ -1,0 +1,30 @@
+@reference "tailwindcss";
+
+.group {
+  @apply inline-flex rounded-md;
+  border: 1px solid hsl(var(--foreground) / 15%);
+  overflow: hidden;
+}
+
+.button {
+  @apply cursor-pointer px-3 py-1 text-sm;
+  background: transparent;
+  border: none;
+  color: hsl(var(--foreground) / 60%);
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.button:not(:last-child) {
+  border-right: 1px solid hsl(var(--foreground) / 15%);
+}
+
+.button:hover {
+  background: hsl(var(--foreground) / 5%);
+}
+
+.active {
+  background: hsl(var(--foreground) / 10%);
+  color: hsl(var(--foreground));
+}

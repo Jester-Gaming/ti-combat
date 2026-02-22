@@ -1,5 +1,10 @@
 # Combat-related abilities
 
+## General
+
+- [x] **Neutral units**
+- [ ] **Capacity check between phases**
+
 ## Faction
 
 ### Arborec
@@ -235,11 +240,5 @@
 
 ## Environment
 
-- [x] **Nebula**
-- [x] **Scar**
-
----
-
-## Other
-
-- [x] Neutrals
+- [x] **Nebula** — If a space combat occurs in a nebula, the defender applies +1 to each combat roll of their ships during that combat.
+- [x] **Scar** — All unit abilities cannot be used by or against units inside of an entropic scar.

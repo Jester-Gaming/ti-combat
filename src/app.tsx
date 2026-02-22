@@ -1,20 +1,33 @@
-import { MoonIcon, SunIcon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 
 import { CombatSimulator } from '@/components/combat-simulator'
-import { IconButton } from '@/components/ui/icon-button'
+import { SettingsPanel } from '@/components/settings-panel'
+import { useSettings } from '@/hooks/use-settings'
 
 import styles from './app.module.css'
 
 function App() {
-  const [isDark, setIsDark] = useState(
-    () => window.matchMedia('(prefers-color-scheme: dark)').matches,
-  )
+  const [settings, setSettings] = useSettings()
 
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', isDark)
-  }, [isDark])
+    if (settings.theme === 'dark') {
+      document.documentElement.classList.add('dark')
+      return
+    }
+    if (settings.theme === 'light') {
+      document.documentElement.classList.remove('dark')
+      return
+    }
+    // system
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    document.documentElement.classList.toggle('dark', mq.matches)
+    const handler = (e: MediaQueryListEvent) => {
+      document.documentElement.classList.toggle('dark', e.matches)
+    }
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [settings.theme])
 
   return (
     <div className={styles.root}>
@@ -27,17 +40,7 @@ function App() {
         {/* Header */}
         <header className={clsx(styles.header, styles.animateFadeUp)}>
           <h1 className={styles.title}>Twilight Imperium Combat Calculator</h1>
-          <IconButton
-            onClick={() => setIsDark(!isDark)}
-            className={styles.themeButton}
-            title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {isDark ? (
-              <SunIcon className={styles.themeIcon} />
-            ) : (
-              <MoonIcon className={styles.themeIcon} />
-            )}
-          </IconButton>
+          <SettingsPanel settings={settings} onSettingsChange={setSettings} />
         </header>
 
         {/* Combat simulator */}

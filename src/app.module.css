@@ -153,11 +153,3 @@
     @apply text-lg;
   }
 }
-
-.themeButton {
-  @apply ml-4 flex h-8 w-8 items-center justify-center rounded;
-}
-
-.themeIcon {
-  @apply h-4 w-4;
-}
