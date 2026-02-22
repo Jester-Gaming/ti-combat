@@ -129,6 +129,102 @@ function getFilteredSacrificeOrder(
   return result
 }
 
+/** Pre-computed parameters for hit assignment */
+export interface AssignHitsParams {
+  participatingUnits: ReadonlySet<UnitBaseType>
+  sacrificeOrder: string[]
+}
+
+/** Compute hit assignment params from state data for a side */
+export function getAssignHitsParams(
+  stateData: CombatStateData,
+  side: CombatSide,
+): AssignHitsParams {
+  const settings = stateData.abilities[side]['SETTINGS']
+  if (!settings) throw new Error('No SETTINGS in getAssignHitsParams')
+
+  const units =
+    stateData.combatMode === 'GROUND'
+      ? (settings.groundCombatParticipating as UnitBaseType[])
+      : (settings.spaceCombatParticipating as UnitBaseType[])
+
+  const participatingUnits = getParticipatingUnitsSet(units)
+
+  const unitPriority = stateData.abilities[side]['UNIT_PRIORITY']
+  if (!unitPriority) throw new Error('No UNIT_PRIORITY in getAssignHitsParams')
+
+  const key =
+    stateData.combatMode === 'GROUND'
+      ? 'groundUnitPriority'
+      : 'spaceUnitPriority'
+  const sacrificeOrder = getFilteredSacrificeOrder(
+    unitPriority[key] as string[],
+    participatingUnits,
+  )
+
+  return { participatingUnits, sacrificeOrder }
+}
+
+/** Standalone hit assignment — takes pre-computed params to avoid repeated lookups */
+export function assignHitsForSide(
+  sideData: SideStateData,
+  params: AssignHitsParams,
+  trackDestroyed?: boolean,
+): Record<string, UnitId[]> {
+  if (sideData.hitPools.length === 0) return EMPTY_DESTROYED
+
+  const { sacrificeOrder } = params
+  let destroyed: Record<string, UnitId[]> | undefined
+  let units = sideData.units
+
+  for (const pool of sideData.hitPools) {
+    let remaining = pool.hits
+    if (remaining <= 0) continue
+
+    const validTargets = pool.validTargets
+
+    for (const variantId of sacrificeOrder) {
+      if (remaining <= 0) break
+      const vid = variantId as UnitType
+      if (
+        validTargets.length > 0 &&
+        !validTargets.includes(vid) &&
+        !validTargets.includes(parseVariantId(vid).type)
+      )
+        continue
+
+      const ids = units[vid]
+      if (!ids || ids.length <= 0) continue
+
+      const toDestroy = Math.min(ids.length, remaining)
+
+      if (trackDestroyed) {
+        if (!destroyed) destroyed = {}
+        if (!destroyed[variantId]) destroyed[variantId] = []
+        for (let i = ids.length - toDestroy; i < ids.length; i++) {
+          destroyed[variantId].push(ids[i])
+        }
+      }
+
+      const kept = ids.length - toDestroy
+      if (kept <= 0) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { [vid]: _removed, ...rest } = units
+        units = rest as SideStateData['units']
+      } else {
+        units = { ...units, [variantId]: ids.slice(0, kept) }
+      }
+
+      remaining -= toDestroy
+    }
+  }
+
+  sideData.units = units
+  sideData.hitPools = []
+
+  return destroyed ?? EMPTY_DESTROYED
+}
+
 /** Build a restriction entry */
 function addRestrictionEntry(
   restrictions: UnitAbilityRestrictions | undefined,
@@ -618,35 +714,6 @@ export class CombatSideState {
     return result
   }
 
-  /** Get participating units from a (potentially modified) state data snapshot */
-  private getParticipatingUnitsFromData(
-    stateData: CombatStateData,
-  ): ReadonlySet<UnitBaseType> {
-    const settings = stateData.abilities[this._side]['SETTINGS']
-    if (!settings)
-      throw new Error('No SETTINGS in getParticipatingUnitsFromData')
-
-    const units =
-      stateData.combatMode === 'GROUND'
-        ? (settings.groundCombatParticipating as UnitBaseType[])
-        : (settings.spaceCombatParticipating as UnitBaseType[])
-
-    return getParticipatingUnitsSet(units)
-  }
-
-  /** Get unit priority from a (potentially modified) state data snapshot */
-  private getUnitPriorityFromData(stateData: CombatStateData): string[] {
-    const unitPriority = stateData.abilities[this._side]['UNIT_PRIORITY']
-    if (!unitPriority)
-      throw new Error('No UNIT_PRIORITY in getUnitPriorityFromData')
-
-    const key =
-      stateData.combatMode === 'GROUND'
-        ? 'groundUnitPriority'
-        : 'spaceUnitPriority'
-    return unitPriority[key] as string[]
-  }
-
   /** Assign hits to this side. Replaces sideData.units with a new record
    *  (does NOT mutate the original arrays — safe for shared branch data).
    *  Returns destroyed UnitIds record.
@@ -655,68 +722,8 @@ export class CombatSideState {
     stateData: CombatStateData,
     trackDestroyed?: boolean,
   ): Record<string, UnitId[]> {
-    const sideData = stateData[this._side]
-    if (sideData.hitPools.length === 0) return EMPTY_DESTROYED
-
-    const participatingUnits = this.getParticipatingUnitsFromData(stateData)
-    const unitPriority = this.getUnitPriorityFromData(stateData)
-    const sacrificeOrder = getFilteredSacrificeOrder(
-      unitPriority,
-      participatingUnits,
-    )
-
-    let destroyed: Record<string, UnitId[]> | undefined
-    // Build new units record — original arrays are never mutated
-    let units = sideData.units
-
-    for (const pool of sideData.hitPools) {
-      let remaining = pool.hits
-      if (remaining <= 0) continue
-
-      const validTargets = pool.validTargets
-
-      for (const variantId of sacrificeOrder) {
-        if (remaining <= 0) break
-        const vid = variantId as UnitType
-        if (
-          validTargets.length > 0 &&
-          !validTargets.includes(vid) &&
-          !validTargets.includes(parseVariantId(vid).type)
-        )
-          continue
-
-        const ids = units[vid]
-        if (!ids || ids.length <= 0) continue
-
-        const toDestroy = Math.min(ids.length, remaining)
-
-        // Track destroyed UnitIds (only when destroy abilities or logging need it)
-        if (trackDestroyed) {
-          if (!destroyed) destroyed = {}
-          if (!destroyed[variantId]) destroyed[variantId] = []
-          for (let i = ids.length - toDestroy; i < ids.length; i++) {
-            destroyed[variantId].push(ids[i])
-          }
-        }
-
-        // Create new array/record — never mutate shared originals
-        const kept = ids.length - toDestroy
-        if (kept <= 0) {
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          const { [vid]: _removed, ...rest } = units
-          units = rest as SideStateData['units']
-        } else {
-          units = { ...units, [variantId]: ids.slice(0, kept) }
-        }
-
-        remaining -= toDestroy
-      }
-    }
-
-    sideData.units = units
-    sideData.hitPools = []
-
-    return destroyed ?? EMPTY_DESTROYED
+    const params = getAssignHitsParams(stateData, this._side)
+    return assignHitsForSide(stateData[this._side], params, trackDestroyed)
   }
 
   // ==========================================================================

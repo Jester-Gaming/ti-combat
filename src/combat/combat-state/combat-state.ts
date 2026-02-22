@@ -11,7 +11,9 @@ import {
   type TimingContextMap,
 } from '../abilities-engine'
 import {
+  assignHitsForSide,
   CombatSideState,
+  getAssignHitsParams,
   getParticipatingUnitsSet,
 } from '../combat-side-state/combat-side-state'
 import { type LogEntry, Logger } from '../logger'
@@ -217,12 +219,18 @@ export class CombatState {
 
     this.runAbilities('BEFORE_ASSIGN_HITS')
 
-    const attackerDestroyed = this.side('attacker').assignHits(
-      this.data,
+    // Pre-compute params once — avoids 2x redundant settings navigation
+    const attackerParams = getAssignHitsParams(this.data, 'attacker')
+    const defenderParams = getAssignHitsParams(this.data, 'defender')
+
+    const attackerDestroyed = assignHitsForSide(
+      this.data.attacker,
+      attackerParams,
       trackDestroyed,
     )
-    const defenderDestroyed = this.side('defender').assignHits(
-      this.data,
+    const defenderDestroyed = assignHitsForSide(
+      this.data.defender,
+      defenderParams,
       trackDestroyed,
     )
 
@@ -734,16 +742,20 @@ function addHitsToData(
 
 /** Check if either side lacks participating units for the current combat mode */
 function noParticipatingUnits(data: CombatStateData): boolean {
-  return (
-    !hasParticipatingUnits(
-      data.attacker.units,
-      getParticipatingUnitsFromData(data, 'attacker'),
-    ) ||
-    !hasParticipatingUnits(
-      data.defender.units,
-      getParticipatingUnitsFromData(data, 'defender'),
+  const mode = data.combatMode
+  const key =
+    mode === 'GROUND' ? 'groundCombatParticipating' : 'spaceCombatParticipating'
+
+  for (const side of ['attacker', 'defender'] as const) {
+    const settings = data.abilities[side]['SETTINGS']
+    if (!settings) return true
+
+    const participating = getParticipatingUnitsSet(
+      settings[key] as UnitBaseType[],
     )
-  )
+    if (!hasParticipatingUnits(data[side].units, participating)) return true
+  }
+  return false
 }
 
 /** Check if units record has any units at all (no type filtering) */
@@ -765,22 +777,6 @@ function hasParticipatingUnits(
     if (participatingUnits.has(type)) return true
   }
   return false
-}
-
-/** Get participating units directly from data */
-function getParticipatingUnitsFromData(
-  data: CombatStateData,
-  side: CombatSide,
-): ReadonlySet<UnitBaseType> {
-  const settings = data.abilities[side]['SETTINGS']
-  if (!settings) throw new Error('No SETTINGS in getParticipatingUnitsFromData')
-
-  const units =
-    data.combatMode === 'GROUND'
-      ? (settings.groundCombatParticipating as UnitBaseType[])
-      : (settings.spaceCombatParticipating as UnitBaseType[])
-
-  return getParticipatingUnitsSet(units)
 }
 
 const abilitiesSideHashCache = new WeakMap<

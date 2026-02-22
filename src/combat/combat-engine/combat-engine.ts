@@ -1,4 +1,5 @@
 import { CombatState } from '../combat-state/combat-state'
+import type { CombatStateData } from '../combat-state/types'
 import type { CombatOutcome, ProbabilityNode } from '../types'
 import { determineWinner } from './utils/determine-winner'
 import { extractSurvivors } from './utils/extract-survivors'
@@ -12,8 +13,8 @@ interface EngineOptions {
 
 const DEFAULT_MAX_ROUNDS = 1000
 
-function getNextRound(currentRound: number, state: CombatState): number {
-  return state.currentPhase.micro === 'START' ? currentRound + 1 : currentRound
+function getNextRound(currentRound: number, data: CombatStateData): number {
+  return data.currentPhase.micro === 'START' ? currentRound + 1 : currentRound
 }
 
 export class CombatEngine {
@@ -94,7 +95,7 @@ export class CombatEngine {
         if (outcomes.length === 1 && outcomes[0].probability === 1) {
           const outcome = outcomes[0]
           state = outcome.state
-          round = getNextRound(round, outcome.state)
+          round = getNextRound(round, outcome.state.data)
           if (node && state.log) {
             node.state = state
             node.round = round
@@ -109,7 +110,7 @@ export class CombatEngine {
               id: nextNodeId++,
               state: o.state,
               probability: o.probability,
-              round: getNextRound(round, o.state),
+              round: getNextRound(round, o.state.data),
               children: [] as ProbabilityNode[],
               log: o.state.log ?? [],
             }))
@@ -131,7 +132,7 @@ export class CombatEngine {
 
         for (let i = 0; i < outcomes.length; i++) {
           const child = outcomes[i]
-          const childRound = getNextRound(round, child.state)
+          const childRound = getNextRound(round, child.state.data)
           const childNode = children ? children[i] : null
 
           const childOutcomes = expandNode(child.state, childRound, childNode)

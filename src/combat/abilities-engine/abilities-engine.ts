@@ -51,6 +51,11 @@ const EMPTY_DESTROYED_IDS: { attacker: Set<UnitId>; defender: Set<UnitId> } = {
   attacker: new Set(),
   defender: new Set(),
 }
+const EMPTY_PENDING: {
+  side: CombatSide
+  variantKey: string
+  unitIds: UnitId[]
+}[] = []
 // ── Ability execution engine (module-private helpers) ────────────────────
 
 /** Source of an ability - either from config or a unit */
@@ -213,7 +218,7 @@ export class AbilitiesEngine {
     side: CombatSide
     variantKey: string
     unitIds: UnitId[]
-  }[] = []
+  }[] = EMPTY_PENDING
 
   _logger?: Logger
 
@@ -229,7 +234,7 @@ export class AbilitiesEngine {
     this._combatState = cs
     this._logger = logger
     this._destroyedIds = EMPTY_DESTROYED_IDS
-    this._pendingUnitInvokes = []
+    this._pendingUnitInvokes = EMPTY_PENDING
   }
 
   // ── Read accessors ──────────────────────────────────────────────────
@@ -316,7 +321,7 @@ export class AbilitiesEngine {
     const instance = Object.create(AbilitiesEngine.prototype) as AbilitiesEngine
     instance._combatState = combatState
     instance._destroyedIds = EMPTY_DESTROYED_IDS
-    instance._pendingUnitInvokes = []
+    instance._pendingUnitInvokes = EMPTY_PENDING
     instance._abilities = abilities
     instance._unitAbilityKeys = unitAbilityKeys
     instance._attackerCtx = new AbilityContext('attacker', instance)
@@ -338,7 +343,7 @@ export class AbilitiesEngine {
     const instance = Object.create(AbilitiesEngine.prototype) as AbilitiesEngine
     instance._combatState = combatState
     instance._destroyedIds = EMPTY_DESTROYED_IDS
-    instance._pendingUnitInvokes = []
+    instance._pendingUnitInvokes = EMPTY_PENDING
     instance._abilities = abilities
     instance._unitAbilityKeys = unitAbilityKeys
     instance._attackerCtx = new AbilityContext('attacker', instance)
@@ -753,6 +758,9 @@ export class AbilitiesEngine {
     variantKey: string,
     unitIds: UnitId[],
   ): void {
+    if (this._pendingUnitInvokes === EMPTY_PENDING) {
+      this._pendingUnitInvokes = []
+    }
     this._pendingUnitInvokes.push({
       side,
       variantKey,
@@ -763,7 +771,7 @@ export class AbilitiesEngine {
   flushPendingUnitInvokes(): void {
     if (this._pendingUnitInvokes.length === 0) return
     const pending = this._pendingUnitInvokes
-    this._pendingUnitInvokes = []
+    this._pendingUnitInvokes = EMPTY_PENDING
     const state = this._combatState.data
     for (const { side, variantKey, unitIds } of pending) {
       this.appendUnitInvokes(side, state[side], variantKey, unitIds)
