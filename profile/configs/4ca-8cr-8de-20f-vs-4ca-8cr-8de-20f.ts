@@ -1,4 +1,4 @@
-import { buildCombatState } from '@/combat/build-combat-state'
+import { buildCombatState } from '@/hooks/combat-setup/build-combat-state'
 
 export default buildCombatState({
   mode: 'SPACE',

@@ -1,2 +1,12 @@
 export { CombatState, type StateWithProbability } from './combat-state'
-export type { CombatStateData, HitPool, SideStateData } from './types'
+export { getInitialPhaseIdentifier } from './phase-utils'
+export {
+  type AbilitiesConfig,
+  type CombatMode,
+  type CombatStateData,
+  type HitPool,
+  type MetaPhase,
+  type MicroPhase,
+  type SideStateData,
+  UNIT_ABILITY_PHASES,
+} from './types'

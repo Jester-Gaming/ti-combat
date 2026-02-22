@@ -3,7 +3,7 @@ import type { FactionKey, UnitBaseType, UnitSelection } from '@/types'
 import { getSimulationUnits } from '@/utils/get-simulation-units'
 
 import { CombatEngine } from './combat-engine'
-import { CombatState } from './combat-state/combat-state'
+import { CombatState } from './combat-state'
 import type {
   AbilitiesConfig,
   CombatMode,
@@ -47,7 +47,7 @@ self.onmessage = (e: MessageEvent<SimulationInput>) => {
   } = e.data
 
   console.time('Setup')
-  prepareSimulationConfig(
+  const sideAbilities = prepareSimulationConfig(
     abilities,
     attackerFaction,
     defenderFaction,
@@ -58,6 +58,15 @@ self.onmessage = (e: MessageEvent<SimulationInput>) => {
     buildSideState(defenderFaction, defenderSelections),
     combatMode,
     abilities,
+    undefined,
+    {
+      attacker: sideAbilities.attacker.abilities,
+      defender: sideAbilities.defender.abilities,
+    },
+    {
+      attacker: sideAbilities.attacker.unitAbilityKeys,
+      defender: sideAbilities.defender.unitAbilityKeys,
+    },
   )
 
   const engine = new CombatEngine()

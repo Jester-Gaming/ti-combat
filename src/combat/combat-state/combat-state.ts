@@ -3,22 +3,19 @@ import type { CombatSide, DiceGroup, UnitBaseType, UnitType } from '@/types'
 
 import {
   AbilitiesEngine,
+  type AbilityTiming,
   cloneInvokes,
+  type DicePool,
   type InvokeCollections,
   type SidedDiceData,
+  type TimingContextMap,
 } from '../abilities-engine'
-import type {
-  AbilityTiming,
-  DicePool,
-  TimingContextMap,
-} from '../abilities-engine/types'
 import {
   CombatSideState,
   getParticipatingUnitsSet,
 } from '../combat-side-state/combat-side-state'
 import { type LogEntry, Logger } from '../logger'
-import { getCombinedDiceDistribution } from '../utils'
-import { parseVariantId } from '../utils/unit-variant'
+import { parseVariantId } from '../utils'
 import {
   getFirstMicroPhase,
   getInitialPhaseIdentifier,
@@ -37,6 +34,7 @@ import type {
   PhaseIdentifier,
   SideStateData,
 } from './types'
+import { getCombinedDiceDistribution } from './utils'
 
 /** A state with its probability */
 export interface StateWithProbability {
@@ -127,6 +125,11 @@ export class CombatState {
     combatMode: CombatMode,
     abilitiesConfig?: AbilitiesConfig,
     currentPhase?: PhaseIdentifier,
+    abilities?: Record<
+      import('@/types').CombatSide,
+      import('../abilities-engine').Ability[]
+    >,
+    unitAbilityKeys?: Record<import('@/types').CombatSide, ReadonlySet<string>>,
   ): CombatState {
     const config = abilitiesConfig
       ? structuredClone(abilitiesConfig)
@@ -142,8 +145,17 @@ export class CombatState {
       currentPhase: currentPhase ?? getInitialPhaseIdentifier(combatMode),
     }
 
+    const emptyKeys = {
+      attacker: new Set<string>(),
+      defender: new Set<string>(),
+    }
+
     instance.data = baseData
-    instance._params = AbilitiesEngine.fromConfig(instance)
+    instance._params = AbilitiesEngine.fromConfig(
+      instance,
+      abilities ?? { attacker: [], defender: [] },
+      unitAbilityKeys ?? emptyKeys,
+    )
 
     // PREPARE abilities mutate baseData in-place
     instance._params.runAbilities('PREPARE')
@@ -165,10 +177,25 @@ export class CombatState {
     return instance
   }
 
-  public static fromDataStandalone(data: CombatStateData): CombatState {
+  public static fromDataStandalone(
+    data: CombatStateData,
+    abilities?: Record<
+      import('@/types').CombatSide,
+      import('../abilities-engine').Ability[]
+    >,
+    unitAbilityKeys?: Record<import('@/types').CombatSide, ReadonlySet<string>>,
+  ): CombatState {
+    const emptyKeys = {
+      attacker: new Set<string>(),
+      defender: new Set<string>(),
+    }
     const instance = Object.create(CombatState.prototype) as CombatState
     instance.data = data
-    instance._params = AbilitiesEngine.wrap(instance)
+    instance._params = AbilitiesEngine.wrap(
+      instance,
+      abilities ?? { attacker: [], defender: [] },
+      unitAbilityKeys ?? emptyKeys,
+    )
     return instance
   }
 

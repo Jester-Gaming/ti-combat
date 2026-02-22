@@ -1,5 +1,5 @@
 import titansOfUlIcon from '@/assets/faction/titans_of_ul.svg?raw'
-import type { Ability } from '@/combat/abilities-engine/types'
+import type { Ability } from '@/combat'
 
 export const tellurian: Ability = {
   key: 'TELLURIAN',

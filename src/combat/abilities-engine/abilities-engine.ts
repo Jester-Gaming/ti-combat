@@ -6,20 +6,17 @@ import type {
   UnitType,
 } from '@/types'
 
-import { TIMING_GROUPS } from '../../data/abilities/general/ability-order'
-import { getOpponentSide } from '../combat-side-state/combat-side-state'
+import {
+  getOpponentSide,
+  resolveUnitStats,
+} from '../combat-side-state/combat-side-state'
 import { CombatState } from '../combat-state/combat-state'
 import type { CombatStateData, SideStateData } from '../combat-state/types'
 import { Logger } from '../logger'
-import { resolveUnitStats } from '../utils/compact-units'
 import { parseVariantId } from '../utils/unit-variant'
 import { AbilityContext } from './api/ability-api'
 import { buildDiceApi, buildDiceReadApi } from './api/dice-api'
 import { extractDefaults } from './declare-param'
-import {
-  getAvailableAbilities,
-  getUnitDefinitionAbilityKeys,
-} from './get-available-abilities'
 import type {
   Ability,
   AbilityInvoke,
@@ -32,6 +29,23 @@ import type {
   SidedContext,
   TimingContextMap,
 } from './types'
+
+export const TIMING_GROUPS: {
+  timings: AbilityTiming[]
+  paramKey: string
+  label: string
+}[] = [
+  {
+    timings: ['START_OF_COMBAT', 'START_OF_COMBAT_ROUND'],
+    paramKey: 'startOfCombat',
+    label: 'Start of Combat (round)',
+  },
+  {
+    timings: ['BEFORE_ASSIGN_HITS'],
+    paramKey: 'beforeAssignHits',
+    label: 'Before Assign Hits',
+  },
+]
 
 const EMPTY_DESTROYED_IDS: { attacker: Set<UnitId>; defender: Set<UnitId> } = {
   attacker: new Set(),
@@ -184,6 +198,7 @@ export function cloneInvokes(invokes: InvokeCollections): InvokeCollections {
 export class AbilitiesEngine {
   private _combatState!: CombatState
   private _abilities!: Record<CombatSide, Ability[]>
+  private _unitAbilityKeys!: Record<CombatSide, ReadonlySet<string>>
   private _attackerCtx!: AbilityContext
   private _defenderCtx!: AbilityContext
 
@@ -201,16 +216,6 @@ export class AbilitiesEngine {
   }[] = []
 
   _logger?: Logger
-
-  private static loadAbilities(
-    attackerFaction: FactionKey,
-    defenderFaction: FactionKey,
-  ): Record<CombatSide, Ability[]> {
-    return {
-      attacker: getAvailableAbilities('attacker', attackerFaction),
-      defender: getAvailableAbilities('defender', defenderFaction),
-    }
-  }
 
   private get state(): CombatStateData {
     return this._combatState.data
@@ -243,6 +248,10 @@ export class AbilitiesEngine {
 
   getAbilities(side: CombatSide): Ability[] {
     return this._abilities[side]
+  }
+
+  get unitAbilityKeys(): Record<CombatSide, ReadonlySet<string>> {
+    return this._unitAbilityKeys
   }
 
   context(side: CombatSide): AbilityContext {
@@ -299,15 +308,17 @@ export class AbilitiesEngine {
    * (via prepareSimulationConfig). This factory just loads abilities
    * and builds invokes from the config as-is.
    */
-  static fromConfig(combatState: CombatState): AbilitiesEngine {
+  static fromConfig(
+    combatState: CombatState,
+    abilities: Record<CombatSide, Ability[]>,
+    unitAbilityKeys: Record<CombatSide, ReadonlySet<string>>,
+  ): AbilitiesEngine {
     const instance = Object.create(AbilitiesEngine.prototype) as AbilitiesEngine
     instance._combatState = combatState
     instance._destroyedIds = EMPTY_DESTROYED_IDS
     instance._pendingUnitInvokes = []
-    instance._abilities = AbilitiesEngine.loadAbilities(
-      combatState.data.attacker.faction,
-      combatState.data.defender.faction,
-    )
+    instance._abilities = abilities
+    instance._unitAbilityKeys = unitAbilityKeys
     instance._attackerCtx = new AbilityContext('attacker', instance)
     instance._defenderCtx = new AbilityContext('defender', instance)
     instance.buildInvokes()
@@ -319,15 +330,17 @@ export class AbilitiesEngine {
    * Used for read-only contexts where we only need ability lookups and
    * default merging (CombatState.fromData fallback, etc.).
    */
-  static wrap(combatState: CombatState): AbilitiesEngine {
+  static wrap(
+    combatState: CombatState,
+    abilities: Record<CombatSide, Ability[]>,
+    unitAbilityKeys: Record<CombatSide, ReadonlySet<string>>,
+  ): AbilitiesEngine {
     const instance = Object.create(AbilitiesEngine.prototype) as AbilitiesEngine
     instance._combatState = combatState
     instance._destroyedIds = EMPTY_DESTROYED_IDS
     instance._pendingUnitInvokes = []
-    instance._abilities = AbilitiesEngine.loadAbilities(
-      combatState.data.attacker.faction,
-      combatState.data.defender.faction,
-    )
+    instance._abilities = abilities
+    instance._unitAbilityKeys = unitAbilityKeys
     instance._attackerCtx = new AbilityContext('attacker', instance)
     instance._defenderCtx = new AbilityContext('defender', instance)
     instance.buildInvokes()
@@ -344,7 +357,7 @@ export class AbilitiesEngine {
     // Quick check: skip if no unit stats have ABILITIES at all
     let hasAnyAbilities = false
     for (const key in sideState.unitStats) {
-      if (resolveUnitStats(sideState, key as UnitType)?.ABILITIES) {
+      if (resolveUnitStats(sideState.unitStats, key as UnitType)?.ABILITIES) {
         hasAnyAbilities = true
         break
       }
@@ -356,7 +369,7 @@ export class AbilitiesEngine {
     for (const key of Object.keys(sideState.units)) {
       const ids = sideState.units[key]
       if (!ids || ids.length <= 0) continue
-      const stats = resolveUnitStats(sideState, key as UnitType)
+      const stats = resolveUnitStats(sideState.unitStats, key as UnitType)
       if (!stats?.ABILITIES) continue
       const { type: unitType } = parseVariantId(key as UnitType)
 
@@ -669,10 +682,10 @@ export class AbilitiesEngine {
     for (const side of ['attacker', 'defender'] as const) {
       const sideMap = collections[side]
       const sideConfig = state.abilities[side]
-      const factionUnitKeys = getUnitDefinitionAbilityKeys(state[side].faction)
+      const unitAbilityKeys = this._unitAbilityKeys[side]
 
       for (const ability of this._abilities[side]) {
-        if (factionUnitKeys.has(ability.key)) continue
+        if (unitAbilityKeys.has(ability.key)) continue
         if (ability.context && ability.context !== state.combatMode) continue
 
         const configParams = sideConfig[ability.key]
@@ -763,7 +776,7 @@ export class AbilitiesEngine {
     variantKey: string,
     unitIds: UnitId[],
   ): void {
-    const stats = resolveUnitStats(sideState, variantKey as UnitType)
+    const stats = resolveUnitStats(sideState.unitStats, variantKey as UnitType)
     if (!stats?.ABILITIES) return
 
     this._combatState.ensureOwnInvokes()
@@ -863,8 +876,7 @@ export class AbilitiesEngine {
     key: string,
     draft: CombatStateData,
   ): void {
-    const factionUnitKeys = getUnitDefinitionAbilityKeys(draft[side].faction)
-    if (factionUnitKeys.has(key)) return
+    if (this._unitAbilityKeys[side].has(key)) return
 
     const ability = this._abilities[side].find(a => a.key === key)
     if (!ability) return

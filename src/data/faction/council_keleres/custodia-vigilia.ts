@@ -1,4 +1,4 @@
-import type { Ability } from '@/combat/abilities-engine/types'
+import type { Ability } from '@/combat'
 import type { UnitId } from '@/types'
 
 export const custodiaVigilia: Ability = {

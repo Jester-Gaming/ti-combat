@@ -1,3 +1,4 @@
+import { TIMING_GROUPS } from '@/combat/abilities-engine/abilities-engine'
 import {
   extractDefaults,
   extractSyncSources,
@@ -11,7 +12,6 @@ import type {
 } from '@/combat/abilities-engine/types'
 import type { AbilitiesConfig, CombatMode } from '@/combat/combat-state/types'
 import { GROUND_FORCES, SHIPS } from '@/constants/units'
-import { TIMING_GROUPS } from '@/data/abilities/general/ability-order'
 import type { CombatSide, UnitBaseType } from '@/types'
 
 import {

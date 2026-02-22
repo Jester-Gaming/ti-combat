@@ -1,6 +1,8 @@
-import type { CombatStateConfig } from '@/combat/build-combat-state'
-import { buildCombatState } from '@/combat/build-combat-state'
-import { CombatEngine } from '@/combat/combat-engine'
+import { CombatEngine } from '@/combat'
+import {
+  buildCombatState,
+  type CombatStateConfig,
+} from '@/hooks/combat-setup/build-combat-state'
 
 function runScenario(config: CombatStateConfig) {
   const state = buildCombatState(config)

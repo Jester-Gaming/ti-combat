@@ -1,5 +1,4 @@
-import type { DeclaredSubtype } from '@/combat/abilities-engine/types'
-import { makeVariantId, parseVariantId } from '@/combat/utils/unit-variant'
+import { type DeclaredSubtype, makeVariantId, parseVariantId } from '@/combat'
 import { UNIT_PRICE } from '@/constants/units'
 import type { UnitBaseType, UnitVariantId } from '@/types'
 

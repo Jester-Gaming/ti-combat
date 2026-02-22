@@ -1,11 +1,9 @@
-import { CombatState } from './combat-state/combat-state'
-import type { CombatOutcome, ProbabilityNode } from './types'
-import {
-  determineWinner,
-  extractSurvivors,
-  generateCompactOutcomeKey,
-  type OutcomeRecord,
-} from './utils/flatten-tree'
+import { CombatState } from '../combat-state/combat-state'
+import type { CombatOutcome, ProbabilityNode } from '../types'
+import { determineWinner } from './utils/determine-winner'
+import { extractSurvivors } from './utils/extract-survivors'
+import { generateCompactOutcomeKey } from './utils/generate-compact-outcome-key'
+import type { OutcomeRecord } from './utils/types'
 
 interface EngineOptions {
   maxRounds?: number

@@ -1,7 +1,5 @@
 import argentFlightIcon from '@/assets/faction/argent_flight.svg?raw'
-import type { Ability } from '@/combat/abilities-engine/types'
-import type { MetaPhase } from '@/combat/combat-state/types'
-import { UNIT_ABILITY_PHASES } from '@/combat/combat-state/types'
+import { type Ability, type MetaPhase, UNIT_ABILITY_PHASES } from '@/combat'
 
 type Params = {
   phases: MetaPhase[]

@@ -1,5 +1,4 @@
-import { declareParam } from '@/combat/abilities-engine/declare-param'
-import type { Ability } from '@/combat/abilities-engine/types'
+import { type Ability, declareParam } from '@/combat'
 import { NON_FIGHTER_SHIPS, UNIT_DISPLAY_NAMES } from '@/constants/units'
 import type { UnitBaseType } from '@/types'
 

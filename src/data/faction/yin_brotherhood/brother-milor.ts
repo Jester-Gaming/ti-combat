@@ -1,5 +1,5 @@
 import yinBrotherhoodIcon from '@/assets/faction/yin_brotherhood.svg?raw'
-import type { Ability } from '@/combat/abilities-engine/types'
+import type { Ability } from '@/combat'
 import type { UnitType } from '@/types'
 
 export const brotherMilor: Ability = {

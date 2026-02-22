@@ -1,5 +1,4 @@
-import { declareParam } from '@/combat/abilities-engine/declare-param'
-import type { Ability } from '@/combat/abilities-engine/types'
+import { type Ability, declareParam } from '@/combat'
 import type { UnitType } from '@/types'
 
 type Params = {

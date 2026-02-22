@@ -1,6 +1,6 @@
 import nekroVirusIcon from '@/assets/faction/nekro_virus.svg?raw'
+import type { Ability } from '@/combat'
 import type {
-  Ability,
   AbilityCallContext,
   ParamChange,
   SettingsParams,

@@ -1,9 +1,8 @@
 import nomadIcon from '@/assets/faction/nomad.svg?raw'
-import { declareParam } from '@/combat/abilities-engine/declare-param'
+import { type Ability, declareParam } from '@/combat'
 import type { UnitType, UnitVariantId } from '@/types'
 import { getEffectiveStats } from '@/utils/get-simulation-units'
 
-import type { Ability } from '../../../combat/abilities-engine/types'
 import { nomad } from './index'
 
 type Params = {

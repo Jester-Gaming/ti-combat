@@ -1,7 +1,6 @@
-import type {
-  Ability,
-  AbilityTiming,
-} from '../../../combat/abilities-engine/types'
+import { TIMING_GROUPS } from '@/combat/abilities-engine/abilities-engine'
+
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
   startOfCombat: string[]
@@ -9,23 +8,6 @@ type Params = {
   beforeUnitAbilityRoll: string[]
   beforeAssignHits: string[]
 }
-
-export const TIMING_GROUPS: {
-  timings: AbilityTiming[]
-  paramKey: keyof Params
-  label: string
-}[] = [
-  {
-    timings: ['START_OF_COMBAT', 'START_OF_COMBAT_ROUND'],
-    paramKey: 'startOfCombat',
-    label: 'Start of Combat (round)',
-  },
-  {
-    timings: ['BEFORE_ASSIGN_HITS'],
-    paramKey: 'beforeAssignHits',
-    label: 'Before Assign Hits',
-  },
-]
 
 export const abilityOrder: Ability<Params> = {
   key: 'ABILITY_ORDER',

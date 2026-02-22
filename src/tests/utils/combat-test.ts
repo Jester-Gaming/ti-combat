@@ -1,23 +1,21 @@
-import type { LogEntry } from '@/combat/logger'
-import type { CombatSide, UnitBaseType, UnitState } from '@/types'
-
-import type { DicePool } from '../../combat/abilities-engine/types'
+import {
+  type Ability,
+  CombatState,
+  type CombatStateData,
+  type DicePool,
+  type LogEntry,
+  type MetaPhase,
+  type MicroPhase,
+  parseVariantId,
+  type SideStateData,
+  type StateWithProbability,
+} from '@/combat'
 import {
   buildCombatState,
   type CombatStateConfig,
   type SideConfig,
-} from '../../combat/build-combat-state'
-import {
-  CombatState,
-  type StateWithProbability,
-} from '../../combat/combat-state/combat-state'
-import type {
-  CombatStateData,
-  MetaPhase,
-  MicroPhase,
-  SideStateData,
-} from '../../combat/combat-state/types'
-import { parseVariantId } from '../../combat/utils/unit-variant'
+} from '@/hooks/combat-setup/build-combat-state'
+import type { CombatSide, UnitBaseType, UnitState } from '@/types'
 
 export type { SideConfig }
 export type CombatTestConfig = CombatStateConfig
@@ -65,11 +63,18 @@ function buildSideView(data: SideStateData): SideView {
 
 export class CombatTest {
   private _state: CombatStateData
+  private _abilities: Record<CombatSide, Ability[]>
+  private _unitAbilityKeys: Record<CombatSide, ReadonlySet<string>>
   private _log: LogEntry[] = []
   private _round = 1
 
   constructor(combatState: CombatState) {
     this._state = combatState.data
+    this._abilities = {
+      attacker: combatState.params.getAbilities('attacker'),
+      defender: combatState.params.getAbilities('defender'),
+    }
+    this._unitAbilityKeys = combatState.params.unitAbilityKeys
   }
 
   // --- State access ---
@@ -105,7 +110,11 @@ export class CombatTest {
 
       if (curMeta === 'COMPLETE') break
 
-      const cs = CombatState.fromDataStandalone(this._state)
+      const cs = CombatState.fromDataStandalone(
+        this._state,
+        this._abilities,
+        this._unitAbilityKeys,
+      )
       const outcomes = cs.advance(this._round, true)
 
       const best = pickOutcomeByHits(outcomes, hits)
@@ -136,7 +145,11 @@ export class CombatTest {
       // Stop after we've processed an END micro-phase
       if (passedEnd) break
 
-      const cs = CombatState.fromDataStandalone(this._state)
+      const cs = CombatState.fromDataStandalone(
+        this._state,
+        this._abilities,
+        this._unitAbilityKeys,
+      )
       const outcomes = cs.advance(this._round, true)
 
       const best = pickOutcomeByHits(outcomes, hits)
@@ -157,7 +170,11 @@ export class CombatTest {
   }
 
   step(round?: number): StateWithProbability[] {
-    const cs = CombatState.fromDataStandalone(this._state)
+    const cs = CombatState.fromDataStandalone(
+      this._state,
+      this._abilities,
+      this._unitAbilityKeys,
+    )
     return cs.advance(round ?? this._round, true)
   }
 

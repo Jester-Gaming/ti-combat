@@ -1,4 +1,3 @@
-import { prepareSimulationConfig } from '@/hooks/combat-setup'
 import type {
   FactionKey,
   UnitBaseType,
@@ -9,14 +8,15 @@ import type {
 import { getFactionUnitConfig } from '@/utils/get-faction-unit-config'
 import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 
-import { CombatState } from './combat-state/combat-state'
-import type { UnitStatsEntry } from './combat-state/types'
+import { CombatState } from '../../combat/combat-state/combat-state'
+import type { UnitStatsEntry } from '../../combat/combat-state/types'
 import type {
   AbilitiesConfig,
   CombatMode,
   SideStateData,
-} from './combat-state/types'
-import { nextUnitIds } from './utils/unit-id'
+} from '../../combat/combat-state/types'
+import { nextUnitIds } from '../../combat/utils/unit-id'
+import { prepareSimulationConfig } from './prepare-simulation-config'
 
 // ============================================================================
 // CONFIG TYPES
@@ -118,7 +118,7 @@ export function buildCombatState(config: CombatStateConfig): CombatState {
   const defenderSide = buildSideState(config.defender)
   const abilitiesConfig = buildAbilitiesConfig(config.attacker, config.defender)
 
-  prepareSimulationConfig(
+  const sideAbilities = prepareSimulationConfig(
     abilitiesConfig,
     config.attacker.faction,
     config.defender.faction,
@@ -130,5 +130,14 @@ export function buildCombatState(config: CombatStateConfig): CombatState {
     defenderSide,
     config.mode,
     abilitiesConfig,
+    undefined,
+    {
+      attacker: sideAbilities.attacker.abilities,
+      defender: sideAbilities.defender.abilities,
+    },
+    {
+      attacker: sideAbilities.attacker.unitAbilityKeys,
+      defender: sideAbilities.defender.unitAbilityKeys,
+    },
   )
 }

@@ -1,9 +1,11 @@
 import baronyOfLetnevIcon from '@/assets/faction/barony_of_letnev.svg?raw'
-import { declareParam } from '@/combat/abilities-engine/declare-param'
-import { makeVariantId, parseVariantId } from '@/combat/utils/unit-variant'
+import {
+  type Ability,
+  declareParam,
+  makeVariantId,
+  parseVariantId,
+} from '@/combat'
 import type { UnitType, UnitVariantId } from '@/types'
-
-import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
   unitType: UnitType

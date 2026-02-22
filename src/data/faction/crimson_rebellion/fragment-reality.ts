@@ -1,6 +1,5 @@
 import crimsonRebellionIcon from '@/assets/faction/crimson_rebellion.svg?raw'
-import { declareParam } from '@/combat/abilities-engine/declare-param'
-import type { Ability } from '@/combat/abilities-engine/types'
+import { type Ability, declareParam } from '@/combat'
 import {
   NON_FIGHTER_SHIPS,
   SHIPS,

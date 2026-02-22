@@ -1,4 +1,4 @@
-import type { Ability } from '@/combat/abilities-engine/types'
+import type { Ability } from '@/combat'
 
 export const quantumManipulator: Ability = {
   key: 'QUANTUM_MANIPULATOR',

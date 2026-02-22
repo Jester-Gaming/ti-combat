@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 
-import type { CombatOutcome } from '@/combat/types'
+import type { CombatOutcome } from '@/combat'
 import type { SimulationInput } from '@/hooks/combat-setup'
 
 const DEBOUNCE_MS = 0

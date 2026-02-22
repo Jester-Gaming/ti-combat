@@ -1,7 +1,14 @@
-import { getAvailableAbilities } from '@/combat/abilities-engine'
-import type { AbilitiesConfig, CombatMode } from '@/combat/combat-state/types'
-import type { FactionKey } from '@/types'
+import type { CombatSide, FactionKey } from '@/types'
 
+import type { Ability } from '../../combat/abilities-engine/types'
+import type {
+  AbilitiesConfig,
+  CombatMode,
+} from '../../combat/combat-state/types'
+import {
+  getAvailableAbilities,
+  getUnitDefinitionAbilityKeys,
+} from './get-available-abilities'
 import {
   reconcileAbilitiesConfig,
   resetSettingsToBase,
@@ -15,13 +22,21 @@ import {
  * Runs the full reconcile pipeline (snapshot user params → reconcile →
  * restore user selections → reset SETTINGS to base), producing a config
  * ready for AbilitiesEngine with no further reconciliation needed.
+ *
+ * Returns the computed abilities so callers can pass them to CombatState
+ * factories (avoiding a redundant second call to getAvailableAbilities).
  */
+export interface SideAbilitiesData {
+  abilities: Ability[]
+  unitAbilityKeys: ReadonlySet<string>
+}
+
 export function prepareSimulationConfig(
   config: AbilitiesConfig,
   attackerFaction: FactionKey,
   defenderFaction: FactionKey,
   combatMode: CombatMode,
-): void {
+): Record<CombatSide, SideAbilitiesData> {
   const abilities = {
     attacker: getAvailableAbilities('attacker', attackerFaction),
     defender: getAvailableAbilities('defender', defenderFaction),
@@ -31,4 +46,15 @@ export function prepareSimulationConfig(
   reconcileAbilitiesConfig(config, abilities, combatMode)
   restoreConsumerParams(config, abilities, savedParams)
   resetSettingsToBase(config, abilities)
+
+  return {
+    attacker: {
+      abilities: abilities.attacker,
+      unitAbilityKeys: getUnitDefinitionAbilityKeys(attackerFaction),
+    },
+    defender: {
+      abilities: abilities.defender,
+      unitAbilityKeys: getUnitDefinitionAbilityKeys(defenderFaction),
+    },
+  }
 }

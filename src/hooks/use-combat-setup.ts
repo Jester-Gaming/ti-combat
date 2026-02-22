@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useReducer, useState } from 'react'
 
-import type { CombatMode } from '@/combat/combat-state/types'
+import type { CombatMode } from '@/combat'
 import { CombatSetup } from '@/hooks/combat-setup'
 import type { CombatSide, FactionKey, UnitBaseType } from '@/types'
 

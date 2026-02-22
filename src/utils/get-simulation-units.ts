@@ -1,4 +1,4 @@
-import { nextUnitIds } from '@/combat/utils/unit-id'
+import { nextUnitIds } from '@/combat'
 import { UNIT_TYPES } from '@/constants/units'
 import type {
   FactionKey,

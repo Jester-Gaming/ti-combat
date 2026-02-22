@@ -1,7 +1,7 @@
 import { readdir } from 'node:fs/promises'
 import { createInterface } from 'node:readline/promises'
 
-import type { CombatState } from '@/combat/combat-state/combat-state'
+import type { CombatState } from '@/combat'
 
 import { runProfile } from './profiler'
 

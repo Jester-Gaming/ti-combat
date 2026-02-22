@@ -1,4 +1,4 @@
-import type { Ability } from '@/combat/abilities-engine/types'
+import type { Ability } from '@/combat'
 import { UNIT_LIMITS } from '@/constants/units'
 
 type Params = {

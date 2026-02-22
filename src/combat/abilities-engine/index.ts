@@ -6,7 +6,6 @@ export {
 } from './abilities-engine'
 export { SideApi } from './api/ability-api'
 export { declareParam, isDeclaredParam } from './declare-param'
-export { getAvailableAbilities } from './get-available-abilities'
 export type {
   Ability,
   AbilityCallContext,
@@ -16,10 +15,14 @@ export type {
   DeclaredSubtype,
   DiceApi,
   DiceContext,
+  DicePool,
   DiceReadApi,
   DiceReadContext,
   OwnOpponentContext,
   ParamChange,
+  SettingsParams,
   SidedContext,
   SidedDiceData,
+  SyncSourceConfig,
+  TimingContextMap,
 } from './types'

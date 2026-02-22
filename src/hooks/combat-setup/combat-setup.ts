@@ -1,19 +1,16 @@
 import {
+  type AbilitiesConfig,
   AbilitiesEngine,
   type Ability,
   type AbilityReadContext,
-  getAvailableAbilities,
-} from '@/combat/abilities-engine'
-import { extractDefaults } from '@/combat/abilities-engine/declare-param'
-import { getOpponentSide } from '@/combat/combat-side-state/combat-side-state'
-import { CombatState } from '@/combat/combat-state/combat-state'
-import { getInitialPhaseIdentifier } from '@/combat/combat-state/phase-utils'
-import type {
-  AbilitiesConfig,
-  CombatMode,
-  CombatStateData,
-  SideStateData,
-} from '@/combat/combat-state/types'
+  type CombatMode,
+  CombatState,
+  type CombatStateData,
+  extractDefaults,
+  getInitialPhaseIdentifier,
+  getOpponentSide,
+  type SideStateData,
+} from '@/combat'
 import { UNIT_LIMITS, UNIT_TYPES } from '@/constants/units'
 import factions from '@/data/faction'
 import type {
@@ -27,6 +24,10 @@ import {
   getSimulationUnits,
 } from '@/utils/get-simulation-units'
 
+import {
+  getAvailableAbilities,
+  getUnitDefinitionAbilityKeys,
+} from './get-available-abilities'
 import {
   initializeAbilityDefaults,
   reconcileAbilitiesConfig,
@@ -56,6 +57,7 @@ export class CombatSetup {
   private _combatMode: CombatMode
   private _abilities: AbilitiesConfig
   private _sideAbilities: Record<CombatSide, Ability[]>
+  private _unitAbilityKeys: Record<CombatSide, ReadonlySet<string>>
   private _stateData: CombatStateData
   private _engine: AbilitiesEngine
 
@@ -73,6 +75,10 @@ export class CombatSetup {
     this._sideAbilities = {
       attacker: getAvailableAbilities('attacker', defaultFaction),
       defender: getAvailableAbilities('defender', defaultFaction),
+    }
+    this._unitAbilityKeys = {
+      attacker: getUnitDefinitionAbilityKeys(defaultFaction),
+      defender: getUnitDefinitionAbilityKeys(defaultFaction),
     }
 
     this._stateData = {
@@ -102,8 +108,16 @@ export class CombatSetup {
       this._combatMode,
     )
 
-    const wrapState = CombatState.fromDataStandalone(this._stateData)
-    this._engine = AbilitiesEngine.wrap(wrapState)
+    const wrapState = CombatState.fromDataStandalone(
+      this._stateData,
+      this._sideAbilities,
+      this._unitAbilityKeys,
+    )
+    this._engine = AbilitiesEngine.wrap(
+      wrapState,
+      this._sideAbilities,
+      this._unitAbilityKeys,
+    )
   }
 
   // ── Read accessors ──────────────────────────────────────────────────
@@ -155,6 +169,7 @@ export class CombatSetup {
 
     // Reload abilities for the changed side
     this._sideAbilities[side] = getAvailableAbilities(side, faction)
+    this._unitAbilityKeys[side] = getUnitDefinitionAbilityKeys(faction)
 
     // Rebuild side config: keep existing params for surviving abilities,
     // initialize defaults for new ones
@@ -411,7 +426,11 @@ export class CombatSetup {
 
   private rebuildEngine(): void {
     const wrapState = CombatState.fromData(this._stateData, this._engine)
-    this._engine = AbilitiesEngine.wrap(wrapState)
+    this._engine = AbilitiesEngine.wrap(
+      wrapState,
+      this._sideAbilities,
+      this._unitAbilityKeys,
+    )
   }
 
   private refreshEngine(): void {

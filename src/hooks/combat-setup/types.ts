@@ -1,4 +1,4 @@
-import type { AbilitiesConfig, CombatMode } from '@/combat/combat-state/types'
+import type { AbilitiesConfig, CombatMode } from '@/combat'
 import type { FactionKey, UnitBaseType, UnitSelection } from '@/types'
 
 export interface SimulationInput {

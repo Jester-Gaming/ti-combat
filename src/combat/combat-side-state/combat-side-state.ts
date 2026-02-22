@@ -21,13 +21,58 @@ import type {
   SideStateData,
   UnitAbilityRestrictions,
 } from '../combat-state/types'
-import { resolveUnitStats, totalCountForType } from '../utils/compact-units'
 import { nextUnitIds } from '../utils/unit-id'
 import {
   getVariantDisplayName,
   makeVariantId,
   parseVariantId,
 } from '../utils/unit-variant'
+
+/**
+ * Resolve a unitStats entry to concrete UnitStats.
+ * If the entry is a factory function, applies it to the nearest parent with
+ * concrete stats (tries each one-subtype-removed variant, then base type).
+ */
+export function resolveUnitStats(
+  unitStats: SideStateData['unitStats'],
+  key: UnitType,
+): UnitStats | undefined {
+  const entry = unitStats[key]
+  if (!entry) return undefined
+  if (typeof entry === 'function') {
+    const { type, subtypes } = parseVariantId(key)
+    // Try each parent variant (remove one subtype at a time)
+    for (let i = 0; i < subtypes.length; i++) {
+      const parentSubs = [...subtypes.slice(0, i), ...subtypes.slice(i + 1)]
+      const parentKey =
+        parentSubs.length > 0 ? makeVariantId(type, parentSubs) : type
+      const parentEntry = unitStats[parentKey]
+      if (parentEntry !== undefined && typeof parentEntry !== 'function') {
+        return entry(parentEntry)
+      }
+    }
+    // Fallback: base type
+    const baseEntry = unitStats[type]
+    if (baseEntry !== undefined && typeof baseEntry !== 'function') {
+      return entry(baseEntry)
+    }
+    return undefined
+  }
+  return entry
+}
+
+/** Total count across all variants of a base type */
+function totalCountForType(
+  units: Record<string, UnitId[]>,
+  baseType: UnitBaseType,
+): number {
+  let total = 0
+  for (const key of Object.keys(units)) {
+    const { type } = parseVariantId(key as UnitType)
+    if (type === baseType) total += units[key].length
+  }
+  return total
+}
 import { getSettingsValidTargets as getSettingsValidTargetsUtil } from './utils/get-settings-valid-targets'
 
 /** Get the opposite side */
@@ -312,21 +357,26 @@ export class CombatSideState {
     return [...types]
   }
 
+  /** Resolve unit stats for a variant key */
+  resolveUnitStats(key: UnitType): UnitStats | undefined {
+    return resolveUnitStats(this.data.unitStats, key)
+  }
+
   /** Get unit stats by variant key or UnitId */
   getUnitStats(unitTypeOrId: string | UnitId): UnitStats | undefined {
     const data = this.data
     if (typeof unitTypeOrId === 'string') {
-      const stats = resolveUnitStats(data, unitTypeOrId as UnitType)
+      const stats = resolveUnitStats(data.unitStats, unitTypeOrId as UnitType)
       if (stats) return stats
       const { type } = parseVariantId(unitTypeOrId as UnitType)
       if (type !== unitTypeOrId) {
-        return resolveUnitStats(data, type)
+        return resolveUnitStats(data.unitStats, type)
       }
       return undefined
     }
     const key = this.findVariantKey(unitTypeOrId)
     if (!key) return undefined
-    return resolveUnitStats(data, key)
+    return resolveUnitStats(data.unitStats, key)
   }
 
   /** Get UnitState for a UnitId */
@@ -549,7 +599,7 @@ export class CombatSideState {
       }
 
       // Read dice values directly from shared stats
-      const stats = resolveUnitStats(data, key)
+      const stats = resolveUnitStats(data.unitStats, key)
       if (!stats) continue
       const dieData =
         source === 'COMBAT' ? stats.COMBAT : stats.UNIT_ABILITIES?.[source]
@@ -763,7 +813,8 @@ export class CombatSideState {
         data.unitStats[newKey] = statsFactory
       } else {
         const sourceStats =
-          resolveUnitStats(data, sourceKey) ?? resolveUnitStats(data, type)
+          resolveUnitStats(data.unitStats, sourceKey) ??
+          resolveUnitStats(data.unitStats, type)
         if (sourceStats) {
           data.unitStats[newKey] = { ...sourceStats }
         }
@@ -822,7 +873,7 @@ export class CombatSideState {
     if (isVariantKey) {
       if (data.unitStats[key]) {
         if (typeof data.unitStats[key] === 'function') {
-          data.unitStats[key] = resolveUnitStats(data, key)!
+          data.unitStats[key] = resolveUnitStats(data.unitStats, key)!
         }
         Object.assign(data.unitStats[key], updates)
       }
@@ -836,7 +887,7 @@ export class CombatSideState {
         if (vType !== type) continue
         if (data.unitStats[vKey]) {
           if (typeof data.unitStats[vKey] === 'function') {
-            data.unitStats[vKey] = resolveUnitStats(data, vKey)!
+            data.unitStats[vKey] = resolveUnitStats(data.unitStats, vKey)!
           }
           Object.assign(data.unitStats[vKey], updates)
         }
@@ -847,7 +898,7 @@ export class CombatSideState {
       }
       if (data.unitStats[type]) {
         if (typeof data.unitStats[type] === 'function') {
-          data.unitStats[type] = resolveUnitStats(data, type)!
+          data.unitStats[type] = resolveUnitStats(data.unitStats, type)!
         }
         Object.assign(data.unitStats[type], updates)
       }

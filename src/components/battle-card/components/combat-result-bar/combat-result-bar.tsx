@@ -1,7 +1,7 @@
 import { clsx } from 'clsx'
 import { useState } from 'react'
 
-import type { CombatOutcome, SurvivorSide } from '@/combat/types'
+import type { CombatOutcome, SurvivorSide } from '@/combat'
 import { UNIT_SHORT_NAMES } from '@/constants/units'
 import type { UnitBaseType } from '@/types'
 

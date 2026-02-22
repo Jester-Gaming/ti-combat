@@ -1,8 +1,7 @@
 import { writeFile } from 'node:fs/promises'
 import { Session } from 'node:inspector/promises'
 
-import { CombatEngine } from '@/combat/combat-engine'
-import { CombatState } from '@/combat/combat-state/combat-state'
+import { CombatEngine, CombatState } from '@/combat'
 
 const TOP_N = 25
 
