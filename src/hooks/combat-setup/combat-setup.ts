@@ -102,7 +102,7 @@ export class CombatSetup {
       this._combatMode,
     )
 
-    const wrapState = CombatState.fromData(this._stateData)
+    const wrapState = CombatState.fromDataStandalone(this._stateData)
     this._engine = AbilitiesEngine.wrap(wrapState)
   }
 

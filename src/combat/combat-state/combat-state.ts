@@ -153,20 +153,22 @@ export class CombatState {
 
   public static fromData(
     data: CombatStateData,
-    params?: AbilitiesEngine,
+    params: AbilitiesEngine,
   ): CombatState {
     const instance = Object.create(CombatState.prototype) as CombatState
     instance.data = data
-    // CombatSideState instances created lazily via getters
-    if (params) {
-      instance._params = params
-      const source = params.combatState
-      instance._invokes = source._invokes
-      instance._invokesOwned = false
-      source._invokesOwned = false
-    } else {
-      instance._params = AbilitiesEngine.wrap(instance)
-    }
+    instance._params = params
+    const source = params.combatState
+    instance._invokes = source._invokes
+    instance._invokesOwned = false
+    source._invokesOwned = false
+    return instance
+  }
+
+  public static fromDataStandalone(data: CombatStateData): CombatState {
+    const instance = Object.create(CombatState.prototype) as CombatState
+    instance.data = data
+    instance._params = AbilitiesEngine.wrap(instance)
     return instance
   }
 
@@ -640,12 +642,18 @@ function applyStoredHitValueModifiers(
 function cloneUnitState(
   us: SideStateData['unitState'],
 ): SideStateData['unitState'] {
-  const clone: SideStateData['unitState'] = {}
-  for (const k in us) {
-    const id = k as unknown as import('@/types').UnitId
-    clone[id] = { ...us[id] }
+  // Fast path: empty unitState (e.g. fighters-only scenarios)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  for (const _ in us) {
+    // Has at least one key — need to clone
+    const clone: SideStateData['unitState'] = {}
+    for (const k in us) {
+      const id = k as unknown as import('@/types').UnitId
+      clone[id] = { ...us[id] }
+    }
+    return clone
   }
-  return clone
+  return {}
 }
 
 /** Branch clone — copies hitPools + unitState per side.

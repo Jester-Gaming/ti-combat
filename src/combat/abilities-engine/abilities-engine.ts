@@ -33,6 +33,10 @@ import type {
   TimingContextMap,
 } from './types'
 
+const EMPTY_DESTROYED_IDS: { attacker: Set<UnitId>; defender: Set<UnitId> } = {
+  attacker: new Set(),
+  defender: new Set(),
+}
 // ── Ability execution engine (module-private helpers) ────────────────────
 
 /** Source of an ability - either from config or a unit */
@@ -160,6 +164,7 @@ export interface RunAbilitiesOptions {
 export interface InvokeCollections {
   attacker: Map<AbilityTiming, TimingInvokeEntry[]>
   defender: Map<AbilityTiming, TimingInvokeEntry[]>
+  _hasDestroyAbilities?: boolean
 }
 
 export function cloneInvokes(invokes: InvokeCollections): InvokeCollections {
@@ -186,10 +191,7 @@ export class AbilitiesEngine {
   _destroyedIds: {
     attacker: Set<UnitId>
     defender: Set<UnitId>
-  } = {
-    attacker: new Set(),
-    defender: new Set(),
-  }
+  } = EMPTY_DESTROYED_IDS
 
   /** Deferred invoke registrations — flushed after ability call completes */
   _pendingUnitInvokes: {
@@ -221,7 +223,7 @@ export class AbilitiesEngine {
   setCombatState(cs: CombatState, logger?: Logger): void {
     this._combatState = cs
     this._logger = logger
-    this._destroyedIds = { attacker: new Set(), defender: new Set() }
+    this._destroyedIds = EMPTY_DESTROYED_IDS
     this._pendingUnitInvokes = []
   }
 
@@ -270,13 +272,22 @@ export class AbilitiesEngine {
   /** Fast check: any DESTROY/WHEN_DESTROY/AFTER_DESTROY invokes registered? */
   hasDestroyAbilities(): boolean {
     const invokes = this._combatState._invokes
+    if (invokes._hasDestroyAbilities !== undefined)
+      return invokes._hasDestroyAbilities
+    let result = false
     for (const side of ['attacker', 'defender'] as const) {
       const sideMap = invokes[side]
-      if (sideMap.get('DESTROY')?.length) return true
-      if (sideMap.get('WHEN_DESTROY')?.length) return true
-      if (sideMap.get('AFTER_DESTROY')?.length) return true
+      if (
+        sideMap.get('DESTROY')?.length ||
+        sideMap.get('WHEN_DESTROY')?.length ||
+        sideMap.get('AFTER_DESTROY')?.length
+      ) {
+        result = true
+        break
+      }
     }
-    return false
+    invokes._hasDestroyAbilities = result
+    return result
   }
 
   // ── Factories ──────────────────────────────────────────────────────
@@ -291,7 +302,7 @@ export class AbilitiesEngine {
   static fromConfig(combatState: CombatState): AbilitiesEngine {
     const instance = Object.create(AbilitiesEngine.prototype) as AbilitiesEngine
     instance._combatState = combatState
-    instance._destroyedIds = { attacker: new Set(), defender: new Set() }
+    instance._destroyedIds = EMPTY_DESTROYED_IDS
     instance._pendingUnitInvokes = []
     instance._abilities = AbilitiesEngine.loadAbilities(
       combatState.data.attacker.faction,
@@ -311,7 +322,7 @@ export class AbilitiesEngine {
   static wrap(combatState: CombatState): AbilitiesEngine {
     const instance = Object.create(AbilitiesEngine.prototype) as AbilitiesEngine
     instance._combatState = combatState
-    instance._destroyedIds = { attacker: new Set(), defender: new Set() }
+    instance._destroyedIds = EMPTY_DESTROYED_IDS
     instance._pendingUnitInvokes = []
     instance._abilities = AbilitiesEngine.loadAbilities(
       combatState.data.attacker.faction,

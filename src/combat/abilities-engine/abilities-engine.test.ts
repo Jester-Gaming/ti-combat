@@ -167,7 +167,9 @@ describe('unit ability invocation', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    CombatState.fromData(state).params.runAbilities('START_OF_COMBAT_ROUND')
+    CombatState.fromDataStandalone(state).params.runAbilities(
+      'START_OF_COMBAT_ROUND',
+    )
 
     expect(invokeCalls).toHaveLength(2)
   })
@@ -208,7 +210,9 @@ describe('unit ability invocation', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    CombatState.fromData(state).params.runAbilities('START_OF_COMBAT_ROUND')
+    CombatState.fromDataStandalone(state).params.runAbilities(
+      'START_OF_COMBAT_ROUND',
+    )
 
     // Only first unit should invoke (second destroyed by first)
     expect(invokeCalls).toHaveLength(1)
@@ -285,7 +289,9 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    CombatState.fromData(state).params.runAbilities('START_OF_COMBAT_ROUND')
+    CombatState.fromDataStandalone(state).params.runAbilities(
+      'START_OF_COMBAT_ROUND',
+    )
 
     // Fighter should be destroyed
     expect(state.defender.units.FIGHTER).toBeUndefined()
@@ -347,7 +353,9 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    CombatState.fromData(state).params.runAbilities('START_OF_COMBAT_ROUND')
+    CombatState.fromDataStandalone(state).params.runAbilities(
+      'START_OF_COMBAT_ROUND',
+    )
 
     expect(afterDestroyCalls).toHaveLength(0)
   })
@@ -415,7 +423,9 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    CombatState.fromData(state).params.runAbilities('START_OF_COMBAT_ROUND')
+    CombatState.fromDataStandalone(state).params.runAbilities(
+      'START_OF_COMBAT_ROUND',
+    )
 
     // Both units should be destroyed
     expect(state.defender.units.FIGHTER).toBeUndefined()
@@ -476,7 +486,7 @@ describe('multi-timing runAbilities', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    CombatState.fromData(state).params.runAbilities([
+    CombatState.fromDataStandalone(state).params.runAbilities([
       'START_OF_COMBAT_ROUND',
       'START_OF_COMBAT',
     ])
@@ -517,7 +527,9 @@ describe('multi-timing runAbilities', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    CombatState.fromData(state).params.runAbilities('START_OF_COMBAT_ROUND')
+    CombatState.fromDataStandalone(state).params.runAbilities(
+      'START_OF_COMBAT_ROUND',
+    )
 
     expect(calls).toHaveLength(1)
   })

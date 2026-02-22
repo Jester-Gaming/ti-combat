@@ -105,7 +105,7 @@ export class CombatTest {
 
       if (curMeta === 'COMPLETE') break
 
-      const cs = CombatState.fromData(this._state)
+      const cs = CombatState.fromDataStandalone(this._state)
       const outcomes = cs.advance(this._round, true)
 
       const best = pickOutcomeByHits(outcomes, hits)
@@ -136,7 +136,7 @@ export class CombatTest {
       // Stop after we've processed an END micro-phase
       if (passedEnd) break
 
-      const cs = CombatState.fromData(this._state)
+      const cs = CombatState.fromDataStandalone(this._state)
       const outcomes = cs.advance(this._round, true)
 
       const best = pickOutcomeByHits(outcomes, hits)
@@ -157,7 +157,7 @@ export class CombatTest {
   }
 
   step(round?: number): StateWithProbability[] {
-    const cs = CombatState.fromData(this._state)
+    const cs = CombatState.fromDataStandalone(this._state)
     return cs.advance(round ?? this._round, true)
   }
 
