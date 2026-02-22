@@ -94,10 +94,18 @@ For phase system, ability timings, unit stats, factions, and ability keys — se
 ## Custom Matcher: `toContainDice`
 
 ```typescript
+// Single dice group
 expect(dicePool).toContainDice(unitType, [hitValue, diceCount])
+
+// Multiple dice groups (variadic)
+expect(dicePool).toContainDice(
+  unitType,
+  [hitValue, diceCount],
+  [hitValue, diceCount],
+)
 ```
 
-Checks that the dice pool for `unitType` contains a dice group matching `[hitValue, diceCount]`. Auto-loaded via setup file — no explicit import needed.
+Checks that the dice pool for `unitType` contains dice groups matching the given `[hitValue, diceCount]` pairs. Accepts one or more dice group arguments. Auto-loaded via setup file — no explicit import needed.
 
 ## Side-Reversal Testing (`forEachSide`)
 
@@ -170,7 +178,7 @@ For unit ability dice (bombardment/space cannon/AFB), advance to the right point
 
 ```typescript
 // Bombardment dice
-t.advanceTo('SPACE_CANNON_DEFENSE') // stops after bombardment processed
+t.advanceTo('SPACE_CANNON_DEFENSE') // stops before SCD (after bombardment and commit)
 const pool = t.dicePool()!
 expect(pool.attacker).toContainDice('DREADNOUGHT', [5, 1])
 
@@ -298,8 +306,8 @@ it('creates subtype and modifies dice', () => {
 
   // Check dice pool from log
   const pool = t.dicePool()!
-  // Cavalry Cruiser gets Nomad flagship stats: [4, 2]
-  expect(pool.attacker).toContainDice('CRUISER', [4, 2])
+  // Cavalry Cruiser gets Nomad flagship stats: [7, 2]
+  expect(pool.attacker).toContainDice('CRUISER', [7, 2])
 })
 ```
 

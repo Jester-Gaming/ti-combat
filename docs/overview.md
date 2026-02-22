@@ -7,24 +7,26 @@ Two-tier system: **MetaPhase** (major stage) + **MicroPhase** (step within stage
 **Space combat flow:**
 
 ```
-SPACE_CANNON_OFFENSE: START -> DICE_ROLL -> ASSIGN_HITS -> END
-AFB:                  START -> DICE_ROLL -> ASSIGN_HITS -> END
-SPACE_COMBAT:         START -> DICE_ROLL -> ASSIGN_HITS -> END (loops)
+SPACE_CANNON_OFFENSE: DICE_ROLL -> ASSIGN_HITS
+SPACE_COMBAT:         START -> [AFB: DICE_ROLL -> ASSIGN_HITS]* -> DICE_ROLL -> ASSIGN_HITS -> END (loops)
 COMPLETE
 ```
+
+\*AFB runs inside round 1 only, between START and DICE_ROLL. After AFB completes, combat continues at SPACE_COMBAT:DICE_ROLL (skipping START). In subsequent rounds, AFB is skipped entirely.
 
 **Ground combat flow:**
 
 ```
-BOMBARDMENT:          START -> DICE_ROLL -> ASSIGN_HITS -> END
-SPACE_CANNON_DEFENSE: START -> DICE_ROLL -> ASSIGN_HITS -> END
+BOMBARDMENT:          DICE_ROLL -> ASSIGN_HITS
+COMMIT_UNITS:         END
+SPACE_CANNON_DEFENSE: DICE_ROLL -> ASSIGN_HITS
 GROUND_COMBAT:        START -> DICE_ROLL -> ASSIGN_HITS -> END (loops)
 COMPLETE
 ```
 
 ## Available Factions
 
-`ARBOREC`, `ARGENT_FLIGHT`, `BARONY_OF_LETNEV`, `CLAN_OF_SAAR`, `COUNCIL_KELERES`, `CRIMSON_REBELLION`, `DEEPWROUGHT_SCHOLARATE`, `EMBERS_OF_MUAAT`, `EMIRATES_OF_HACAN`, `EMPYREAN`, `FEDERATION_OF_SOL`, `FIRMAMENT`, `GHOSTS_OF_CREUSS`, `L1Z1X_MINDNET`, `LAST_BASTION`, `MAHACT_GENE_SORCERERS`, `MENTAK_COALITION`, `NAALU_COLLECTIVE`, `NAAZ_ROKHA_ALLIANCE`, `NEKRO_VIRUS`, `NOMAD`, `OBSIDIAN`, `RAL_NEL`, `SARDAKK_NORR`, `TITANS_OF_UL`, `UNIVERSITIES_OF_JOL_NAR`, `VUILRAITH_CABAL`, `WINNU`, `XXCHA_KINGDOM`, `YIN_BROTHERHOOD`, `YSSARIL_TRIBES`
+`ARBOREC`, `ARGENT_FLIGHT`, `BARONY_OF_LETNEV`, `CLAN_OF_SAAR`, `COUNCIL_KELERES`, `CRIMSON_REBELLION`, `DEEPWROUGHT_SCHOLARATE`, `EMBERS_OF_MUAAT`, `EMIRATES_OF_HACAN`, `EMPYREAN`, `FEDERATION_OF_SOL`, `FIRMAMENT`, `GHOSTS_OF_CREUSS`, `L1Z1X_MINDNET`, `LAST_BASTION`, `MAHACT_GENE_SORCERERS`, `MENTAK_COALITION`, `NAALU_COLLECTIVE`, `NAAZ_ROKHA_ALLIANCE`, `NEKRO_VIRUS`, `NEUTRAL`, `NOMAD`, `OBSIDIAN`, `RAL_NEL`, `SARDAKK_NORR`, `TITANS_OF_UL`, `UNIVERSITIES_OF_JOL_NAR`, `VUILRAITH_CABAL`, `WINNU`, `XXCHA_KINGDOM`, `YIN_BROTHERHOOD`, `YSSARIL_TRIBES`
 
 ## Base Unit Types
 
@@ -47,6 +49,6 @@ Format: `[hitValue, diceCount]`
 
 Note: Faction-specific units override these values. Use `getFactionUnitConfig(faction)` to check. Notable overrides:
 
-- Sardakk Norr: All combat values improved by 1 (e.g. Cruiser [6, 1])
-- Sardakk Norr Dreadnought (Exotrireme): Bombardment [4, 2]
-- Jol-Nar: All combat values worsened by 1 (Fragile ability built into faction)
+- Sardakk Norr: `unrelenting` ability applies -1 to hit values at runtime (e.g. Cruiser effectively [6, 1])
+- Sardakk Norr Dreadnought (Exotrireme): Bombardment [4, 2] (stat override)
+- Jol-Nar: `fragile` ability applies +1 to hit values at runtime (worsens combat)
