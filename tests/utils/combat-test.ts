@@ -17,6 +17,8 @@ import {
 } from '@/hooks/combat-setup/build-combat-state'
 import type { CombatSide, UnitBaseType, UnitState } from '@/types'
 
+import { shuffleInPlace } from './shuffle'
+
 export type { SideConfig }
 export type CombatTestConfig = CombatStateConfig
 
@@ -85,9 +87,17 @@ export class CombatTest {
   constructor(combatState: CombatState, reversed = false) {
     this._state = combatState.data
     this._abilities = {
-      attacker: combatState.params.getAbilities('attacker'),
-      defender: combatState.params.getAbilities('defender'),
+      attacker: [...combatState.params.getAbilities('attacker')],
+      defender: [...combatState.params.getAbilities('defender')],
     }
+
+    // Shuffle ability resolution order for order-independence testing.
+    // Only shuffle _abilities (buildInvokes iteration order).
+    // ABILITY_ORDER arrays are NOT shuffled — they represent intentional
+    // ordering set by tests to control resolution priority within a timing.
+    shuffleInPlace(this._abilities.attacker)
+    shuffleInPlace(this._abilities.defender)
+
     this._unitAbilityKeys = combatState.params.unitAbilityKeys
     this._reversed = reversed
   }

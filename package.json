@@ -15,6 +15,7 @@
     "format:check": "prettier --check .",
     "test": "vitest --no-isolate --pool=threads",
     "test:run": "vitest run --no-isolate --pool=threads",
+    "test:shuffle": "sh -c 'for i in $(seq ${N:-5}); do echo \"\\nShuffle run $i/$N...\"; SHUFFLE_SEED=random npx vitest run --no-isolate --pool=threads || exit 1; done'",
     "test:snapshots": "vitest --config tests/snapshots/vitest.config.ts",
     "test:snapshots:run": "vitest run --config tests/snapshots/vitest.config.ts",
     "test:snapshots:update": "vitest run --config tests/snapshots/vitest.config.ts --update",

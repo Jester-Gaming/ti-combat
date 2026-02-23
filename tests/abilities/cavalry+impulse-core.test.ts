@@ -3,6 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { combatTest } from '../utils/combat-test'
 
 describe('CAVALRY + IMPULSE_CORE', () => {
+  // ABILITY_ORDER is not needed here: IMPULSE_CORE can't fire until
+  // CAVALRY creates the variant (or finds a matching sacrifice target),
+  // so the alternation mechanism ensures the same result regardless of order.
+
   it('sacrifices Cavalry destroyer when DESTROYER:Cavalry is in priority', () => {
     const t = combatTest({
       mode: 'SPACE',

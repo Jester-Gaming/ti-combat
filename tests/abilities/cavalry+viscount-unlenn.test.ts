@@ -45,6 +45,9 @@ describe.forEachSide('CAVALRY + VISCOUNT_UNLENN', () => {
             isEnabled: true,
             unitType: 'CRUISER:Cavalry',
           },
+          ABILITY_ORDER: {
+            startOfCombat: ['CAVALRY', 'VISCOUNT_UNLENN'],
+          },
         },
       },
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },

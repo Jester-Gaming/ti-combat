@@ -49,7 +49,11 @@ export default defineConfig({
   test: {
     globals: true,
     css: true,
-    setupFiles: ['tests/utils/expect.ts', 'tests/utils/for-each-side.ts'],
+    setupFiles: [
+      'tests/utils/expect.ts',
+      'tests/utils/for-each-side.ts',
+      'tests/utils/shuffle-abilities.ts',
+    ],
     exclude: [
       '**/node_modules/**',
       '**/dist/**',
