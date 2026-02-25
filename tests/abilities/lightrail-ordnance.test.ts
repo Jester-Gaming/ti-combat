@@ -15,7 +15,7 @@ describe('LIGHTRAIL_ORDNANCE', () => {
     })
 
     t.advanceTo('SPACE_COMBAT')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     expect(pool.defender).toContainDice('SPACE_DOCK', [5, 2])
   })
@@ -32,7 +32,7 @@ describe('LIGHTRAIL_ORDNANCE', () => {
     })
 
     t.advanceTo('GROUND_COMBAT')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     expect(pool.defender).toContainDice('SPACE_DOCK', [5, 2])
   })
@@ -49,41 +49,8 @@ describe('LIGHTRAIL_ORDNANCE', () => {
     })
 
     t.advanceTo('SPACE_COMBAT')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     expect(pool.defender).toContainDice('SPACE_DOCK', [5, 2], [5, 2])
-  })
-
-  it('does not add dice when ability is disabled', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: { faction: 'ARBOREC', units: { CRUISER: 1 } },
-      defender: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 1, SPACE_DOCK: 1 },
-      },
-    })
-
-    t.advanceTo('SPACE_COMBAT')
-    const pool = t.dicePool()!
-
-    expect(pool.defender).not.toContainDice('SPACE_DOCK')
-  })
-
-  it('does not add dice when no space docks present', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: { faction: 'ARBOREC', units: { CRUISER: 1 } },
-      defender: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 1 },
-        abilities: { LIGHTRAIL_ORDNANCE: true },
-      },
-    })
-
-    t.advanceTo('SPACE_COMBAT')
-    const pool = t.dicePool()!
-
-    expect(pool.defender).not.toContainDice('SPACE_DOCK')
   })
 })

@@ -235,7 +235,7 @@ export class CombatTest {
     })
   }
 
-  dicePool(): { attacker: DicePool; defender: DicePool } | undefined {
+  dicePool(): { attacker: DicePool; defender: DicePool } {
     // Find the last DICE_POOL entry
     for (let i = this._log.length - 1; i >= 0; i--) {
       const entry = this._log[i]
@@ -250,7 +250,7 @@ export class CombatTest {
         return { attacker: data.attacker, defender: data.defender }
       }
     }
-    return undefined
+    throw new Error('No DICE_POOL entry found in combat log')
   }
 }
 
@@ -258,7 +258,22 @@ export class CombatTest {
 // HELPERS
 // ============================================================================
 
-/** Pick the outcome matching the requested hit spec */
+/** Extract raw dice hits from the last DICE_HITS log entry for an outcome */
+function getDiceHits(
+  outcome: StateWithProbability,
+): { attacker: number; defender: number } | undefined {
+  const log = outcome.state.log
+  if (!log) return undefined
+  for (let i = log.length - 1; i >= 0; i--) {
+    const entry = log[i]
+    if (entry.path[entry.path.length - 1] === 'DICE_HITS' && entry.data) {
+      return entry.data[0] as { attacker: number; defender: number }
+    }
+  }
+  return undefined
+}
+
+/** Pick the outcome matching the requested hit spec (raw dice, pre-abilities) */
 function pickOutcomeByHits(
   outcomes: StateWithProbability[],
   hits: HitsSpec,
@@ -266,35 +281,24 @@ function pickOutcomeByHits(
   if (outcomes.length === 1) return outcomes[0]
 
   const match = outcomes.find(outcome => {
-    const attackerHits = outcome.state.data.attacker.hitPools.reduce(
-      (sum, p) => sum + p.hits,
-      0,
-    )
-    const defenderHits = outcome.state.data.defender.hitPools.reduce(
-      (sum, p) => sum + p.hits,
-      0,
-    )
+    const diceHits = getDiceHits(outcome)
+    if (!diceHits) return false
 
     if (typeof hits === 'number') {
-      return attackerHits + defenderHits === hits
+      return diceHits.attacker + diceHits.defender === hits
     }
 
     const wantAttacker = hits.attacker ?? 0
     const wantDefender = hits.defender ?? 0
-    return attackerHits === wantAttacker && defenderHits === wantDefender
+    return (
+      diceHits.attacker === wantAttacker && diceHits.defender === wantDefender
+    )
   })
 
   if (!match) {
     const available = outcomes.map(o => {
-      const a = o.state.data.attacker.hitPools.reduce(
-        (sum, p) => sum + p.hits,
-        0,
-      )
-      const d = o.state.data.defender.hitPools.reduce(
-        (sum, p) => sum + p.hits,
-        0,
-      )
-      return `{a:${a},d:${d}}`
+      const d = getDiceHits(o)
+      return d ? `{a:${d.attacker},d:${d.defender}}` : '{no dice}'
     })
     const hitsStr =
       typeof hits === 'number'

@@ -15,7 +15,7 @@ describe('EXPERIMENTAL_BATTLESTATION', () => {
     })
 
     t.advanceTo('SPACE_COMBAT')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     expect(pool.defender).toContainDice('EXPERIMENTAL_BATTLESTATION', [5, 3])
   })
@@ -32,7 +32,7 @@ describe('EXPERIMENTAL_BATTLESTATION', () => {
     })
 
     t.advanceTo('AFB')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     expect(pool.defender).toContainDice('PDS', [6, 1])
     expect(pool.defender).toContainDice('EXPERIMENTAL_BATTLESTATION', [5, 3])
@@ -55,7 +55,7 @@ describe('EXPERIMENTAL_BATTLESTATION', () => {
     expect(t.attacker.units.CRUISER).toHaveLength(1)
   })
 
-  it('fires SCO even when defender has no units', () => {
+  it('[engine] fires SCO even when defender has no units', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: { faction: 'ARBOREC', units: { CRUISER: 3 } },

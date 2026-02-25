@@ -18,7 +18,7 @@ export const dynamo: Ability<Params> = {
     {
       timing: 'AFTER_SUSTAIN_DAMAGE_USE',
       side: 'OWN',
-      isCallable: () => true,
+      isCallable: (_, ctx, unitId) => ctx.api.own.hasUnit(unitId),
       call: (ctx, _params, unitId) => {
         ctx.api.own.modifyUnitState(unitId, { isDamaged: false })
       },

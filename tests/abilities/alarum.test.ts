@@ -22,7 +22,7 @@ describe.forEachSide('Alarum', () => {
 
     // Verify newly added infantry participates in next round dice
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
     expect(pool.attacker).toContainDice('INFANTRY', [8, 1])
     expect(pool.attacker.INFANTRY).toHaveLength(3)
   })

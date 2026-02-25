@@ -1,5 +1,5 @@
 import { type Ability, declareParam, parseVariantId } from '@/combat'
-import { NON_FIGHTER_SHIPS, SHIPS, UNIT_LIMITS } from '@/constants/units'
+import { UNIT_LIMITS } from '@/constants/units'
 import type { UnitBaseType, UnitId, UnitType } from '@/types'
 
 type Params = {
@@ -8,17 +8,15 @@ type Params = {
   shipPriority: string[]
 }
 
-const SHIPS_SET = new Set<UnitBaseType>(SHIPS)
-const NON_FIGHTER_SET = new Set<UnitBaseType>(NON_FIGHTER_SHIPS)
-
 function collectDestroyedShips(
   destroyed: Record<string, UnitId[]>,
+  ships: Set<UnitBaseType>,
 ): Partial<Record<UnitBaseType, number>> {
   const counts: Partial<Record<UnitBaseType, number>> = {}
   for (const k in destroyed) {
     const key = k as UnitType
     const { type } = parseVariantId(key)
-    if (SHIPS_SET.has(type)) {
+    if (ships.has(type)) {
       counts[type] = (counts[type] ?? 0) + destroyed[key].length
     }
   }
@@ -53,19 +51,25 @@ export const sleeperCell: Ability<Params> = {
     },
     {
       timing: 'DESTROY',
-      isCallable: (params, _ctx, units) => {
+      isCallable: (params, ctx, units) => {
         if (!params.isActive) return false
+        const { ships } = ctx.api.own.getAbilityConfig('SETTINGS')
+        const shipsSet = new Set<UnitBaseType>(ships)
         for (const k in units.opponent) {
           const key = k as UnitType
           if (units.opponent[key]?.length > 0) {
             const { type } = parseVariantId(key)
-            if (SHIPS_SET.has(type)) return true
+            if (shipsSet.has(type)) return true
           }
         }
         return false
       },
       call: (ctx, params, units) => {
-        const destroyed = collectDestroyedShips(units.opponent)
+        const { ships, nonFighterShips } =
+          ctx.api.own.getAbilityConfig('SETTINGS')
+        const shipsSet = new Set<UnitBaseType>(ships)
+        const nonFighterSet = new Set<UnitBaseType>(nonFighterShips)
+        const destroyed = collectDestroyedShips(units.opponent, shipsSet)
 
         // Cap placement at unit limits
         const toPlace: Partial<Record<UnitBaseType, number>> = {}
@@ -78,7 +82,7 @@ export const sleeperCell: Ability<Params> = {
         ctx.api.own.placeUnits(toPlace)
 
         // Enforce fleet pool limit (fighters don't count)
-        const totalNonFighter = ctx.api.own.countUnits(NON_FIGHTER_SHIPS)
+        const totalNonFighter = ctx.api.own.countUnits(nonFighterShips)
         const excess = totalNonFighter - params.fleetPool
         if (excess <= 0) return
 
@@ -87,7 +91,7 @@ export const sleeperCell: Ability<Params> = {
         const prioritySet = new Set(params.shipPriority)
         const allUnitTypes = ctx.api.own.getActiveBaseTypes()
         const unlisted = allUnitTypes.filter(
-          t => NON_FIGHTER_SET.has(t) && !prioritySet.has(t),
+          t => nonFighterSet.has(t) && !prioritySet.has(t),
         )
         const removalOrder = [
           ...unlisted,
@@ -97,7 +101,7 @@ export const sleeperCell: Ability<Params> = {
         let remaining = excess
         for (const type of removalOrder) {
           if (remaining <= 0) break
-          if (!NON_FIGHTER_SET.has(type as UnitBaseType)) continue
+          if (!nonFighterSet.has(type as UnitBaseType)) continue
           const unitType = type as UnitBaseType
           const unitAmount = ctx.api.own.countUnits(unitType)
           const toRemove = Math.min(remaining, unitAmount)

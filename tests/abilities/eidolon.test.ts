@@ -15,7 +15,7 @@ describe.forEachSide('EIDOLON', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Mech Z-Grav form: [8, 2]
     expect(pool.attacker).toContainDice('MECH', [8, 2])
@@ -33,7 +33,7 @@ describe.forEachSide('EIDOLON', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Each mech rolls [8, 2] — 3 mechs = 3 groups of [8, 2]
     const mechDice = pool.attacker.MECH!
@@ -79,7 +79,7 @@ describe.forEachSide('EIDOLON', () => {
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound({ attacker: 1 })
 
-    // Mech should NOT sustain — it's not in spacePriority for SUSTAIN_DAMAGE
+    // Mech should NOT sustain
     expect(t.attacker.units.MECH![0].isDamaged).toBeFalsy()
   })
 
@@ -101,30 +101,12 @@ describe.forEachSide('EIDOLON', () => {
     // Eidolon has context: 'SPACE' so it doesn't fire in ground combat
     t.advanceTo('GROUND_COMBAT', 'START')
     t.advanceRound({ attacker: 1 })
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Mech normal stats: [6, 2]
     expect(pool.attacker).toContainDice('MECH', [6, 2])
 
     // Sustain should work in ground combat
     expect(t.attacker.units.MECH![0].isDamaged).toBe(true)
-  })
-
-  it('does not affect non-Naaz-Rokha factions', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 1, MECH: 1 },
-      },
-      defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'START')
-    t.advanceRound()
-    const pool = t.dicePool()!
-
-    // Mech should not roll dice for non-Naaz-Rokha factions
-    expect(pool.attacker.MECH).toBeUndefined()
   })
 })

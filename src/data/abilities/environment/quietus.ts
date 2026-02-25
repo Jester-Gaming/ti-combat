@@ -26,7 +26,7 @@ export const quietus: Ability = {
       call: ctx => {
         if (ctx.api.own.getFaction() === 'CRIMSON_REBELLION') return
         for (const ability of UNIT_ABILITIES) {
-          ctx.api.own.setUnitAbilityCannotBeUsed(ability, 'QUIETUS')
+          ctx.api.own.setUnitAbilityLost(ability, 'QUIETUS')
         }
       },
     },

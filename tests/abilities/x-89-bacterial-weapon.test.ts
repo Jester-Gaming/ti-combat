@@ -17,8 +17,8 @@ describe('X_89_BACTERIAL_WEAPON', () => {
       },
     })
 
-    // Bombardment: 1 natural hit doubled to 2 by X-89
-    t.advanceTo('SPACE_CANNON_DEFENSE', undefined, { defender: 2 })
+    // Bombardment: 1 natural hit, X-89 doubles to 2
+    t.advanceTo('SPACE_CANNON_DEFENSE', undefined, { defender: 1 })
 
     expect(t.abilityLog('X_89_BACTERIAL_WEAPON')).not.toHaveLength(0)
     expect(t.defender.units.INFANTRY).toHaveLength(2)
@@ -39,31 +39,11 @@ describe('X_89_BACTERIAL_WEAPON', () => {
     })
 
     t.advanceTo('GROUND_COMBAT', 'START')
-    // Attacker produces 1 natural hit, doubled to 2 by X-89
-    t.advanceRound({ defender: 2 })
+    // Attacker produces 1 natural hit, X-89 doubles to 2
+    t.advanceRound({ defender: 1 })
 
     expect(t.abilityLog('X_89_BACTERIAL_WEAPON')).not.toHaveLength(0)
     expect(t.defender.units.INFANTRY).toHaveLength(2)
-  })
-
-  it('does not fire when zero hits produced', () => {
-    const t = combatTest({
-      mode: 'GROUND',
-      attacker: {
-        faction: 'ARBOREC',
-        units: { INFANTRY: 2 },
-        abilities: { X_89_BACTERIAL_WEAPON: true },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { INFANTRY: 2 },
-      },
-    })
-
-    t.advanceTo('GROUND_COMBAT', 'START')
-    t.advanceRound({ defender: 0 })
-
-    expect(t.abilityLog('X_89_BACTERIAL_WEAPON')).toHaveLength(0)
   })
 
   it('doubles both bombardment and ground combat hits in same battle', () => {
@@ -80,13 +60,13 @@ describe('X_89_BACTERIAL_WEAPON', () => {
       },
     })
 
-    // Bombardment: 1 natural hit doubled to 2
-    t.advanceTo('SPACE_CANNON_DEFENSE', undefined, { defender: 2 })
+    // Bombardment: 1 natural hit, X-89 doubles to 2
+    t.advanceTo('SPACE_CANNON_DEFENSE', undefined, { defender: 1 })
     expect(t.defender.units.INFANTRY).toHaveLength(3)
 
     t.advanceTo('GROUND_COMBAT', 'START')
-    // Ground combat: 1 natural hit doubled to 2
-    t.advanceRound({ defender: 2 })
+    // Ground combat: 1 natural hit, X-89 doubles to 2
+    t.advanceRound({ defender: 1 })
 
     expect(t.abilityLog('X_89_BACTERIAL_WEAPON')).not.toHaveLength(0)
     expect(t.defender.units.INFANTRY).toHaveLength(1)

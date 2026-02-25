@@ -25,7 +25,7 @@ export const quietus: Ability = {
       timing: 'DESTROY',
       call: ctx => {
         for (const ability of UNIT_ABILITIES) {
-          ctx.api.opponent.removeUnitAbilityCannotBeUsed(ability, 'QUIETUS')
+          ctx.api.opponent.removeUnitAbilityLost(ability, 'QUIETUS')
         }
       },
     },

@@ -1,24 +1,7 @@
-import type { SideApi } from '../../../combat/abilities-engine/api/ability-api'
 import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
   isEnabled: boolean
-}
-
-function stripMechAbilities(api: SideApi) {
-  // Remove unit abilities (except Sustain Damage) from mechs
-  api.setUnitAbilityLost('BOMBARDMENT', 'ARTICLES_OF_WAR', 'MECH')
-  api.setUnitAbilityLost('AFB', 'ARTICLES_OF_WAR', 'MECH')
-  api.setUnitAbilityLost('SPACE_CANNON', 'ARTICLES_OF_WAR', 'MECH')
-  api.setUnitAbilityLost('PLANETARY_SHIELD', 'ARTICLES_OF_WAR', 'MECH')
-
-  // Remove printed Ability objects from mech units (keep only Sustain Damage)
-  const mechStats = api.getUnitStats('MECH')
-  if (mechStats?.ABILITIES) {
-    api.modifyUnitType('MECH', {
-      ABILITIES: mechStats.ABILITIES.filter(a => a.key === 'SUSTAIN_DAMAGE'),
-    })
-  }
 }
 
 export const articlesOfWar: Ability<Params> = {
@@ -29,14 +12,35 @@ export const articlesOfWar: Ability<Params> = {
     isEnabled: false,
     uses: Infinity,
   },
+  sync: true,
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'PREPARE',
       isCallable: (params: Params) => params.isEnabled,
       call: ctx => {
-        stripMechAbilities(ctx.api.own)
-        stripMechAbilities(ctx.api.opponent)
+        ctx.api.own.setUnitAbilityLost('BOMBARDMENT', 'ARTICLES_OF_WAR', 'MECH')
+        ctx.api.own.setUnitAbilityLost('AFB', 'ARTICLES_OF_WAR', 'MECH')
+        ctx.api.own.setUnitAbilityLost(
+          'SPACE_CANNON',
+          'ARTICLES_OF_WAR',
+          'MECH',
+        )
+        ctx.api.own.setUnitAbilityLost(
+          'PLANETARY_SHIELD',
+          'ARTICLES_OF_WAR',
+          'MECH',
+        )
+
+        // Remove printed Ability objects from mech units (keep only Sustain Damage)
+        const mechStats = ctx.api.own.getUnitStats('MECH')
+        if (mechStats?.ABILITIES) {
+          ctx.api.own.modifyUnitType('MECH', {
+            ABILITIES: mechStats.ABILITIES.filter(
+              a => a.key === 'SUSTAIN_DAMAGE',
+            ),
+          })
+        }
       },
     },
   ],

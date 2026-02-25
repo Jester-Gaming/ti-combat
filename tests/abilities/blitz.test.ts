@@ -1,5 +1,3 @@
-import '../utils/expect'
-
 import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
@@ -17,7 +15,7 @@ describe('BLITZ', () => {
     })
 
     t.advanceTo('SPACE_CANNON_DEFENSE')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Cruiser: no bombardment -> gains [6, 1]
     expect(pool.attacker).toContainDice('CRUISER', [6, 1])
@@ -37,7 +35,7 @@ describe('BLITZ', () => {
     })
 
     t.advanceTo('SPACE_CANNON_DEFENSE')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Dreadnought already has Bombardment [5, 1] — no extra dice from Blitz
     expect(pool.attacker).toContainDice('DREADNOUGHT', [5, 1])
@@ -57,7 +55,7 @@ describe('BLITZ', () => {
     })
 
     t.advanceTo('SPACE_CANNON_DEFENSE')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // 2 Cruisers + 1 Destroyer = 3 dice groups of [6, 1]
     const cruiserDice = pool.attacker.CRUISER ?? []
@@ -80,30 +78,12 @@ describe('BLITZ', () => {
     })
 
     t.advanceTo('SPACE_CANNON_DEFENSE')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Fighters should not get bombardment
     expect(pool.attacker.FIGHTER).toBeUndefined()
     // Cruiser still gets it
     expect(pool.attacker).toContainDice('CRUISER', [6, 1])
-  })
-
-  it('does nothing when disabled', () => {
-    const t = combatTest({
-      mode: 'GROUND',
-      attacker: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 1, INFANTRY: 1 },
-        abilities: { BLITZ: { isEnabled: false } },
-      },
-      defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
-    })
-
-    t.advanceTo('SPACE_CANNON_DEFENSE')
-    const pool = t.dicePool()
-
-    // No bombardment dice from Cruiser since Blitz is disabled
-    expect(pool?.attacker?.CRUISER).toBeUndefined()
   })
 
   it('works alongside existing bombardment units', () => {
@@ -118,7 +98,7 @@ describe('BLITZ', () => {
     })
 
     t.advanceTo('SPACE_CANNON_DEFENSE')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Dreadnought keeps its native bombardment [5, 1]
     expect(pool.attacker).toContainDice('DREADNOUGHT', [5, 1])

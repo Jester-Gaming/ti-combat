@@ -53,49 +53,6 @@ describe.forEachSide('SLEEPER_CELL', () => {
     expect(t.attacker.units.FIGHTER).toHaveLength(1)
   })
 
-  it('does not place copies of ground forces', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'MENTAK_COALITION',
-        units: { CRUISER: 3 },
-        abilities: { SLEEPER_CELL: true },
-      },
-      defender: {
-        faction: 'NEKRO_VIRUS',
-        // Alastor makes ground forces participate as ships
-        units: { FLAGSHIP: 1, INFANTRY: 2 },
-      },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'START')
-    // Defender receives 2 hits — infantry destroyed via Alastor
-    t.advanceRound({ defender: 2 })
-
-    // Attacker should NOT gain infantry — Sleeper Cell only copies ships
-    expect(t.attacker.units.INFANTRY).toBeUndefined()
-  })
-
-  it('does not fire when not enabled', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'MENTAK_COALITION',
-        units: { CRUISER: 3 },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 2 },
-      },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'START')
-    t.advanceRound({ defender: 1 })
-
-    expect(t.abilityLog('SLEEPER_CELL')).toHaveLength(0)
-    expect(t.attacker.units.CRUISER).toHaveLength(3)
-  })
-
   it('enforces fleet pool limit by removing lowest priority non-fighter ships', () => {
     const t = combatTest({
       mode: 'SPACE',

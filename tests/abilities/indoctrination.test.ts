@@ -24,7 +24,7 @@ describe.forEachSide('INDOCTRINATION', () => {
     expect(t.defender.units.INFANTRY).toHaveLength(2)
   })
 
-  it('does not trigger AFTER_DESTROY for removed unit', () => {
+  it('[engine] does not trigger AFTER_DESTROY for removed unit', () => {
     const t = combatTest({
       mode: 'GROUND',
       attacker: {

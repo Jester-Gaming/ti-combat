@@ -7,6 +7,7 @@ export const matriarch: Ability = {
   category: 'FACTION',
   subcategory: 'FLAGSHIP',
   context: 'GROUND',
+  side: 'attacker',
   params: {
     isEnabled: true,
     uses: Infinity,

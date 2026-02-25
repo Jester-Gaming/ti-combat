@@ -163,7 +163,7 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
     t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
 
     expect(t.attacker.units.CRUISER).toHaveLength(1) // kept (listed)
-    // Carrier and destroyer are unlisted — both removed
+    // Carrier is unlisted and removed; Destroyer fills the remaining fleet slot
     expect(t.attacker.units.CARRIER).toBeUndefined()
     expect(t.attacker.units.DESTROYER).toHaveLength(1)
   })

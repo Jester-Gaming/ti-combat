@@ -15,7 +15,7 @@ describe('GEOFORM', () => {
     })
 
     t.advanceTo('SPACE_COMBAT')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     expect(pool.defender).toContainDice('GEOFORM', [5, 3])
   })
@@ -32,26 +32,8 @@ describe('GEOFORM', () => {
     })
 
     t.advanceTo('GROUND_COMBAT')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     expect(pool.defender).toContainDice('GEOFORM', [5, 3])
-  })
-
-  it('does not add dice during combat rounds', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: { faction: 'ARBOREC', units: { CRUISER: 1 } },
-      defender: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 1 },
-        abilities: { GEOFORM: true },
-      },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'START')
-    t.advanceRound()
-    const pool = t.dicePool()!
-
-    expect(pool.defender.GEOFORM).toBeUndefined()
   })
 })

@@ -21,9 +21,9 @@ describe.forEachSide(
       })
 
       t.advanceTo('GROUND_COMBAT', 'START')
-      // Attacker rolls 1 natural hit + VPW adds 1 = 2 hits on defender
-      // Defender rolls 1 hit on attacker
-      t.advanceRound({ attacker: 1, defender: 2 })
+      // Attacker dice produce 1 hit + VPW adds 1 = 2 total on defender
+      // Defender dice produce 1 hit on attacker
+      t.advanceRound({ attacker: 1, defender: 1 })
 
       expect(t.abilityLog('VALKYRIE_PARTICLE_WEAVE')).not.toHaveLength(0)
       // Mech sustains once, NES cancels 1 additional → both hits absorbed

@@ -18,7 +18,7 @@ describe.forEachSide('LIGHTRAIL_ORDNANCE + LINKSHIP', () => {
     })
 
     t.advanceTo('SPACE_COMBAT')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Lightrail Ordnance upgrades Space Dock SC to [5, 2]
     // Linkship reads that enhanced value

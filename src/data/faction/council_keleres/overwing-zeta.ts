@@ -13,24 +13,6 @@ const ALLOWED_TYPES: UnitBaseType[] = ['FLAGSHIP', 'CRUISER', 'DESTROYER']
 
 const NON_FIGHTER_SET = new Set<UnitBaseType>(NON_FIGHTER_SHIPS)
 
-function getShipsToPlace(ships: Record<string, number>) {
-  const toPlace: Partial<Record<UnitBaseType, number>> = {}
-  const flagship = Math.min(ships.FLAGSHIP ?? 0, 1)
-  if (flagship > 0) toPlace.FLAGSHIP = flagship
-
-  const cruisers = ships.CRUISER ?? 0
-  const destroyers = ships.DESTROYER ?? 0
-  let remaining = 2
-  const clampedCruisers = Math.min(cruisers, remaining)
-  remaining -= clampedCruisers
-  const clampedDestroyers = Math.min(destroyers, remaining)
-
-  if (clampedCruisers > 0) toPlace.CRUISER = clampedCruisers
-  if (clampedDestroyers > 0) toPlace.DESTROYER = clampedDestroyers
-
-  return toPlace
-}
-
 function countToPlace(toPlace: Partial<Record<UnitBaseType, number>>) {
   let count = 0
   for (const [type, n] of Object.entries(toPlace)) {
@@ -63,20 +45,18 @@ export const overwingZeta: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT_ROUND',
       isCallable: (params, ctx) => {
-        const toPlace = getShipsToPlace(params.ships)
-        if (Object.keys(toPlace).length === 0) return false
+        if (Object.keys(params.ships).length === 0) return false
 
         if (params.strategy === 'ENOUGH_FLEET_POOL') {
           const currentNonFighter = ctx.api.own.countUnits(NON_FIGHTER_SHIPS)
-          const adding = countToPlace(toPlace)
+          const adding = countToPlace(params.ships)
           return currentNonFighter + adding <= params.fleetPool
         }
 
         return true
       },
       call: (ctx, params) => {
-        const toPlace = getShipsToPlace(params.ships)
-        ctx.api.own.placeUnits(toPlace)
+        ctx.api.own.placeUnits(params.ships)
 
         if (params.strategy !== 'IMMEDIATELY') return
 

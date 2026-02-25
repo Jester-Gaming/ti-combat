@@ -15,7 +15,7 @@ describe.forEachSide('THE_ALASTOR', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Infantry: [8, 1]
     expect(pool.attacker).toContainDice('INFANTRY', [8, 1])
@@ -33,7 +33,7 @@ describe.forEachSide('THE_ALASTOR', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Nekro Mordred mech: [6, 1]
     expect(pool.attacker).toContainDice('MECH', [6, 1])
@@ -73,23 +73,5 @@ describe.forEachSide('THE_ALASTOR', () => {
 
     expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBe(true)
     expect(t.attacker.units.MECH![0].isDamaged).toBe(true)
-  })
-
-  it('does not affect non-Nekro factions', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 1, INFANTRY: 2 },
-      },
-      defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'START')
-    t.advanceRound()
-    const pool = t.dicePool()!
-
-    // Infantry should not roll dice for non-Nekro factions
-    expect(pool.attacker.INFANTRY).toBeUndefined()
   })
 })

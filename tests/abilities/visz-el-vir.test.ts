@@ -15,7 +15,7 @@ describe.forEachSide('VISZ_EL_VIR', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Mech Z-Grav form: [8, 2] + 1 die from Visz El Vir = [8, 3]
     expect(pool.attacker).toContainDice('MECH', [8, 3])
@@ -33,7 +33,7 @@ describe.forEachSide('VISZ_EL_VIR', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Each mech: [8, 2] + 1 = [8, 3]
     const mechDice = pool.attacker.MECH!
@@ -56,7 +56,7 @@ describe.forEachSide('VISZ_EL_VIR', () => {
 
     t.advanceTo('GROUND_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Mech normal stats: [6, 2] + 1 die from Visz El Vir = [6, 3]
     expect(pool.attacker).toContainDice('MECH', [6, 3])
@@ -74,7 +74,7 @@ describe.forEachSide('VISZ_EL_VIR', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Mech Z-Grav form: [8, 2] — no extra die without flagship
     expect(pool.attacker).toContainDice('MECH', [8, 2])

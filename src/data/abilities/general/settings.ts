@@ -36,6 +36,7 @@ export const settings: Ability<SettingsParams> = {
         u => u !== 'FIGHTER',
       )
       params.spaceCombatParticipating = params.ships
+      params.validTargetsSpaceCannonOffense = params.ships
     } else if (key === 'groundForces') {
       params.groundCombatParticipating = params.groundForces
       params.validTargetsBombardment = params.groundForces

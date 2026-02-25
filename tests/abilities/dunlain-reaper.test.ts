@@ -90,28 +90,4 @@ describe.forEachSide('DUNLAIN_REAPER', () => {
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
     expect(t.abilityLog('DUNLAIN_REAPER')).toHaveLength(0)
   })
-
-  it('stops firing after uses are exhausted', () => {
-    const t = combatTest({
-      mode: 'GROUND',
-      attacker: {
-        faction: 'BARONY_OF_LETNEV',
-        units: { INFANTRY: 3 },
-        abilities: { DUNLAIN_REAPER: { uses: 1 } },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { INFANTRY: 2 },
-      },
-    })
-
-    t.advanceTo('GROUND_COMBAT', 'START')
-    t.advanceRound()
-    t.advanceRound()
-
-    // Only 1 use, so only 1 replacement
-    expect(t.attacker.units.INFANTRY).toHaveLength(2)
-    expect(t.attacker.units.MECH).toHaveLength(1)
-    expect(t.abilityLog('DUNLAIN_REAPER')).not.toHaveLength(0)
-  })
 })

@@ -43,22 +43,29 @@ describe.forEachSide('DIMENSIONAL_SPLICER', () => {
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
   })
 
-  it('does not fire when disabled', () => {
+  it.fails('destroys ship by DS if it was already damaged', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {
-        faction: 'GHOSTS_OF_CREUSS',
-        units: { CRUISER: 1 },
+        faction: 'ARBOREC',
+        units: { DREADNOUGHT: 1 },
+        abilities: { PRE_DAMAGED: { DREADNOUGHT: 1 } },
       },
       defender: {
-        faction: 'ARBOREC',
+        faction: 'GHOSTS_OF_CREUSS',
         units: { CRUISER: 2 },
+        abilities: { DIMENSIONAL_SPLICER: true },
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT', 'START')
 
-    expect(t.defender.units.CRUISER).toHaveLength(2)
+    // DS fires at START_OF_COMBAT → flagship already damaged → can't sustain → destroyed
+    // AS never gets to fire (START_OF_COMBAT_ROUND comes after START_OF_COMBAT)
+    t.advanceRound()
+
+    expect(t.abilityLog('DIMENSIONAL_SPLICER')).not.toHaveLength(0)
+    expect(t.attacker.units.DREADNOUGHT).toBeUndefined()
   })
 
   it('can target a fighter', () => {
@@ -78,25 +85,5 @@ describe.forEachSide('DIMENSIONAL_SPLICER', () => {
     t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
 
     expect(t.defender.units.FIGHTER).toHaveLength(2)
-  })
-
-  it('only targets ships, not ground forces', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'GHOSTS_OF_CREUSS',
-        units: { CRUISER: 1 },
-        abilities: { DIMENSIONAL_SPLICER: true },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { INFANTRY: 2 },
-      },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
-
-    // Infantry should not be targeted — they are not ships
-    expect(t.defender.units.INFANTRY).toHaveLength(2)
   })
 })

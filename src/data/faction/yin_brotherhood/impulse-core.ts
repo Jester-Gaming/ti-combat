@@ -47,16 +47,13 @@ export const impulseCore: Ability<Params> = {
         const sacrifice = ctx.api.own.findUnitByPriority(
           params.sacrificePriority,
         )
-        if (sacrifice === undefined) return
+        const target = ctx.api.opponent.findUnitByPriority(
+          params.targetPriority,
+        )
+        if (!sacrifice || !target) return
 
+        ctx.api.opponent.addHits(1, [ctx.api.opponent.getUnitVariant(target)!])
         ctx.api.own.destroyUnit(sacrifice)
-
-        for (const variantId of params.targetPriority) {
-          if (ctx.api.opponent.findUnitByPriority([variantId]) !== undefined) {
-            ctx.api.opponent.addHits(1, [parseVariantId(variantId).type])
-            return
-          }
-        }
       },
     },
   ],

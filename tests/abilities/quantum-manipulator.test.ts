@@ -48,6 +48,27 @@ describe.forEachSide('QUANTUM_MANIPULATOR', () => {
     expect(t.abilityLog('QUANTUM_MANIPULATOR')).not.toHaveLength(0)
   })
 
+  it.fails('does not absorb SCO hits', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { PDS: 2, CRUISER: 1 },
+      },
+      defender: {
+        faction: 'NOMAD',
+        units: { CRUISER: 1, MECH: 1 },
+      },
+    })
+
+    // SCO: defender receives 2 hits, Quantum Manipulator should not fire
+    t.advanceTo('SPACE_COMBAT', 'START', { defender: 2 })
+
+    expect(t.defender.units.CRUISER).toBeUndefined()
+    expect(t.defender.units.MECH![0]?.isDamaged).toBeFalsy()
+    expect(t.abilityLog('QUANTUM_MANIPULATOR')).toHaveLength(0)
+  })
+
   it('does not fire when mech is already damaged', () => {
     const t = combatTest({
       mode: 'SPACE',

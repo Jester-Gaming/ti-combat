@@ -1,6 +1,5 @@
 import yinBrotherhoodIcon from '@/assets/faction/yin_brotherhood.svg?raw'
 import type { Ability } from '@/combat'
-import { GROUND_FORCES } from '@/constants/units'
 
 export const greyfireMutagen: Ability = {
   key: 'GREYFIRE_MUTAGEN',
@@ -15,7 +14,8 @@ export const greyfireMutagen: Ability = {
       timing: 'START_OF_COMBAT',
       isCallable: (_params, ctx) => {
         if (ctx.api.opponent.getFaction() === 'YIN_BROTHERHOOD') return false
-        if (ctx.api.opponent.countUnits(GROUND_FORCES) < 2) return false
+        const { groundForces } = ctx.api.opponent.getAbilityConfig('SETTINGS')
+        if (ctx.api.opponent.countUnits(groundForces) < 2) return false
         return ctx.api.opponent.hasUnitType('INFANTRY')
       },
       call: ctx => {

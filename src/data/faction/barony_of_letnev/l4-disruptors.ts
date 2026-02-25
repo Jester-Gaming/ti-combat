@@ -21,14 +21,5 @@ export const l4Disruptors: Ability = {
         )
       },
     },
-    {
-      timing: 'CLEANUP',
-      call: ctx => {
-        ctx.api.opponent.removeUnitAbilityCannotBeUsed(
-          'SPACE_CANNON',
-          'L4_DISRUPTORS',
-        )
-      },
-    },
   ],
 }

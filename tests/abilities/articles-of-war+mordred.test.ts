@@ -22,7 +22,7 @@ describe.forEachSide('ARTICLES_OF_WAR + MORDRED', () => {
 
     t.advanceTo('GROUND_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Without Mordred bonus, mech rolls at normal [6, 1]
     expect(pool.attacker).toContainDice('MECH', [6, 1])

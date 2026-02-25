@@ -27,7 +27,7 @@ describe.forEachSide('CAVALRY + GRAVLEASH_MANEUVERS', () => {
       t.attacker.units.CRUISER!.some(u => u.subtypes?.includes('Cavalry')),
     ).toBe(true)
 
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
     expect(pool.attacker).toContainDice('CRUISER', [4, 1])
   })
 
@@ -53,7 +53,7 @@ describe.forEachSide('CAVALRY + GRAVLEASH_MANEUVERS', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     expect(pool.attacker).toContainDice('CRUISER', [4, 2])
   })

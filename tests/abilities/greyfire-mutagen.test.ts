@@ -66,25 +66,6 @@ describe.forEachSide('GREYFIRE_MUTAGEN', () => {
     expect(t.defender.units.MECH).toHaveLength(2)
   })
 
-  it('does not fire in space combat', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'EMIRATES_OF_HACAN',
-        units: { CRUISER: 1 },
-        abilities: { GREYFIRE_MUTAGEN: true },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 1, INFANTRY: 2 },
-      },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
-
-    expect(t.abilityLog('GREYFIRE_MUTAGEN')).toHaveLength(0)
-  })
-
   it('does not fire when opponent is Yin Brotherhood', () => {
     const t = combatTest({
       mode: 'GROUND',

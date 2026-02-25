@@ -429,7 +429,7 @@ export class AbilitiesEngine {
     }
 
     let consecutiveSkips = 0
-    let currentSide: CombatSide = options?.triggerSide ?? 'attacker'
+    let currentSide: CombatSide = 'attacker'
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let workingContext: any = context
 

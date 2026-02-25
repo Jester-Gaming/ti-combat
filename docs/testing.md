@@ -10,7 +10,9 @@
 
 - Single ability: `ability-name.test.ts` (kebab-case of the ability key)
 - Multiple abilities: names joined with `+`, sorted alphabetically. Example: `bunker+plasma-scoring.test.ts`
+- Exceptions: `assimilator-z` and `technological-singularity` always come first in both filename and describe block, in that order. Example: `assimilator-z+technological-singularity+fourth-moon.test.ts`
 - All test files go in `tests/abilities/`
+- Each test file must contain exactly ONE `describe` block (either `describe()` or `describe.forEachSide()`)
 - Never include `ABILITY_ORDER` in test filenames, even if the test configures it to control resolution order
 
 ## Imports
@@ -167,7 +169,7 @@ it('modifies combat dice', () => {
 
   t.advanceTo('SPACE_COMBAT', 'START')
   t.advanceRound()
-  const pool = t.dicePool()!
+  const pool = t.dicePool()
 
   // Cruiser base combat: [7, 1] -> modified to [6, 1]
   expect(pool.attacker).toContainDice('CRUISER', [6, 1])
@@ -179,12 +181,12 @@ For unit ability dice (bombardment/space cannon/AFB), advance to the right point
 ```typescript
 // Bombardment dice
 t.advanceTo('SPACE_CANNON_DEFENSE') // stops before SCD (after bombardment and commit)
-const pool = t.dicePool()!
+const pool = t.dicePool()
 expect(pool.attacker).toContainDice('DREADNOUGHT', [5, 1])
 
 // Space cannon offense dice
 t.advanceTo('AFB') // stops after SCO processed
-const pool = t.dicePool()!
+const pool = t.dicePool()
 expect(pool.defender).toContainDice('PDS', [6, 1])
 ```
 
@@ -277,8 +279,8 @@ it('disables space cannon entirely', () => {
   t.advanceTo('AFB') // past SCO
   const pool = t.dicePool()
 
-  // No dice pool logged (phase skipped entirely) or PDS absent
-  expect(pool?.defender?.PDS).toBeUndefined()
+  // PDS absent from defender dice pool
+  expect(pool.defender.PDS).toBeUndefined()
 })
 ```
 
@@ -305,7 +307,7 @@ it('creates subtype and modifies dice', () => {
   expect(t.abilityLog('CAVALRY')).not.toHaveLength(0)
 
   // Check dice pool from log
-  const pool = t.dicePool()!
+  const pool = t.dicePool()
   // Cavalry Cruiser gets Nomad flagship stats: [7, 2]
   expect(pool.attacker).toContainDice('CRUISER', [7, 2])
 })
@@ -385,7 +387,7 @@ expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
 expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
 
 // Dice value check
-const pool = t.dicePool()!
+const pool = t.dicePool()
 expect(pool.attacker).toContainDice('CRUISER', [7, 1])
 
 // No dice for a unit type
@@ -399,6 +401,99 @@ expect(t.abilityLog('MY_ABILITY')).toHaveLength(0)
 
 // Ability uses remaining
 expect(t.state.abilities.attacker.ABILITY_KEY.uses).toBe(1)
+```
+
+## Faction-Ability Correctness
+
+Never put a faction-specific ability on a side that uses a different faction. Each side's `faction` must own every faction-specific ability in its `abilities` block. Check `docs/abilities-list.md` for ownership. Exceptions (valid on any faction's side):
+
+- **Non-faction technologies** (e.g. PLASMA_SCORING, GRAVITON_LASER_SYSTEM, DURANIUM_ARMOR, etc.) — faction technologies (e.g. NON_EUCLIDEAN_SHIELDING, SUPERCHARGE) belong to their faction only
+- **Promissory notes** (e.g. TEKKLAR_LEGION, CAVALRY) — check `docs/abilities-list.md` for the full list
+- **Agents** (e.g. VISCOUNT_UNLENN, BROTHER_MILOR) — check `docs/abilities-list.md` for the full list
+- **Commanders** (e.g. TRRAKAN_AUN_ZULOK, AROZ_HOLLOW) — check `docs/abilities-list.md` for the full list
+- **Environment abilities** (e.g. QUIETUS, GEOFORM) — check `docs/abilities-list.md` for the full list
+- **NEKRO_VIRUS** can have other factions' technologies and flagship abilities
+  - When testing Nekro with another faction's **flagship** ability, include `ASSIMILATOR_Z` in the test filename (the Nekro flagship that enables copying). E.g. `assimilator-z+technological-singularity+fourth-moon.test.ts`
+
+## Interaction Tests: What NOT to Test
+
+Not every pair of abilities needs an interaction test. Only write combination tests when abilities genuinely interact — when one modifies state the other reads, or when timing/ordering between them matters. **Do not** write tests for combinations that operate independently.
+
+### Independent modifier stacking
+
+If two abilities both apply hit value modifiers or both add extra dice, they stack mechanically with no special interaction. Individual ability tests already verify each modifier works. No need to test any of these combinations:
+
+- **Hit value + hit value:** Two abilities that each apply a flat modifier to combat rolls.
+- **Die count + die count:** Two abilities that each add extra dice to the same or different rolls.
+- **Hit value + die count:** One modifies hit values, the other adds dice — they affect orthogonal dimensions of the same roll.
+
+### Redundant blocking
+
+If two abilities both block the same mechanic (e.g. both block Space Cannon, or both block Bombardment), testing them together just verifies redundant stacking.
+
+### Blocker negates modifier
+
+If one ability completely blocks a mechanic (e.g. blocks all Space Cannon) and the other modifies that mechanic's rolls (e.g. applies -1 to Space Cannon rolls), the modifier is irrelevant when the mechanic is blocked. There is no interaction to test.
+
+### Blocker removes precondition
+
+If ability A blocks a mechanic (e.g. blocks Sustain Damage) and ability B depends on that mechanic's output (e.g. repairs units that sustained damage), then B simply has nothing to act on. The test just verifies trivially expected "nothing happens" behavior.
+
+### Config ability vs unit-ability blocker
+
+Config abilities are never blocked by abilities that disable unit abilities. Testing "config ability still fires when blocker is active" is not a meaningful interaction — it's just how the system works.
+
+### Abilities in non-overlapping contexts
+
+If ability A only fires in space combat and ability B only fires in ground combat, they can never interact.
+
+### Independent phase abilities with no shared state
+
+If ability A fires at one phase and ability B fires at a different phase, and neither modifies state the other reads, they are independent. This includes hit value modifiers on one side combined with unit-stealing or phase-specific abilities on the other side that operate on a different dimension of combat.
+
+### When TO write interaction tests
+
+Write a combination test when:
+
+- **One enables/disables the other:** e.g. an ability strips Planetary Shield → another ability that requires PS doesn't fire; an ability blocks sustain → Direct Hit never triggers
+- **One modifies state the other reads:** e.g. an ability places ships → another counts ship types for a bonus; an ability copies destroyed ships → another's bonus changes next round
+- **Timing/ordering matters:** e.g. an ability steals a unit at START_OF_COMBAT → another can't deploy at START_OF_COMBAT_ROUND because the target is gone
+- **One creates units the other destroys/targets:** e.g. an ability places ships mid-combat → another ability destroys all ships; an ability places infantry → another targets it with an extra die
+- **Shared resource contention:** Both abilities want to modify the same unit at the same phase
+- **Sustain-related chains:** Abilities that fire on sustain use (Direct Hit, Reflective Shielding), modify sustain behavior (Non-Euclidean Shielding cancels extra hits), or repair after sustain (Duranium Armor, Dynamo) — these form genuine causal chains where one ability's outcome feeds into another
+
+## What NOT to Write as Standalone Tests
+
+Don't test framework-level behaviors that apply to all abilities uniformly:
+
+- **"Does not fire when not enabled"** — Every ability checks `isEnabled`/`uses` via the framework.
+- **"Only fires once (uses: 1)"** — Uses decrement is handled by the framework, not individual abilities.
+- **"Does not affect ground/space combat"** — The `context` field already restricts this at the engine level.
+
+## Verify Assumptions Before Asserting Behavior
+
+When a test relies on a unit dying to trigger an ability (Sleeper Cell, Technological Singularity, Vos Hollow, Direct Hit, etc.), **always add an explicit check that the unit actually died** before asserting the ability behavior. This catches cases where the test setup doesn't produce the expected destruction.
+
+```typescript
+// BAD: assumes cruiser died, only checks ability log
+t.advanceRound({ attacker: 1 })
+expect(t.abilityLog('VOS_HOLLOW')).not.toHaveLength(0)
+
+// GOOD: verify death first, then check ability
+t.advanceRound({ attacker: 1 })
+expect(t.attacker.units.CRUISER).toHaveLength(2) // 3 → 2
+expect(t.abilityLog('VOS_HOLLOW')).not.toHaveLength(0)
+```
+
+Same applies to multi-round tests where a unit sustains in round 1 and dies in round 2:
+
+```typescript
+t.advanceRound({ attacker: 1 }) // round 1: flagship sustains
+expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBe(true)
+
+t.advanceRound({ attacker: 1 }) // round 2: flagship destroyed
+expect(t.attacker.units.FLAGSHIP).toBeUndefined()
+expect(t.abilityLog('VAN_HAUGE')).not.toHaveLength(0)
 ```
 
 ## Tips

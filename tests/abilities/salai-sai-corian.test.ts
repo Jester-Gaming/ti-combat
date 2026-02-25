@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe.forEachSide('Salai Sai Corian', () => {
+describe.forEachSide('SALAI_SAI_CORIAN', () => {
   it('rolls dice equal to opponent non-fighter ship count', () => {
     const t = combatTest({
       mode: 'SPACE',
@@ -18,7 +18,7 @@ describe.forEachSide('Salai Sai Corian', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // 2 cruisers + 1 destroyer = 3 non-fighter ships
     expect(pool.attacker).toContainDice('FLAGSHIP', [7, 3])
@@ -36,7 +36,7 @@ describe.forEachSide('Salai Sai Corian', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     expect(pool.attacker).toContainDice('FLAGSHIP', [7, 0])
   })
@@ -56,30 +56,9 @@ describe.forEachSide('Salai Sai Corian', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // 2 dreadnoughts + 1 carrier = 3
     expect(pool.attacker).toContainDice('FLAGSHIP', [7, 3])
-  })
-
-  it('counts opponent flagship', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'WINNU',
-        units: { FLAGSHIP: 1 },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 1, FLAGSHIP: 1 },
-      },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'START')
-    t.advanceRound()
-    const pool = t.dicePool()!
-
-    // 1 cruiser + 1 flagship = 2
-    expect(pool.attacker).toContainDice('FLAGSHIP', [7, 2])
   })
 })

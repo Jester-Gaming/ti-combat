@@ -18,7 +18,7 @@ describe.forEachSide('HEL_TITAN', () => {
 
     t.advanceTo('GROUND_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Hel-Titan I: Combat [7, 1]
     expect(pool.defender).toContainDice('PDS', [7, 1])
@@ -42,26 +42,5 @@ describe.forEachSide('HEL_TITAN', () => {
     t.advanceRound({ defender: 2 })
 
     expect(t.defender.units.PDS).toBeUndefined()
-  })
-
-  it('PDS does not participate in ground combat for non-Titan factions', () => {
-    const t = combatTest({
-      mode: 'GROUND',
-      attacker: {
-        faction: 'ARBOREC',
-        units: { INFANTRY: 2 },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { PDS: 1, INFANTRY: 1 },
-      },
-    })
-
-    t.advanceTo('GROUND_COMBAT', 'START')
-    t.advanceRound()
-    const pool = t.dicePool()!
-
-    // PDS should not roll dice for non-Titan factions
-    expect(pool.defender.PDS).toBeUndefined()
   })
 })

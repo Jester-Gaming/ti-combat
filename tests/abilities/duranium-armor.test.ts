@@ -55,6 +55,29 @@ describe.forEachSide('DURANIUM_ARMOR', () => {
     expect(t.attacker.units.DREADNOUGHT![1].isDamaged).toBe(true)
   })
 
+  it.fails('repairs a unit that used sustain for space cannon offense', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { DREADNOUGHT: 1, CRUISER: 1 },
+        abilities: { DURANIUM_ARMOR: true },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 1, PDS: 1 },
+      },
+    })
+
+    // SCO: 1 hit on attacker → Dreadnought sustains
+    t.advanceTo('SPACE_COMBAT', 'START', { attacker: 1 })
+    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
+
+    // Round 1: 0 hits — sustain was during SCO, not this round → Duranium repairs
+    t.advanceRound({ attacker: 0 })
+    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(false)
+  })
+
   it('does not fire when no damaged units exist', () => {
     const t = combatTest({
       mode: 'SPACE',

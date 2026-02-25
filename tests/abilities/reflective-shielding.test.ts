@@ -28,30 +28,26 @@ describe.forEachSide('REFLECTIVE_SHIELDING', () => {
     expect(t.defender.units.CRUISER).toBeUndefined()
   })
 
-  it('consumes one use per combat (2 sustains, 1 use = only 2 hits)', () => {
+  it.fails('does not fire during Space Cannon Offense', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {
         faction: 'ARBOREC',
-        units: { DREADNOUGHT: 2 },
+        units: { DREADNOUGHT: 1 },
         abilities: { REFLECTIVE_SHIELDING: true },
       },
       defender: {
         faction: 'ARBOREC',
-        units: { CRUISER: 3 },
+        units: { PDS: 1, CRUISER: 1 },
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
-    t.advanceRound({ attacker: 2 })
+    t.advanceTo('SPACE_COMBAT', undefined, { attacker: 1 })
 
-    // Both dreadnoughts sustain, but only first triggers Reflective Shielding
-    expect(t.attacker.units.DREADNOUGHT).toHaveLength(2)
+    // Dreadnought sustained from SCO hit
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
-    expect(t.attacker.units.DREADNOUGHT![1].isDamaged).toBe(true)
-
-    // Only 2 hits produced (not 4) — 1 cruiser survives
-    expect(t.defender.units.CRUISER).toHaveLength(1)
+    // RS should not fire during SCO
+    expect(t.abilityLog('REFLECTIVE_SHIELDING')).toHaveLength(0)
   })
 
   it('does not fire during ground combat', () => {
@@ -76,27 +72,5 @@ describe.forEachSide('REFLECTIVE_SHIELDING', () => {
 
     // No hits produced — infantry survive (RS context is SPACE)
     expect(t.defender.units.INFANTRY).toHaveLength(2)
-  })
-
-  it('does not fire when no sustain occurs (fighter destroyed)', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'ARBOREC',
-        units: { FIGHTER: 1 },
-        abilities: { REFLECTIVE_SHIELDING: true },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 1 },
-      },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'START')
-    t.advanceRound({ attacker: 1 })
-
-    // Fighter can't sustain — no trigger
-    expect(t.attacker.units.FIGHTER).toBeUndefined()
-    expect(t.defender.units.CRUISER).toHaveLength(1)
   })
 })

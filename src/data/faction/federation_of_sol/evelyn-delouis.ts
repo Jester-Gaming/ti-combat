@@ -1,10 +1,5 @@
 import federationOfSolIcon from '@/assets/faction/federation_of_sol.svg?raw'
-import {
-  type Ability,
-  declareParam,
-  makeVariantId,
-  parseVariantId,
-} from '@/combat'
+import { type Ability, declareParam, makeVariantId } from '@/combat'
 import type { UnitType, UnitVariantId } from '@/types'
 
 type Params = {
@@ -50,8 +45,7 @@ export const evelynDelouis: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT_ROUND',
       isCallable: (params, ctx) => {
-        const { type } = parseVariantId(params.unitType)
-        return ctx.api.own.hasUnitType(type)
+        return ctx.api.own.hasUnitType(params.unitType)
       },
       call: (ctx, params) => {
         ctx.api.own.addSubtype(params.unitType, EVELYN)

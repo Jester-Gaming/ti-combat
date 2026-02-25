@@ -1,6 +1,6 @@
 import sardakkNorrIcon from '@/assets/faction/sardakk_norr.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
-import { sardakkFlagshipAbility } from '@/data/faction/sardakk_norr/flagship-ability'
+import { cmorranNorr } from '@/data/faction/sardakk_norr/cmorran-norr'
 import { ghomSekkus } from '@/data/faction/sardakk_norr/ghom-sekkus'
 import { tekklarLegion } from '@/data/faction/sardakk_norr/tekklar-legion'
 import { unrelenting } from '@/data/faction/sardakk_norr/unrelenting'
@@ -24,7 +24,7 @@ export const sardakk_norr: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [sardakkFlagshipAbility, sustainDamage],
+        ABILITIES: [cmorranNorr, sustainDamage],
       },
     },
     MECH: {

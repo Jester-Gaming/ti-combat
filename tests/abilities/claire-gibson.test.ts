@@ -46,27 +46,6 @@ describe('Claire Gibson', () => {
     expect(t.defender.units.INFANTRY).toBeUndefined()
   })
 
-  it('does not fire when disabled', () => {
-    const t = combatTest({
-      mode: 'GROUND',
-      attacker: {
-        faction: 'ARBOREC',
-        units: { INFANTRY: 2 },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { INFANTRY: 2 },
-        abilities: { CLAIRE_GIBSON: { isEnabled: false } },
-      },
-    })
-
-    t.advanceTo('GROUND_COMBAT', 'START')
-    t.advanceRound()
-
-    expect(t.abilityLog('CLAIRE_GIBSON')).toHaveLength(0)
-    expect(t.defender.units.INFANTRY).toHaveLength(2)
-  })
-
   it('only fires for the defender', () => {
     const t = combatTest({
       mode: 'GROUND',

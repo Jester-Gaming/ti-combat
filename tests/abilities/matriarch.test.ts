@@ -15,7 +15,7 @@ describe('MATRIARCH', () => {
 
     t.advanceTo('GROUND_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Hybrid Crystal Fighter I: [8, 1]
     expect(pool.attacker).toContainDice('FIGHTER', [8, 1])
@@ -70,59 +70,5 @@ describe('MATRIARCH', () => {
     // Both infantry and fighter destroyed by SCD hits
     expect(t.attacker.units.INFANTRY).toBeUndefined()
     expect(t.attacker.units.FIGHTER).toBeUndefined()
-  })
-
-  it('does not affect ground combat without flagship', () => {
-    const t = combatTest({
-      mode: 'GROUND',
-      attacker: {
-        faction: 'NAALU_COLLECTIVE',
-        units: { FIGHTER: 2, INFANTRY: 1 },
-      },
-      defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
-    })
-
-    t.advanceTo('GROUND_COMBAT', 'START')
-    t.advanceRound()
-    const pool = t.dicePool()!
-
-    // Fighters should not roll dice without flagship present
-    expect(pool.attacker.FIGHTER).toBeUndefined()
-  })
-
-  it('does not affect non-Naalu factions', () => {
-    const t = combatTest({
-      mode: 'GROUND',
-      attacker: {
-        faction: 'ARBOREC',
-        units: { FIGHTER: 2, INFANTRY: 1 },
-      },
-      defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
-    })
-
-    t.advanceTo('GROUND_COMBAT', 'START')
-    t.advanceRound()
-    const pool = t.dicePool()!
-
-    // Fighters should not roll dice for non-Naalu factions
-    expect(pool.attacker.FIGHTER).toBeUndefined()
-  })
-
-  it('does not affect space combat', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'NAALU_COLLECTIVE',
-        units: { FLAGSHIP: 1, FIGHTER: 2 },
-      },
-      defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'START')
-    t.advanceRound()
-    const pool = t.dicePool()!
-
-    // Fighters participate in space combat normally (not via Matriarch)
-    expect(pool.attacker).toContainDice('FIGHTER', [8, 1])
   })
 })

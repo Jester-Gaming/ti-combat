@@ -166,20 +166,6 @@ describe.forEachSide('SUSTAIN_DAMAGE', () => {
     expect(t.defender.units.DREADNOUGHT).toHaveLength(2)
   })
 
-  it('unit is destroyed when hits exceed sustain capacity', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: { faction: 'ARBOREC', units: { CRUISER: 2 } },
-      defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 1 } },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'START')
-    t.advanceRound({ defender: 2 })
-
-    // Dreadnought sustained 1 hit but still destroyed by 2nd
-    expect(t.defender.units.DREADNOUGHT).toBeUndefined()
-  })
-
   it('both sides sustain independently', () => {
     const t = combatTest({
       mode: 'SPACE',

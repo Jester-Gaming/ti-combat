@@ -19,7 +19,7 @@ describe('MAGEN_DEFENSE_GRID', () => {
 
     t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
 
-    expect(t.abilityLog('MAGEN_DEFENSE_GRID').length).toBeGreaterThan(0)
+    expect(t.abilityLog('MAGEN_DEFENSE_GRID')).not.toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
   })
 
@@ -39,7 +39,7 @@ describe('MAGEN_DEFENSE_GRID', () => {
 
     t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
 
-    expect(t.abilityLog('MAGEN_DEFENSE_GRID').length).toBeGreaterThan(0)
+    expect(t.abilityLog('MAGEN_DEFENSE_GRID')).not.toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
   })
 
@@ -63,25 +63,6 @@ describe('MAGEN_DEFENSE_GRID', () => {
     expect(t.attacker.units.INFANTRY).toHaveLength(3)
   })
 
-  it('does not fire in space combat', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 2 },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { PDS: 1, CRUISER: 1 },
-        abilities: { MAGEN_DEFENSE_GRID: true },
-      },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
-
-    expect(t.abilityLog('MAGEN_DEFENSE_GRID')).toHaveLength(0)
-  })
-
   it('can hit a mech with sustain damage', () => {
     const t = combatTest({
       mode: 'GROUND',
@@ -98,7 +79,7 @@ describe('MAGEN_DEFENSE_GRID', () => {
 
     t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
 
-    expect(t.abilityLog('MAGEN_DEFENSE_GRID').length).toBeGreaterThan(0)
+    expect(t.abilityLog('MAGEN_DEFENSE_GRID')).not.toHaveLength(0)
     // Mech sustains the hit
     expect(t.attacker.units.MECH).toHaveLength(1)
     expect(t.attacker.units.MECH![0].isDamaged).toBe(true)

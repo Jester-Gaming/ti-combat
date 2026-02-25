@@ -15,7 +15,7 @@ describe('CUSTODIA_VIGILIA', () => {
     })
 
     t.advanceTo('SPACE_COMBAT')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     expect(pool.defender).toContainDice('CUSTODIA_VIGILIA', [5, 1])
   })
@@ -32,7 +32,7 @@ describe('CUSTODIA_VIGILIA', () => {
     })
 
     t.advanceTo('GROUND_COMBAT')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     expect(pool.defender).toContainDice('CUSTODIA_VIGILIA', [5, 1])
   })
@@ -49,7 +49,7 @@ describe('CUSTODIA_VIGILIA', () => {
     })
 
     t.advanceTo('SPACE_COMBAT')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     expect(pool.defender).toContainDice('PDS', [6, 1])
     expect(pool.defender).toContainDice('CUSTODIA_VIGILIA', [5, 1])
@@ -68,7 +68,7 @@ describe('CUSTODIA_VIGILIA', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     expect(pool.defender.CUSTODIA_VIGILIA).toBeUndefined()
   })
@@ -85,7 +85,7 @@ describe('CUSTODIA_VIGILIA', () => {
     })
 
     t.advanceTo('GROUND_COMBAT')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     expect(pool.attacker?.CUSTODIA_VIGILIA).toBeUndefined()
   })

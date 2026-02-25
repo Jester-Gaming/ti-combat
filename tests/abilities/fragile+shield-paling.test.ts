@@ -18,7 +18,7 @@ describe.forEachSide('FRAGILE + SHIELD_PALING', () => {
 
     t.advanceTo('GROUND_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Infantry: 8 (base), Fragile excluded by Shield Paling
     expect(pool.attacker).toContainDice('INFANTRY', [8, 1])

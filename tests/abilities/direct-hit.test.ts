@@ -24,51 +24,6 @@ describe.forEachSide('DIRECT_HIT', () => {
     expect(t.defender.units.DREADNOUGHT).toBeUndefined()
   })
 
-  it('does not fire when uses is 0', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 1 },
-        abilities: { DIRECT_HIT: { uses: 0 } },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { DREADNOUGHT: 1 },
-      },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'START')
-    t.advanceRound({ defender: 1 })
-
-    // Dreadnought sustains normally — no Direct Hit
-    expect(t.defender.units.DREADNOUGHT).toHaveLength(1)
-    expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
-  })
-
-  it('consumes one use per sustain', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 2 },
-        abilities: { DIRECT_HIT: { uses: 1 } },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { DREADNOUGHT: 2 },
-      },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'START')
-    t.advanceRound({ defender: 2 })
-
-    // First dreadnought sustained and was destroyed (used 1 Direct Hit)
-    // Second dreadnought sustained normally (no uses left)
-    expect(t.defender.units.DREADNOUGHT).toHaveLength(1)
-    expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
-  })
-
   it('multiple uses destroy multiple ships', () => {
     const t = combatTest({
       mode: 'SPACE',

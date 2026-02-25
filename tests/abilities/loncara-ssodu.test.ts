@@ -1,5 +1,3 @@
-import '../utils/expect'
-
 import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
@@ -16,7 +14,7 @@ describe('LONCARA_SSODU', () => {
     })
 
     t.advanceTo('GROUND_COMBAT')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     expect(pool.defender).toContainDice('PDS', [6, 1])
     expect(pool.defender.FLAGSHIP).toBeUndefined()

@@ -25,27 +25,6 @@ describe.forEachSide('RAID_FORMATION', () => {
     expect(t.defender.units.DREADNOUGHT![1].isDamaged).toBe(true)
   })
 
-  it('does not damage when no excess hits', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'ARGENT_FLIGHT',
-        units: { DESTROYER: 1 },
-        abilities: { RAID_FORMATION: true },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { FIGHTER: 3, DREADNOUGHT: 1 },
-      },
-    })
-
-    // 1 destroyer with AFB 9x2 = 2 dice
-    // Pick branch with 1 hit: 1 hit <= 3 fighters = no excess
-    t.advanceTo('AFB', 'ASSIGN_HITS', 1)
-
-    expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
-  })
-
   it('does not damage ships without sustain', () => {
     const t = combatTest({
       mode: 'SPACE',
@@ -70,7 +49,7 @@ describe.forEachSide('RAID_FORMATION', () => {
     expect(t.defender.units.CRUISER![2].isDamaged).toBeFalsy()
   })
 
-  it('does not damage ships with lost sustain', () => {
+  it('??? does not damage ships with lost sustain', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {

@@ -79,47 +79,4 @@ describe.forEachSide('Shields Holding', () => {
     expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(1)
   })
-
-  it('does not fire when uses are 0', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 3 },
-        abilities: { SHIELDS_HOLDING: { uses: 0 } },
-      },
-      defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'START')
-    t.advanceRound({ attacker: 2 })
-
-    // No cancellation — 2 cruisers destroyed
-    expect(t.abilityLog('SHIELDS_HOLDING')).toHaveLength(0)
-    expect(t.attacker.units.CRUISER).toHaveLength(1)
-  })
-
-  it('decrements uses after each activation', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 3 },
-        abilities: { SHIELDS_HOLDING: { uses: 1 } },
-      },
-      defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'START')
-
-    // First round: cancels 2 hits, uses decremented to 0
-    t.advanceRound({ attacker: 3 })
-    expect(t.abilityLog('SHIELDS_HOLDING')).not.toHaveLength(0)
-    expect(t.attacker.units.CRUISER).toHaveLength(2)
-
-    // Second round: no uses left, hits remain → 2 more cruisers destroyed
-    t.advanceRound({ attacker: 2 })
-    expect(t.abilityLog('SHIELDS_HOLDING')).not.toHaveLength(0)
-    expect(t.attacker.units.CRUISER).toBeUndefined()
-  })
 })

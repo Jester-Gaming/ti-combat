@@ -10,7 +10,7 @@ export const tekklarLegion: Ability = {
   context: 'GROUND',
   params: {
     isEnabled: false,
-    uses: 1,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
   invoke: [

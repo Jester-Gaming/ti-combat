@@ -1,5 +1,3 @@
-import '../utils/expect'
-
 import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
@@ -23,7 +21,7 @@ describe.forEachSide('MORALE_BOOST', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Cruiser: 7 - 1(morale) = 6
     expect(pool.defender).toContainDice('CRUISER', [6, 1])
@@ -48,7 +46,7 @@ describe.forEachSide('MORALE_BOOST', () => {
     // Morale boost fires at START_OF_COMBAT_ROUND (meta=SPACE_COMBAT)
     // AFB dice should NOT be affected (meta=AFB)
     t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Destroyer AFB: base value 9, dice 2 — NOT modified by morale boost
     expect(pool.defender).toContainDice('DESTROYER', [9, 2])
@@ -72,7 +70,7 @@ describe.forEachSide('MORALE_BOOST', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Cruiser: 7 (no modifier)
     expect(pool.defender).toContainDice('CRUISER', [7, 1])

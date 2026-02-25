@@ -18,7 +18,7 @@ describe.forEachSide('FRAGILE', () => {
 
     t.advanceTo('GROUND_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Infantry: 8 + 1(Fragile) = 9
     expect(pool.attacker).toContainDice('INFANTRY', [9, 1])

@@ -7,9 +7,13 @@ function itForEachSide(name: string, fn: () => void | Promise<void>) {
     setReversed(false)
     return fn()
   })
-  it(`[reversed] ${name}`, () => {
+  it(`[reversed] ${name}`, async () => {
     setReversed(true)
-    return fn()
+    try {
+      await fn()
+    } finally {
+      setReversed(false)
+    }
   })
 }
 

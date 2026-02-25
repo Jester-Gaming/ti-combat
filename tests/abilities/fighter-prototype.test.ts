@@ -1,5 +1,3 @@
-import '../utils/expect'
-
 import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
@@ -23,7 +21,7 @@ describe.forEachSide('FIGHTER_PROTOTYPE', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
     t.advanceRound()
-    const pool = t.dicePool()!
+    const pool = t.dicePool()
 
     // Fighter: 9 - 2(prototype) = 7
     expect(pool.defender).toContainDice('FIGHTER', [7, 1])

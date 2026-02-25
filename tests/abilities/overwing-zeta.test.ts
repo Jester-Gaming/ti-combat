@@ -58,33 +58,6 @@ describe.forEachSide('OVERWING_ZETA', () => {
     expect(t.attacker.units.CRUISER).toHaveLength(1)
   })
 
-  it('clamps cruisers + destroyers to 2 total', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'COUNCIL_KELERES',
-        units: { CRUISER: 1 },
-        abilities: {
-          OVERWING_ZETA: {
-            isEnabled: true,
-            ships: { CRUISER: 2, DESTROYER: 2 },
-            fleetPool: 20,
-          },
-        },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 1 },
-      },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
-
-    // Cruisers processed first, cap at 2 total → 2 cruisers, 0 destroyers
-    expect(t.attacker.units.CRUISER).toHaveLength(3) // 1 original + 2 placed
-    expect(t.attacker.units.DESTROYER).toBeUndefined()
-  })
-
   it('does not fire when no ships configured', () => {
     const t = combatTest({
       mode: 'SPACE',

@@ -386,6 +386,14 @@ export class CombatState {
           attacker: attOutcome.hits,
           defender: defOutcome.hits,
         })
+        // Log raw hits *received* per side before AFTER_DICE_ROLL /
+        // AFTER_UNIT_ABILITY_ROLL abilities can modify hitPools.
+        // Used by test framework (pickOutcomeByHits) to select branches
+        // based on unmodified dice results.
+        branchLogger?.child(metaPhase).child('DICE_HITS').log({
+          attacker: defOutcome.hits,
+          defender: attOutcome.hits,
+        })
 
         if (runAfterRoll) {
           this.data = branchData

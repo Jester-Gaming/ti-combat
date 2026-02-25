@@ -1,23 +1,22 @@
 import obsidianIcon from '@/assets/faction/obsidian.svg?raw'
 import { type Ability, declareParam, parseVariantId } from '@/combat'
-import { SHIPS } from '@/constants/units'
 import type { UnitBaseType, UnitId, UnitType } from '@/types'
 
 type Params = {
   targetPriority: UnitType[]
 }
 
-const SHIPS_SET = new Set<UnitBaseType>(SHIPS)
-
 function findDestroyedShipTypes(
   destroyed: Record<UnitType, UnitId[]>,
+  ships: UnitBaseType[],
 ): Set<UnitBaseType> {
+  const shipsSet = new Set<UnitBaseType>(ships)
   const types = new Set<UnitBaseType>()
   for (const k in destroyed) {
     const key = k as UnitType
     if (destroyed[key]?.length > 0) {
       const { type } = parseVariantId(key)
-      if (SHIPS_SET.has(type)) types.add(type)
+      if (shipsSet.has(type)) types.add(type)
     }
   }
   return types
@@ -43,20 +42,33 @@ export const vosHollow: Ability<Params> = {
     {
       timing: 'AFTER_DESTROY',
       isCallable: (params, ctx, units) => {
-        const ownDestroyedShips = findDestroyedShipTypes(units.own)
+        const { ships: ownShips } = ctx.api.own.getAbilityConfig('SETTINGS')
+        const { ships: opponentShips } =
+          ctx.api.opponent.getAbilityConfig('SETTINGS')
+        const ownDestroyedShips = findDestroyedShipTypes(units.own, ownShips)
+        const opponentShipsSet = new Set<UnitBaseType>(opponentShips)
         for (const variantId of params.targetPriority) {
           const { type } = parseVariantId(variantId)
-          if (ownDestroyedShips.has(type) && ctx.api.opponent.hasUnitType(type))
+          if (
+            ownDestroyedShips.has(type) &&
+            opponentShipsSet.has(type) &&
+            ctx.api.opponent.hasUnitType(type)
+          )
             return true
         }
         return false
       },
       call: (ctx, params, units) => {
-        const ownDestroyedShips = findDestroyedShipTypes(units.own)
+        const { ships: ownShips } = ctx.api.own.getAbilityConfig('SETTINGS')
+        const { ships: opponentShips } =
+          ctx.api.opponent.getAbilityConfig('SETTINGS')
+        const ownDestroyedShips = findDestroyedShipTypes(units.own, ownShips)
+        const opponentShipsSet = new Set<UnitBaseType>(opponentShips)
         for (const variantId of params.targetPriority) {
           const { type } = parseVariantId(variantId)
           if (
             ownDestroyedShips.has(type) &&
+            opponentShipsSet.has(type) &&
             ctx.api.opponent.hasUnitType(type)
           ) {
             ctx.api.opponent.destroyUnit(type)
