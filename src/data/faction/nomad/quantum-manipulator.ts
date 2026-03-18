@@ -15,6 +15,7 @@ export const quantumManipulator: Ability = {
   invoke: [
     {
       timing: 'BEFORE_ASSIGN_HITS',
+      context: 'SPACE_COMBAT',
       isCallable: (_params, ctx) => {
         if (ctx.api.own.getPendingHits() <= 0) return false
         const unitId = ctx.getUnit()

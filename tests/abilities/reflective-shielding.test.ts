@@ -28,7 +28,7 @@ describe.forEachSide('REFLECTIVE_SHIELDING', () => {
     expect(t.defender.units.CRUISER).toBeUndefined()
   })
 
-  it.fails('does not fire during Space Cannon Offense', () => {
+  it('does not fire during Space Cannon Offense', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {

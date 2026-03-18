@@ -1060,7 +1060,12 @@ export class AbilitiesEngine {
           const allowed = Array.isArray(entry.invoke.context)
             ? entry.invoke.context
             : [entry.invoke.context]
-          if (!allowed.includes(meta)) continue
+          // AFB is part of SPACE_COMBAT, so SPACE_COMBAT context includes AFB
+          if (
+            !allowed.includes(meta) &&
+            !(meta === 'AFB' && allowed.includes('SPACE_COMBAT'))
+          )
+            continue
         }
         if (triggerSide && entry.invoke.side) {
           if (entry.invoke.side === 'OWN' && side !== triggerSide) continue

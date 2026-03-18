@@ -48,7 +48,7 @@ describe.forEachSide('QUANTUM_MANIPULATOR', () => {
     expect(t.abilityLog('QUANTUM_MANIPULATOR')).not.toHaveLength(0)
   })
 
-  it.fails('does not absorb SCO hits', () => {
+  it('does not absorb SCO hits', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {

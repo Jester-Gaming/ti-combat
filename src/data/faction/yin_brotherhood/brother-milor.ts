@@ -15,6 +15,7 @@ export const brotherMilor: Ability = {
   invoke: [
     {
       timing: 'AFTER_DESTROY',
+      context: ['SPACE_COMBAT', 'GROUND_COMBAT'],
       isCallable: (_params, _ctx, units) => {
         for (const key in units.own) {
           if (units.own[key as UnitType]?.length > 0) return true
