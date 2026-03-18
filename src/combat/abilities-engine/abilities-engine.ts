@@ -122,6 +122,22 @@ function countAllUnits(units: Record<string, unknown[]>): number {
   return n
 }
 
+/** Copy-on-write: shallow-copy the abilities path so in-place mutations
+ *  don't leak into other branches that share the same abilities object.
+ *  Returns the (now owned) ability entry for `abilityKey`. */
+function cowAbilityEntry(
+  draft: CombatStateData,
+  side: CombatSide,
+  abilityKey: string,
+): Record<string, unknown> {
+  draft.abilities = { ...draft.abilities }
+  draft.abilities[side] = { ...draft.abilities[side] }
+  const entry = draft.abilities[side][abilityKey]
+  const clone = entry ? { ...entry } : {}
+  draft.abilities[side][abilityKey] = clone
+  return clone
+}
+
 /** Decrement `uses` in ability config after a successful invocation */
 function decrementUses(
   draft: CombatStateData,
@@ -136,13 +152,11 @@ function decrementUses(
     isFinite(params.uses)
   ) {
     const config = draft.abilities[side][abilityKey]
+    const entry = cowAbilityEntry(draft, side, abilityKey)
     if (config && typeof config.uses === 'number') {
-      config.uses -= 1
-    } else if (config) {
-      // Config exists but uses not set — initialize from params default
-      config.uses = params.uses - 1
+      entry.uses = config.uses - 1
     } else {
-      draft.abilities[side][abilityKey] = { uses: params.uses - 1 }
+      entry.uses = params.uses - 1
     }
     if (engine) {
       engine.syncInvokesForKey(side, abilityKey, draft)

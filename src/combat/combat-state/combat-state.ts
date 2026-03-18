@@ -699,12 +699,14 @@ function cloneUnitState(
   return {}
 }
 
-/** Branch clone — copies hitPools + unitState per side.
- *  units arrays stay shared with base, which is safe because
- *  assignHits builds new arrays via slice (never mutates originals).
+/** Branch clone — copies hitPools, unitState, and abilities per side.
+ *  units arrays stay shared with base — all mutation paths (assignHits,
+ *  removeUnit) build new arrays instead of mutating originals.
  *  unitState must be cloned because abilities like SUSTAIN_DAMAGE
  *  mutate entries (isDamaged) at BEFORE_ASSIGN_HITS — branches are
- *  processed sequentially, so earlier branches would corrupt later ones. */
+ *  processed sequentially, so earlier branches would corrupt later ones.
+ *  abilities must be cloned because abilities like DIRECT_HIT decrement
+ *  `uses` — shared config would leak decrements across branches. */
 function cloneStateForBranch(
   base: CombatStateData,
   nextPhase: PhaseIdentifier,
@@ -712,6 +714,7 @@ function cloneStateForBranch(
   return {
     ...base,
     currentPhase: nextPhase,
+    abilities: base.abilities,
     attacker: {
       ...base.attacker,
       hitPools: [...base.attacker.hitPools],

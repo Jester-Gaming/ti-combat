@@ -249,7 +249,7 @@ export class SideApi {
     maybeUpdates?: Record<string, unknown>,
   ) {
     const state = this.state
-    const sideConfig = state.abilities[this._side]
+    const side = this._side
 
     let targetKey: string
     let updates: Record<string, unknown>
@@ -262,8 +262,16 @@ export class SideApi {
       updates = keyOrUpdates
     }
 
+    // COW: shallow-copy the abilities path so mutations don't leak
+    // into other branches sharing the same abilities object.
+    state.abilities = { ...state.abilities }
+    state.abilities[side] = { ...state.abilities[side] }
+    const sideConfig = state.abilities[side]
+
     if (!sideConfig[targetKey]) {
       sideConfig[targetKey] = {}
+    } else {
+      sideConfig[targetKey] = { ...sideConfig[targetKey] }
     }
 
     const oldIsEnabled = sideConfig[targetKey].isEnabled
@@ -280,11 +288,11 @@ export class SideApi {
         sideConfig[targetKey].isEnabled !== oldIsEnabled ||
         sideConfig[targetKey].uses !== oldUses
       ) {
-        abilitiesParams.syncInvokesForKey(this._side, targetKey, state)
+        abilitiesParams.syncInvokesForKey(side, targetKey, state)
       }
 
       abilitiesParams.invokeOnParamSet(
-        this._side,
+        side,
         targetKey,
         Object.keys(updates),
         state,

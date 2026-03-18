@@ -752,12 +752,19 @@ export class CombatSideState {
     const idx = ids.indexOf(unitId)
     if (idx === -1) return
 
-    ids.splice(idx, 1)
-    delete data.unitState[unitId]
-
-    if (ids.length <= 0) {
-      delete data.units[key]
+    // Build a new array instead of splicing in-place so that branches
+    // sharing the same units reference are not affected.
+    if (ids.length <= 1) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [key]: _removed, ...rest } = data.units
+      data.units = rest as SideStateData['units']
+    } else {
+      const copy = ids.slice()
+      copy.splice(idx, 1)
+      data.units = { ...data.units, [key]: copy }
     }
+
+    delete data.unitState[unitId]
   }
 
   /** Modify per-unit mutable state */
