@@ -5,6 +5,7 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 const UNIT_ABILITIES: UnitAbility[] = [
   'AFB',
   'BOMBARDMENT',
+  'DEPLOY',
   'SPACE_CANNON',
   'SUSTAIN_DAMAGE',
   'PLANETARY_SHIELD',

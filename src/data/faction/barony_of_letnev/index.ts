@@ -13,7 +13,6 @@ export const barony_of_letnev: Faction = {
   name: 'Barony of Letnev',
   icon: baronyOfLetnevIcon,
   abilities: {
-    faction: [dunlainReaper],
     technology: [l4Disruptors, nonEuclideanShielding],
     agent: [viscountUnlenn],
     breakthrough: [gravleashManeuvers],
@@ -44,6 +43,7 @@ export const barony_of_letnev: Faction = {
         COMBAT: [6, 1],
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
+          DEPLOY: dunlainReaper,
         },
         ABILITIES: [sustainDamage],
       },

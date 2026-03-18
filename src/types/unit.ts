@@ -17,6 +17,7 @@ interface UnitAbilities {
   SPACE_CANNON?: DiceGroup
   PLANETARY_SHIELD?: boolean
   PRODUCTION?: number
+  DEPLOY?: Ability
 }
 
 export type UnitAbility = keyof UnitAbilities

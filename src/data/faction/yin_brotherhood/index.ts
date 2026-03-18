@@ -7,6 +7,7 @@ import { devotion } from './devotion'
 import { greyfireMutagen } from './greyfire-mutagen'
 import { impulseCore } from './impulse-core'
 import { indoctrination } from './indoctrination'
+import { moyinsAshes } from './moyins-ashes'
 import { vanHauge } from './van-hauge'
 
 export const yin_brotherhood: Faction = {
@@ -43,6 +44,7 @@ export const yin_brotherhood: Faction = {
         COMBAT: [6, 1],
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
+          DEPLOY: moyinsAshes,
         },
         ABILITIES: [sustainDamage],
       },

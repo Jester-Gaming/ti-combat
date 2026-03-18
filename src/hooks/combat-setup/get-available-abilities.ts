@@ -1,5 +1,6 @@
 import factions from '@/data/faction'
-import type { CombatSide, Faction, FactionKey } from '@/types'
+import type { CombatSide, Faction, FactionKey, UnitBaseType } from '@/types'
+import { getEffectiveStats } from '@/utils/get-simulation-units'
 
 import type { Ability } from '../../combat/abilities-engine/types'
 import actionCard from '../../data/abilities/action-card'
@@ -46,7 +47,10 @@ const NEUTRAL_HIDDEN_CATEGORIES = new Set([
 ])
 
 /** Collect abilities with UI from faction unit definitions */
-function collectUnitAbilities(faction: Faction): Ability[] {
+function collectUnitAbilities(
+  faction: Faction,
+  upgradedTypes?: ReadonlySet<UnitBaseType>,
+): Ability[] {
   const seen = new Set<string>()
   const abilities: Ability[] = []
 
@@ -63,6 +67,23 @@ function collectUnitAbilities(faction: Faction): Ability[] {
       if (!ability.headerUI && !ability.uiConfig) continue
       seen.add(ability.key)
       abilities.push(ability)
+    }
+  }
+
+  // Collect DEPLOY from effective stats only
+  for (const [unitType, unitDef] of Object.entries(faction.units)) {
+    if (!unitDef) continue
+    const effective = getEffectiveStats(
+      unitDef.BASE,
+      unitDef.UPGRADED,
+      upgradedTypes?.has(unitType as UnitBaseType) ?? false,
+    )
+    const deploy = effective.UNIT_ABILITIES?.DEPLOY
+    if (deploy && !seen.has(deploy.key)) {
+      if (deploy.headerUI || deploy.uiConfig) {
+        seen.add(deploy.key)
+        abilities.push(deploy)
+      }
     }
   }
 
@@ -88,6 +109,10 @@ export function getUnitDefinitionAbilityKeys(
     ]) {
       keys.add(ability.key)
     }
+    for (const stats of [unitDef.BASE, unitDef.UPGRADED]) {
+      const deploy = stats?.UNIT_ABILITIES?.DEPLOY
+      if (deploy) keys.add(deploy.key)
+    }
   }
   unitDefAbilityKeysCache.set(factionKey, keys)
   return keys
@@ -96,6 +121,7 @@ export function getUnitDefinitionAbilityKeys(
 export function getAvailableAbilities(
   side: CombatSide,
   factionKey: FactionKey,
+  upgradedTypes?: ReadonlySet<UnitBaseType>,
 ): Ability[] {
   const isNeutral = factionKey === 'NEUTRAL'
 
@@ -116,7 +142,9 @@ export function getAvailableAbilities(
     ...(abilities?.hero ?? []),
     ...(abilities?.breakthrough ?? []),
   ]
-  const unitAbilities = faction ? collectUnitAbilities(faction) : []
+  const unitAbilities = faction
+    ? collectUnitAbilities(faction, upgradedTypes)
+    : []
 
   return [...baseAbilities, ...factionAbilities, ...unitAbilities]
 }

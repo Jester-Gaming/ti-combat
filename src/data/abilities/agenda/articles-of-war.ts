@@ -31,6 +31,7 @@ export const articlesOfWar: Ability<Params> = {
           'ARTICLES_OF_WAR',
           'MECH',
         )
+        ctx.api.own.setUnitAbilityLost('DEPLOY', 'ARTICLES_OF_WAR', 'MECH')
 
         // Remove printed Ability objects from mech units (keep only Sustain Damage)
         const mechStats = ctx.api.own.getUnitStats('MECH')

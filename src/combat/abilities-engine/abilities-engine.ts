@@ -58,9 +58,10 @@ const EMPTY_PENDING: {
 }[] = []
 // ── Ability execution engine (module-private helpers) ────────────────────
 
-/** Source of an ability - either from config or a unit */
+/** Source of an ability - either from config, a deploy ability, or a unit */
 type AbilitySource =
   | { type: 'config' }
+  | { type: 'deploy'; unitType: UnitBaseType }
   | { type: 'unit'; unitType: UnitBaseType; unitId: UnitId }
 
 // Type guard to detect sided objects (attacker/defender)
@@ -405,6 +406,27 @@ export class AbilitiesEngine {
     return entries
   }
 
+  /** Collect deploy abilities from unit stats (not requiring units on field) */
+  static collectDeployAbilities(
+    state: CombatStateData,
+    side: CombatSide,
+  ): { ability: Ability; unitType: UnitBaseType }[] {
+    const sideState = state[side]
+    const seen = new Set<UnitBaseType>()
+    const entries: { ability: Ability; unitType: UnitBaseType }[] = []
+
+    for (const key of Object.keys(sideState.unitStats)) {
+      const stats = resolveUnitStats(sideState.unitStats, key as UnitType)
+      const deploy = stats?.UNIT_ABILITIES?.DEPLOY
+      if (!deploy) continue
+      const { type: baseType } = parseVariantId(key as UnitType)
+      if (seen.has(baseType as UnitBaseType)) continue
+      seen.add(baseType as UnitBaseType)
+      entries.push({ ability: deploy, unitType: baseType as UnitBaseType })
+    }
+    return entries
+  }
+
   // ── Ability execution engine ──────────────────────────────────────
 
   runAbilities<T extends AbilityTiming>(
@@ -525,6 +547,12 @@ export class AbilitiesEngine {
         if (sideTracker.configAbilities.has(invoke)) {
           continue
         }
+      } else if (source.type === 'deploy') {
+        if (sideTracker.configAbilities.has(invoke)) continue
+        const sideState = this._combatState.side(side)
+        if (sideState.isRestricted('lost', 'DEPLOY', source.unitType)) continue
+        if (sideState.isRestricted('cannotBeUsed', 'DEPLOY', source.unitType))
+          continue
       } else {
         const sideUnits = state[side].units
         let unitAlive = false
@@ -646,7 +674,7 @@ export class AbilitiesEngine {
 
         childLogger?.forSide(side).log()
 
-        if (source.type === 'config') {
+        if (source.type === 'config' || source.type === 'deploy') {
           sideTracker.configAbilities.add(invoke)
         } else {
           const key = `${invoke.timing}:${source.unitType}:${ability.key}`
@@ -753,6 +781,38 @@ export class AbilitiesEngine {
           else sideMap.set(invoke.timing, [entry])
         }
       }
+
+      const deployAbilities = AbilitiesEngine.collectDeployAbilities(
+        state,
+        side,
+      )
+      for (const { ability, unitType } of deployAbilities) {
+        if (ability.context && ability.context !== state.combatMode) continue
+        const configParams = sideConfig[ability.key]
+        const mergedParams = configParams
+          ? { ...extractDefaults(ability), ...configParams }
+          : extractDefaults(ability)
+
+        if ('isEnabled' in mergedParams && !mergedParams.isEnabled) continue
+
+        for (const invoke of ability.invoke) {
+          if (
+            'uses' in mergedParams &&
+            typeof mergedParams.uses === 'number' &&
+            mergedParams.uses <= 0
+          )
+            continue
+          const list = sideMap.get(invoke.timing)
+          const entry: TimingInvokeEntry = {
+            ability,
+            invoke,
+            params: mergedParams,
+            source: { type: 'deploy', unitType },
+          }
+          if (list) list.push(entry)
+          else sideMap.set(invoke.timing, [entry])
+        }
+      }
     }
 
     this._combatState._invokes = collections
@@ -854,7 +914,10 @@ export class AbilitiesEngine {
     const sideMap = this._combatState._invokes[side]
     for (const [timing, entries] of sideMap) {
       const filtered = entries.filter(e => {
-        if (e.source.type !== 'config' || e.ability.key !== abilityKey)
+        if (
+          (e.source.type !== 'config' && e.source.type !== 'deploy') ||
+          e.ability.key !== abilityKey
+        )
           return true
         return keepIf ? keepIf(e) : false
       })
@@ -893,12 +956,62 @@ export class AbilitiesEngine {
     }
   }
 
+  private addDeployAbilityInvokes(
+    side: CombatSide,
+    ability: Ability,
+    unitType: UnitBaseType,
+    mergedParams: Record<string, unknown>,
+    state: CombatStateData,
+  ): void {
+    if (ability.context && ability.context !== state.combatMode) return
+    this._combatState.ensureOwnInvokes()
+    const sideMap = this._combatState._invokes[side]
+    for (const invoke of ability.invoke) {
+      if (
+        'uses' in mergedParams &&
+        typeof mergedParams.uses === 'number' &&
+        mergedParams.uses <= 0
+      )
+        continue
+      const entry: TimingInvokeEntry = {
+        ability,
+        invoke,
+        params: mergedParams,
+        source: { type: 'deploy', unitType },
+      }
+      const list = sideMap.get(invoke.timing)
+      if (list) list.push(entry)
+      else sideMap.set(invoke.timing, [entry])
+    }
+  }
+
   syncInvokesForKey(
     side: CombatSide,
     key: string,
     draft: CombatStateData,
   ): void {
     if (this._unitAbilityKeys[side].has(key)) return
+
+    // Check if this is a deploy ability
+    const deployAbilities = AbilitiesEngine.collectDeployAbilities(draft, side)
+    const deployEntry = deployAbilities.find(d => d.ability.key === key)
+    if (deployEntry) {
+      this.removeConfigInvokeEntries(side, key)
+      const newConfig = draft.abilities[side][key]
+      const defaults = extractDefaults(deployEntry.ability)
+      const mergedParams = newConfig ? { ...defaults, ...newConfig } : defaults
+
+      if ('isEnabled' in mergedParams && !mergedParams.isEnabled) return
+
+      this.addDeployAbilityInvokes(
+        side,
+        deployEntry.ability,
+        deployEntry.unitType,
+        mergedParams,
+        draft,
+      )
+      return
+    }
 
     const ability = this._abilities[side].find(a => a.key === key)
     if (!ability) return

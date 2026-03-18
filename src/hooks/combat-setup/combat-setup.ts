@@ -73,8 +73,16 @@ export class CombatSetup {
     this._abilities = { attacker: {}, defender: {} }
 
     this._sideAbilities = {
-      attacker: getAvailableAbilities('attacker', defaultFaction),
-      defender: getAvailableAbilities('defender', defaultFaction),
+      attacker: getAvailableAbilities(
+        'attacker',
+        defaultFaction,
+        this.getUpgradedTypes('attacker'),
+      ),
+      defender: getAvailableAbilities(
+        'defender',
+        defaultFaction,
+        this.getUpgradedTypes('defender'),
+      ),
     }
     this._unitAbilityKeys = {
       attacker: getUnitDefinitionAbilityKeys(defaultFaction),
@@ -168,7 +176,11 @@ export class CombatSetup {
     }
 
     // Reload abilities for the changed side
-    this._sideAbilities[side] = getAvailableAbilities(side, faction)
+    this._sideAbilities[side] = getAvailableAbilities(
+      side,
+      faction,
+      this.getUpgradedTypes(side),
+    )
     this._unitAbilityKeys[side] = getUnitDefinitionAbilityKeys(faction)
 
     // Rebuild side config: keep existing params for surviving abilities,
@@ -322,6 +334,15 @@ export class CombatSetup {
 
   // ── Private helpers ──────────────────────────────────────────────────
 
+  private getUpgradedTypes(side: CombatSide): Set<UnitBaseType> {
+    const sel = this.selectionsForSide(side)
+    const set = new Set<UnitBaseType>()
+    for (const [k, v] of Object.entries(sel)) {
+      if (v.upgraded) set.add(k as UnitBaseType)
+    }
+    return set
+  }
+
   private selectionsForSide(
     side: CombatSide,
   ): Record<UnitBaseType, UnitSelection> {
@@ -336,6 +357,8 @@ export class CombatSetup {
     update: Partial<UnitSelection>,
   ): void {
     const selections = this.selectionsForSide(side)
+    const upgradeChanged =
+      'upgraded' in update && update.upgraded !== selections[unitType].upgraded
     const newSelections = {
       ...selections,
       [unitType]: { ...selections[unitType], ...update },
@@ -349,7 +372,22 @@ export class CombatSetup {
     const faction =
       side === 'attacker' ? this._attackerFaction : this._defenderFaction
     this.rebuildUnits(side, faction, newSelections)
-    this.refreshEngine()
+
+    if (upgradeChanged) {
+      this._sideAbilities[side] = getAvailableAbilities(
+        side,
+        faction,
+        this.getUpgradedTypes(side),
+      )
+      reconcileAbilitiesConfig(
+        this._abilities,
+        this._sideAbilities,
+        this._combatMode,
+      )
+      this.rebuildEngine()
+    } else {
+      this.refreshEngine()
+    }
   }
 
   private rebuildUnits(

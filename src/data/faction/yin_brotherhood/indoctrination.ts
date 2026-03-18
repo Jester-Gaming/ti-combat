@@ -1,10 +1,6 @@
 import type { Ability } from '@/combat'
 
-type Params = {
-  deployMech: boolean
-}
-
-export const indoctrination: Ability<Params> = {
+export const indoctrination: Ability = {
   key: 'INDOCTRINATION',
   name: 'Indoctrination',
   category: 'FACTION',
@@ -13,7 +9,6 @@ export const indoctrination: Ability<Params> = {
   params: {
     isEnabled: false,
     uses: Infinity,
-    deployMech: false,
   },
   headerUI: 'isEnabled',
   invoke: [
@@ -22,18 +17,11 @@ export const indoctrination: Ability<Params> = {
       isCallable: (_params, ctx) => {
         return ctx.api.opponent.hasUnitType('INFANTRY')
       },
-      call: (ctx, params) => {
+      call: ctx => {
         ctx.api.opponent.removeUnit('INFANTRY')
-        const unit = params.deployMech ? 'MECH' : 'INFANTRY'
-        ctx.api.own.placeUnits({ [unit]: 1 })
+        const [placedId] = ctx.api.own.placeUnits({ INFANTRY: 1 }).INFANTRY
+        ctx.trigger('WHEN_INDOCTRINATION', placedId)
       },
-    },
-  ],
-  uiConfig: () => [
-    {
-      key: 'deployMech' as const,
-      label: 'Deploy Mech',
-      type: 'checkbox' as const,
     },
   ],
 }

@@ -945,10 +945,13 @@ export class CombatSideState {
       if (allowed <= 0) continue
 
       const newIds = nextUnitIds(allowed)
-      if (!data.units[unitType]) {
-        data.units[unitType] = []
+      // Build a new array instead of pushing in-place so that branches
+      // sharing the same units reference are not affected.
+      const existing_ids = data.units[unitType]
+      data.units = {
+        ...data.units,
+        [unitType]: existing_ids ? [...existing_ids, ...newIds] : [...newIds],
       }
-      data.units[unitType].push(...newIds)
       if (!data.unitStats[unitType]) {
         data.unitStats[unitType] = {}
       }

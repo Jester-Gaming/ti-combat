@@ -1,16 +1,23 @@
 import { prepareSimulationConfig } from '@/hooks/combat-setup'
 import type { SimulationInput } from '@/hooks/combat-setup/types'
 import type { FactionKey, UnitBaseType, UnitSelection } from '@/types'
-import { getSimulationUnits } from '@/utils/get-simulation-units'
+import {
+  buildUnitStatsMap,
+  getSimulationUnits,
+} from '@/utils/get-simulation-units'
 
 import { CombatEngine } from './combat-engine'
 import { CombatState } from './combat-state'
-import type { SideStateData } from './combat-state/types'
+import type { SideStateData, UnitStatsEntry } from './combat-state/types'
 
 function buildSideState(
   faction: FactionKey,
   selections: Record<UnitBaseType, UnitSelection>,
 ): SideStateData {
+  const upgradedSet = new Set<UnitBaseType>()
+  for (const [k, v] of Object.entries(selections)) {
+    if (v.upgraded) upgradedSet.add(k as UnitBaseType)
+  }
   const { units, unitState, unitStats } = getSimulationUnits(
     faction,
     selections,
@@ -19,7 +26,10 @@ function buildSideState(
     faction,
     units,
     unitState,
-    unitStats,
+    unitStats: {
+      ...buildUnitStatsMap(faction, upgradedSet),
+      ...unitStats,
+    } as Record<string, UnitStatsEntry>,
     hitPools: [],
   }
 }

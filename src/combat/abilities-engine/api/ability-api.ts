@@ -159,7 +159,9 @@ export class SideApi {
     this._sideState.removeUnit(unitTypeOrUnit)
   }
 
-  placeUnits(unitsToAdd: Partial<Record<UnitBaseType, number>>) {
+  placeUnits(
+    unitsToAdd: Partial<Record<UnitBaseType, number>>,
+  ): Record<UnitBaseType, UnitId[]> {
     const placed = this._sideState.placeUnits(unitsToAdd)
 
     const abilitiesParams = this._abilitiesParams
@@ -172,6 +174,7 @@ export class SideApi {
         )
       }
     }
+    return placed as Record<UnitBaseType, UnitId[]>
   }
 
   modifyUnitType(key: UnitType, updates: Partial<UnitStats>): void {

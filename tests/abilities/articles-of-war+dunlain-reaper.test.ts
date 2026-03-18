@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { combatTest } from '../utils/combat-test'
 
 describe('ARTICLES_OF_WAR + DUNLAIN_REAPER', () => {
-  it.fails("deploy shouldn't work", () => {
+  it('Articles of War disables deploy', () => {
     const t = combatTest({
       mode: 'GROUND',
       attacker: {
@@ -23,9 +23,9 @@ describe('ARTICLES_OF_WAR + DUNLAIN_REAPER', () => {
     t.advanceTo('GROUND_COMBAT', 'START')
     t.advanceRound()
 
-    // Dunlain Reaper should still fire (it's a config ability, not a printed ability)
-    expect(t.abilityLog('DUNLAIN_REAPER')).not.toHaveLength(0)
+    // DEPLOY is a unit ability on MECH, so Articles of War disables it
+    expect(t.abilityLog('DUNLAIN_REAPER')).toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(3)
-    expect(t.attacker.units.MECH).toHaveLength(0)
+    expect(t.attacker.units.MECH).toBeUndefined()
   })
 })
