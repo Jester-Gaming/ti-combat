@@ -55,7 +55,7 @@ describe.forEachSide('DURANIUM_ARMOR', () => {
     expect(t.attacker.units.DREADNOUGHT![1].isDamaged).toBe(true)
   })
 
-  it.fails('repairs a unit that used sustain for space cannon offense', () => {
+  it('repairs a unit that used sustain for space cannon offense', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {
