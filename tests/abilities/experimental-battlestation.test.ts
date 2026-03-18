@@ -55,7 +55,7 @@ describe('EXPERIMENTAL_BATTLESTATION', () => {
     expect(t.attacker.units.CRUISER).toHaveLength(1)
   })
 
-  it('[engine] fires SCO even when defender has no units', () => {
+  it('fires SCO even when defender has no units', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: { faction: 'ARBOREC', units: { CRUISER: 3 } },

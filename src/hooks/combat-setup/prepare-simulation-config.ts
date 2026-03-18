@@ -36,10 +36,18 @@ export function prepareSimulationConfig(
   attackerFaction: FactionKey,
   defenderFaction: FactionKey,
   combatMode: CombatMode,
+  customAbilities?: Ability[],
 ): Record<CombatSide, SideAbilitiesData> {
+  const custom = customAbilities ?? []
   const abilities = {
-    attacker: getAvailableAbilities('attacker', attackerFaction),
-    defender: getAvailableAbilities('defender', defenderFaction),
+    attacker: [
+      ...getAvailableAbilities('attacker', attackerFaction),
+      ...custom,
+    ],
+    defender: [
+      ...getAvailableAbilities('defender', defenderFaction),
+      ...custom,
+    ],
   }
 
   const savedParams = snapshotConsumerParams(config, abilities)

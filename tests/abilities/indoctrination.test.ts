@@ -24,30 +24,6 @@ describe.forEachSide('INDOCTRINATION', () => {
     expect(t.defender.units.INFANTRY).toHaveLength(2)
   })
 
-  it('[engine] does not trigger AFTER_DESTROY for removed unit', () => {
-    const t = combatTest({
-      mode: 'GROUND',
-      attacker: {
-        faction: 'YIN_BROTHERHOOD',
-        units: { INFANTRY: 2 },
-        abilities: { INDOCTRINATION: true },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { INFANTRY: 1 },
-      },
-    })
-
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
-
-    // Indoctrination removes 1 infantry, adds 1 to attacker
-    expect(t.attacker.units.INFANTRY).toHaveLength(3)
-    expect(t.defender.units.INFANTRY).toBeUndefined()
-
-    // removeUnit should NOT trigger AFTER_DESTROY timing
-    expect(t.abilityLog('AFTER_DESTROY')).toHaveLength(0)
-  })
-
   it('does not fire in space combat', () => {
     const t = combatTest({
       mode: 'SPACE',

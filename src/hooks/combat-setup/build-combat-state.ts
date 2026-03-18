@@ -33,6 +33,7 @@ export interface CombatStateConfig {
   mode: CombatMode
   attacker: SideConfig
   defender: SideConfig
+  customAbilities?: import('../../combat/abilities-engine/types').Ability[]
 }
 
 // ============================================================================
@@ -123,6 +124,7 @@ export function buildCombatState(config: CombatStateConfig): CombatState {
     config.attacker.faction,
     config.defender.faction,
     config.mode,
+    config.customAbilities,
   )
 
   return CombatState.forSimulation(
