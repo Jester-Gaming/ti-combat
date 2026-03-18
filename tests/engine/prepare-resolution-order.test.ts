@@ -18,34 +18,31 @@ import { combatTest } from '../utils/combat-test'
  * Actual: PLANETARY_SHIELD fires before 2RAM → bombardment blocked.
  */
 describe('engine: PREPARE resolution order', () => {
-  it.fails(
-    '2RAM disables Planetary Shield when another PREPARE ability is present',
-    () => {
-      const t = combatTest({
-        mode: 'GROUND',
-        attacker: {
-          faction: 'L1Z1X_MINDNET',
-          units: { DREADNOUGHT: 1, INFANTRY: 1 },
-          abilities: {
-            TWO_RAM: true,
-            // BLITZ fires at PREPARE (action cards come before commanders
-            // in the ability list). It takes the attacker's first alternation
-            // turn, allowing PLANETARY_SHIELD to fire before 2RAM.
-            BLITZ: true,
-          },
+  it('2RAM disables Planetary Shield when another PREPARE ability is present', () => {
+    const t = combatTest({
+      mode: 'GROUND',
+      attacker: {
+        faction: 'L1Z1X_MINDNET',
+        units: { DREADNOUGHT: 1, INFANTRY: 1 },
+        abilities: {
+          TWO_RAM: true,
+          // BLITZ fires at PREPARE (action cards come before commanders
+          // in the ability list). It takes the attacker's first alternation
+          // turn, allowing PLANETARY_SHIELD to fire before 2RAM.
+          BLITZ: true,
         },
-        defender: {
-          faction: 'ARBOREC',
-          units: { PDS: 1, INFANTRY: 1 },
-        },
-      })
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { PDS: 1, INFANTRY: 1 },
+      },
+    })
 
-      // Advance past bombardment
-      t.advanceTo('SPACE_CANNON_DEFENSE')
-      const pool = t.dicePool()
+    // Advance past bombardment
+    t.advanceTo('SPACE_CANNON_DEFENSE')
+    const pool = t.dicePool()
 
-      // 2RAM should disable Planetary Shield → dreadnought bombardment works
-      expect(pool.attacker.DREADNOUGHT).toBeDefined()
-    },
-  )
+    // 2RAM should disable Planetary Shield → dreadnought bombardment works
+    expect(pool.attacker.DREADNOUGHT).toBeDefined()
+  })
 })

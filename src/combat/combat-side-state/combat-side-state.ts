@@ -405,9 +405,42 @@ export class CombatSideState {
     const entries = this.data.unitAbilityRestrictions?.[layer]?.[ability]
     if (!entries) return false
     const { type: baseType } = parseVariantId(unitType as UnitType)
-    return entries.some(
-      e => !e.unitType || e.unitType === unitType || e.unitType === baseType,
-    )
+    const visited = new Set<string>()
+    return entries.some(e => {
+      if (e.unitType && e.unitType !== unitType && e.unitType !== baseType) {
+        return false
+      }
+      if (this.isSourceDisabled(e.reason, visited)) return false
+      return true
+    })
+  }
+
+  /**
+   * Check if the ability that sourced a restriction is itself disabled.
+   * Looks across both combat sides, both layers (lost + cannotBeUsed).
+   * Uses a visited set to prevent cycles.
+   */
+  private isSourceDisabled(reason: string, visited: Set<string>): boolean {
+    if (visited.has(reason)) return false
+    visited.add(reason)
+
+    const ability = reason as UnitAbility
+    for (const side of ['attacker', 'defender'] as const) {
+      const sideState = this._combatState.side(side)
+      const restrictions = sideState.data.unitAbilityRestrictions
+      if (!restrictions) continue
+
+      for (const layer of ['lost', 'cannotBeUsed'] as const) {
+        const entries = restrictions[layer]?.[ability]
+        if (!entries || entries.length === 0) continue
+
+        const hasValidEntry = entries.some(
+          e => !sideState.isSourceDisabled(e.reason, visited),
+        )
+        if (hasValidEntry) return true
+      }
+    }
+    return false
   }
 
   /** Get all UnitIds for a type, optionally including variants */
