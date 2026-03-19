@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { combatTest } from '../utils/combat-test'
 
 describe.forEachSide('SALAI_SAI_CORIAN + VISCOUNT_UNLENN', () => {
-  it.fails('Viscount adds 1 die on top of Salai dynamic dice count', () => {
+  it('Viscount adds 1 die on top of Salai dynamic dice count', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {

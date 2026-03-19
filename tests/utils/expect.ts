@@ -14,7 +14,7 @@ expect.extend({
     ...expected: [number, number][]
   ) {
     const dice = received[source] ?? []
-    const values = dice.map(d => `[${d[0]}, ${d[1]}]`).join(', ')
+    const values = dice.map(d => `[${d[0]}, ${d[1] + d[2]}]`).join(', ')
 
     if (expected.length === 0) {
       const pass = dice.length > 0
@@ -30,7 +30,9 @@ expect.extend({
     const remaining = [...dice]
     const missing: [number, number][] = []
     for (const exp of expected) {
-      const idx = remaining.findIndex(d => d[0] === exp[0] && d[1] === exp[1])
+      const idx = remaining.findIndex(
+        d => d[0] === exp[0] && d[1] + d[2] === exp[1],
+      )
       if (idx >= 0) {
         remaining.splice(idx, 1)
       } else {

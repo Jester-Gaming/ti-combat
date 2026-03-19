@@ -59,8 +59,8 @@ function flattenDicePool(pool: DicePool): DiceGroup[] {
 
     // Group by hitValue for efficiency
     const grouped = new Map<number, number>()
-    for (const [hitValue, diceCount] of units) {
-      grouped.set(hitValue, (grouped.get(hitValue) ?? 0) + diceCount)
+    for (const [hitValue, baseDice, bonusDice] of units) {
+      grouped.set(hitValue, (grouped.get(hitValue) ?? 0) + baseDice + bonusDice)
     }
 
     for (const [hitValue, totalDice] of grouped) {
@@ -656,11 +656,12 @@ function applyStoredHitValueModifiers(
       for (const dice of Object.values(pool)) {
         if (!dice) continue
         for (let i = 0; i < dice.length; i++) {
-          if (dice[i][2] === mod.unitId) {
+          if (dice[i][3] === mod.unitId) {
             dice[i] = [
               Math.max(1, dice[i][0] + mod.amount),
               dice[i][1],
               dice[i][2],
+              dice[i][3],
             ]
             break
           }
@@ -674,7 +675,12 @@ function applyStoredHitValueModifiers(
       if (mod.unitType && type !== mod.unitType) continue
       if (mod.excludeUnitTypes?.includes(type)) continue
       for (let i = 0; i < dice.length; i++) {
-        dice[i] = [Math.max(1, dice[i][0] + mod.amount), dice[i][1], dice[i][2]]
+        dice[i] = [
+          Math.max(1, dice[i][0] + mod.amount),
+          dice[i][1],
+          dice[i][2],
+          dice[i][3],
+        ]
       }
     }
   }

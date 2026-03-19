@@ -9,7 +9,7 @@ type Params = {
 }
 
 function expectedHits(sc: DiceGroup): number {
-  return sc[1] * (11 - sc[0])
+  return (sc[1] + (sc[2] ?? 0)) * (11 - sc[0])
 }
 
 function hasStructures(params: Params): boolean {

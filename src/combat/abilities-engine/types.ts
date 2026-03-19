@@ -89,6 +89,8 @@ export interface DiceApi extends DiceReadApi {
   addDiceCount(count: number, source: UnitBaseType): void
   addDiceCount(count: number, unit: UnitId): void
 
+  setDiceCount(count: number, unit: UnitId): void
+
   addDiceGroup(source: string, unit: UnitId, diceGroup: DiceGroup): void
 }
 

@@ -23,7 +23,7 @@ function clonePool(pool: DicePool): DicePool {
   for (const [type, dice] of Object.entries(pool)) {
     if (dice) {
       result[type as UnitBaseType] = dice.map(
-        d => [d[0], d[1], d[2]] as SourcedDiceGroup,
+        d => [d[0], d[1], d[2], d[3]] as SourcedDiceGroup,
       )
     }
   }
@@ -50,8 +50,8 @@ export function buildDiceApi(pool: DicePool): DiceApi {
         for (const [, dice] of Object.entries(data)) {
           if (!dice) continue
           for (let i = 0; i < dice.length; i++) {
-            if (dice[i][2] === target) {
-              dice[i] = [dice[i][0], dice[i][1] + count, dice[i][2]]
+            if (dice[i][3] === target) {
+              dice[i] = [dice[i][0], dice[i][1], dice[i][2] + count, dice[i][3]]
               return
             }
           }
@@ -90,20 +90,36 @@ export function buildDiceApi(pool: DicePool): DiceApi {
           const dice = data[bestType]!
           dice[bestIndex] = [
             dice[bestIndex][0],
-            dice[bestIndex][1] + count,
-            dice[bestIndex][2],
+            dice[bestIndex][1],
+            dice[bestIndex][2] + count,
+            dice[bestIndex][3],
           ]
         }
       } else {
         const dice = data[strategyOrSourceOrUnit]
         if (!dice || dice.length === 0) return
-        dice[0] = [dice[0][0], dice[0][1] + count, dice[0][2]]
+        dice[0] = [dice[0][0], dice[0][1], dice[0][2] + count, dice[0][3]]
+      }
+    },
+
+    setDiceCount: (count: number, unit: UnitId) => {
+      for (const [, dice] of Object.entries(data)) {
+        if (!dice) continue
+        for (let i = 0; i < dice.length; i++) {
+          if (dice[i][3] === unit) {
+            dice[i] = [dice[i][0], count, dice[i][2], dice[i][3]]
+            return
+          }
+        }
       }
     },
 
     addDiceGroup: (source: string, unit: UnitId, diceGroup: DiceGroup) => {
       const existing = data[source] ?? []
-      data[source] = [...existing, [diceGroup[0], diceGroup[1], unit]]
+      data[source] = [
+        ...existing,
+        [diceGroup[0], diceGroup[1], diceGroup[2] ?? 0, unit],
+      ]
     },
   } as DiceApi
 

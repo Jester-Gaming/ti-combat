@@ -20,7 +20,8 @@ function binomialCoeff(n: number, k: number): number {
 const diceDistCache = new Map<string, DiceRollOutcome[]>()
 
 export function getDiceDistribution(group: DiceGroup): DiceRollOutcome[] {
-  const [hitValue, diceCount] = group
+  const [hitValue, baseDice, bonusDice = 0] = group
+  const diceCount = baseDice + bonusDice
   const cacheKey = `${hitValue}:${diceCount}`
   const cached = diceDistCache.get(cacheKey)
   if (cached) return cached

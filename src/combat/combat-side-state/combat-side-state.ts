@@ -739,7 +739,7 @@ export class CombatSideState {
       // Store UnitId directly per unit
       const arr = result[type] ?? []
       for (const id of ids) {
-        arr.push([hitValue, dicePerUnit, id])
+        arr.push([hitValue, dicePerUnit, 0, id])
       }
       result[type] = arr
     }
