@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { combatTest } from '../utils/combat-test'
 
 describe('EVELYN_DELOUIS + INDOCTRINATION', () => {
-  it.fails('Evelyn fires after Indoctrination removes an infantry', () => {
+  it('Evelyn fires after Indoctrination removes an infantry', () => {
     const t = combatTest({
       mode: 'GROUND',
       attacker: {
@@ -15,7 +15,7 @@ describe('EVELYN_DELOUIS + INDOCTRINATION', () => {
         faction: 'ARBOREC',
         units: { INFANTRY: 3 },
         abilities: {
-          EVELYN_DELOUIS: { isEnabled: true, uses: 1, unitType: 'INFANTRY' },
+          EVELYN_DELOUIS: { isEnabled: true, unitType: 'INFANTRY' },
         },
       },
     })
@@ -46,7 +46,7 @@ describe('EVELYN_DELOUIS + INDOCTRINATION', () => {
         faction: 'ARBOREC',
         units: { INFANTRY: 1, MECH: 1 },
         abilities: {
-          EVELYN_DELOUIS: { isEnabled: true, uses: 1, unitType: 'INFANTRY' },
+          EVELYN_DELOUIS: { isEnabled: true, unitType: 'INFANTRY' },
         },
       },
     })

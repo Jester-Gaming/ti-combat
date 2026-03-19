@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { combatTest } from '../utils/combat-test'
 
 describe.forEachSide('EVELYN_DELOUIS', () => {
-  it.fails('adds 1 extra die to chosen ground force', () => {
+  it('adds 1 extra die to chosen ground force', () => {
     const t = combatTest({
       mode: 'GROUND',
       attacker: {
@@ -12,7 +12,6 @@ describe.forEachSide('EVELYN_DELOUIS', () => {
         abilities: {
           EVELYN_DELOUIS: {
             isEnabled: true,
-            uses: 1,
             unitType: 'INFANTRY',
           },
         },

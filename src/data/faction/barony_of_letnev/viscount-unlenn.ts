@@ -63,7 +63,7 @@ export const viscountUnlenn: Ability<Params> = {
       isCallable: (params, ctx) => {
         const variantId = makeVariantId(params.unitType, [VISCOUNT])
         const unitId = ctx.api.own.findUnitByPriority([variantId])
-        return !!unitId
+        return unitId !== undefined
       },
       call: (ctx, params, dice) => {
         const variantId = makeVariantId(params.unitType, [VISCOUNT])

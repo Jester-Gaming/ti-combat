@@ -56,7 +56,7 @@ export const evelynDelouis: Ability<Params> = {
       isCallable: (params, ctx) => {
         const variantId = makeVariantId(params.unitType, [EVELYN])
         const unitId = ctx.api.own.findUnitByPriority([variantId])
-        return !!unitId
+        return unitId !== undefined
       },
       call: (ctx, params, dice) => {
         const variantId = makeVariantId(params.unitType, [EVELYN])
