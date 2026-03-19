@@ -69,10 +69,11 @@ export const cavalry: Ability<Params> = {
         ctx.api.own.addSubtype(params.unitType, CAVALRY, stats => ({
           ...stats,
           COMBAT: memoriaStats.COMBAT,
-          UNIT_ABILITIES: memoriaStats.UNIT_ABILITIES,
-          ...(memoriaStats.ABILITIES
-            ? { ABILITIES: memoriaStats.ABILITIES }
-            : {}),
+          UNIT_ABILITIES: {
+            ...stats.UNIT_ABILITIES,
+            SUSTAIN_DAMAGE: memoriaStats.UNIT_ABILITIES?.SUSTAIN_DAMAGE,
+            AFB: memoriaStats.UNIT_ABILITIES?.AFB,
+          },
         }))
       },
     },
