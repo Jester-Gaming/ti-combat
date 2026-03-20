@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
+// We have a rulling for that from Dane
+// MVS still counts as something that is blocked by Quietus
 describe.forEachSide('METALI_VOID_SHIELDING + QUIETUS', () => {
-  it.skip('??? MVS cannot fire when Quietus blocks sustain', () => {
+  it('MVS cannot fire when Quietus blocks sustain', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {
@@ -23,8 +25,7 @@ describe.forEachSide('METALI_VOID_SHIELDING + QUIETUS', () => {
     t.advanceRound({ attacker: 1 })
 
     // Cruiser destroyed (MVS couldn't fire)
-    expect(t.abilityLog('METALI_VOID_SHIELDING')).not.toHaveLength(0)
-    expect(t.attacker.units.CRUISER![0].isDamaged).toBe(true)
-    expect(t.attacker.units.CRUISER).toHaveLength(2)
+    expect(t.abilityLog('METALI_VOID_SHIELDING')).toHaveLength(0)
+    expect(t.attacker.units.CRUISER).toHaveLength(1)
   })
 })

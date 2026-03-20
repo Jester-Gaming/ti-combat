@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
+// I had a conversation with Milty about that scenario
+// We don't have explicit rulling, but now for consistency
+// (i.e. Metali Void Shielding + Crimson's Flagship)
+// that iteraction is also disabled
 describe.forEachSide('CAVALRY + PUBLICIZE_WEAPON_SCHEMATICS', () => {
-  it.skip('??? Cavalry on War Sun: PWS removes War Sun sustain but Cavalry overrides it', () => {
+  it("Cavalry on War Sun: Sustain Damage still can't be used", () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: { faction: 'ARBOREC', units: { CRUISER: 3 } },
@@ -26,7 +30,6 @@ describe.forEachSide('CAVALRY + PUBLICIZE_WEAPON_SCHEMATICS', () => {
     // 1 hit on defender: Cavalry War Sun should sustain via subtype stats
     t.advanceTo('SPACE_COMBAT', 'END', { defender: 1 })
 
-    expect(t.defender.units.WAR_SUN).toHaveLength(1)
-    expect(t.defender.units.WAR_SUN![0].isDamaged).toBe(true)
+    expect(t.defender.units.WAR_SUN).toBeFalsy()
   })
 })

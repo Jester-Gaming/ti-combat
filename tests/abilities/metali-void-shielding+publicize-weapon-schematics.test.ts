@@ -2,10 +2,14 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
+// Check the info for
+// CAVALRY + PUBLICIZE_WEAPON_SCHEMATICS or METALI_VOID_SHIELDING + QUIETUS
+// We don't have explicit ruling for that one
+// For consistensy I t
 describe.forEachSide(
   'METALI_VOID_SHIELDING + PUBLICIZE_WEAPON_SCHEMATICS',
   () => {
-    it.skip('??? targets War Sun that lost sustain via PWS', () => {
+    it('Cannot target War Sun that lost sustain via PWS', () => {
       const t = combatTest({
         mode: 'SPACE',
         attacker: {
@@ -26,9 +30,8 @@ describe.forEachSide(
       t.advanceRound({ defender: 1 })
 
       // War Sun lost sustain via PWS, Void Shielding grants it back
-      expect(t.defender.units.WAR_SUN).toHaveLength(1)
-      expect(t.defender.units.WAR_SUN![0].isDamaged).toBe(true)
-      expect(t.abilityLog('METALI_VOID_SHIELDING')).not.toHaveLength(0)
+      expect(t.abilityLog('METALI_VOID_SHIELDING')).toHaveLength(0)
+      expect(t.defender.units.WAR_SUN).toBeFalsy()
     })
   },
 )

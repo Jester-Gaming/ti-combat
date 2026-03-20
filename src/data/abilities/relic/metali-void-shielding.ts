@@ -22,12 +22,8 @@ function findVoidShieldTarget(ctx: AbilityReadContext): UnitId | undefined {
     const units = ctx.api.own.getUnits(variantId)
     if (units.length === 0) continue
 
-    // Skip variant if it has active native sustain — those units use their own ability
-    const stats = ctx.api.own.getUnitStats(variantId)
-    if (
-      stats?.UNIT_ABILITIES?.SUSTAIN_DAMAGE &&
-      !ctx.api.own.isUnitAbilityLost('SUSTAIN_DAMAGE', unitType)
-    ) {
+    // Ignore units that don't have sustain because it lost
+    if (ctx.api.own.isUnitAbilityLost('SUSTAIN_DAMAGE', unitType)) {
       continue
     }
 
