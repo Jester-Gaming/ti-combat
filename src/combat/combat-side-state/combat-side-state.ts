@@ -165,7 +165,9 @@ export function getAssignHitsParams(
   const key =
     stateData.combatMode === 'GROUND'
       ? 'groundUnitPriority'
-      : 'spaceUnitPriority'
+      : stateData.currentPhase.meta === 'SPACE_CANNON_OFFENSE'
+        ? 'scoUnitPriority'
+        : 'spaceUnitPriority'
   const sacrificeOrder = getFilteredSacrificeOrder(
     unitPriority[key] as string[],
     participatingUnits,

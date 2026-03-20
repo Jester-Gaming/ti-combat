@@ -23,7 +23,7 @@ describe('GRAVITON_LASER_SYSTEM', () => {
     expect(t.attacker.units.FIGHTER).toHaveLength(2)
   })
 
-  it.fails('targets fighter when no non-fighter ships present', () => {
+  it('targets fighter when no non-fighter ships present', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {
