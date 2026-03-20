@@ -22,11 +22,11 @@ export const eidolon: Ability = {
           ships: (current: UnitBaseType[]) => [...current, 'MECH'],
         })
 
-        // Z-Grav form loses Sustain Damage
-        ctx.api.own.setUnitAbilityLost('SUSTAIN_DAMAGE', 'EIDOLON', 'MECH')
-
-        // Modify all mechs to Z-Grav form: combat [8, 2]
-        ctx.api.own.modifyUnitType('MECH', { COMBAT: [8, 2] })
+        // Modify all mechs to Z-Grav form: combat [8, 2], loses Sustain Damage
+        ctx.api.own.modifyUnitType('MECH', {
+          COMBAT: [8, 2],
+          UNIT_ABILITIES: {},
+        })
       },
     },
   ],
