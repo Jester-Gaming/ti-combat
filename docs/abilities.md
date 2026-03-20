@@ -293,14 +293,16 @@ modifyHitValue(amount: number, filter: (source: UnitType) => boolean): void
 Two-layer system — **lost** (ability removed) vs **cannotBeUsed** (ability present but blocked):
 
 ```typescript
-// Disable ability for all units or specific type
-setUnitAbilityLost(ability: UnitAbility, reason: string, unitType?: UnitBaseType): void
-removeUnitAbilityLost(ability: UnitAbility, reason: string, unitType?: UnitBaseType): void
-setUnitAbilityCannotBeUsed(ability: UnitAbility, reason: string, unitType?: UnitBaseType): void
-removeUnitAbilityCannotBeUsed(ability: UnitAbility, reason: string, unitType?: UnitBaseType): void
+// Disable ability for all units, specific type, or category
+setUnitAbilityLost(ability: UnitAbility, reason: string, target?: UnitBaseType | UnitCategory): void
+removeUnitAbilityLost(ability: UnitAbility, reason: string, target?: UnitBaseType | UnitCategory): void
+setUnitAbilityCannotBeUsed(ability: UnitAbility, reason: string, target?: UnitBaseType | UnitCategory): void
+removeUnitAbilityCannotBeUsed(ability: UnitAbility, reason: string, target?: UnitBaseType | UnitCategory): void
 ```
 
 `reason` is the ability key that caused the restriction. Used to cleanly remove restrictions without affecting other abilities' restrictions.
+
+`target` can be a specific `UnitBaseType` (e.g., `'MECH'`) or a `UnitCategory` (`'SHIPS'`, `'NON_FIGHTER_SHIPS'`, `'GROUND_FORCES'`, `'STRUCTURES'`). Categories are resolved at check time, so changes to category membership are automatically reflected.
 
 **lost vs cannotBeUsed**: "lost" means the ability is gone (e.g., Publicize Weapon Schematics removes War Sun sustain). "cannotBeUsed" means it's still there but blocked (e.g., Fourth Moon prevents sustain from firing). Both are checked by Sustain Damage before firing.
 
@@ -423,7 +425,7 @@ export const fourthMoon: Ability = {
     {
       timing: 'PREPARE',
       call: ctx => {
-        ctx.api.opponent.setUnitAbilityCannotBeUsed('SUSTAIN_DAMAGE', 'FOURTH_MOON')
+        ctx.api.opponent.setUnitAbilityCannotBeUsed('SUSTAIN_DAMAGE', 'FOURTH_MOON', 'SHIPS')
       },
     },
   ],

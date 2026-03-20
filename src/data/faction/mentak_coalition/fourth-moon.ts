@@ -19,6 +19,7 @@ export const fourthMoon: Ability = {
         ctx.api.opponent.setUnitAbilityCannotBeUsed(
           'SUSTAIN_DAMAGE',
           'FOURTH_MOON',
+          'SHIPS',
         )
       },
     },
@@ -28,6 +29,7 @@ export const fourthMoon: Ability = {
         ctx.api.opponent.removeUnitAbilityCannotBeUsed(
           'SUSTAIN_DAMAGE',
           'FOURTH_MOON',
+          'SHIPS',
         )
       },
     },

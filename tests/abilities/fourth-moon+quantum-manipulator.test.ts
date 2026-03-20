@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { combatTest } from '../utils/combat-test'
 
 describe.forEachSide('FOURTH_MOON + QUANTUM_MANIPULATOR', () => {
-  it.fails('Quantum Manipulator is not blocked for Fourth Moon', () => {
+  it('Quantum Manipulator is not blocked for Fourth Moon', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {

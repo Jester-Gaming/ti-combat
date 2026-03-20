@@ -1,3 +1,4 @@
+import type { UnitCategory } from '@/constants/units'
 import type {
   CombatSide,
   UnitAbility,
@@ -206,33 +207,33 @@ export class SideApi {
   setUnitAbilityLost(
     ability: UnitAbility,
     reason: string,
-    unitType?: UnitBaseType,
+    target?: UnitBaseType | UnitCategory,
   ) {
-    this._sideState.addRestriction('lost', ability, reason, unitType)
+    this._sideState.addRestriction('lost', ability, reason, target)
   }
 
   removeUnitAbilityLost(
     ability: UnitAbility,
     reason: string,
-    unitType?: UnitBaseType,
+    target?: UnitBaseType | UnitCategory,
   ) {
-    this._sideState.removeRestriction('lost', ability, reason, unitType)
+    this._sideState.removeRestriction('lost', ability, reason, target)
   }
 
   setUnitAbilityCannotBeUsed(
     ability: UnitAbility,
     reason: string,
-    unitType?: UnitBaseType,
+    target?: UnitBaseType | UnitCategory,
   ) {
-    this._sideState.addRestriction('cannotBeUsed', ability, reason, unitType)
+    this._sideState.addRestriction('cannotBeUsed', ability, reason, target)
   }
 
   removeUnitAbilityCannotBeUsed(
     ability: UnitAbility,
     reason: string,
-    unitType?: UnitBaseType,
+    target?: UnitBaseType | UnitCategory,
   ) {
-    this._sideState.removeRestriction('cannotBeUsed', ability, reason, unitType)
+    this._sideState.removeRestriction('cannotBeUsed', ability, reason, target)
   }
 
   addSubtype(

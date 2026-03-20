@@ -1,4 +1,5 @@
-import { UNIT_LIMITS } from '@/constants/units'
+import type { UnitCategory } from '@/constants/units'
+import { UNIT_CATEGORIES, UNIT_LIMITS } from '@/constants/units'
 import type {
   CombatSide,
   UnitAbility,
@@ -27,6 +28,14 @@ import {
   makeVariantId,
   parseVariantId,
 } from '../utils/unit-variant'
+
+/** Maps UnitCategory to the corresponding SETTINGS parameter key */
+const CATEGORY_TO_SETTINGS_KEY: Record<UnitCategory, string> = {
+  SHIPS: 'ships',
+  NON_FIGHTER_SHIPS: 'nonFighterShips',
+  GROUND_FORCES: 'groundForces',
+  STRUCTURES: 'structures',
+}
 
 /**
  * Resolve a unitStats entry to concrete UnitStats.
@@ -232,11 +241,14 @@ function addRestrictionEntry(
   ability: UnitAbility,
   reason: string,
   unitType?: UnitBaseType,
+  category?: UnitCategory,
 ): UnitAbilityRestrictions {
   const current = restrictions ?? {}
   const layerData = current[layer] ?? {}
   const entries = layerData[ability] ?? []
-  const entry: RestrictionEntry = unitType ? { reason, unitType } : { reason }
+  const entry: RestrictionEntry = { reason }
+  if (unitType) entry.unitType = unitType
+  if (category) entry.category = category
 
   return {
     ...current,
@@ -254,6 +266,7 @@ function removeRestrictionEntry(
   ability: UnitAbility,
   reason: string,
   unitType?: UnitBaseType,
+  category?: UnitCategory,
 ): UnitAbilityRestrictions | undefined {
   if (!restrictions) return undefined
   const layerData = restrictions[layer]
@@ -262,7 +275,8 @@ function removeRestrictionEntry(
   if (!entries) return restrictions
 
   const filtered = entries.filter(
-    e => e.reason !== reason || e.unitType !== unitType,
+    e =>
+      e.reason !== reason || e.unitType !== unitType || e.category !== category,
   )
 
   const newLayerData = { ...layerData }
@@ -396,7 +410,7 @@ export class CombatSideState {
     return this.data.hitPools.reduce((sum, pool) => sum + pool.hits, 0)
   }
 
-  /** Check if a unit ability is restricted (variant-aware) */
+  /** Check if a unit ability is restricted (variant-aware, category-aware) */
   isRestricted(
     layer: 'lost' | 'cannotBeUsed',
     ability: UnitAbility,
@@ -410,9 +424,23 @@ export class CombatSideState {
       if (e.unitType && e.unitType !== unitType && e.unitType !== baseType) {
         return false
       }
+      if (e.category && !this.isCategoryMember(e.category, baseType)) {
+        return false
+      }
       if (this.isSourceDisabled(e.reason, visited)) return false
       return true
     })
+  }
+
+  /** Check if a unit type belongs to a category using runtime SETTINGS */
+  private isCategoryMember(category: UnitCategory, baseType: string): boolean {
+    const settings = this.stateData.abilities[this._side]['SETTINGS']
+    if (settings) {
+      const key = CATEGORY_TO_SETTINGS_KEY[category]
+      const list = settings[key] as UnitBaseType[] | undefined
+      if (list) return list.includes(baseType as UnitBaseType)
+    }
+    return (UNIT_CATEGORIES[category] as readonly string[]).includes(baseType)
   }
 
   /**
@@ -1033,15 +1061,17 @@ export class CombatSideState {
     layer: 'lost' | 'cannotBeUsed',
     ability: UnitAbility,
     reason: string,
-    unitType?: UnitBaseType,
+    target?: UnitBaseType | UnitCategory,
   ): void {
     const data = this.data
+    const isCategory = target !== undefined && target in UNIT_CATEGORIES
     data.unitAbilityRestrictions = addRestrictionEntry(
       data.unitAbilityRestrictions,
       layer,
       ability,
       reason,
-      unitType,
+      isCategory ? undefined : (target as UnitBaseType),
+      isCategory ? (target as UnitCategory) : undefined,
     )
   }
 
@@ -1050,15 +1080,17 @@ export class CombatSideState {
     layer: 'lost' | 'cannotBeUsed',
     ability: UnitAbility,
     reason: string,
-    unitType?: UnitBaseType,
+    target?: UnitBaseType | UnitCategory,
   ): void {
     const data = this.data
+    const isCategory = target !== undefined && target in UNIT_CATEGORIES
     data.unitAbilityRestrictions = removeRestrictionEntry(
       data.unitAbilityRestrictions,
       layer,
       ability,
       reason,
-      unitType,
+      isCategory ? undefined : (target as UnitBaseType),
+      isCategory ? (target as UnitCategory) : undefined,
     )
   }
 }

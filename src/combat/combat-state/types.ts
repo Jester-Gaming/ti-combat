@@ -1,3 +1,4 @@
+import type { UnitCategory } from '@/constants/units'
 import type {
   FactionKey,
   UnitAbility,
@@ -96,6 +97,7 @@ export interface HitPool {
 export interface RestrictionEntry {
   reason: string
   unitType?: UnitBaseType
+  category?: UnitCategory
 }
 
 /** Two-layer restriction system for unit abilities */

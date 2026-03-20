@@ -15,6 +15,15 @@ export const GROUND_FORCES: UnitBaseType[] = ['MECH', 'INFANTRY']
 
 export const STRUCTURES: UnitBaseType[] = ['PDS', 'SPACE_DOCK']
 
+export type UnitCategory = keyof typeof UNIT_CATEGORIES
+
+export const UNIT_CATEGORIES = {
+  SHIPS,
+  NON_FIGHTER_SHIPS,
+  GROUND_FORCES,
+  STRUCTURES,
+} as const
+
 export const UNIT_TYPES: UnitBaseType[] = [
   ...SHIPS,
   ...GROUND_FORCES,
