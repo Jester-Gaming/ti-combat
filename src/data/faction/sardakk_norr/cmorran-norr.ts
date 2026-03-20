@@ -15,7 +15,12 @@ export const cmorranNorr: Ability = {
     {
       timing: 'BEFORE_DICE_ROLL',
       call: ctx => {
-        ctx.api.own.modifyHitValue(-1, { exclude: ['FLAGSHIP'] })
+        const settings = ctx.api.own.getAbilityConfig('SETTINGS')
+        const ships = settings?.ships ?? []
+        for (const shipType of ships) {
+          if (shipType === 'FLAGSHIP') continue
+          ctx.api.own.modifyHitValue(-1, shipType)
+        }
       },
     },
   ],

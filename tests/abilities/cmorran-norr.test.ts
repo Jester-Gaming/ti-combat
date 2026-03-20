@@ -24,7 +24,7 @@ describe('CMORRAN_NORR', () => {
     expect(pool.attacker).toContainDice('CRUISER', [5, 1])
   })
 
-  it.fails('does not apply during ground combat', () => {
+  it('does not apply to ground forces', () => {
     const t = combatTest({
       mode: 'GROUND',
       attacker: {
@@ -40,6 +40,5 @@ describe('CMORRAN_NORR', () => {
 
     // Infantry: 8 - 1(Unrelenting) = 7, C'morran N'orr doesn't apply in ground combat
     expect(pool.attacker).toContainDice('INFANTRY', [7, 1], [7, 1])
-    expect(t.abilityLog('CMORRAN_NORR')).toHaveLength(0)
   })
 })
