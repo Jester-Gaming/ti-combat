@@ -11,7 +11,9 @@ import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
@@ -239,15 +241,32 @@ export function AbilityConfig({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className={styles.selectContent}>
-                      {config.items.map(item => (
-                        <SelectItem
-                          key={item.value}
-                          value={item.value}
-                          className={styles.selectItem}
-                        >
-                          {item.label}
-                        </SelectItem>
-                      ))}
+                      {config.items.map(item =>
+                        'group' in item ? (
+                          <SelectGroup key={item.group}>
+                            <SelectLabel className={styles.selectLabel}>
+                              {item.group}
+                            </SelectLabel>
+                            {item.items.map(gi => (
+                              <SelectItem
+                                key={gi.value}
+                                value={gi.value}
+                                className={styles.selectItem}
+                              >
+                                {gi.label}
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        ) : (
+                          <SelectItem
+                            key={item.value}
+                            value={item.value}
+                            className={styles.selectItem}
+                          >
+                            {item.label}
+                          </SelectItem>
+                        ),
+                      )}
                     </SelectContent>
                   </Select>
                 </div>

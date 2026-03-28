@@ -11,6 +11,8 @@
 - Single ability: `ability-name.test.ts` (kebab-case of the ability key)
 - Multiple abilities: names joined with `+`, sorted alphabetically. Example: `bunker+plasma-scoring.test.ts`
 - Exceptions: `assimilator-z` and `technological-singularity` always come first in both filename and describe block, in that order. Example: `assimilator-z+technological-singularity+fourth-moon.test.ts`
+- Nekro unit abilities (`NEKRO_UNIT_*`): use the unit name (kebab-case) in both filename and describe block, not the ability key. Drop version numbers (I/II) from filenames. Example: `technological-singularity+spec-ops.test.ts` with `describe('TECHNOLOGICAL_SINGULARITY + SPEC_OPS', ...)` for `NEKRO_UNIT_FEDERATION_OF_SOL_INFANTRY`
+- Tests about Nekro having other factions' technologies (via `NEKRO_UNIT_*` or `NEKRO_FLAGSHIP_*`) always include `technological-singularity` in the filename, whether the ability is pre-enabled in config or dynamically enabled/disabled by TS
 - All test files go in `tests/abilities/`
 - Each test file must contain exactly ONE `describe` block (either `describe()` or `describe.forEachSide()`)
 - Never include `ABILITY_ORDER` in test filenames, even if the test configures it to control resolution order

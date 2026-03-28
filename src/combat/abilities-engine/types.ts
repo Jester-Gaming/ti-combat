@@ -270,14 +270,17 @@ interface UIConfigNumber<
   max?: number
 }
 
+export type SelectItem = { label: string; value: string }
+export type SelectGroup = {
+  group: string
+  items: { label: string; value: string }[]
+}
+
 interface UIConfigSelect<
   TParams = Record<string, unknown>,
 > extends UIConfigItemBase<TParams> {
   type: 'select'
-  items: {
-    label: string
-    value: string
-  }[]
+  items: (SelectItem | SelectGroup)[]
 }
 
 interface UIConfigNumberList<

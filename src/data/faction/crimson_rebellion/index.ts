@@ -3,7 +3,7 @@ import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 import { fragmentReality } from './fragment-reality'
-import { quietus } from './quietus-flagship'
+import { quietus } from './quietus'
 
 export const crimson_rebellion: Faction = {
   name: 'Crimson Rebellion',

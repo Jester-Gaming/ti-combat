@@ -29,12 +29,15 @@ const allCommanderAbilities = Object.values(factions).flatMap(
 const allExternalAbilities: Ability[] = []
 {
   const seen = new Set<string>()
-  const addIfExternal = (ability: Ability) => {
+  const addIfExternal = (ability: Ability, faction: Faction) => {
     if (!ability.allowExternal) return
     if (seen.has(ability.key)) return
     if (!ability.headerUI && !ability.uiConfig) return
     seen.add(ability.key)
-    allExternalAbilities.push(ability)
+    allExternalAbilities.push({
+      ...ability,
+      icon: faction.icon,
+    })
   }
   for (const faction of Object.values(factions)) {
     if (!faction) continue
@@ -44,13 +47,13 @@ const allExternalAbilities: Ability[] = []
         ...(unitDef.BASE.ABILITIES ?? []),
         ...(unitDef.UPGRADED?.ABILITIES ?? []),
       ]) {
-        addIfExternal(ability)
+        addIfExternal(ability, faction)
       }
     }
     if (faction.abilities) {
       for (const list of Object.values(faction.abilities)) {
         if (list) {
-          for (const ability of list) addIfExternal(ability as Ability)
+          for (const ability of list) addIfExternal(ability as Ability, faction)
         }
       }
     }
@@ -98,7 +101,6 @@ function collectUnitAbilities(
     for (const ability of allUnitAbilities) {
       if (seen.has(ability.key)) continue
       if (!ability.headerUI && !ability.uiConfig) continue
-      if (ability.allowExternal) continue // in global pool already
       seen.add(ability.key)
       abilities.push(ability)
     }
@@ -181,28 +183,31 @@ export function getAvailableAbilities(
 ): Ability[] {
   const isNeutral = factionKey === 'NEUTRAL'
 
+  const faction = factions[factionKey]
   const ownedKeys = getFactionOwnedAbilityKeys(factionKey)
   const baseAbilities = allAbilities
     .filter(ability => {
       if (ability.side && ability.side !== side) return false
       if (isNeutral && NEUTRAL_HIDDEN_CATEGORIES.has(ability.category))
         return false
+      if (ability.allowExternal && ownedKeys.has(ability.key)) {
+        return false
+      }
       return true
     })
     .map(ability => {
       if (ability.allowExternal && !ownedKeys.has(ability.key)) {
         return { ...ability, category: 'OTHER' }
       }
+
       return ability
     })
 
   // Get faction-specific abilities
-  const faction = factions[factionKey]
   const abilities = faction?.abilities
   const factionAbilities = [
     ...(abilities?.faction ?? []),
     ...(abilities?.technology ?? []),
-    ...(abilities?.unit ?? []),
     ...(abilities?.hero ?? []),
     ...(abilities?.breakthrough ?? []),
   ]

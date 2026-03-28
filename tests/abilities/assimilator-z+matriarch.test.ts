@@ -9,7 +9,7 @@ describe.forEachSide('ASSIMILATOR_Z + MATRIARCH', () => {
       attacker: {
         faction: 'NEKRO_VIRUS',
         units: { FLAGSHIP: 1, FIGHTER: 2, INFANTRY: 1 },
-        abilities: { MATRIARCH: true },
+        abilities: { NEKRO_FLAGSHIP_MATRIARCH: true },
       },
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
     })

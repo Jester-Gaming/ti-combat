@@ -27,6 +27,8 @@ export const dynamo: Ability<Params> = {
     },
     {
       timing: 'DESTROY',
+      isCallable: (_params, ctx, units) =>
+        ctx.isOwner() && (units.own.FLAGSHIP?.length ?? 0) > 0,
       call: ctx => {
         ctx.api.own.updateAbilityConfig({ uses: 0 })
       },

@@ -12,17 +12,19 @@ import { getEffectiveStats } from '@/utils/get-simulation-units'
 
 import { otherFactions } from '../other-factions'
 import { mordred } from './mordred'
-import {
-  connectTechnologicalSingularity,
-  technologicalSingularity,
-} from './technological-singularity'
+import { createTechnologicalSingularity } from './technological-singularity'
 import { theAlastor } from './the-alastor'
+
+// ---------------------------------------------------------------------------
+// Collect flagship abilities from other factions
+// ---------------------------------------------------------------------------
 
 const flagshipAbilities = Object.values(otherFactions).flatMap(faction =>
   (faction.units.FLAGSHIP?.BASE?.ABILITIES ?? [])
     .filter(a => a.subcategory === 'FLAGSHIP')
     .map(ability => ({
       ...ability,
+      key: `NEKRO_FLAGSHIP_${ability.key}`,
       name: ability.name,
       icon: faction.icon,
       readOnly: false,
@@ -30,9 +32,12 @@ const flagshipAbilities = Object.values(otherFactions).flatMap(faction =>
         ...ability.params,
         isEnabled: ability.headerUI === 'isEnabled' ? false : true,
       },
-    }))
-    .map(a => connectTechnologicalSingularity(a)),
+    })),
 )
+
+// ---------------------------------------------------------------------------
+// Collect technology abilities from other factions
+// ---------------------------------------------------------------------------
 
 const technologyAbilities = Object.values(otherFactions).flatMap(faction =>
   (faction.abilities?.technology ?? [])
@@ -41,11 +46,20 @@ const technologyAbilities = Object.values(otherFactions).flatMap(faction =>
       ...ability,
       name: ability.name,
       icon: faction.icon,
-    }))
-    .map(a => connectTechnologicalSingularity(a, { canDisable: true })),
+    })),
 )
 
+// ---------------------------------------------------------------------------
+// Collect unit abilities from other factions
+// ---------------------------------------------------------------------------
+
 const EXCLUDED_UNIT_TYPES = new Set(['FLAGSHIP', 'MECH', 'SPACE_DOCK'])
+
+const STANDARD_ABILITY_KEYS = new Set([
+  'SUSTAIN_DAMAGE',
+  'PLANETARY_SHIELD',
+  'DISABLE_PLANETARY_SHIELD',
+])
 
 function createFactionUnitAbility(
   factionKey: string,
@@ -62,6 +76,27 @@ function createFactionUnitAbility(
   }
   const displayName = stats.NAME ?? unitDef.BASE.NAME ?? unitType
 
+  const mainAbility = (stats.ABILITIES ?? []).find(
+    a => !STANDARD_ABILITY_KEYS.has(a.key),
+  )
+
+  const effectiveStats = mainAbility
+    ? {
+        ...stats,
+        ABILITIES: stats.ABILITIES!.map(a =>
+          a === mainAbility ? { ...a, key } : a,
+        ),
+      }
+    : stats
+
+  // Extract child's custom params (exclude base params)
+  const childCustomParams: Record<string, unknown> = {}
+  if (mainAbility) {
+    for (const [k, v] of Object.entries(mainAbility.params)) {
+      if (k !== 'isEnabled' && k !== 'uses') childCustomParams[k] = v
+    }
+  }
+
   // Collect declareParamChange from unit abilities (e.g. Hel-Titan adds PDS to groundForces)
   const paramChanges = (stats.ABILITIES ?? [])
     .filter(a => a.declareParamChange)
@@ -77,8 +112,10 @@ function createFactionUnitAbility(
     params: {
       isEnabled: false,
       uses: Infinity,
+      ...childCustomParams,
     },
     headerUI: 'isEnabled',
+    ...(mainAbility?.uiConfig && { uiConfig: mainAbility.uiConfig }),
     ...(paramChanges.length > 0 && {
       declareParamChange: (): ParamChange[] => paramChanges,
     }),
@@ -86,13 +123,38 @@ function createFactionUnitAbility(
       {
         timing: 'PREPARE' as const,
         call: (ctx: AbilityCallContext) => {
-          ctx.api.own.modifyUnitType(unitType, stats)
+          // Save original stats before overwriting
+          const original = ctx.api.own.getUnitStats(unitType)
+          if (original) {
+            ctx.api.own.updateAbilityConfig(key, {
+              _savedStats: { ...original },
+            })
+          }
+          ctx.api.own.modifyUnitType(unitType, effectiveStats)
+          // Run child ability's config-level PREPARE invokes
+          if (mainAbility) {
+            for (const inv of mainAbility.invoke) {
+              if (inv.timing !== 'PREPARE') continue
+              ;(inv.call as (c: AbilityCallContext) => void)(ctx)
+            }
+          }
         },
       },
       {
         timing: 'CLEANUP' as const,
         call: (ctx: AbilityCallContext) => {
-          ctx.api.own.modifyUnitType(unitType, defaultStats)
+          const config = ctx.api.own.getAbilityConfig(key)
+          const saved = config?._savedStats as
+            | Record<string, unknown>
+            | undefined
+          ctx.api.own.modifyUnitType(unitType, saved ?? defaultStats)
+          // Run child ability's config-level CLEANUP invokes
+          if (mainAbility) {
+            for (const inv of mainAbility.invoke) {
+              if (inv.timing !== 'CLEANUP') continue
+              ;(inv.call as (c: AbilityCallContext) => void)(ctx)
+            }
+          }
         },
       },
     ],
@@ -104,26 +166,27 @@ const unitAbilities = Object.entries(otherFactions)
   .flatMap(([factionKey, faction]) =>
     (Object.entries(faction.units) as [UnitBaseType, UnitDefinition][])
       .filter(([unitType]) => !EXCLUDED_UNIT_TYPES.has(unitType))
-      .map(([unitType, unitDef]) => {
-        const ability = createFactionUnitAbility(
-          factionKey,
-          faction,
-          unitType,
-          unitDef,
-        )
-        return connectTechnologicalSingularity(ability, {
-          canDisable: true,
-        })
-      }),
+      .map(([unitType, unitDef]) =>
+        createFactionUnitAbility(factionKey, faction, unitType, unitDef),
+      ),
   )
+
+const technologicalSingularity = createTechnologicalSingularity(
+  [...flagshipAbilities, ...technologyAbilities, ...unitAbilities],
+  [...technologyAbilities, ...unitAbilities],
+  mordred,
+)
+
+// ---------------------------------------------------------------------------
+// Export faction
+// ---------------------------------------------------------------------------
 
 export const nekro_virus: Faction = {
   name: 'Nekro Virus',
   icon: nekroVirusIcon,
   abilities: {
     faction: [technologicalSingularity],
-    technology: technologyAbilities,
-    unit: unitAbilities,
+    technology: [...technologyAbilities, ...unitAbilities],
   },
   units: {
     FLAGSHIP: {
@@ -151,7 +214,7 @@ export const nekro_virus: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [connectTechnologicalSingularity(mordred), sustainDamage],
+        ABILITIES: [mordred, sustainDamage],
       },
     },
   },

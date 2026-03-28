@@ -6,7 +6,6 @@ import type { UnitBaseType, UnitDefinition } from './unit'
 interface FactionAbilities {
   faction?: readonly Ability[]
   technology?: readonly Ability[]
-  unit?: readonly Ability[]
   promissory?: readonly Ability[]
   agent?: readonly Ability[]
   commander?: readonly Ability[]
