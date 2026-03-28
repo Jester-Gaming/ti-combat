@@ -26,6 +26,7 @@ const CATEGORY_ORDER = [
   'COMMANDER',
   'AGENDA',
   'ENVIRONMENT',
+  'OTHER',
 ]
 
 const SUBCATEGORY_ORDER = [

@@ -25,6 +25,38 @@ const allCommanderAbilities = Object.values(factions).flatMap(
   faction => faction?.abilities?.commander ?? [],
 ) as Ability[]
 
+// Collect allowExternal abilities from all factions (available to all)
+const allExternalAbilities: Ability[] = []
+{
+  const seen = new Set<string>()
+  const addIfExternal = (ability: Ability) => {
+    if (!ability.allowExternal) return
+    if (seen.has(ability.key)) return
+    if (!ability.headerUI && !ability.uiConfig) return
+    seen.add(ability.key)
+    allExternalAbilities.push(ability)
+  }
+  for (const faction of Object.values(factions)) {
+    if (!faction) continue
+    for (const unitDef of Object.values(faction.units)) {
+      if (!unitDef) continue
+      for (const ability of [
+        ...(unitDef.BASE.ABILITIES ?? []),
+        ...(unitDef.UPGRADED?.ABILITIES ?? []),
+      ]) {
+        addIfExternal(ability)
+      }
+    }
+    if (faction.abilities) {
+      for (const list of Object.values(faction.abilities)) {
+        if (list) {
+          for (const ability of list) addIfExternal(ability as Ability)
+        }
+      }
+    }
+  }
+}
+
 const allAbilities = [
   ...general,
   ...environment,
@@ -35,6 +67,7 @@ const allAbilities = [
   ...allPromissoryAbilities,
   ...allAgentAbilities,
   ...allCommanderAbilities,
+  ...allExternalAbilities,
 ]
 
 const NEUTRAL_HIDDEN_CATEGORIES = new Set([
@@ -65,6 +98,7 @@ function collectUnitAbilities(
     for (const ability of allUnitAbilities) {
       if (seen.has(ability.key)) continue
       if (!ability.headerUI && !ability.uiConfig) continue
+      if (ability.allowExternal) continue // in global pool already
       seen.add(ability.key)
       abilities.push(ability)
     }
@@ -118,6 +152,28 @@ export function getUnitDefinitionAbilityKeys(
   return keys
 }
 
+const factionOwnedKeysCache = new Map<FactionKey, ReadonlySet<string>>()
+
+/** Get keys of all faction-owned abilities (unit definitions + faction abilities) */
+export function getFactionOwnedAbilityKeys(
+  factionKey: FactionKey,
+): ReadonlySet<string> {
+  const cached = factionOwnedKeysCache.get(factionKey)
+  if (cached) return cached
+  const keys = new Set(getUnitDefinitionAbilityKeys(factionKey))
+  const faction = factions[factionKey]
+  if (faction?.abilities) {
+    const a = faction.abilities
+    for (const list of Object.values(a)) {
+      if (list) {
+        for (const ability of list) keys.add((ability as Ability).key)
+      }
+    }
+  }
+  factionOwnedKeysCache.set(factionKey, keys)
+  return keys
+}
+
 export function getAvailableAbilities(
   side: CombatSide,
   factionKey: FactionKey,
@@ -125,12 +181,20 @@ export function getAvailableAbilities(
 ): Ability[] {
   const isNeutral = factionKey === 'NEUTRAL'
 
-  const baseAbilities = allAbilities.filter(ability => {
-    if (ability.side && ability.side !== side) return false
-    if (isNeutral && NEUTRAL_HIDDEN_CATEGORIES.has(ability.category))
-      return false
-    return true
-  })
+  const ownedKeys = getFactionOwnedAbilityKeys(factionKey)
+  const baseAbilities = allAbilities
+    .filter(ability => {
+      if (ability.side && ability.side !== side) return false
+      if (isNeutral && NEUTRAL_HIDDEN_CATEGORIES.has(ability.category))
+        return false
+      return true
+    })
+    .map(ability => {
+      if (ability.allowExternal && !ownedKeys.has(ability.key)) {
+        return { ...ability, category: 'OTHER' }
+      }
+      return ability
+    })
 
   // Get faction-specific abilities
   const faction = factions[factionKey]

@@ -97,35 +97,39 @@ describe.forEachSide('DYNAMO', () => {
     expect(t.abilityLog('DYNAMO')).not.toHaveLength(0)
   })
 
-  it.fails('flagship destruction sets uses to 0', () => {
+  it('flagship destruction stops Dynamo', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {
         faction: 'EMPYREAN',
-        units: { FLAGSHIP: 1, WAR_SUN: 1 },
-        abilities: { DYNAMO: { uses: 10 } },
+        units: { FLAGSHIP: 1, DREADNOUGHT: 1 },
+        abilities: {
+          DYNAMO: { uses: 10 },
+          // Flagship sustains first so Direct Hit targets it
+          SUSTAIN_DAMAGE: { spacePriority: ['FLAGSHIP', 'DREADNOUGHT'] },
+        },
       },
       defender: {
         faction: 'ARBOREC',
         units: { CRUISER: 3 },
+        abilities: { DIRECT_HIT: { uses: 1 } },
       },
     })
 
     t.advanceTo('SPACE_COMBAT', 'START')
 
-    // Round 1: 2 hits to attacker
-    // Flagship sustains + repaired. 1 remaining: Flagship (cost 8) destroyed
-    // War Sun (cost 12) survives undamaged
-    t.advanceRound({ attacker: 2 })
-
-    expect(t.attacker.units.FLAGSHIP).toBeUndefined()
-    expect(t.attacker.units.WAR_SUN).toHaveLength(1)
-    expect(t.attacker.units.WAR_SUN![0].isDamaged).toBeFalsy()
-
-    // Round 2: War Sun sustains — NOT repaired (flagship destroyed, uses set to 0)
+    // 1 hit: flagship sustains → Dynamo repairs → Direct Hit kills flagship
+    // DESTROY handler disables Dynamo
     t.advanceRound({ attacker: 1 })
 
-    expect(t.attacker.units.WAR_SUN).toHaveLength(1)
-    expect(t.attacker.units.WAR_SUN![0].isDamaged).toBe(true)
+    expect(t.attacker.units.FLAGSHIP).toBeUndefined()
+    expect(t.attacker.units.DREADNOUGHT).toHaveLength(1)
+    expect(t.abilityLog('DYNAMO')).not.toHaveLength(0)
+
+    // Round 2: dreadnought sustains — NOT repaired (Dynamo disabled)
+    t.advanceRound({ attacker: 1 })
+
+    expect(t.attacker.units.DREADNOUGHT).toHaveLength(1)
+    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
   })
 })

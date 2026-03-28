@@ -132,6 +132,10 @@ export class CombatState {
       import('../abilities-engine').Ability[]
     >,
     unitAbilityKeys?: Record<import('@/types').CombatSide, ReadonlySet<string>>,
+    factionOwnedKeys?: Record<
+      import('@/types').CombatSide,
+      ReadonlySet<string>
+    >,
   ): CombatState {
     const config = abilitiesConfig
       ? structuredClone(abilitiesConfig)
@@ -157,6 +161,7 @@ export class CombatState {
       instance,
       abilities ?? { attacker: [], defender: [] },
       unitAbilityKeys ?? emptyKeys,
+      factionOwnedKeys ?? emptyKeys,
     )
 
     // PREPARE abilities mutate baseData in-place
@@ -186,6 +191,10 @@ export class CombatState {
       import('../abilities-engine').Ability[]
     >,
     unitAbilityKeys?: Record<import('@/types').CombatSide, ReadonlySet<string>>,
+    factionOwnedKeys?: Record<
+      import('@/types').CombatSide,
+      ReadonlySet<string>
+    >,
   ): CombatState {
     const emptyKeys = {
       attacker: new Set<string>(),
@@ -197,6 +206,7 @@ export class CombatState {
       instance,
       abilities ?? { attacker: [], defender: [] },
       unitAbilityKeys ?? emptyKeys,
+      factionOwnedKeys ?? emptyKeys,
     )
     return instance
   }

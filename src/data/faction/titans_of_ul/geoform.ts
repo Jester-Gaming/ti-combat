@@ -5,7 +5,9 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const geoform: Ability = {
   key: 'GEOFORM',
   name: 'Geoform',
-  category: 'ENVIRONMENT',
+  category: 'FACTION',
+  subcategory: 'HERO',
+  allowExternal: true,
   params: {
     isEnabled: false,
     uses: Infinity,

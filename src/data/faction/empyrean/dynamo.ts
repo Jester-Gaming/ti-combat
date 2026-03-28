@@ -8,7 +8,9 @@ type Params = {
 export const dynamo: Ability<Params> = {
   key: 'DYNAMO',
   name: 'Dynamo',
-  category: 'ENVIRONMENT',
+  category: 'FACTION',
+  subcategory: 'FLAGSHIP',
+  allowExternal: true,
   params: {
     isEnabled: true,
     uses: 0,
@@ -21,6 +23,12 @@ export const dynamo: Ability<Params> = {
       isCallable: (_, ctx, unitId) => ctx.api.own.hasUnit(unitId),
       call: (ctx, _params, unitId) => {
         ctx.api.own.modifyUnitState(unitId, { isDamaged: false })
+      },
+    },
+    {
+      timing: 'DESTROY',
+      call: ctx => {
+        ctx.api.own.updateAbilityConfig({ uses: 0 })
       },
     },
   ],

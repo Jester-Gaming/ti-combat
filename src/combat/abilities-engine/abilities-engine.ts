@@ -114,6 +114,7 @@ interface TimingInvokeEntry {
   invoke: AbilityInvoke
   params: Record<string, unknown>
   source: AbilitySource
+  ownerFaction?: FactionKey
 }
 
 /** Count total units across all variant keys */
@@ -219,6 +220,7 @@ export class AbilitiesEngine {
   private _combatState!: CombatState
   private _abilities!: Record<CombatSide, Ability[]>
   private _unitAbilityKeys!: Record<CombatSide, ReadonlySet<string>>
+  private _factionOwnedKeys!: Record<CombatSide, ReadonlySet<string>>
   private _attackerCtx!: AbilityContext
   private _defenderCtx!: AbilityContext
 
@@ -332,6 +334,7 @@ export class AbilitiesEngine {
     combatState: CombatState,
     abilities: Record<CombatSide, Ability[]>,
     unitAbilityKeys: Record<CombatSide, ReadonlySet<string>>,
+    factionOwnedKeys: Record<CombatSide, ReadonlySet<string>>,
   ): AbilitiesEngine {
     const instance = Object.create(AbilitiesEngine.prototype) as AbilitiesEngine
     instance._combatState = combatState
@@ -339,6 +342,7 @@ export class AbilitiesEngine {
     instance._pendingUnitInvokes = EMPTY_PENDING
     instance._abilities = abilities
     instance._unitAbilityKeys = unitAbilityKeys
+    instance._factionOwnedKeys = factionOwnedKeys
     instance._attackerCtx = new AbilityContext('attacker', instance)
     instance._defenderCtx = new AbilityContext('defender', instance)
     instance.buildInvokes()
@@ -354,6 +358,7 @@ export class AbilitiesEngine {
     combatState: CombatState,
     abilities: Record<CombatSide, Ability[]>,
     unitAbilityKeys: Record<CombatSide, ReadonlySet<string>>,
+    factionOwnedKeys: Record<CombatSide, ReadonlySet<string>>,
   ): AbilitiesEngine {
     const instance = Object.create(AbilitiesEngine.prototype) as AbilitiesEngine
     instance._combatState = combatState
@@ -361,6 +366,7 @@ export class AbilitiesEngine {
     instance._pendingUnitInvokes = EMPTY_PENDING
     instance._abilities = abilities
     instance._unitAbilityKeys = unitAbilityKeys
+    instance._factionOwnedKeys = factionOwnedKeys
     instance._attackerCtx = new AbilityContext('attacker', instance)
     instance._defenderCtx = new AbilityContext('defender', instance)
     instance.buildInvokes()
@@ -541,7 +547,7 @@ export class AbilitiesEngine {
 
     const sideTracker = tracker[side]
 
-    for (const { ability, invoke, params, source } of invokes) {
+    for (const { ability, invoke, params, source, ownerFaction } of invokes) {
       // Check if already invoked
       if (source.type === 'config') {
         if (sideTracker.configAbilities.has(invoke)) {
@@ -618,6 +624,7 @@ export class AbilitiesEngine {
 
       const ctx = this.context(side)
       ctx.unitSource = unitSource
+      ctx.ownerFaction = ownerFaction
 
       let canCall: boolean
       if (inv.isCallable) {
@@ -749,12 +756,23 @@ export class AbilitiesEngine {
             mergedParams.uses <= 0
           )
             continue
+          // allowExternal DESTROY invokes only make sense as unit abilities
+          if (
+            ability.allowExternal &&
+            (invoke.timing === 'DESTROY' ||
+              invoke.timing === 'WHEN_DESTROY' ||
+              invoke.timing === 'AFTER_DESTROY')
+          )
+            continue
           const list = sideMap.get(invoke.timing)
           const entry: TimingInvokeEntry = {
             ability,
             invoke,
             params: mergedParams,
             source: { type: 'config' },
+            ownerFaction: this._factionOwnedKeys[side].has(ability.key)
+              ? state[side].faction
+              : undefined,
           }
           if (list) list.push(entry)
           else sideMap.set(invoke.timing, [entry])
@@ -762,7 +780,9 @@ export class AbilitiesEngine {
       }
 
       const unitAbilities = AbilitiesEngine.collectUnitAbilities(state, side)
+      const collectedUnitKeys = new Set<string>()
       for (const { ability, unitType, unitId } of unitAbilities) {
+        collectedUnitKeys.add(ability.key)
         if (ability.context && ability.context !== state.combatMode) continue
         const configParams = sideConfig[ability.key]
         const mergedParams = configParams
@@ -776,6 +796,48 @@ export class AbilitiesEngine {
             invoke,
             params: mergedParams,
             source: { type: 'unit', unitType, unitId },
+            ownerFaction: state[side].faction,
+          }
+          if (list) list.push(entry)
+          else sideMap.set(invoke.timing, [entry])
+        }
+      }
+
+      // Register allowExternal abilities whose unit is not on the field
+      for (const ability of this._abilities[side]) {
+        if (!unitAbilityKeys.has(ability.key)) continue
+        if (!ability.allowExternal) continue
+        if (collectedUnitKeys.has(ability.key)) continue
+        if (ability.context && ability.context !== state.combatMode) continue
+
+        const configParams = sideConfig[ability.key]
+        const mergedParams = configParams
+          ? { ...extractDefaults(ability), ...configParams }
+          : extractDefaults(ability)
+
+        if ('isEnabled' in mergedParams && !mergedParams.isEnabled) continue
+
+        for (const invoke of ability.invoke) {
+          // Skip DESTROY timings — unit is not on the field, can't be destroyed
+          if (
+            invoke.timing === 'DESTROY' ||
+            invoke.timing === 'WHEN_DESTROY' ||
+            invoke.timing === 'AFTER_DESTROY'
+          )
+            continue
+          if (
+            'uses' in mergedParams &&
+            typeof mergedParams.uses === 'number' &&
+            mergedParams.uses <= 0
+          )
+            continue
+          const list = sideMap.get(invoke.timing)
+          const entry: TimingInvokeEntry = {
+            ability,
+            invoke,
+            params: mergedParams,
+            source: { type: 'config' },
+            ownerFaction: state[side].faction,
           }
           if (list) list.push(entry)
           else sideMap.set(invoke.timing, [entry])
@@ -808,6 +870,7 @@ export class AbilitiesEngine {
             invoke,
             params: mergedParams,
             source: { type: 'deploy', unitType },
+            ownerFaction: state[side].faction,
           }
           if (list) list.push(entry)
           else sideMap.set(invoke.timing, [entry])
@@ -896,6 +959,7 @@ export class AbilitiesEngine {
               unitType: unitType as UnitBaseType,
               unitId,
             },
+            ownerFaction: sideState.faction,
           }
           const list = sideMap.get(invoke.timing)
           if (list) list.push(entry)
@@ -949,6 +1013,9 @@ export class AbilitiesEngine {
         invoke,
         params: mergedParams,
         source: { type: 'config' },
+        ownerFaction: this._factionOwnedKeys[side].has(ability.key)
+          ? state[side].faction
+          : undefined,
       }
       const list = sideMap.get(invoke.timing)
       if (list) list.push(entry)
@@ -978,6 +1045,7 @@ export class AbilitiesEngine {
         invoke,
         params: mergedParams,
         source: { type: 'deploy', unitType },
+        ownerFaction: state[side].faction,
       }
       const list = sideMap.get(invoke.timing)
       if (list) list.push(entry)
@@ -990,7 +1058,14 @@ export class AbilitiesEngine {
     key: string,
     draft: CombatStateData,
   ): void {
-    if (this._unitAbilityKeys[side].has(key)) return
+    if (this._unitAbilityKeys[side].has(key)) {
+      // Unit ability: skip unless allowExternal with unit not on the field
+      const ability = this._abilities[side].find(a => a.key === key)
+      if (!ability?.allowExternal) return
+      const unitAbilities = AbilitiesEngine.collectUnitAbilities(draft, side)
+      if (unitAbilities.some(e => e.ability.key === key)) return
+      // Fall through: unit not on field, handle as config
+    }
 
     // Check if this is a deploy ability
     const deployAbilities = AbilitiesEngine.collectDeployAbilities(draft, side)

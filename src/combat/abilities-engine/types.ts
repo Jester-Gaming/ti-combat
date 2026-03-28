@@ -150,6 +150,8 @@ export interface AbilityReadContext {
   getAbilitiesForTiming(
     timing: AbilityTiming | AbilityTiming[],
   ): { key: string; name: string }[]
+  /** Returns true if the current side's faction owns this ability (faction or unit ability). */
+  isOwner(): boolean
 }
 
 /** Mutable context for call (Immer draft, full API) */
@@ -168,6 +170,8 @@ export interface AbilityCallContext {
   getAbilitiesForTiming(
     timing: AbilityTiming | AbilityTiming[],
   ): { key: string; name: string }[]
+  /** Returns true if the current side's faction owns this ability (faction or unit ability). */
+  isOwner(): boolean
 }
 
 // Auto-generate invoke type for each timing
@@ -323,6 +327,8 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   context?: CombatMode
   /** When true, both sides share identical config. Changing params on one side mirrors to the other. */
   sync?: boolean
+  /** When true, this unit ability can fire as a config ability when its source unit is not on the field. */
+  allowExternal?: boolean
   /** Abilities sharing the same exclusiveGroup are mutually exclusive — enabling one disables others in the group. */
   exclusiveGroup?: string
   /** Called when a user changes a param. Can modify other params in response.

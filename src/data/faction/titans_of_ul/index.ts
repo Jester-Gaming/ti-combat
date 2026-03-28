@@ -3,6 +3,7 @@ import { planetaryShield } from '@/data/abilities/unit/planetary-shield'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
+import { geoform } from './geoform'
 import { helTitan } from './hel-titan'
 import { tellurian } from './tellurian'
 
@@ -11,6 +12,7 @@ export const titans_of_ul: Faction = {
   icon: titansOfUlIcon,
   abilities: {
     agent: [tellurian],
+    hero: [geoform],
   },
   units: {
     FLAGSHIP: {

@@ -7,6 +7,7 @@ import type {
 } from '../../combat/combat-state/types'
 import {
   getAvailableAbilities,
+  getFactionOwnedAbilityKeys,
   getUnitDefinitionAbilityKeys,
 } from './get-available-abilities'
 import {
@@ -29,6 +30,7 @@ import {
 interface SideAbilitiesData {
   abilities: Ability[]
   unitAbilityKeys: ReadonlySet<string>
+  factionOwnedKeys: ReadonlySet<string>
 }
 
 export function prepareSimulationConfig(
@@ -59,10 +61,12 @@ export function prepareSimulationConfig(
     attacker: {
       abilities: abilities.attacker,
       unitAbilityKeys: getUnitDefinitionAbilityKeys(attackerFaction),
+      factionOwnedKeys: getFactionOwnedAbilityKeys(attackerFaction),
     },
     defender: {
       abilities: abilities.defender,
       unitAbilityKeys: getUnitDefinitionAbilityKeys(defenderFaction),
+      factionOwnedKeys: getFactionOwnedAbilityKeys(defenderFaction),
     },
   }
 }

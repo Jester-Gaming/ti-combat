@@ -26,6 +26,7 @@ import {
 
 import {
   getAvailableAbilities,
+  getFactionOwnedAbilityKeys,
   getUnitDefinitionAbilityKeys,
 } from './get-available-abilities'
 import {
@@ -58,6 +59,7 @@ export class CombatSetup {
   private _abilities: AbilitiesConfig
   private _sideAbilities: Record<CombatSide, Ability[]>
   private _unitAbilityKeys: Record<CombatSide, ReadonlySet<string>>
+  private _factionOwnedKeys: Record<CombatSide, ReadonlySet<string>>
   private _stateData: CombatStateData
   private _engine: AbilitiesEngine
 
@@ -87,6 +89,10 @@ export class CombatSetup {
     this._unitAbilityKeys = {
       attacker: getUnitDefinitionAbilityKeys(defaultFaction),
       defender: getUnitDefinitionAbilityKeys(defaultFaction),
+    }
+    this._factionOwnedKeys = {
+      attacker: getFactionOwnedAbilityKeys(defaultFaction),
+      defender: getFactionOwnedAbilityKeys(defaultFaction),
     }
 
     this._stateData = {
@@ -120,11 +126,13 @@ export class CombatSetup {
       this._stateData,
       this._sideAbilities,
       this._unitAbilityKeys,
+      this._factionOwnedKeys,
     )
     this._engine = AbilitiesEngine.wrap(
       wrapState,
       this._sideAbilities,
       this._unitAbilityKeys,
+      this._factionOwnedKeys,
     )
   }
 
@@ -182,6 +190,7 @@ export class CombatSetup {
       this.getUpgradedTypes(side),
     )
     this._unitAbilityKeys[side] = getUnitDefinitionAbilityKeys(faction)
+    this._factionOwnedKeys[side] = getFactionOwnedAbilityKeys(faction)
 
     // Rebuild side config: keep existing params for surviving abilities,
     // initialize defaults for new ones
@@ -468,6 +477,7 @@ export class CombatSetup {
       wrapState,
       this._sideAbilities,
       this._unitAbilityKeys,
+      this._factionOwnedKeys,
     )
   }
 

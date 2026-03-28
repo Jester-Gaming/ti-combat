@@ -65,6 +65,10 @@ self.onmessage = (e: MessageEvent<SimulationInput>) => {
       attacker: sideAbilities.attacker.unitAbilityKeys,
       defender: sideAbilities.defender.unitAbilityKeys,
     },
+    {
+      attacker: sideAbilities.attacker.factionOwnedKeys,
+      defender: sideAbilities.defender.factionOwnedKeys,
+    },
   )
 
   const engine = new CombatEngine()

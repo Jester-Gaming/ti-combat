@@ -1,6 +1,7 @@
 import type { UnitCategory } from '@/constants/units'
 import type {
   CombatSide,
+  FactionKey,
   UnitAbility,
   UnitBaseType,
   UnitId,
@@ -320,6 +321,7 @@ export class SideApi {
 export class AbilityContext {
   logger?: Logger
   unitSource?: UnitId
+  ownerFaction?: FactionKey
 
   private _abilitiesParams: AbilitiesEngine
   private _side: CombatSide
@@ -369,6 +371,7 @@ export class AbilityContext {
   private nested(fn: () => void): void {
     const saved = {
       unitSource: this.unitSource,
+      ownerFaction: this.ownerFaction,
       logger: this.logger,
       ownAbilityKey: this._api.own._abilityKey,
       ownAbilityEngine: this._api.own._abilitiesParams,
@@ -377,6 +380,7 @@ export class AbilityContext {
     }
     fn()
     this.unitSource = saved.unitSource
+    this.ownerFaction = saved.ownerFaction
     this.logger = saved.logger
     this._api.own._abilityKey = saved.ownAbilityKey
     this._api.own._abilitiesParams = saved.ownAbilityEngine
@@ -412,6 +416,13 @@ export class AbilityContext {
       throw new Error('getUnit() can only be called from unit abilities')
     }
     return this.unitSource
+  }
+
+  isOwner(): boolean {
+    return (
+      this.ownerFaction !== undefined &&
+      this.state[this._side].faction === this.ownerFaction
+    )
   }
 
   getAbilitiesForTiming(
