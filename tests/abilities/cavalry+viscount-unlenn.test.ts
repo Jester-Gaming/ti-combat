@@ -83,37 +83,34 @@ describe.forEachSide('CAVALRY + VISCOUNT_UNLENN', () => {
     expect(t.abilityLog('CAVALRY')).toHaveLength(0)
   })
 
-  it.fails(
-    'Cavalry targets Cruiser:Viscount — both affect the same unit',
-    () => {
-      const t = combatTest({
-        mode: 'SPACE',
-        attacker: {
-          faction: 'ARBOREC',
-          units: { CRUISER: 2 },
-          abilities: {
-            CAVALRY: { isEnabled: true, unitType: 'CRUISER:Viscount' },
-            VISCOUNT_UNLENN: { isEnabled: true, unitType: 'CRUISER' },
-            ABILITY_ORDER: {
-              startOfCombat: ['VISCOUNT_UNLENN', 'CAVALRY'],
-            },
+  it('Cavalry targets Cruiser:Viscount — both affect the same unit', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+        abilities: {
+          CAVALRY: { isEnabled: true, unitType: 'CRUISER:Viscount' },
+          VISCOUNT_UNLENN: { isEnabled: true, unitType: 'CRUISER' },
+          ABILITY_ORDER: {
+            startOfCombat: ['VISCOUNT_UNLENN', 'CAVALRY'],
           },
         },
-        defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
-      })
+      },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
+    })
 
-      t.advanceTo('SPACE_COMBAT', 'START')
-      t.advanceRound()
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
 
-      expect(t.abilityLog('CAVALRY')).not.toHaveLength(0)
-      expect(t.abilityLog('VISCOUNT_UNLENN')).not.toHaveLength(0)
+    expect(t.abilityLog('CAVALRY')).not.toHaveLength(0)
+    expect(t.abilityLog('VISCOUNT_UNLENN')).not.toHaveLength(0)
 
-      const pool = t.dicePool()
+    const pool = t.dicePool()
 
-      // Viscount Cruiser [7, 2] then Cavalry on that unit = [7, 3]
-      expect(pool.attacker).toContainDice('CRUISER', [7, 3])
-    },
-  )
+    // Viscount Cruiser [7, 2] then Cavalry on that unit = [7, 3]
+    expect(pool.attacker).toContainDice('CRUISER', [7, 3])
+  })
 
   it('Viscount targets Cruiser:Cavalry — both affect the same unit', () => {
     const t = combatTest({

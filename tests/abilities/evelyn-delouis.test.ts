@@ -30,4 +30,31 @@ describe.forEachSide('EVELYN_DELOUIS', () => {
     // Other infantry stays at: [8, 1]
     expect(pool.attacker).toContainDice('INFANTRY', [8, 1])
   })
+
+  it('subtype removed after dice roll, no extra die next round', () => {
+    const t = combatTest({
+      mode: 'GROUND',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { INFANTRY: 1 },
+        abilities: {
+          EVELYN_DELOUIS: { isEnabled: true, unitType: 'INFANTRY' },
+        },
+      },
+      defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
+    })
+
+    // Round 1: Evelyn adds extra die
+    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceRound()
+    const pool1 = t.dicePool()
+    expect(pool1.attacker).toContainDice('INFANTRY', [8, 2])
+
+    // Round 2: no extra die (subtype removed after round 1)
+    t.advanceRound()
+    const pool2 = t.dicePool()
+
+    // Infantry back to base: [8, 1]
+    expect(pool2.attacker).toContainDice('INFANTRY', [8, 1])
+  })
 })

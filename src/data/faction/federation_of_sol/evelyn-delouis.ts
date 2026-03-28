@@ -1,6 +1,6 @@
 import federationOfSolIcon from '@/assets/faction/federation_of_sol.svg?raw'
 import { type Ability, declareParam, makeVariantId } from '@/combat'
-import type { UnitType, UnitVariantId } from '@/types'
+import type { DiceGroup, UnitType, UnitVariantId } from '@/types'
 
 type Params = {
   unitType: UnitType
@@ -48,21 +48,22 @@ export const evelynDelouis: Ability<Params> = {
         return ctx.api.own.hasUnitType(params.unitType)
       },
       call: (ctx, params) => {
-        ctx.api.own.addSubtype(params.unitType, EVELYN)
+        ctx.api.own.addSubtype(params.unitType, EVELYN, parentStats => {
+          if (!parentStats.COMBAT) return parentStats
+          const [hit, dice, bonus = 0] = parentStats.COMBAT
+          return { ...parentStats, COMBAT: [hit, dice, bonus + 1] as DiceGroup }
+        })
       },
     },
     {
-      timing: 'BEFORE_DICE_ROLL',
+      timing: 'CLEANUP_ROUND',
       isCallable: (params, ctx) => {
         const variantId = makeVariantId(params.unitType, [EVELYN])
         const unitId = ctx.api.own.findUnitByPriority([variantId])
         return unitId !== undefined
       },
-      call: (ctx, params, dice) => {
+      call: (ctx, params) => {
         const variantId = makeVariantId(params.unitType, [EVELYN])
-        const unitId = ctx.api.own.findUnitByPriority([variantId])
-        if (unitId === undefined) return
-        dice.own.addDiceCount(1, unitId)
         ctx.api.own.removeSubtype(variantId, EVELYN)
       },
     },

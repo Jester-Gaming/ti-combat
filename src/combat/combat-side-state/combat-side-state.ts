@@ -55,9 +55,9 @@ export function resolveUnitStats(
       const parentSubs = [...subtypes.slice(0, i), ...subtypes.slice(i + 1)]
       const parentKey =
         parentSubs.length > 0 ? makeVariantId(type, parentSubs) : type
-      const parentEntry = unitStats[parentKey]
-      if (parentEntry !== undefined && typeof parentEntry !== 'function') {
-        return entry(parentEntry)
+      const parentStats = resolveUnitStats(unitStats, parentKey)
+      if (parentStats !== undefined) {
+        return entry(parentStats)
       }
     }
     // Fallback: base type
@@ -763,13 +763,13 @@ export class CombatSideState {
       const dieData =
         source === 'COMBAT' ? stats.COMBAT : stats.UNIT_ABILITIES?.[source]
       if (!dieData) continue
-      const [hitValue, dicePerUnit] = dieData
-      if (dicePerUnit <= 0) continue
+      const [hitValue, dicePerUnit, bonusDice = 0] = dieData
+      if (dicePerUnit + bonusDice <= 0) continue
 
       // Store UnitId directly per unit
       const arr = result[type] ?? []
       for (const id of ids) {
-        arr.push([hitValue, dicePerUnit, 0, id])
+        arr.push([hitValue, dicePerUnit, bonusDice, id])
       }
       result[type] = arr
     }
@@ -964,7 +964,9 @@ export class CombatSideState {
         if (vType !== type) continue
         if (data.unitStats[vKey]) {
           if (typeof data.unitStats[vKey] === 'function') {
-            data.unitStats[vKey] = resolveUnitStats(data.unitStats, vKey)!
+            // Skip factory-based variants — they resolve against parent stats,
+            // so updating the base type is sufficient.
+            continue
           }
           Object.assign(data.unitStats[vKey], updates)
         }
