@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import federationOfSolIcon from '@/assets/faction/federation_of_sol.svg?raw'
 import { type Ability, declareParam, makeVariantId } from '@/combat'
 import type { DiceGroup, UnitType, UnitVariantId } from '@/types'
@@ -14,6 +16,7 @@ export const evelynDelouis: Ability<Params> = {
   icon: federationOfSolIcon,
   category: 'AGENT',
   context: 'GROUND',
+  paramsSchema: z.object({ unitType: z.string() }),
   params: {
     isEnabled: false,
     uses: 2,

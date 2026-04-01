@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import { type Ability, declareParam } from '@/combat'
 import type { UnitBaseType } from '@/types'
 
@@ -11,6 +13,9 @@ export const magenDefenseGrid: Ability<Params> = {
   category: 'TECHNOLOGY',
   context: 'GROUND',
   side: 'defender',
+  paramsSchema: z.object({
+    targetPriority: z.array(z.string()),
+  }),
   params: {
     isEnabled: false,
     uses: Infinity,

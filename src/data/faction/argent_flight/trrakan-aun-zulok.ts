@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import argentFlightIcon from '@/assets/faction/argent_flight.svg?raw'
 import { type Ability, type MetaPhase, UNIT_ABILITY_PHASES } from '@/combat'
 
@@ -11,6 +13,7 @@ export const trrakanAunZulok: Ability<Params> = {
   icon: argentFlightIcon,
   category: 'COMMANDER',
   headerUI: 'isEnabled',
+  paramsSchema: z.object({ phases: z.array(z.string()) }),
   params: {
     isEnabled: false,
     uses: Infinity,

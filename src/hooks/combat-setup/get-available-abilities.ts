@@ -60,6 +60,27 @@ const allExternalAbilities: Ability[] = []
   }
 }
 
+// Collect all unique unit abilities with UI from all factions (for validation lookup)
+const allUnitAbilities: Ability[] = []
+{
+  const seen = new Set<string>()
+  for (const faction of Object.values(factions)) {
+    if (!faction) continue
+    for (const unitDef of Object.values(faction.units)) {
+      if (!unitDef) continue
+      for (const ability of [
+        ...(unitDef.BASE.ABILITIES ?? []),
+        ...(unitDef.UPGRADED?.ABILITIES ?? []),
+      ] as Ability[]) {
+        if (seen.has(ability.key)) continue
+        if (!ability.headerUI && !ability.uiConfig) continue
+        seen.add(ability.key)
+        allUnitAbilities.push(ability)
+      }
+    }
+  }
+}
+
 const allAbilities = [
   ...general,
   ...environment,
@@ -72,6 +93,13 @@ const allAbilities = [
   ...allCommanderAbilities,
   ...allExternalAbilities,
 ]
+
+// Extended list including faction unit abilities — used for validation lookup only
+const allAbilitiesForLookup = [...allAbilities, ...allUnitAbilities]
+
+export function getAllAbilities(): Ability[] {
+  return allAbilitiesForLookup
+}
 
 const NEUTRAL_HIDDEN_CATEGORIES = new Set([
   'AGENDA',

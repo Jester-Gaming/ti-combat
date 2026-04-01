@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import { type Ability, parseVariantId } from '@/combat'
 import type { SideApi } from '@/combat/abilities-engine/api/ability-api'
 import type { DiceGroup, UnitBaseType, UnitType } from '@/types'
@@ -51,6 +53,7 @@ export const linkshipI: Ability<Params> = {
   category: 'FACTION',
   subcategory: 'UNIT',
   context: 'SPACE',
+  paramsSchema: z.object({ structures: z.record(z.string(), z.number()) }),
   params: {
     isEnabled: true,
     uses: Infinity,
@@ -86,6 +89,7 @@ export const linkshipII: Ability<Params> = {
   category: 'FACTION',
   subcategory: 'UNIT',
   context: 'SPACE',
+  paramsSchema: z.object({ structures: z.record(z.string(), z.number()) }),
   params: {
     isEnabled: true,
     uses: Infinity,

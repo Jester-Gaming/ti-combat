@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import { type Ability, declareParam, parseVariantId } from '@/combat'
 import type { UnitType } from '@/types'
 
@@ -14,6 +16,10 @@ export const devotion: Ability<Params> = {
   category: 'FACTION',
   subcategory: 'ABILITY',
   context: 'SPACE',
+  paramsSchema: z.object({
+    sacrificePriority: z.array(z.string()),
+    targetPriority: z.array(z.string()),
+  }),
   params: {
     isEnabled: false,
     uses: Infinity,

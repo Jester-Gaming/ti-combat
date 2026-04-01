@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import { TIMING_GROUPS } from '@/combat/abilities-engine/abilities-engine'
 
 import type { Ability } from '../../../combat/abilities-engine/types'
@@ -13,6 +15,12 @@ export const abilityOrder: Ability<Params> = {
   key: 'ABILITY_ORDER',
   name: 'Resolve Order',
   category: 'GENERAL',
+  paramsSchema: z.object({
+    startOfCombat: z.array(z.string()),
+    beforeDiceRoll: z.array(z.string()),
+    beforeUnitAbilityRoll: z.array(z.string()),
+    beforeAssignHits: z.array(z.string()),
+  }),
   params: {
     isEnabled: true,
     uses: Infinity,

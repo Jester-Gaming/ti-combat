@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import { type Ability, declareParam } from '@/combat'
 import { NON_FIGHTER_SHIPS, UNIT_DISPLAY_NAMES } from '@/constants/units'
 import type { UnitBaseType } from '@/types'
@@ -27,6 +29,12 @@ export const overwingZeta: Ability<Params> = {
   category: 'FACTION',
   subcategory: 'HERO',
   context: 'SPACE',
+  paramsSchema: z.object({
+    strategy: z.string(),
+    ships: z.record(z.string(), z.number()),
+    fleetPool: z.number(),
+    shipPriority: z.array(z.string()),
+  }),
   params: {
     isEnabled: false,
     uses: 1,

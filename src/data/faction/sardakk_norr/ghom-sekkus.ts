@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import sardakkNorrIcon from '@/assets/faction/sardakk_norr.svg?raw'
 import type { Ability } from '@/combat'
 import {
@@ -19,6 +21,7 @@ export const ghomSekkus: Ability<Params> = {
   category: 'COMMANDER',
   context: 'GROUND',
   side: 'attacker',
+  paramsSchema: z.object({ units: z.record(z.string(), z.number()) }),
   params: {
     isEnabled: false,
     uses: Infinity,

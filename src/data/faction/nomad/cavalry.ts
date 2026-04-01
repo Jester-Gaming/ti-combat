@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import nomadIcon from '@/assets/faction/nomad.svg?raw'
 import { type Ability, declareParam } from '@/combat'
 import type { UnitType, UnitVariantId } from '@/types'
@@ -18,6 +20,10 @@ export const cavalry: Ability<Params> = {
   icon: nomadIcon,
   category: 'PROMISSORY',
   context: 'SPACE',
+  paramsSchema: z.object({
+    memoria2: z.boolean(),
+    unitType: z.string(),
+  }),
   params: {
     isEnabled: false,
     uses: 1,

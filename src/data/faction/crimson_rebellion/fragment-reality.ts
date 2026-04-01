@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import crimsonRebellionIcon from '@/assets/faction/crimson_rebellion.svg?raw'
 import { type Ability, declareParam } from '@/combat'
 import {
@@ -25,6 +27,11 @@ export const fragmentReality: Ability<Params> = {
   category: 'FACTION',
   subcategory: 'HERO',
   context: 'SPACE',
+  paramsSchema: z.object({
+    ships: z.record(z.string(), z.number()),
+    fleetPool: z.number(),
+    shipPriority: z.array(z.string()),
+  }),
   params: {
     isEnabled: false,
     uses: Infinity,

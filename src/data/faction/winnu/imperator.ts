@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
@@ -9,6 +11,7 @@ export const imperator: Ability<Params> = {
   name: 'Imperator',
   category: 'FACTION',
   subcategory: 'BREAKTHROUGH',
+  paramsSchema: z.object({ supportCount: z.number() }),
   params: {
     isEnabled: true,
     uses: Infinity,

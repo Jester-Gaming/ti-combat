@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import baronyOfLetnevIcon from '@/assets/faction/barony_of_letnev.svg?raw'
 import {
   type Ability,
@@ -19,6 +21,7 @@ export const viscountUnlenn: Ability<Params> = {
   icon: baronyOfLetnevIcon,
   category: 'AGENT',
   context: 'SPACE',
+  paramsSchema: z.object({ unitType: z.string() }),
   params: {
     isEnabled: false,
     uses: 2,

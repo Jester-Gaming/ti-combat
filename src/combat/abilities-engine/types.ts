@@ -321,6 +321,10 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   category: string
   subcategory?: string
   params: AbilityBaseParams & Params
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  paramsSchema?: {
+    safeParse: (data: unknown) => { success: boolean; data?: any }
+  }
   headerUI?: 'isEnabled' | 'uses' | (string & keyof Params) // Param key to render in header (checkbox for boolean, number input for number)
   readOnly?: boolean // Show UI but prevent user from changing the enable state
   uiConfig?: UIConfig<AbilityBaseParams & Params>

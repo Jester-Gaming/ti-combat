@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import type { UnitType } from '@/types'
 
 import { declareParam } from '../../../combat/abilities-engine/declare-param'
@@ -14,6 +16,12 @@ export const unitPriority: Ability<Params> = {
   key: 'UNIT_PRIORITY',
   name: 'Assign Hits Order',
   category: 'GENERAL',
+  paramsSchema: z.object({
+    spaceUnitPriority: z.array(z.string()),
+    groundUnitPriority: z.array(z.string()),
+    customScoPriority: z.boolean(),
+    scoUnitPriority: z.array(z.string()),
+  }),
   params: {
     isEnabled: true,
     uses: Infinity,

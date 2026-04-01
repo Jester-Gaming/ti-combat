@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import { type Ability, declareParam, parseVariantId } from '@/combat'
 import { UNIT_LIMITS } from '@/constants/units'
 import type { UnitBaseType, UnitId, UnitType } from '@/types'
@@ -29,6 +31,11 @@ export const sleeperCell: Ability<Params> = {
   category: 'FACTION',
   subcategory: 'HERO',
   context: 'SPACE',
+  paramsSchema: z.object({
+    isActive: z.boolean(),
+    fleetPool: z.number(),
+    shipPriority: z.array(z.string()),
+  }),
   params: {
     isEnabled: false,
     uses: Infinity,

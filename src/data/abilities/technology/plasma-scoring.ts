@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
@@ -8,6 +10,9 @@ export const plasmaScoring: Ability<Params> = {
   key: 'PLASMA_SCORING',
   name: 'Plasma Scoring',
   category: 'TECHNOLOGY',
+  paramsSchema: z.object({
+    strategy: z.string(),
+  }),
   params: {
     isEnabled: false,
     uses: Infinity,

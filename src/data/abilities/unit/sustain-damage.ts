@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import {
   type Ability,
   type AbilityReadContext,
@@ -60,6 +62,10 @@ export const sustainDamage: Ability<Params> = {
   key: 'SUSTAIN_DAMAGE',
   name: 'Sustain Damage',
   category: 'GENERAL',
+  paramsSchema: z.object({
+    spacePriority: z.array(z.string()),
+    groundPriority: z.array(z.string()),
+  }),
   params: {
     isEnabled: true,
     uses: Infinity,

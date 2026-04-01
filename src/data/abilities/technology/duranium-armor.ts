@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import { declareParam } from '../../../combat/abilities-engine/declare-param'
 import type {
   Ability,
@@ -35,6 +37,10 @@ export const duraniumArmor: Ability<Params> = {
   key: 'DURANIUM_ARMOR',
   name: 'Duranium Armor',
   category: 'TECHNOLOGY',
+  paramsSchema: z.object({
+    spaceRepairPriority: z.array(z.string()),
+    groundRepairPriority: z.array(z.string()),
+  }),
   params: {
     isEnabled: false,
     uses: Infinity,

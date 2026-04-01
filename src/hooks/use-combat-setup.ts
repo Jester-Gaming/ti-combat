@@ -2,6 +2,8 @@ import { useCallback, useMemo, useReducer, useState } from 'react'
 
 import type { CombatMode } from '@/combat'
 import { CombatSetup } from '@/hooks/combat-setup'
+import { getAllAbilities } from '@/hooks/combat-setup/get-available-abilities'
+import type { SerializedConfig } from '@/hooks/combat-setup/serialization'
 import type { CombatSide, FactionKey, UnitBaseType } from '@/types'
 
 export function useCombatSetup() {
@@ -53,6 +55,14 @@ export function useCombatSetup() {
     forceRender()
   }, [setup])
 
+  const loadConfig = useCallback(
+    (config: SerializedConfig) => {
+      setup.loadConfig(config)
+      forceRender()
+    },
+    [setup],
+  )
+
   const { stateData } = setup
 
   // Memoize to avoid new object reference every render —
@@ -62,6 +72,14 @@ export function useCombatSetup() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [stateData],
   )
+
+  const serializedConfig = useMemo(
+    () => setup.toSerializedConfig(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [stateData],
+  )
+
+  const allAbilities = useMemo(() => getAllAbilities(), [])
 
   return {
     attackerFaction: setup.attackerFaction,
@@ -75,11 +93,14 @@ export function useCombatSetup() {
     getAvailableAbilities: setup.getAvailableAbilities.bind(setup),
     isUpgraded: setup.isUpgraded.bind(setup),
     simulationInput,
+    serializedConfig,
+    allAbilities,
     setFaction,
     setUnitCount,
     setUpgraded,
     setAbilityParam,
     setCombatMode,
     swap,
+    loadConfig,
   }
 }

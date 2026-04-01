@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import obsidianIcon from '@/assets/faction/obsidian.svg?raw'
 import { type Ability, declareParam, parseVariantId } from '@/combat'
 import type { UnitBaseType, UnitId, UnitType } from '@/types'
@@ -28,6 +30,9 @@ export const vosHollow: Ability<Params> = {
   icon: obsidianIcon,
   category: 'AGENT',
   context: 'SPACE',
+  paramsSchema: z.object({
+    targetPriority: z.array(z.string()),
+  }),
   params: {
     isEnabled: false,
     uses: 1,

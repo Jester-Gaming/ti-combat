@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import type { UnitBaseType } from '@/types'
 
 import type { Ability } from '../../../combat/abilities-engine/types'
@@ -13,6 +15,9 @@ export const fragile: Ability<Params> = {
   name: 'Fragile',
   category: 'FACTION',
   subcategory: 'ABILITY',
+  paramsSchema: z.object({
+    excludeUnits: z.array(z.string()),
+  }),
   params: {
     isEnabled: true,
     uses: Infinity,

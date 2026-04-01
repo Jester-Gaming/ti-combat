@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
@@ -9,6 +11,7 @@ export const alarum: Ability<Params> = {
   name: 'Alarum',
   category: 'FACTION',
   subcategory: 'MECH',
+  paramsSchema: z.object({ infantryAvailable: z.number() }),
   params: {
     isEnabled: true,
     uses: Infinity,

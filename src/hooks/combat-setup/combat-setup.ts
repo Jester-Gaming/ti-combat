@@ -33,6 +33,11 @@ import {
   initializeAbilityDefaults,
   reconcileAbilitiesConfig,
 } from './reconcile'
+import {
+  serializeAbilities,
+  type SerializedConfig,
+  serializeUnits,
+} from './serialization'
 import type { SimulationInput } from './types'
 
 function createDefaultUnitSelections(): Record<UnitBaseType, UnitSelection> {
@@ -339,6 +344,125 @@ export class CombatSetup {
       combatMode: this._combatMode,
       abilities: this._abilities,
     }
+  }
+
+  toSerializedConfig(): SerializedConfig {
+    // Compute reconciled defaults to diff against — this captures
+    // auto-populated values (declared params with source) so we only
+    // store what the user actually changed
+    const freshAbilities: AbilitiesConfig = { attacker: {}, defender: {} }
+    initializeAbilityDefaults(freshAbilities, this._sideAbilities)
+    reconcileAbilitiesConfig(
+      freshAbilities,
+      this._sideAbilities,
+      this._combatMode,
+    )
+
+    return {
+      v: 1,
+      af: this._attackerFaction,
+      df: this._defenderFaction,
+      m: this._combatMode === 'SPACE' ? 'S' : 'G',
+      au: serializeUnits(this._attackerSelections),
+      du: serializeUnits(this._defenderSelections),
+      aa: serializeAbilities(this._abilities.attacker, freshAbilities.attacker),
+      da: serializeAbilities(this._abilities.defender, freshAbilities.defender),
+    }
+  }
+
+  loadConfig(config: SerializedConfig): void {
+    const af = config.af as FactionKey
+    const df = config.df as FactionKey
+
+    // Set factions
+    this._attackerFaction = af
+    this._defenderFaction = df
+    this._combatMode = config.m === 'S' ? 'SPACE' : 'GROUND'
+
+    // Set unit selections
+    this._attackerSelections = createDefaultUnitSelections()
+    this._defenderSelections = createDefaultUnitSelections()
+    for (const [type, [count, upgraded]] of Object.entries(config.au)) {
+      const ut = type as UnitBaseType
+      if (this._attackerSelections[ut]) {
+        this._attackerSelections[ut] = { count, upgraded: upgraded === 1 }
+      }
+    }
+    for (const [type, [count, upgraded]] of Object.entries(config.du)) {
+      const ut = type as UnitBaseType
+      if (this._defenderSelections[ut]) {
+        this._defenderSelections[ut] = { count, upgraded: upgraded === 1 }
+      }
+    }
+
+    // Rebuild abilities for new factions
+    this._sideAbilities = {
+      attacker: getAvailableAbilities(
+        'attacker',
+        af,
+        this.getUpgradedTypes('attacker'),
+      ),
+      defender: getAvailableAbilities(
+        'defender',
+        df,
+        this.getUpgradedTypes('defender'),
+      ),
+    }
+    this._unitAbilityKeys = {
+      attacker: getUnitDefinitionAbilityKeys(af),
+      defender: getUnitDefinitionAbilityKeys(df),
+    }
+    this._factionOwnedKeys = {
+      attacker: getFactionOwnedAbilityKeys(af),
+      defender: getFactionOwnedAbilityKeys(df),
+    }
+
+    // Initialize ability defaults, reconcile, then apply URL overrides
+    this._abilities = { attacker: {}, defender: {} }
+    initializeAbilityDefaults(this._abilities, this._sideAbilities)
+    reconcileAbilitiesConfig(
+      this._abilities,
+      this._sideAbilities,
+      this._combatMode,
+    )
+
+    // Apply URL ability params on top of reconciled defaults
+    for (const [key, params] of Object.entries(config.aa)) {
+      if (this._abilities.attacker[key]) {
+        this._abilities.attacker[key] = {
+          ...this._abilities.attacker[key],
+          ...params,
+        }
+      }
+    }
+    for (const [key, params] of Object.entries(config.da)) {
+      if (this._abilities.defender[key]) {
+        this._abilities.defender[key] = {
+          ...this._abilities.defender[key],
+          ...params,
+        }
+      }
+    }
+
+    // Rebuild units for both sides
+    this.rebuildUnits('attacker', af, this._attackerSelections)
+    this.rebuildUnits('defender', df, this._defenderSelections)
+
+    // Rebuild stateData references
+    this._stateData = {
+      ...this._stateData,
+      abilities: this._abilities,
+      combatMode: this._combatMode,
+      currentPhase: getInitialPhaseIdentifier(this._combatMode),
+    }
+
+    // Final reconcile and engine rebuild
+    reconcileAbilitiesConfig(
+      this._abilities,
+      this._sideAbilities,
+      this._combatMode,
+    )
+    this.rebuildEngine()
   }
 
   // ── Private helpers ──────────────────────────────────────────────────

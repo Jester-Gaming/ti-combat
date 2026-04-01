@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import { type Ability, declareParam } from '@/combat'
 import type { UnitType } from '@/types'
 
@@ -11,6 +13,9 @@ export const dimensionalSplicer: Ability<Params> = {
   category: 'FACTION',
   subcategory: 'TECHNOLOGY',
   context: 'SPACE',
+  paramsSchema: z.object({
+    targetPriority: z.array(z.string()),
+  }),
   params: {
     isEnabled: false,
     uses: Infinity,

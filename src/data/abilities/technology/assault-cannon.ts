@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import { type UnitType } from '@/types'
 
 import { declareParam } from '../../../combat/abilities-engine/declare-param'
@@ -12,6 +14,9 @@ export const assaultCannon: Ability<Params> = {
   name: 'Assault Cannon',
   category: 'TECHNOLOGY',
   context: 'SPACE',
+  paramsSchema: z.object({
+    targetPriority: z.array(z.string()),
+  }),
   params: {
     isEnabled: false,
     uses: Infinity,

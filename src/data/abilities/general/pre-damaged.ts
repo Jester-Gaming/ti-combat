@@ -1,3 +1,5 @@
+import { z } from 'zod/mini'
+
 import type { UnitType } from '@/types'
 
 import type { Ability } from '../../../combat/abilities-engine/types'
@@ -10,6 +12,9 @@ export const preDamaged: Ability<Params> = {
   key: 'PRE_DAMAGED',
   name: 'Damaged Units',
   category: 'GENERAL',
+  paramsSchema: z.object({
+    damagedUnits: z.record(z.string(), z.optional(z.number())),
+  }),
   params: {
     isEnabled: true,
     uses: Infinity,

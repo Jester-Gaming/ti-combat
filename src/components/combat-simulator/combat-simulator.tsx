@@ -5,6 +5,7 @@ import { useMemo, useState } from 'react'
 
 import { AbilitiesPanel } from '@/components/abilities-panel'
 import { BattleCard } from '@/components/battle-card'
+import { useToast } from '@/components/toast'
 import { GlassCard } from '@/components/ui/glass-card'
 import { GlowText } from '@/components/ui/glow-text'
 import {
@@ -15,6 +16,7 @@ import {
 } from '@/components/ui/sheet'
 import { useCombatSetup } from '@/hooks/use-combat-setup'
 import { useSimulation } from '@/hooks/use-simulation'
+import { useUrlSync } from '@/hooks/use-url-sync'
 import type { CombatSide, UnitBaseType } from '@/types'
 import { getUnitConfig } from '@/utils/get-unit-config'
 
@@ -37,6 +39,9 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     getAvailableAbilities,
     isUpgraded,
     simulationInput,
+    serializedConfig,
+    loadConfig,
+    allAbilities,
     setFaction,
     setUnitCount,
     setUpgraded,
@@ -44,6 +49,9 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     setCombatMode,
     swap,
   } = useCombatSetup()
+
+  const { toast } = useToast()
+  useUrlSync(serializedConfig, loadConfig, allAbilities, toast)
 
   const [attackerSheetOpen, setAttackerSheetOpen] = useState(false)
   const [defenderSheetOpen, setDefenderSheetOpen] = useState(false)

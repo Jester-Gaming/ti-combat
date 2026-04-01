@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 
 import { CombatSimulator } from '@/components/combat-simulator'
 import { SettingsPanel } from '@/components/settings-panel'
+import { ToastProvider } from '@/components/toast'
 import { useSettings } from '@/hooks/use-settings'
 
 import styles from './app.module.css'
@@ -30,25 +31,29 @@ function App() {
   }, [settings.theme])
 
   return (
-    <div className={styles.root}>
-      {/* Background layers */}
-      <div className={styles.starfield} />
-      <div className={styles.nebulaOverlay} />
+    <ToastProvider>
+      <div className={styles.root}>
+        {/* Background layers */}
+        <div className={styles.starfield} />
+        <div className={styles.nebulaOverlay} />
 
-      {/* Main content */}
-      <div className={styles.mainContent}>
-        {/* Header */}
-        <header className={clsx(styles.header, styles.animateFadeUp)}>
-          <h1 className={styles.title}>Twilight Imperium Combat Calculator</h1>
-          <SettingsPanel settings={settings} onSettingsChange={setSettings} />
-        </header>
+        {/* Main content */}
+        <div className={styles.mainContent}>
+          {/* Header */}
+          <header className={clsx(styles.header, styles.animateFadeUp)}>
+            <h1 className={styles.title}>
+              Twilight Imperium Combat Calculator
+            </h1>
+            <SettingsPanel settings={settings} onSettingsChange={setSettings} />
+          </header>
 
-        {/* Combat simulator */}
-        <CombatSimulator
-          className={clsx(styles.animateFadeUp, styles.animateDelay100)}
-        />
+          {/* Combat simulator */}
+          <CombatSimulator
+            className={clsx(styles.animateFadeUp, styles.animateDelay100)}
+          />
+        </div>
       </div>
-    </div>
+    </ToastProvider>
   )
 }
 
