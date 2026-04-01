@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ti-combat",
+  "compatibility_date": "2025-04-01",
+  "pages_build_output_dir": "dist",
+  "kv_namespaces": [
+    {
+      "binding": "URL_SHORTENER",
+      "id": "88eed008821d4430b4b177b611fb2925"
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 
 import { CombatSimulator } from '@/components/combat-simulator'
 import { SettingsPanel } from '@/components/settings-panel'
+import { ShareButton } from '@/components/share-button'
 import { ToastProvider } from '@/components/toast'
 import { useSettings } from '@/hooks/use-settings'
 
@@ -45,6 +46,7 @@ function App() {
               Twilight Imperium Combat Calculator
             </h1>
             <SettingsPanel settings={settings} onSettingsChange={setSettings} />
+            <ShareButton />
           </header>
 
           {/* Combat simulator */}
