@@ -31,6 +31,7 @@ export const naalu_collective: Faction = {
           "During combat against an opponent who has at least 1 relic fragment, apply +2 to the results of this unit's combat rolls.",
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
@@ -42,6 +43,7 @@ export const naalu_collective: Faction = {
         NAME: 'Hybrid Crystal Fighter I',
         COST: 0.5,
         COMBAT: [8, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {},
       },
       UPGRADED: {

@@ -29,6 +29,7 @@ export const yssaril_tribes: Faction = {
           'Deploy: After you use your Stall Tactics faction ability, you may place 1 mech on a planet you control.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },

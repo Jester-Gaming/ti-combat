@@ -35,6 +35,7 @@ export const firmament: Faction = {
           'When ground forces are committed to this planet, you may choose for your units to coexist, if they were not already.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },

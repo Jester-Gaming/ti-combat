@@ -28,6 +28,7 @@ export const clan_of_saar: Faction = {
           'Deploy: After you gain control of a planet, you may spend 1 trade good to place 1 mech on that planet.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },

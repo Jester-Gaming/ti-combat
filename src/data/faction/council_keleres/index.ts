@@ -36,6 +36,7 @@ export const council_keleres: Faction = {
           'Other players must spend 1 influence to commit ground forces to this planet.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },

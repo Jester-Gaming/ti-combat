@@ -32,6 +32,7 @@ export const ral_nel: Faction = {
           'At the end of a round of ground combat on this planet, you may move up to 2 of your ground forces to this planet from planets in adjacent systems.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },

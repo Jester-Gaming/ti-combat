@@ -38,6 +38,7 @@ export const naaz_rokha_alliance: Faction = {
           'If this unit is in the space area of the active system at the start of a space combat, flip this card.',
         COST: 2,
         COMBAT: [6, 2],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },

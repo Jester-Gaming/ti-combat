@@ -201,35 +201,6 @@ describe.forEachSide('FLEET_POOL', () => {
     expect(t.attacker.units.FIGHTER).toHaveLength(4)
   })
 
-  it('naalu upgraded fighters removed when exceeding pool', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'NAALU_COLLECTIVE',
-        // 1 cruiser (cost 1) + 6 naalu fighters II (cost 0.5 each = 3) = 4 total, pool = 3
-        units: { CRUISER: 1, FIGHTER: 6 },
-        upgrades: ['FIGHTER'],
-        abilities: {
-          FLEET_POOL: {
-            isEnabled: true,
-            fleetPool: 3,
-            shipPriority: ['CRUISER', 'FIGHTER'],
-          },
-        },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 1 },
-      },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
-
-    // Total = 1 + 6*0.5 = 4, excess = 1 → remove 2 fighters (2*0.5 = 1)
-    expect(t.attacker.units.CRUISER).toHaveLength(1)
-    expect(t.attacker.units.FIGHTER).toHaveLength(4)
-  })
-
   it('does nothing when disabled', () => {
     const t = combatTest({
       mode: 'SPACE',

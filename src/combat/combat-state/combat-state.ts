@@ -440,6 +440,8 @@ export class CombatState {
   }
 
   private completeTransition(): StateWithProbability[] {
+    this.runAbilities('END_OF_COMBAT')
+
     this.data.currentPhase = {
       meta: 'COMPLETE' as const,
       micro: getLastMicroPhase('COMPLETE'),

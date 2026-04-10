@@ -36,6 +36,7 @@ export const federation_of_sol: Faction = {
           'Deploy: After you use your Orbital Drop faction ability, you may spend 3 resources to place 1 mech on that planet.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
@@ -67,6 +68,7 @@ export const federation_of_sol: Faction = {
         NAME: 'Spec Ops I',
         COST: 0.5,
         COMBAT: [7, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {},
       },
       UPGRADED: {

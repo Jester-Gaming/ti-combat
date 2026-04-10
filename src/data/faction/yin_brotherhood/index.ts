@@ -43,6 +43,7 @@ export const yin_brotherhood: Faction = {
           "Deploy: When you use your Indoctrination faction ability, you may spend 1 additional influence to replace your opponent's unit with 1 mech instead of 1 infantry.",
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
           DEPLOY: moyinsAshes,

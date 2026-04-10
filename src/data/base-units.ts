@@ -107,10 +107,12 @@ const baseUnits = {
       COMBAT: [9, 1],
       MOVE: null,
       CAPACITY: null,
+      CAPACITY_COST: 1,
       UNIT_ABILITIES: {},
     },
     UPGRADED: {
       FLEET_POOL_COST: 1,
+      CAPACITY_COST: null,
       COMBAT: [8, 1],
       MOVE: 2,
     },
@@ -121,6 +123,7 @@ const baseUnits = {
       COMBAT: [8, 1],
       MOVE: null,
       CAPACITY: null,
+      CAPACITY_COST: 1,
       UNIT_ABILITIES: {},
     },
     UPGRADED: {

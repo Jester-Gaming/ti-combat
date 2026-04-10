@@ -83,6 +83,7 @@ export const neutral: Faction = {
       BASE: {
         COST: 0.5,
         COMBAT: [8, 1],
+        CAPACITY_COST: 1,
         MOVE: 2,
         CAPACITY: null,
         UNIT_ABILITIES: {},
@@ -92,6 +93,7 @@ export const neutral: Faction = {
       BASE: {
         COST: 2,
         COMBAT: [2, 1],
+        CAPACITY_COST: 1,
         MOVE: null,
         CAPACITY: null,
         UNIT_ABILITIES: {
@@ -104,6 +106,7 @@ export const neutral: Faction = {
       BASE: {
         COST: 0.5,
         COMBAT: [8, 1],
+        CAPACITY_COST: 1,
         MOVE: null,
         CAPACITY: null,
         UNIT_ABILITIES: {},

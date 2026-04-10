@@ -29,6 +29,7 @@ export const emirates_of_hacan: Faction = {
           "This planet's planet card may be traded as part of a transaction; if you do, move all of your units from this planet to another planet you control.",
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },

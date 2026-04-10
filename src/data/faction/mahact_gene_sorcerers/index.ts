@@ -31,6 +31,7 @@ export const mahact_gene_sorcerers: Faction = {
           'After a player whose command token is in your fleet pool activates this system, you may spend their token from your fleet pool to end their turn; they gain that token.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
@@ -44,6 +45,7 @@ export const mahact_gene_sorcerers: Faction = {
           'After this unit is destroyed, gain 1 commodity or convert 1 of your commodities to a trade good.',
         COST: 0.5,
         COMBAT: [8, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {},
       },
       UPGRADED: {

@@ -567,6 +567,11 @@ export class CombatSetup {
     faction: FactionKey,
     selections: Record<UnitBaseType, UnitSelection>,
   ): void {
+    const upgradedSet = new Set(
+      (Object.keys(selections) as UnitBaseType[]).filter(
+        t => selections[t].upgraded,
+      ),
+    )
     const { units, unitState, unitStats } = getSimulationUnits(
       faction,
       selections,
@@ -578,7 +583,10 @@ export class CombatSetup {
         faction,
         units,
         unitState,
-        unitStats,
+        unitStats: {
+          ...buildUnitStatsMap(faction, upgradedSet),
+          ...unitStats,
+        },
       },
     }
   }

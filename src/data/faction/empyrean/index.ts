@@ -31,6 +31,7 @@ export const empyrean: Faction = {
           "You may remove this unit from a system that contains or is adjacent to another player's units to cancel an action card played by that player.",
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },

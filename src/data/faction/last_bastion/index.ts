@@ -32,6 +32,7 @@ export const last_bastion: Faction = {
           'When this unit is destroyed, if it was galvanized, galvanize up to 3 of your infantry in its system.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },

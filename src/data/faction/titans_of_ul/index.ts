@@ -38,6 +38,7 @@ export const titans_of_ul: Faction = {
           'Deploy: When you would place a PDS on a planet, you may place 1 mech and 1 infantry on that planet instead.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },

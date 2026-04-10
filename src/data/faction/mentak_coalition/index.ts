@@ -36,6 +36,7 @@ export const mentak_coalition: Faction = {
           "Other players' ground forces on this planet cannot use Sustain Damage.",
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },

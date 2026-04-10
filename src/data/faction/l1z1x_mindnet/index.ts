@@ -35,6 +35,7 @@ export const l1z1x_mindnet: Faction = {
           'This unit may use its Bombardment ability to destroy 1 ground force on a planet that contains 1 or more of your units.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
           BOMBARDMENT: [8, 1],

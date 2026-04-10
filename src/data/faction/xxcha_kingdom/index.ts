@@ -30,6 +30,7 @@ export const xxcha_kingdom: Faction = {
           "You may use this unit's Space Cannon against ships that are in systems adjacent to this unit's system.",
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
           SPACE_CANNON: [8, 1],

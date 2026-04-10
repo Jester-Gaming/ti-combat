@@ -34,6 +34,7 @@ export const ghosts_of_creuss: Faction = {
           'After any player activates a system, you may remove this unit from the game board to place or move a Creuss wormhole token into this system.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },

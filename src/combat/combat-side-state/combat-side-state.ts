@@ -1,5 +1,5 @@
 import type { UnitCategory } from '@/constants/units'
-import { UNIT_CATEGORIES, UNIT_LIMITS } from '@/constants/units'
+import { UNIT_CATEGORIES, UNIT_LIMITS, UNIT_TYPES } from '@/constants/units'
 import type {
   CombatSide,
   UnitAbility,
@@ -578,26 +578,8 @@ export class CombatSideState {
   }
 
   /** Get all unit types (participating + structures) from SETTINGS */
-  getAllUnitTypes(combatModeOverride?: CombatMode): UnitBaseType[] {
-    const state = this.stateData
-    const settings = state.abilities[this._side]['SETTINGS']
-    if (!settings) {
-      const sideState = this.data
-      const types = new Set<UnitBaseType>()
-      for (const key of Object.keys(sideState.units) as UnitType[]) {
-        if (sideState.units[key].length <= 0) continue
-        const { type } = parseVariantId(key)
-        types.add(type)
-      }
-      return [...types]
-    }
-    const mode = combatModeOverride ?? state.combatMode
-    const participating =
-      mode === 'GROUND'
-        ? ((settings.groundCombatParticipating as UnitBaseType[]) ?? [])
-        : ((settings.spaceCombatParticipating as UnitBaseType[]) ?? [])
-    const structures = (settings.structures as UnitBaseType[]) ?? []
-    return [...new Set([...participating, ...structures])]
+  getAllUnitTypes(): UnitBaseType[] {
+    return [...new Set(UNIT_TYPES)]
   }
 
   /** Get unit variant options (base types + declared subtypes) */
@@ -610,7 +592,7 @@ export class CombatSideState {
   }): UnitType[] {
     const state = this.stateData
     let baseTypes = filter?.includeNonParticipating
-      ? this.getAllUnitTypes(filter?.combatMode)
+      ? this.getAllUnitTypes()
       : this.getParticipatingUnitTypes(filter?.combatMode)
     if (filter?.include) {
       const includeSet = new Set(filter.include)

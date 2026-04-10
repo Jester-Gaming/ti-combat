@@ -35,6 +35,7 @@ export const universities_of_jol_nar: Faction = {
           'Your infantry on this planet are not affected by your Fragile faction ability.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },

@@ -4,7 +4,7 @@
 
 - [x] **Neutral units**
 - [x] **Fleet Pool**
-- [ ] **Capacity check between phases**
+- [x] **Capacity check between phases**
 
 ## Faction
 

@@ -39,6 +39,7 @@ export const argent_flight: Faction = {
           'This unit does not count against capacity if it is being transported or if it in a space area with 1 or more of your ships that have capacity values.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 0,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },

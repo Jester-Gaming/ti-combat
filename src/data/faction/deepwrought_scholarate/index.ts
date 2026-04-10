@@ -29,6 +29,7 @@ export const deepwrought_scholarate: Faction = {
           'When another player activates this system, if this unit is coexisting, you may move it and any of your infantry on its planet to a planet you control in your home system.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
           PRODUCTION: 1,

@@ -30,6 +30,7 @@ export const arborec: Faction = {
           'Deploy: When you would use your Mitosis faction ability, you may replace 1 of your infantry with 1 mech from your reinforcements instead.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
           PRODUCTION: 2,
@@ -43,6 +44,7 @@ export const arborec: Faction = {
         NAME: 'Letani Warrior I',
         COST: 0.5,
         COMBAT: [8, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           PRODUCTION: 1,
         },

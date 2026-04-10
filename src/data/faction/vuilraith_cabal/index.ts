@@ -30,6 +30,7 @@ export const vuilraith_cabal: Faction = {
           'When your infantry on this planet are destroyed, place them on your faction sheet; those units are captured.',
         COST: 2,
         COMBAT: [6, 1],
+        CAPACITY_COST: 1,
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
