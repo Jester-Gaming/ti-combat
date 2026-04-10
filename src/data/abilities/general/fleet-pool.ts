@@ -127,7 +127,7 @@ export function enforceFleetPool(api: SideApi): void {
 export const fleetPool: Ability<Params> = {
   key: 'FLEET_POOL',
   name: 'Enforce Fleet Pool',
-  category: 'GENERAL',
+  category: 'ADVANCED',
   context: 'SPACE',
   params: {
     isEnabled: false,
