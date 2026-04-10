@@ -98,12 +98,50 @@
   color: hsl(var(--muted-foreground) / 60%);
 }
 
+.clearButton {
+  @apply flex h-6 w-6 cursor-pointer items-center justify-center rounded;
+}
+
+.clearButtonAttacker {
+  --btn-color: var(--attacker);
+}
+
+.clearButtonDefender {
+  --btn-color: var(--defender);
+}
+
+@media (width >= 640px) {
+  .clearButton {
+    @apply h-7 w-7;
+  }
+}
+
+.combatModeLineOuter {
+  min-width: 1.5rem;
+}
+
+@media (width >= 640px) {
+  .combatModeLineOuter {
+    min-width: 1.75rem;
+  }
+}
+
+.clearIcon {
+  @apply h-4 w-4;
+}
+
 .combatResult {
   @apply mt-8;
 }
 
 .combatModeDivider {
-  @apply mb-4 flex items-center gap-3;
+  @apply mb-4 flex items-center gap-1 px-1;
+}
+
+@media (width >= 640px) {
+  .combatModeDivider {
+    @apply px-2;
+  }
 }
 
 .combatModeLine {

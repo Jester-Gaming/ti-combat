@@ -1,4 +1,4 @@
-import { LoopIcon } from '@radix-ui/react-icons'
+import { LoopIcon, TrashIcon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
 import type { CSSProperties, ReactNode } from 'react'
 import { Fragment } from 'react'
@@ -6,6 +6,7 @@ import { Fragment } from 'react'
 import type { CombatMode, CombatOutcome } from '@/combat'
 import { GlassCard } from '@/components/ui/glass-card'
 import { GlowText } from '@/components/ui/glow-text'
+import { IconButton } from '@/components/ui/icon-button'
 import { UNIT_LIMITS, UNIT_TYPES } from '@/constants/units'
 import type {
   CombatSide,
@@ -44,6 +45,7 @@ interface BattleCardProps {
     count: number,
   ) => void
   onUpgradeToggle: (side: CombatSide, unit: UnitBaseType) => void
+  onResetUnits: (side: CombatSide) => void
   attackerActions?: ReactNode
   defenderActions?: ReactNode
   className?: string
@@ -66,6 +68,7 @@ export function BattleCard({
   onSwap,
   onUnitCountChange,
   onUpgradeToggle,
+  onResetUnits,
   attackerActions,
   defenderActions,
   className,
@@ -176,6 +179,16 @@ export function BattleCard({
 
       <div className={styles.combatResult}>
         <div className={styles.combatModeDivider}>
+          <div
+            className={clsx(styles.combatModeLine, styles.combatModeLineOuter)}
+          />
+          <IconButton
+            className={clsx(styles.clearButton, styles.clearButtonAttacker)}
+            onClick={() => onResetUnits('attacker')}
+            title="Reset attacker units"
+          >
+            <TrashIcon className={styles.clearIcon} />
+          </IconButton>
           <div className={styles.combatModeLine} />
           <div className={styles.combatModeToggle}>
             <button
@@ -200,6 +213,16 @@ export function BattleCard({
             </button>
           </div>
           <div className={styles.combatModeLine} />
+          <IconButton
+            className={clsx(styles.clearButton, styles.clearButtonDefender)}
+            onClick={() => onResetUnits('defender')}
+            title="Reset defender units"
+          >
+            <TrashIcon className={styles.clearIcon} />
+          </IconButton>
+          <div
+            className={clsx(styles.combatModeLine, styles.combatModeLineOuter)}
+          />
         </div>
         <CombatResultBar
           result={combatResult}

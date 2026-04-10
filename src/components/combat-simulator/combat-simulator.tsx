@@ -1,4 +1,4 @@
-import { GearIcon } from '@radix-ui/react-icons'
+import { GearIcon, ResetIcon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
 import type { CSSProperties } from 'react'
 import { useMemo, useState } from 'react'
@@ -47,6 +47,8 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     setUpgraded,
     setAbilityParam,
     setCombatMode,
+    resetUnits,
+    resetAbilities,
     swap,
   } = useCombatSetup()
 
@@ -141,6 +143,17 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           >
             Attacker Abilities
           </GlowText>
+          <button
+            type="button"
+            className={clsx(
+              styles.resetAbilitiesButton,
+              styles.resetAbilitiesButtonAttacker,
+            )}
+            onClick={() => resetAbilities('attacker')}
+            title="Reset attacker abilities to defaults"
+          >
+            <ResetIcon />
+          </button>
         </div>
         <AbilitiesPanel
           abilities={attackerAbilities}
@@ -172,6 +185,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           onSwap={swap}
           onUnitCountChange={setUnitCount}
           onUpgradeToggle={handleUpgradeToggle}
+          onResetUnits={resetUnits}
           attackerActions={
             <button
               type="button"
@@ -207,6 +221,17 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
             >
               Attacker Abilities
             </GlowText>
+            <button
+              type="button"
+              className={clsx(
+                styles.resetAbilitiesButton,
+                styles.resetAbilitiesButtonAttacker,
+              )}
+              onClick={() => resetAbilities('attacker')}
+              title="Reset attacker abilities to defaults"
+            >
+              <ResetIcon />
+            </button>
           </div>
           <SheetDescription className="sr-only">
             Configure attacker abilities
@@ -235,6 +260,17 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
             >
               Defender Abilities
             </GlowText>
+            <button
+              type="button"
+              className={clsx(
+                styles.resetAbilitiesButton,
+                styles.resetAbilitiesButtonDefender,
+              )}
+              onClick={() => resetAbilities('defender')}
+              title="Reset defender abilities to defaults"
+            >
+              <ResetIcon />
+            </button>
           </div>
           <SheetDescription className="sr-only">
             Configure defender abilities
@@ -264,6 +300,17 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           >
             Defender Abilities
           </GlowText>
+          <button
+            type="button"
+            className={clsx(
+              styles.resetAbilitiesButton,
+              styles.resetAbilitiesButtonDefender,
+            )}
+            onClick={() => resetAbilities('defender')}
+            title="Reset defender abilities to defaults"
+          >
+            <ResetIcon />
+          </button>
         </div>
         <div className={styles.sidePanelScroll}>
           <AbilitiesPanel

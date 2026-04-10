@@ -50,6 +50,22 @@ export function useCombatSetup() {
     [setup],
   )
 
+  const resetUnits = useCallback(
+    (side: CombatSide) => {
+      setup.resetUnits(side)
+      forceRender()
+    },
+    [setup],
+  )
+
+  const resetAbilities = useCallback(
+    (side: CombatSide) => {
+      setup.resetAbilities(side)
+      forceRender()
+    },
+    [setup],
+  )
+
   const swap = useCallback(() => {
     setup.swap()
     forceRender()
@@ -100,6 +116,8 @@ export function useCombatSetup() {
     setUpgraded,
     setAbilityParam,
     setCombatMode,
+    resetUnits,
+    resetAbilities,
     swap,
     loadConfig,
   }

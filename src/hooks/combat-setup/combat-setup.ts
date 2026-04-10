@@ -278,6 +278,45 @@ export class CombatSetup {
     this.rebuildEngine()
   }
 
+  resetUnits(side: CombatSide): void {
+    const newSelections = createDefaultUnitSelections()
+    if (side === 'attacker') {
+      this._attackerSelections = newSelections
+    } else {
+      this._defenderSelections = newSelections
+    }
+
+    const faction =
+      side === 'attacker' ? this._attackerFaction : this._defenderFaction
+    this.rebuildUnits(side, faction, newSelections)
+
+    // Upgrades may have changed — recalculate available abilities
+    this._sideAbilities[side] = getAvailableAbilities(
+      side,
+      faction,
+      this.getUpgradedTypes(side),
+    )
+    reconcileAbilitiesConfig(
+      this._abilities,
+      this._sideAbilities,
+      this._combatMode,
+    )
+    this.rebuildEngine()
+  }
+
+  resetAbilities(side: CombatSide): void {
+    this._abilities[side] = {}
+    initializeAbilityDefaults(this._abilities, this._sideAbilities)
+    reconcileAbilitiesConfig(
+      this._abilities,
+      this._sideAbilities,
+      this._combatMode,
+    )
+    // Force new stateData reference so React memoization triggers
+    this._stateData = { ...this._stateData }
+    this.rebuildEngine()
+  }
+
   swap(): void {
     // Swap factions
     ;[this._attackerFaction, this._defenderFaction] = [

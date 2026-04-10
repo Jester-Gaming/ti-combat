@@ -31,13 +31,35 @@
 }
 
 .sidePanelHeader {
-  @apply mb-4 shrink-0 border-b px-4 pb-4;
+  @apply mb-4 flex shrink-0 items-center border-b px-4 pb-4;
   border-color: hsl(var(--side-color) / 30%);
 }
 
 .sidePanelTitle {
-  @apply text-center text-sm font-semibold tracking-widest uppercase;
+  @apply flex-1 text-center text-sm font-semibold tracking-widest uppercase;
   font-family: var(--font-heading);
+}
+
+.resetAbilitiesButton {
+  @apply flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded;
+  color: hsl(var(--muted-foreground) / 35%);
+  transition: all 0.15s ease;
+}
+
+.resetAbilitiesButton:hover {
+  background: hsl(var(--muted-foreground) / 10%);
+}
+
+.resetAbilitiesButton svg {
+  @apply h-3.5 w-3.5;
+}
+
+.resetAbilitiesButtonAttacker:hover {
+  color: hsl(var(--attacker));
+}
+
+.resetAbilitiesButtonDefender:hover {
+  color: hsl(var(--defender));
 }
 
 .sidePanel::-webkit-scrollbar {
@@ -126,7 +148,7 @@
 }
 
 .sheetHeader {
-  @apply mb-4 border-b pb-4;
+  @apply mb-4 flex items-center border-b pb-4;
 }
 
 .sheetAttacker .sheetHeader {
