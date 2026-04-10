@@ -61,7 +61,8 @@ describe.forEachSide('SLEEPER_CELL', () => {
         // 2 cruisers + 1 carrier = 3 non-fighter ships, fleetPool: 3
         units: { CRUISER: 2, CARRIER: 1, FIGHTER: 2 },
         abilities: {
-          SLEEPER_CELL: {
+          SLEEPER_CELL: true,
+          FLEET_POOL: {
             isEnabled: true,
             fleetPool: 3,
             // Keep cruisers over carriers
@@ -95,7 +96,7 @@ describe.forEachSide('SLEEPER_CELL', () => {
         // Cruiser limit is 8; attacker has 7
         units: { CRUISER: 7 },
         abilities: {
-          SLEEPER_CELL: { isEnabled: true, fleetPool: 20 },
+          SLEEPER_CELL: true,
         },
       },
       defender: {
@@ -119,7 +120,7 @@ describe.forEachSide('SLEEPER_CELL', () => {
         faction: 'MENTAK_COALITION',
         units: { CRUISER: 2 },
         abilities: {
-          SLEEPER_CELL: { isEnabled: true, fleetPool: 20 },
+          SLEEPER_CELL: true,
         },
       },
       defender: {

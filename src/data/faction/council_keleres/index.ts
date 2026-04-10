@@ -18,6 +18,7 @@ export const council_keleres: Faction = {
         NAME: 'Artemiris',
         DESCRIPTION:
           'Other players must spend 2 influence to activate this system.',
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [7, 2],
         MOVE: 1,

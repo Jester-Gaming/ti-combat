@@ -39,7 +39,6 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
           FRAGMENT_REALITY: {
             isEnabled: true,
             ships: { DESTROYER: 2, FIGHTER: 3 },
-            fleetPool: 20,
           },
         },
       },
@@ -89,6 +88,9 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
           FRAGMENT_REALITY: {
             isEnabled: true,
             ships: { DESTROYER: 2 },
+          },
+          FLEET_POOL: {
+            isEnabled: true,
             // 3 existing + 2 placed = 5, pool = 3 → 2 excess
             fleetPool: 3,
             // Keep cruisers first, then destroyers, carriers last
@@ -120,6 +122,9 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
           FRAGMENT_REALITY: {
             isEnabled: true,
             ships: { FIGHTER: 5, CRUISER: 1 },
+          },
+          FLEET_POOL: {
+            isEnabled: true,
             // 2 cruisers total, pool = 2 → no excess
             fleetPool: 2,
           },
@@ -147,6 +152,9 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
           FRAGMENT_REALITY: {
             isEnabled: true,
             ships: { DESTROYER: 1 },
+          },
+          FLEET_POOL: {
+            isEnabled: true,
             // 3 existing + 1 placed = 4, pool = 2 → 2 excess
             fleetPool: 2,
             // Only cruiser in priority, carrier and destroyer are unlisted

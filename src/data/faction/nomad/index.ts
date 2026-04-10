@@ -18,6 +18,7 @@ export const nomad: Faction = {
         NAME: 'Memoria I',
         DESCRIPTION:
           'You may treat this unit as if it were adjacent to systems that contain 1 or more of your mechs.',
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [7, 2],
         MOVE: 1,

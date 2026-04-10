@@ -8,6 +8,7 @@ export const neutral: Faction = {
   units: {
     FLAGSHIP: {
       BASE: {
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [7, 2],
         MOVE: 1,
@@ -20,6 +21,7 @@ export const neutral: Faction = {
     },
     WAR_SUN: {
       BASE: {
+        FLEET_POOL_COST: 1,
         COST: 12,
         COMBAT: [3, 3],
         MOVE: 2,
@@ -33,6 +35,7 @@ export const neutral: Faction = {
     },
     DREADNOUGHT: {
       BASE: {
+        FLEET_POOL_COST: 1,
         COST: 4,
         COMBAT: [5, 1],
         MOVE: 2,
@@ -46,6 +49,7 @@ export const neutral: Faction = {
     },
     CARRIER: {
       BASE: {
+        FLEET_POOL_COST: 1,
         COST: 3,
         COMBAT: [9, 1],
         MOVE: 2,
@@ -55,6 +59,7 @@ export const neutral: Faction = {
     },
     CRUISER: {
       BASE: {
+        FLEET_POOL_COST: 1,
         COST: 2,
         COMBAT: [6, 1],
         MOVE: 3,
@@ -64,6 +69,7 @@ export const neutral: Faction = {
     },
     DESTROYER: {
       BASE: {
+        FLEET_POOL_COST: 1,
         COST: 1,
         COMBAT: [8, 1],
         MOVE: 2,

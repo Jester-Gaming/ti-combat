@@ -20,6 +20,7 @@ export const naaz_rokha_alliance: Faction = {
         NAME: 'Visz El Vir',
         DESCRIPTION:
           'Your mechs in this system roll 1 additional die during combat.',
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [9, 2],
         MOVE: 1,

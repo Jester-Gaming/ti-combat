@@ -17,6 +17,7 @@ export const universities_of_jol_nar: Faction = {
         NAME: 'J.N.S. Hylarim',
         DESCRIPTION:
           'When making a combat roll for this ship, each result of 9 or 10, before applying modifiers, produces 2 additional hits.',
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [6, 2],
         MOVE: 1,

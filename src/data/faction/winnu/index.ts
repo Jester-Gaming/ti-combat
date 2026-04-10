@@ -19,6 +19,7 @@ export const winnu: Faction = {
         NAME: 'Salai Sai Corian',
         DESCRIPTION:
           "When this unit makes a combat roll, it rolls a number of dice equal to the number of your opponent's non-fighter ships in this system.",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [7, 1],
         MOVE: 1,

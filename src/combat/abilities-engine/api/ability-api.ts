@@ -1,4 +1,5 @@
 import type { UnitCategory } from '@/constants/units'
+import { enforceFleetPool } from '@/data/abilities/general/fleet-pool'
 import type {
   CombatSide,
   FactionKey,
@@ -176,6 +177,7 @@ export class SideApi {
         )
       }
     }
+    enforceFleetPool(this)
     return placed as Record<UnitBaseType, UnitId[]>
   }
 

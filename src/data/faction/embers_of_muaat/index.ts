@@ -12,6 +12,7 @@ export const embers_of_muaat: Faction = {
         NAME: 'The Inferno',
         DESCRIPTION:
           "Action: Spend 1 token from your strategy pool to place 1 cruiser in this unit's system.",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [5, 2],
         MOVE: 1,
@@ -40,6 +41,7 @@ export const embers_of_muaat: Faction = {
         NAME: 'Prototype War Sun I',
         DESCRIPTION:
           'Other players units in this system lose the Planetary Shield ability.',
+        FLEET_POOL_COST: 1,
         COST: 12,
         COMBAT: [3, 3],
         MOVE: 1,

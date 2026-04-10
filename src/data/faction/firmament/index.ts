@@ -17,6 +17,7 @@ export const firmament: Faction = {
         NAME: "Heaven's Eye",
         DESCRIPTION:
           "If the active system contains units that belong to a player who has a control token on 1 of your plots, apply +1 to this ship's move value and repair it at the end of every combat round.",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [5, 2],
         MOVE: 1,

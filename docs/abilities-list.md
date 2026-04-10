@@ -3,6 +3,7 @@
 ## General
 
 - [x] **Neutral units**
+- [x] **Fleet Pool**
 - [ ] **Capacity check between phases**
 
 ## Faction

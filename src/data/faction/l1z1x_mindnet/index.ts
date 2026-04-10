@@ -17,6 +17,7 @@ export const l1z1x_mindnet: Faction = {
         NAME: '[0.0.1]',
         DESCRIPTION:
           'During a space combat, hits produced by this ship and by your dreadnoughts in this system must be assigned to non-fighter ships if able.',
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [5, 2],
         MOVE: 1,
@@ -44,6 +45,7 @@ export const l1z1x_mindnet: Faction = {
     DREADNOUGHT: {
       BASE: {
         NAME: 'Super Dreadnought I',
+        FLEET_POOL_COST: 1,
         COST: 4,
         COMBAT: [5, 1],
         MOVE: 1,

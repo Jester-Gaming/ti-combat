@@ -25,6 +25,7 @@ export const yin_brotherhood: Faction = {
         NAME: 'Van Hauge',
         DESCRIPTION:
           'When this ship is destroyed, destroy all ships in this system.',
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [9, 2],
         MOVE: 1,

@@ -11,6 +11,7 @@ export const yssaril_tribes: Faction = {
         NAME: "Y'sia Y'ssrila",
         DESCRIPTION:
           "This ship can move through systems that contain other player's ships.",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [5, 2],
         MOVE: 2,

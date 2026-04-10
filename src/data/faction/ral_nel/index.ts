@@ -14,6 +14,7 @@ export const ral_nel: Faction = {
         NAME: 'Last Dispatch',
         DESCRIPTION:
           'When this unit retreats, you may destroy 1 ship in the active system that does not have Sustain Damage.',
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [8, 2],
         MOVE: 2,
@@ -42,6 +43,7 @@ export const ral_nel: Faction = {
         NAME: 'Linkship I',
         DESCRIPTION:
           'This unit can use the Space Cannon ability of one of your structures in its space area; each structure can only be triggered once.',
+        FLEET_POOL_COST: 1,
         COST: 1,
         COMBAT: [9, 1],
         MOVE: 3,

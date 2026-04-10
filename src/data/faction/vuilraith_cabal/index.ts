@@ -11,6 +11,7 @@ export const vuilraith_cabal: Faction = {
         NAME: 'The Terror Between',
         DESCRIPTION:
           'Capture all other non-structure units that are destroyed in this system, including your own.',
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [5, 2],
         MOVE: 1,

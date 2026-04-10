@@ -13,7 +13,6 @@ describe.forEachSide('OVERWING_ZETA', () => {
           OVERWING_ZETA: {
             isEnabled: true,
             ships: { FLAGSHIP: 1, CRUISER: 1 },
-            fleetPool: 20,
           },
         },
       },
@@ -41,7 +40,6 @@ describe.forEachSide('OVERWING_ZETA', () => {
           OVERWING_ZETA: {
             isEnabled: true,
             ships: { FLAGSHIP: 1, DESTROYER: 2 },
-            fleetPool: 20,
           },
         },
       },
@@ -56,6 +54,32 @@ describe.forEachSide('OVERWING_ZETA', () => {
     expect(t.attacker.units.FLAGSHIP).toHaveLength(1)
     expect(t.attacker.units.DESTROYER).toHaveLength(2)
     expect(t.attacker.units.CRUISER).toHaveLength(1)
+  })
+
+  it('clamps cruisers + destroyers to 2 total', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'COUNCIL_KELERES',
+        units: { CRUISER: 1 },
+        abilities: {
+          OVERWING_ZETA: {
+            isEnabled: true,
+            ships: { CRUISER: 2, DESTROYER: 2 },
+          },
+        },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 1 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+
+    // Cruisers processed first, cap at 2 total → 2 cruisers, 0 destroyers
+    expect(t.attacker.units.CRUISER).toHaveLength(3) // 1 original + 2 placed
+    expect(t.attacker.units.DESTROYER).toBeUndefined()
   })
 
   it('does not fire when no ships configured', () => {
@@ -91,6 +115,9 @@ describe.forEachSide('OVERWING_ZETA', () => {
           OVERWING_ZETA: {
             isEnabled: true,
             ships: { FLAGSHIP: 1, DESTROYER: 1 },
+          },
+          FLEET_POOL: {
+            isEnabled: true,
             // 3 existing + 2 placed = 5, pool = 3 → 2 excess
             fleetPool: 3,
             shipPriority: ['FLAGSHIP', 'CRUISER', 'DESTROYER', 'CARRIER'],
@@ -123,6 +150,9 @@ describe.forEachSide('OVERWING_ZETA', () => {
             isEnabled: true,
             strategy: 'ENOUGH_FLEET_POOL',
             ships: { CRUISER: 2 },
+          },
+          FLEET_POOL: {
+            isEnabled: true,
             fleetPool: 4,
           },
         },
@@ -159,6 +189,9 @@ describe.forEachSide('OVERWING_ZETA', () => {
             isEnabled: true,
             strategy: 'ENOUGH_FLEET_POOL',
             ships: { FLAGSHIP: 1 },
+          },
+          FLEET_POOL: {
+            isEnabled: true,
             fleetPool: 3,
           },
         },

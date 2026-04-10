@@ -11,6 +11,7 @@ export const emirates_of_hacan: Faction = {
         NAME: 'Wrath of Kenara',
         DESCRIPTION:
           'After you roll a die during a space combat in this system, you may spend 1 trade good to apply +1 to the result.',
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [7, 2],
         MOVE: 1,

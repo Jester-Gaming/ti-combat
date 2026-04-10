@@ -12,6 +12,7 @@ export const arborec: Faction = {
         NAME: 'Duha Menaimon',
         DESCRIPTION:
           'After you activate this system, you may produce up to 5 units in this system.',
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [7, 2],
         MOVE: 1,

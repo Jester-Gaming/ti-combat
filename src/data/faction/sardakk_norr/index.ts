@@ -17,6 +17,7 @@ export const sardakk_norr: Faction = {
         NAME: "C'morran N'orr",
         DESCRIPTION:
           "Apply +1 to the result of each of your other ship's combat rolls in this system.",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [6, 2],
         MOVE: 1,
@@ -43,6 +44,7 @@ export const sardakk_norr: Faction = {
     DREADNOUGHT: {
       BASE: {
         NAME: 'Exotrireme I',
+        FLEET_POOL_COST: 1,
         COST: 4,
         COMBAT: [5, 1],
         MOVE: 1,

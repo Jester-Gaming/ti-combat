@@ -216,8 +216,15 @@ export function getAvailableAbilities(
   const baseAbilities = allAbilities
     .filter(ability => {
       if (ability.side && ability.side !== side) return false
-      if (isNeutral && NEUTRAL_HIDDEN_CATEGORIES.has(ability.category))
-        return false
+      if (isNeutral) {
+        if (NEUTRAL_HIDDEN_CATEGORIES.has(ability.category)) {
+          return false
+        }
+        if (ability.key === 'FLEET_POOL') {
+          return false
+        }
+        return true
+      }
       if (ability.allowExternal && ownedKeys.has(ability.key)) {
         return false
       }

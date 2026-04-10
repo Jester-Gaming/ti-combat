@@ -13,6 +13,7 @@ export const empyrean: Faction = {
         NAME: 'Dynamo',
         DESCRIPTION:
           "After any player's unit in this system or an adjacent system uses Sustain Damage, you may spend 2 influence to repair that unit.",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [5, 2],
         MOVE: 1,

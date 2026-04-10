@@ -17,6 +17,7 @@ export const crimson_rebellion: Faction = {
         NAME: 'Quietus',
         DESCRIPTION:
           "While this unit is in a system that contains an active breach, other players' units in systems with active breaches lose all of their unit abilities.",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [5, 2],
         MOVE: 1,
@@ -45,6 +46,7 @@ export const crimson_rebellion: Faction = {
         NAME: 'Exile I',
         DESCRIPTION:
           "At the end of any player's combat in this unit's system or an adjacent system, you may place 1 inactive breach in that system.",
+        FLEET_POOL_COST: 1,
         COST: 1,
         COMBAT: [8, 1],
         MOVE: 2,

@@ -6,6 +6,7 @@ const baseUnits = {
   WAR_SUN: {
     BASE: {
       COST: 12,
+      FLEET_POOL_COST: 1,
       COMBAT: [3, 3],
       MOVE: 2,
       CAPACITY: 6,
@@ -20,6 +21,7 @@ const baseUnits = {
   CRUISER: {
     BASE: {
       COST: 2,
+      FLEET_POOL_COST: 1,
       COMBAT: [7, 1],
       MOVE: 2,
       CAPACITY: null,
@@ -34,6 +36,7 @@ const baseUnits = {
   DREADNOUGHT: {
     BASE: {
       COST: 4,
+      FLEET_POOL_COST: 1,
       COMBAT: [5, 1],
       MOVE: 1,
       CAPACITY: 1,
@@ -51,6 +54,7 @@ const baseUnits = {
   DESTROYER: {
     BASE: {
       COST: 1,
+      FLEET_POOL_COST: 1,
       COMBAT: [9, 1],
       MOVE: 2,
       CAPACITY: null,
@@ -86,6 +90,7 @@ const baseUnits = {
   CARRIER: {
     BASE: {
       COST: 3,
+      FLEET_POOL_COST: 1,
       COMBAT: [9, 1],
       MOVE: 1,
       CAPACITY: 4,
@@ -105,6 +110,7 @@ const baseUnits = {
       UNIT_ABILITIES: {},
     },
     UPGRADED: {
+      FLEET_POOL_COST: 1,
       COMBAT: [8, 1],
       MOVE: 2,
     },

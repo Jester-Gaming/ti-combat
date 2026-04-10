@@ -11,6 +11,7 @@ export const deepwrought_scholarate: Faction = {
         NAME: 'D.W.S. Luminous',
         DESCRIPTION:
           "This ship can move through systems that contain your units, even if other players' units are present; if it would, apply +1 to its move value for each of those systems.",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [7, 2],
         MOVE: 1,

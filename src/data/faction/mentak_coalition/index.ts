@@ -18,6 +18,7 @@ export const mentak_coalition: Faction = {
         NAME: 'Fourth Moon',
         DESCRIPTION:
           "Other players' ships in this system cannot use Sustain Damage.",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [7, 2],
         MOVE: 1,

@@ -16,6 +16,7 @@ export const ghosts_of_creuss: Faction = {
         NAME: 'Hil Colish',
         DESCRIPTION:
           "This ship's system contains a delta wormhole. After you activate a system that contains a wormhole, this ship may move through wormholes.",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [5, 1],
         MOVE: 1,

@@ -13,6 +13,7 @@ export const last_bastion: Faction = {
         NAME: 'The Egeiro',
         DESCRIPTION:
           "Apply +1 to the result of each of this unit's combat rolls for each non-home system that contains a planet you control.",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [9, 1],
         MOVE: 1,

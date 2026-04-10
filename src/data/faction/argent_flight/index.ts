@@ -21,6 +21,7 @@ export const argent_flight: Faction = {
         NAME: 'Quetzecoatl',
         DESCRIPTION:
           'Other players cannot use Space Cannon against your ships in this system.',
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [7, 2],
         MOVE: 1,
@@ -47,6 +48,7 @@ export const argent_flight: Faction = {
     DESTROYER: {
       BASE: {
         NAME: 'Strike Wing Alpha I',
+        FLEET_POOL_COST: 1,
         COST: 1,
         COMBAT: [8, 1],
         MOVE: 2,

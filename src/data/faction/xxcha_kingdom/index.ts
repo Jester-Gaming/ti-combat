@@ -11,6 +11,7 @@ export const xxcha_kingdom: Faction = {
         NAME: 'Loncara Ssodu',
         DESCRIPTION:
           "You may use this unit's Space Cannon against ships that are in adjacent systems.",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [7, 2],
         MOVE: 1,

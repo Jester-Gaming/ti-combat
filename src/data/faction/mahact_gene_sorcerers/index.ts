@@ -13,6 +13,7 @@ export const mahact_gene_sorcerers: Faction = {
         NAME: 'Arvicon Rex',
         DESCRIPTION:
           "During combat against an opponent whose command token is not in your fleet pool, apply +2 to the results of this unit's combat rolls.",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [5, 2],
         MOVE: 1,

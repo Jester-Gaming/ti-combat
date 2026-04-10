@@ -23,6 +23,7 @@ export const barony_of_letnev: Faction = {
         NAME: 'Arc Secundus',
         DESCRIPTION:
           "Other players' units in this system lose Planetary Shield. At the start of each space combat round, repair this ship.",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [5, 2],
         MOVE: 1,

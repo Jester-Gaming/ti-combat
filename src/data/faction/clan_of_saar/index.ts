@@ -9,6 +9,7 @@ export const clan_of_saar: Faction = {
     FLAGSHIP: {
       BASE: {
         NAME: 'Son of Ragh',
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [5, 2],
         MOVE: 1,

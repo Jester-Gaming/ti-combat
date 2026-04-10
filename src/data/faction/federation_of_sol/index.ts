@@ -18,6 +18,7 @@ export const federation_of_sol: Faction = {
         NAME: 'Genesis',
         DESCRIPTION:
           "At the end of the status phase, place 1 infantry from your reinforcements in this system's space area.",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [5, 2],
         MOVE: 1,
@@ -44,6 +45,7 @@ export const federation_of_sol: Faction = {
     CARRIER: {
       BASE: {
         NAME: 'Advanced Carrier I',
+        FLEET_POOL_COST: 1,
         COST: 3,
         COMBAT: [9, 1],
         MOVE: 1,

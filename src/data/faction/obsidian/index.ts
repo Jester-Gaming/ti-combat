@@ -18,6 +18,7 @@ export const obsidian: Faction = {
     FLAGSHIP: {
       BASE: {
         NAME: "Heaven's Hollow",
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [5, 3],
         MOVE: 1,

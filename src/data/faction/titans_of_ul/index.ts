@@ -20,6 +20,7 @@ export const titans_of_ul: Faction = {
         NAME: 'Ouranos',
         DESCRIPTION:
           'Deploy: After you activate a system that contains 1 or more of your PDS, you may replace 1 of those PDS with this unit.',
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [7, 2],
         MOVE: 1,
@@ -46,6 +47,7 @@ export const titans_of_ul: Faction = {
     CRUISER: {
       BASE: {
         NAME: 'Saturn Engine I',
+        FLEET_POOL_COST: 1,
         COST: 2,
         COMBAT: [7, 1],
         MOVE: 2,

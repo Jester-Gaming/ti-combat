@@ -194,6 +194,7 @@ export const nekro_virus: Faction = {
         NAME: 'The Alastor',
         DESCRIPTION:
           'At the start of a space combat, choose any number of your ground forces in this system to participate in that combat as if they were ships.',
+        FLEET_POOL_COST: 1,
         COST: 8,
         COMBAT: [9, 2],
         MOVE: 1,
