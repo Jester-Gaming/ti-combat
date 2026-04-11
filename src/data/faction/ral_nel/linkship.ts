@@ -37,7 +37,6 @@ function findBestSpaceCannon(
 const uiConfig: Ability<Params>['uiConfig'] = ctx => [
   {
     key: 'structures',
-    label: 'Structures',
     type: 'number-list',
     items: ctx.api.own.getUnitVariantsOptions({
       include: STRUCTURE_TYPES,

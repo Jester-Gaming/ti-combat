@@ -49,7 +49,6 @@ export const dimensionalSplicer: Ability<Params> = {
     return [
       {
         key: 'targetPriority' as const,
-        label: 'Target Priority',
         type: 'order-list' as const,
         items: ctx.api.opponent.getUnitVariantsOptions({
           combatMode: 'SPACE',

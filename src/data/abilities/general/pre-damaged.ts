@@ -29,7 +29,6 @@ export const preDamaged: Ability<Params> = {
       ? [
           {
             key: 'damagedUnits',
-            label: 'Damaged Units',
             type: 'number-list',
             items,
           },

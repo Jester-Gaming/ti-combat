@@ -50,7 +50,6 @@ export function AbilityConfig({
   }, [ability, defaults, readContext, params])
 
   const hasConfigItems = uiConfigItems && uiConfigItems.length > 0
-  const showLabels = uiConfigItems && uiConfigItems.length > 1
   const isCollapsible = !!hasConfigItems
   const [isCollapsed, setIsCollapsed] = useState(true)
 
@@ -288,7 +287,7 @@ export function AbilityConfig({
 
               return (
                 <div key={key} className={styles.configItemGroup}>
-                  {showLabels && (
+                  {config.label && (
                     <span className={styles.configItemText}>
                       {config.label}
                     </span>
@@ -309,7 +308,7 @@ export function AbilityConfig({
               >
               return (
                 <div key={key} className={styles.configItemGroup}>
-                  {showLabels && (
+                  {config.label && (
                     <span className={styles.configItemText}>
                       {config.label}
                     </span>

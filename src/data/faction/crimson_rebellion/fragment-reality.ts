@@ -46,7 +46,6 @@ export const fragmentReality: Ability<Params> = {
   uiConfig: () => [
     {
       key: 'ships' as const,
-      label: 'Ships',
       type: 'number-list' as const,
       items: SHIPS.map(type => ({
         label: UNIT_DISPLAY_NAMES[type],

@@ -87,7 +87,6 @@ export const vosHollow: Ability<Params> = {
     return [
       {
         key: 'targetPriority' as const,
-        label: 'Target Priority',
         type: 'priority-list' as const,
         items: ctx.api.opponent.getUnitVariantsOptions({
           combatMode: 'SPACE',

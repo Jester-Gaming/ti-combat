@@ -223,7 +223,7 @@ export type AbilityInvoke<TParams = Record<string, unknown>> = {
 
 interface UIConfigItemBase<TParams = Record<string, unknown>> {
   key: keyof TParams // Property name in params (e.g., 'riskDirectHit')
-  label: string // Display label (e.g., 'Risk Direct Hit?')
+  label?: string // Display label (e.g., 'Risk Direct Hit?')
 }
 
 interface UIConfigCheckbox<

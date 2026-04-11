@@ -45,7 +45,6 @@ export const ghomSekkus: Ability<Params> = {
   uiConfig: [
     {
       key: 'units' as const,
-      label: 'Ground Forces',
       type: 'number-list' as const,
       items: GROUND_FORCES.map(type => ({
         label: UNIT_DISPLAY_NAMES[type],

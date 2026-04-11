@@ -23,7 +23,6 @@ export const trrakanAunZulok: Ability<Params> = {
     {
       type: 'checkbox-list',
       key: 'phases',
-      label: 'Abilities',
       items: [
         { label: 'Anti-Fighter Barrage', value: 'AFB' },
         { label: 'Space Cannon Offense', value: 'SPACE_CANNON_OFFENSE' },
