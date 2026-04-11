@@ -32,6 +32,8 @@ function getShipsToPlace(ships: Record<string, number>) {
 export const overwingZeta: Ability<Params> = {
   key: 'OVERWING_ZETA',
   name: 'Overwing Zeta',
+  description:
+    'At the start of a round of space combat in a system that contains a planet you control: Place your flagship and up to a total of 2 cruisers or destroyers from your reinforcements in the active system.',
   category: 'FACTION',
   subcategory: 'HERO',
   context: 'SPACE',

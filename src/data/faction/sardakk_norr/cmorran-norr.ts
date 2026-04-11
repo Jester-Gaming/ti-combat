@@ -3,6 +3,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const cmorranNorr: Ability = {
   key: 'CMORRAN_NORR',
   name: "C'morran N'orr",
+  description:
+    "Apply +1 to the result of each of your other ship's combat rolls in this system.",
   category: 'FACTION',
   subcategory: 'FLAGSHIP',
   params: {

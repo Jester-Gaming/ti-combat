@@ -3,6 +3,8 @@ import type { Ability } from '@/combat'
 export const valkyrieParticleWeave: Ability = {
   key: 'VALKYRIE_PARTICLE_WEAVE',
   name: 'Valkyrie Particle Weave',
+  description:
+    'After making combat rolls during a round of ground combat, if your opponent produced 1 or more hits, you produce 1 additional hit.',
   category: 'FACTION',
   subcategory: 'TECHNOLOGY',
   context: 'GROUND',

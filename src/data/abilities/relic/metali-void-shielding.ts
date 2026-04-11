@@ -39,6 +39,8 @@ function findVoidShieldTarget(ctx: AbilityReadContext): UnitId | undefined {
 export const metaliVoidShielding: Ability = {
   key: 'METALI_VOID_SHIELDING',
   name: 'Metali Void Shielding',
+  description:
+    'Each time hits are produced against 1 or more of your non-fighter ships, 1 of those ships may use Sustain Damage as if it had that ability.',
   category: 'RELIC',
   context: 'SPACE',
   params: {

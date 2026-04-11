@@ -3,6 +3,8 @@ import type { Ability } from '@/combat'
 export const quantumManipulator: Ability = {
   key: 'QUANTUM_MANIPULATOR',
   name: 'Quantum Manipulator',
+  description:
+    'While this unit is in a space area during combat, you may use its Sustain Damage ability to cancel a hit that is produced against your ships in this system.',
   category: 'FACTION',
   subcategory: 'UNIT',
   context: 'SPACE',

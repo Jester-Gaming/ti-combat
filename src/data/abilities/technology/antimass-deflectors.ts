@@ -3,6 +3,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const antimassDeflectors: Ability = {
   key: 'ANTIMASS_DEFLECTORS',
   name: 'Antimass Deflectors',
+  description:
+    "When other players' units use Space Cannon against your units, apply -1 to the result of each die roll.",
   category: 'TECHNOLOGY',
   params: {
     isEnabled: false,

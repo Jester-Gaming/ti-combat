@@ -1,5 +1,9 @@
-import { ChevronDownIcon, ChevronRightIcon } from '@radix-ui/react-icons'
-import { useMemo, useState } from 'react'
+import {
+  ChevronDownIcon,
+  ChevronRightIcon,
+  QuestionMarkCircledIcon,
+} from '@radix-ui/react-icons'
+import { useId, useMemo, useState } from 'react'
 
 import {
   type Ability,
@@ -17,6 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Tooltip } from '@/components/ui/tooltip'
 
 import { CheckboxList } from '../checkbox-list'
 import { NumberList } from '../number-list'
@@ -39,6 +44,8 @@ export function AbilityConfig({
   params,
   onParamsChange,
 }: AbilityConfigProps): React.ReactElement {
+  const id = useId()
+  const anchorName = `--a${id.replaceAll(':', '')}`
   const defaults = useMemo(() => extractDefaults(ability), [ability])
 
   const uiConfigItems = useMemo(() => {
@@ -79,6 +86,12 @@ export function AbilityConfig({
   function toggleCollapsed(): void {
     setIsCollapsed(prev => !prev)
   }
+
+  const descriptionIcon = ability.description ? (
+    <Tooltip content={ability.description} anchor={anchorName}>
+      <QuestionMarkCircledIcon className={styles.descriptionIcon} />
+    </Tooltip>
+  ) : null
 
   const headerParamKey = ability.headerUI
   const headerParamValue = headerParamKey
@@ -150,6 +163,7 @@ export function AbilityConfig({
             />
           )}
           <span className={styles.title}>{ability.name}</span>
+          {descriptionIcon}
           {headerControl}
         </>
       ) : (
@@ -173,6 +187,7 @@ export function AbilityConfig({
             />
           )}
           <span className={styles.title}>{ability.name}</span>
+          {descriptionIcon}
         </button>
       )}
     </div>
@@ -181,6 +196,11 @@ export function AbilityConfig({
   return (
     <div
       className={`${styles.container} ${headerParamKey ? styles.hasHeaderControl : ''} ${headerParamKey && isHeaderBoolean ? styles.clickable : ''} ${ability.readOnly ? styles.readOnly : ''} ${ability.context && ability.context !== combatMode ? styles.dimmed : ''}`}
+      style={
+        ability.description
+          ? ({ anchorName } as React.CSSProperties)
+          : undefined
+      }
       onClick={
         headerParamKey && isHeaderBoolean && !ability.readOnly
           ? handleContainerClick

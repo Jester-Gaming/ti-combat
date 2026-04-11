@@ -3,6 +3,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const l4Disruptors: Ability = {
   key: 'L4_DISRUPTORS',
   name: 'L4 Disruptors',
+  description:
+    'During an invasion, units cannot use Space Cannon against your units.',
   category: 'FACTION',
   subcategory: 'TECHNOLOGY',
   context: 'GROUND',

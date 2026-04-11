@@ -3,6 +3,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const quetzecoatl: Ability = {
   key: 'QUETZECOATL',
   name: 'Quetzecoatl',
+  description:
+    'Other players cannot use Space Cannon against your ships in this system.',
   category: 'FACTION',
   subcategory: 'FLAGSHIP',
   context: 'SPACE',

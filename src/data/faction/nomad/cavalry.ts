@@ -17,6 +17,8 @@ const CAVALRY = 'Cavalry' as UnitVariantId
 export const cavalry: Ability<Params> = {
   key: 'CAVALRY',
   name: 'Cavalry',
+  description:
+    "At the start of a space combat against a player other than the Nomad: During this combat, treat 1 of your non-fighter ships as if it has the Sustain Damage ability, combat value, and Anti-Fighter Barrage value of the Nomad's flagship.",
   icon: nomadIcon,
   category: 'PROMISSORY',
   context: 'SPACE',

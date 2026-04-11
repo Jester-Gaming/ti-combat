@@ -1,0 +1,21 @@
+@reference "tailwindcss";
+
+.wrapper {
+  display: inline-flex;
+  align-items: center;
+}
+
+.tooltip {
+  @apply pointer-events-none z-50 m-0 w-max max-w-56 rounded border-none bg-transparent px-2 py-1 text-xs leading-snug opacity-0 transition-opacity;
+  position: fixed;
+  inset: auto auto anchor(top) anchor(center);
+  translate: -50% -6px;
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  box-shadow: 0 2px 8px hsl(0deg 0% 0% / 40%);
+}
+
+.wrapper:hover .tooltip {
+  @apply opacity-100;
+  transition-delay: 300ms;
+}

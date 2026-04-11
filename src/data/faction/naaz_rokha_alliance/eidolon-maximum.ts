@@ -4,6 +4,8 @@ import type { UnitBaseType } from '@/types'
 export const eidolonMaximum: Ability = {
   key: 'EIDOLON_MAXIMUM',
   name: 'Eidolon Maximum',
+  description:
+    'This unit is both a ship and a ground force. It cannot be assigned hits from unit abilities. Repair it at the start of every combat round.',
   category: 'FACTION',
   subcategory: 'BREAKTHROUGH',
   params: {

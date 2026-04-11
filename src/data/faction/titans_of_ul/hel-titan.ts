@@ -4,6 +4,7 @@ import type { UnitBaseType } from '@/types'
 export const helTitan: Ability = {
   key: 'HEL_TITAN',
   name: 'Hel-Titan',
+  description: 'This unit is treated as both a structure and a ground force',
   category: 'FACTION',
   subcategory: 'UNIT',
   params: {

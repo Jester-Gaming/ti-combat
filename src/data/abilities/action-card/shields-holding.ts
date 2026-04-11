@@ -3,6 +3,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const shieldsHolding: Ability = {
   key: 'SHIELDS_HOLDING',
   name: 'Shields Holding',
+  description:
+    'Before you assign hits to your ships during a space combat: Cancel up to 2 hits.',
   category: 'ACTION_CARD',
   context: 'SPACE',
   params: {

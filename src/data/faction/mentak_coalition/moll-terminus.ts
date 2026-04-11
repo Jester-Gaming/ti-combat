@@ -3,6 +3,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const mollTerminus: Ability = {
   key: 'MOLL_TERMINUS',
   name: 'Moll Terminus',
+  description:
+    "Other players' ground forces on this planet cannot use Sustain Damage.",
   category: 'FACTION',
   subcategory: 'MECH',
   context: 'GROUND',

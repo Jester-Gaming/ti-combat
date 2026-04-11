@@ -5,6 +5,8 @@ import type { UnitBaseType } from '@/types'
 export const theAlastor: Ability = {
   key: 'THE_ALASTOR',
   name: 'The Alastor',
+  description:
+    'At the start of a space combat, choose any number of your ground forces in this system to participate in that combat as if they were ships.',
   category: 'FACTION',
   subcategory: 'FLAGSHIP',
   context: 'SPACE',

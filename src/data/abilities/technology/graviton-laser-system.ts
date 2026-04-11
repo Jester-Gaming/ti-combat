@@ -5,6 +5,8 @@ import type { UnitType } from '../../../types'
 export const gravitonLaserSystem: Ability = {
   key: 'GRAVITON_LASER_SYSTEM',
   name: 'Graviton Laser System',
+  description:
+    'You may exhaust this card before 1 or more of your units use Space Cannon; hits produced by those units must be assigned to non-fighter ships if able.',
   category: 'TECHNOLOGY',
   context: 'SPACE',
   params: {

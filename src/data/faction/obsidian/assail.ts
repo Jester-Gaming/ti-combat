@@ -3,6 +3,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const assail: Ability = {
   key: 'ASSAIL',
   name: 'Assail',
+  description:
+    'Apply +1 to the results of each of your combat and unit ability rolls against the puppeted player.',
   category: 'FACTION',
   subcategory: 'ABILITY',
   params: {

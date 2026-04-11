@@ -10,6 +10,8 @@ type Params = {
 export const strikeWingAmbuscade: Ability<Params> = {
   key: 'STRIKE_WING_AMBUSCADE',
   name: 'Strike Wing Ambuscade',
+  description:
+    'When 1 or more of your units make a roll for a unit ability: Choose 1 of those units to roll 1 additional die. Then, return this card to the Argent player.',
   icon: argentFlightIcon,
   category: 'PROMISSORY',
   headerUI: 'isEnabled',

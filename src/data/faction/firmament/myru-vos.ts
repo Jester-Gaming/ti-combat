@@ -5,6 +5,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const myruVos: Ability = {
   key: 'MYRU_VOS',
   name: 'Myru Vos',
+  description:
+    'When a player moves ships: You may exhaust this card; if you do, Space Cannon cannot be used against those ships.',
   icon: firmamentIcon,
   category: 'AGENT',
   context: 'SPACE',

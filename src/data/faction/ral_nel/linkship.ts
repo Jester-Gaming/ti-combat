@@ -49,6 +49,8 @@ const uiConfig: Ability<Params>['uiConfig'] = ctx => [
 export const linkshipI: Ability<Params> = {
   key: 'LINKSHIP',
   name: 'Linkship',
+  description:
+    'This unit can use the Space Cannon ability of one of your structures in its space area; each structure can only be triggered once.',
   category: 'FACTION',
   subcategory: 'UNIT',
   context: 'SPACE',
@@ -85,6 +87,8 @@ export const linkshipI: Ability<Params> = {
 export const linkshipII: Ability<Params> = {
   key: 'LINKSHIP',
   name: 'Linkship',
+  description:
+    'This unit can use the Space Cannon ability of one of your structures in its space area; each linkship can trigger the same structure.',
   category: 'FACTION',
   subcategory: 'UNIT',
   context: 'SPACE',

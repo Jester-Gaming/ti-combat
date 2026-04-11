@@ -14,6 +14,8 @@ type Params = {
 export const fragmentReality: Ability<Params> = {
   key: 'FRAGMENT_REALITY',
   name: 'Fragment Reality',
+  description:
+    'At the start of a space combat, you may purge this card to place all ships from this card into the active system.',
   icon: crimsonRebellionIcon,
   category: 'FACTION',
   subcategory: 'HERO',

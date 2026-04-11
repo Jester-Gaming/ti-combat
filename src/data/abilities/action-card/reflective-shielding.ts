@@ -3,6 +3,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const reflectiveShielding: Ability = {
   key: 'REFLECTIVE_SHIELDING',
   name: 'Reflective Shielding',
+  description:
+    "When one of your ships uses Sustain Damage during combat: Produce 2 hits against your opponent's ships in the active system.",
   category: 'ACTION_CARD',
   context: 'SPACE',
   params: {

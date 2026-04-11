@@ -17,6 +17,8 @@ type Params = {
 export const ghomSekkus: Ability<Params> = {
   key: 'GHOM_SEKKUS',
   name: "G'hom Sek'kus",
+  description:
+    'You can commit up to 1 ground force from each planet in the active system and each planet in adjacent systems that do not contain 1 of your command tokens.',
   icon: sardakkNorrIcon,
   category: 'COMMANDER',
   context: 'GROUND',

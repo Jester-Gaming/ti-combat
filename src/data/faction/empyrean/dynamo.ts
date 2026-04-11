@@ -8,6 +8,8 @@ type Params = {
 export const dynamo: Ability<Params> = {
   key: 'DYNAMO',
   name: 'Dynamo',
+  description:
+    "After any player's unit in this system or an adjacent system uses Sustain Damage, you may spend 2 influence to repair that unit.",
   category: 'FACTION',
   subcategory: 'FLAGSHIP',
   allowExternal: true,

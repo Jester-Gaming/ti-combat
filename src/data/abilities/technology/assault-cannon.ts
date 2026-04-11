@@ -12,6 +12,8 @@ type Params = {
 export const assaultCannon: Ability<Params> = {
   key: 'ASSAULT_CANNON',
   name: 'Assault Cannon',
+  description:
+    'At the start of a space combat in a system that contains 3 or more of your non-fighter ships, your opponent must destroy 1 of their non-fighter ships.',
   category: 'TECHNOLOGY',
   context: 'SPACE',
   paramsSchema: z.object({

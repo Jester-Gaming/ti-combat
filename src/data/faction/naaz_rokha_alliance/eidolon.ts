@@ -4,6 +4,8 @@ import type { UnitBaseType } from '@/types'
 export const eidolon: Ability = {
   key: 'EIDOLON',
   name: 'Z-Grav Eidolon',
+  description:
+    'If this unit is in the space area of the active system, it is also a ship.',
   category: 'FACTION',
   subcategory: 'MECH',
   context: 'SPACE',

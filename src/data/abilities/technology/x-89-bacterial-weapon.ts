@@ -3,6 +3,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const x89BacterialWeapon: Ability = {
   key: 'X_89_BACTERIAL_WEAPON',
   name: 'X-89 Bacterial Weapon',
+  description:
+    "Double the hits produced by your units' Bombardment and ground combat rolls. Exhaust each planet you use Bombardment against.",
   category: 'TECHNOLOGY',
   context: 'GROUND',
   params: {

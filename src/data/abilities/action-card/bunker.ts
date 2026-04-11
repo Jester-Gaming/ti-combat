@@ -3,6 +3,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const bunker: Ability = {
   key: 'BUNKER',
   name: 'Bunker',
+  description:
+    'At the start of an invasion: During this invasion, apply -4 to the result of each Bombardment roll against planets you control.',
   category: 'ACTION_CARD',
   context: 'GROUND',
   params: {

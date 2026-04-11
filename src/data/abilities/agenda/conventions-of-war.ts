@@ -3,6 +3,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const conventionsOfWar: Ability = {
   key: 'CONVENTIONS_OF_WAR',
   name: 'Conventions of War',
+  description:
+    'Players cannot use Bombardment against units that are on cultural planets.',
   category: 'AGENDA',
   context: 'GROUND',
   params: {

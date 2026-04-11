@@ -3,6 +3,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const moraleBoost: Ability = {
   key: 'MORALE_BOOST',
   name: 'Morale Boost',
+  description:
+    "At the start of a combat round: Apply +1 to the result of each of your unit's combat rolls during this combat round.",
   category: 'ACTION_CARD',
   params: {
     isEnabled: true,

@@ -14,6 +14,8 @@ const UNIT_ABILITIES: UnitAbility[] = [
 export const entropicScar: Ability = {
   key: 'ENTROPIC_SCAR',
   name: 'Entropic Scar',
+  description:
+    'All unit abilities cannot be used by or against units inside of an entropic scar.',
   category: 'ENVIRONMENT',
   params: {
     isEnabled: false,

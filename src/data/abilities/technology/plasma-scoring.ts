@@ -9,6 +9,8 @@ type Params = {
 export const plasmaScoring: Ability<Params> = {
   key: 'PLASMA_SCORING',
   name: 'Plasma Scoring',
+  description:
+    'When 1 or more of your units use Bombardment or Space Cannon, 1 of those units may roll 1 additional die.',
   category: 'TECHNOLOGY',
   paramsSchema: z.object({
     strategy: z.string(),

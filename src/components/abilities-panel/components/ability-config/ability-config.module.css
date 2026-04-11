@@ -108,6 +108,16 @@
   text-overflow: ellipsis;
 }
 
+.descriptionIcon {
+  @apply h-3 w-3 shrink-0 cursor-help;
+  color: hsl(var(--muted-foreground) / 40%);
+  transition: color 0.15s;
+}
+
+.descriptionIcon:hover {
+  color: hsl(var(--muted-foreground));
+}
+
 .headerNumberInput {
   @apply h-4 w-4 shrink-0 rounded border text-center text-[10px];
   border-color: hsl(var(--foreground) / 15%);

@@ -5,6 +5,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const arozHollow: Ability = {
   key: 'AROZ_HOLLOW',
   name: 'Aroz Hollow',
+  description:
+    "Apply +1 to the result of each of your units' combat rolls in The Fracture.",
   icon: obsidianIcon,
   category: 'COMMANDER',
   params: {

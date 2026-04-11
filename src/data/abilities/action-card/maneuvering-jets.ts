@@ -3,6 +3,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const maneuveringJets: Ability = {
   key: 'MANEUVERING_JETS',
   name: 'Maneuvering Jets',
+  description:
+    "Before you assign hits produced by another player's Space Cannon roll: Cancel 1 hit.",
   category: 'ACTION_CARD',
   params: {
     isEnabled: true,

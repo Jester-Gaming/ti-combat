@@ -4,6 +4,8 @@ import type { Ability } from '@/combat'
 export const tellurian: Ability = {
   key: 'TELLURIAN',
   name: 'Tellurian',
+  description:
+    'When a hit is produced against a unit: You may exhaust this card to cancel that hit.',
   icon: titansOfUlIcon,
   category: 'AGENT',
   headerUI: 'isEnabled',

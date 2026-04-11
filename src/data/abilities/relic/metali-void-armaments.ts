@@ -5,6 +5,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const metaliVoidArmaments: Ability = {
   key: 'METALI_VOID_ARMAMENTS',
   name: 'Metali Void Armaments',
+  description:
+    "During the Anti-Fighter Barrage step of space combat, you may resolve Anti-Fighter Barrage 6 (x3) against your opponent's units.",
   category: 'RELIC',
   context: 'SPACE',
   params: {

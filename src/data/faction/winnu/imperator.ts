@@ -9,6 +9,8 @@ type Params = {
 export const imperator: Ability<Params> = {
   key: 'IMPERATOR',
   name: 'Imperator',
+  description:
+    'Apply +1 to the results of each of your unit\'s combat rolls for each "Support for the Throne" in your opponent\'s play area.',
   category: 'FACTION',
   subcategory: 'BREAKTHROUGH',
   paramsSchema: z.object({ supportCount: z.number() }),

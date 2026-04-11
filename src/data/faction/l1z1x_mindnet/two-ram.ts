@@ -5,6 +5,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const twoRam: Ability = {
   key: 'TWO_RAM',
   name: '2RAM',
+  description:
+    'Units that have Planetary Shield do not prevent you from using Bombardment.',
   icon: l1z1xMindnetIcon,
   category: 'COMMANDER',
   context: 'GROUND',

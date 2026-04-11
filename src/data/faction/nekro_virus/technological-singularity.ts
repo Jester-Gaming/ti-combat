@@ -90,6 +90,8 @@ export function createTechnologicalSingularity(
   return {
     key: 'TECHNOLOGICAL_SINGULARITY',
     name: 'Technological Singularity',
+    description:
+      "Once per combat, after 1 of your opponent's units is destroyed, you may gain 1 technology that is owned by that player.",
     category: 'FACTION',
     subcategory: 'ABILITY',
     params: {

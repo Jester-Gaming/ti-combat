@@ -3,6 +3,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const arcSecundus: Ability = {
   key: 'ARC_SECUNDUS',
   name: 'Arc Secundus',
+  description:
+    "Other players' units in this system lose Planetary Shield. At the start of each space combat round, repair this ship.",
   category: 'FACTION',
   subcategory: 'FLAGSHIP',
   params: {

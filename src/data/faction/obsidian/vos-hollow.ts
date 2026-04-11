@@ -27,6 +27,8 @@ function findDestroyedShipTypes(
 export const vosHollow: Ability<Params> = {
   key: 'VOS_HOLLOW',
   name: 'Vos Hollow',
+  description:
+    "When a player's ship is destroyed during any combat: You may exhaust this card; if you do, that player's opponent must destroy 1 of their ships of the same type in the active system.",
   icon: obsidianIcon,
   category: 'AGENT',
   context: 'SPACE',

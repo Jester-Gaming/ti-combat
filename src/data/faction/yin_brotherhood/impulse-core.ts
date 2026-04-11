@@ -13,6 +13,8 @@ const SACRIFICE_TYPES = new Set(['CRUISER', 'DESTROYER'])
 export const impulseCore: Ability<Params> = {
   key: 'IMPULSE_CORE',
   name: 'Impulse Core',
+  description:
+    "At the start of a space combat, you may destroy 1 of your cruisers or destroyers in the active system to produce 1 hit against your opponent's ships; that hit must be assigned by your opponent to 1 of their non-fighter ships if able.",
   category: 'FACTION',
   subcategory: 'TECHNOLOGY',
   context: 'SPACE',

@@ -9,6 +9,8 @@ type Params = {
 export const theEgeiro: Ability<Params> = {
   key: 'THE_EGEIRO',
   name: 'The Egeiro',
+  description:
+    "Apply +1 to the result of each of this unit's combat rolls for each non-home system that contains a planet you control.",
   category: 'FACTION',
   subcategory: 'FLAGSHIP',
   context: 'SPACE',

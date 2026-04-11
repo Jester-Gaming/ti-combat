@@ -5,6 +5,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const shieldPaling: Ability = {
   key: 'SHIELD_PALING',
   name: 'Shield Paling',
+  description:
+    'Your infantry on this planet are not affected by your Fragile faction ability.',
   category: 'FACTION',
   subcategory: 'MECH',
   context: 'GROUND',

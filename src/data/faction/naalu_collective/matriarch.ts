@@ -4,6 +4,8 @@ import type { UnitBaseType } from '@/types'
 export const matriarch: Ability = {
   key: 'MATRIARCH',
   name: 'Matriarch',
+  description:
+    'During an invasion in this system, you may commit fighters to planets as if they were ground forces. When combat ends, return those units to the space area.',
   category: 'FACTION',
   subcategory: 'FLAGSHIP',
   context: 'GROUND',

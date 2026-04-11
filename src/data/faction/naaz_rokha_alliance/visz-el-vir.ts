@@ -3,6 +3,7 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const viszElVir: Ability = {
   key: 'VISZ_EL_VIR',
   name: 'Visz El Vir',
+  description: 'Your mechs in this system roll 1 additional die during combat.',
   category: 'FACTION',
   subcategory: 'FLAGSHIP',
   params: {

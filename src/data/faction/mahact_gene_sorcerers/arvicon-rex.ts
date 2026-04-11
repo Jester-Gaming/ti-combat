@@ -3,6 +3,8 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const arviconRex: Ability = {
   key: 'ARVICON_REX',
   name: 'Arvicon Rex',
+  description:
+    "During combat against an opponent whose command token is not in your fleet pool, apply +2 to the results of this unit's combat rolls.",
   category: 'FACTION',
   subcategory: 'FLAGSHIP',
   params: {

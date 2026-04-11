@@ -3,6 +3,7 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const publicizeWeaponSchematics: Ability = {
   key: 'PUBLICIZE_WEAPON_SCHEMATICS',
   name: 'Publicize Weapon Schematics',
+  description: 'All war suns lose Sustain Damage.',
   category: 'AGENDA',
   context: 'SPACE',
   params: {

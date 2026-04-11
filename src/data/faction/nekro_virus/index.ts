@@ -109,6 +109,7 @@ function createFactionUnitAbility(
     category: 'FACTION',
     subcategory: 'UNIT',
     exclusiveGroup: unitType,
+    description: mainAbility?.description,
     params: {
       isEnabled: false,
       uses: Infinity,

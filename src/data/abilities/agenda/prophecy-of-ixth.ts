@@ -3,6 +3,7 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const prophecyOfIxth: Ability = {
   key: 'PROPHECY_OF_IXTH',
   name: 'Prophecy of Ixth',
+  description: "Apply +1 to the result of their fighter's combat rolls.",
   category: 'AGENDA',
   context: 'SPACE',
   params: {
