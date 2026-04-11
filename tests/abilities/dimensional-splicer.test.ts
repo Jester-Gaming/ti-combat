@@ -43,13 +43,15 @@ describe.forEachSide('DIMENSIONAL_SPLICER', () => {
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
   })
 
-  it.fails('destroys ship by DS if it was already damaged', () => {
+  it('destroys ship by DS if it was already damaged', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {
         faction: 'ARBOREC',
         units: { DREADNOUGHT: 1 },
-        abilities: { PRE_DAMAGED: { DREADNOUGHT: 1 } },
+        abilities: {
+          PRE_DAMAGED: { isEnabled: true, damagedUnits: { DREADNOUGHT: 1 } },
+        },
       },
       defender: {
         faction: 'GHOSTS_OF_CREUSS',
@@ -60,8 +62,7 @@ describe.forEachSide('DIMENSIONAL_SPLICER', () => {
 
     t.advanceTo('SPACE_COMBAT', 'START')
 
-    // DS fires at START_OF_COMBAT → flagship already damaged → can't sustain → destroyed
-    // AS never gets to fire (START_OF_COMBAT_ROUND comes after START_OF_COMBAT)
+    // DS fires at START_OF_COMBAT → dreadnought already damaged → can't sustain → destroyed
     t.advanceRound()
 
     expect(t.abilityLog('DIMENSIONAL_SPLICER')).not.toHaveLength(0)
