@@ -23,6 +23,10 @@ import {
 
 type SideConfig = Record<string, Record<string, unknown>>
 
+/** Tracks the last-seen valid list per sync-source param, so reconciliation
+ *  can distinguish "user unchecked this" from "genuinely new item." */
+export type SyncSnapshots = Map<string, string[]>
+
 // ── Sync-source reconciliation helpers ────────────────────────────────────
 
 function resolveSettings(
@@ -80,10 +84,11 @@ export function reconcileAbilitiesConfig(
   config: AbilitiesConfig,
   abilities: Record<CombatSide, Ability[]>,
   combatMode: CombatMode,
+  syncSnapshots?: SyncSnapshots,
 ): void {
   resetBaseGroups(config, abilities)
   ensureConsumerDefaults(config, abilities)
-  reconcileSyncAll(config, abilities)
+  reconcileSyncAll(config, abilities, syncSnapshots)
   reconcileAbilityOrder(config, abilities, combatMode)
 }
 
@@ -181,6 +186,7 @@ function ensureConsumerDefaults(
 function reconcileSyncAll(
   config: AbilitiesConfig,
   abilities: Record<CombatSide, Ability[]>,
+  syncSnapshots?: SyncSnapshots,
 ): void {
   // Pass 1: Reconcile SETTINGS computed params for both sides
   // Must happen before consumers so cross-side sources
@@ -196,6 +202,8 @@ function reconcileSyncAll(
       settings,
       subtypes,
       subtypes,
+      side,
+      syncSnapshots,
     )
   }
 
@@ -218,6 +226,8 @@ function reconcileSyncAll(
       oppSettings,
       ownSubtypes,
       oppSubtypes,
+      side,
+      syncSnapshots,
     )
   }
 }
@@ -306,6 +316,8 @@ function reconcileSyncSources(
   opponentSettings: SettingsParams,
   ownSubtypes: DeclaredSubtype[],
   opponentSubtypes: DeclaredSubtype[],
+  side: CombatSide,
+  syncSnapshots?: SyncSnapshots,
 ): void {
   for (const ability of abilities) {
     const syncSources = extractSyncSources(ability)
@@ -341,10 +353,72 @@ function reconcileSyncSources(
       const currentValue = abilityParams[config.key]
 
       if (Array.isArray(currentValue)) {
-        abilityParams[config.key] = reconcileArrayParam(
-          currentValue as string[],
-          validList,
-        )
+        const arr = currentValue as string[]
+        const snapshotKey = `${side}:${ability.key}:${config.key}`
+        const prevPool =
+          arr.length > 0 ? syncSnapshots?.get(snapshotKey) : undefined
+
+        if (prevPool) {
+          // Only add items that are genuinely new (not in previous pool)
+          const prevSet = new Set(prevPool)
+          const genuinelyNew = validList.filter(item => !prevSet.has(item))
+          const validSet = new Set(validList)
+          const kept = arr.filter(item => validSet.has(item))
+          if (genuinelyNew.length > 0) {
+            // Subtypes inherit checked state from their base type
+            const keptSet = new Set(kept)
+            const newBases = new Set(
+              genuinelyNew.filter(item => !item.includes(':')),
+            )
+            const toAdd = genuinelyNew.filter(item => {
+              const colonIdx = item.indexOf(':')
+              if (colonIdx === -1) return true
+              const base = item.slice(0, colonIdx)
+              return keptSet.has(base) || newBases.has(base)
+            })
+            if (toAdd.length > 0) {
+              // Insert new items: subtypes go after their parent,
+              // base types use validList order via reconcileArrayParam
+              const newSubtypes = toAdd.filter(item => item.includes(':'))
+              const newBaseTypes = toAdd.filter(item => !item.includes(':'))
+
+              const result = [...kept]
+              // Insert subtypes right after their parent
+              for (const sub of newSubtypes) {
+                const base = sub.slice(0, sub.indexOf(':'))
+                let insertIdx = result.length
+                for (let i = result.length - 1; i >= 0; i--) {
+                  if (result[i] === base || result[i].startsWith(base + ':')) {
+                    insertIdx = i + 1
+                    break
+                  }
+                }
+                result.splice(insertIdx, 0, sub)
+              }
+
+              // Insert new base types via reconcileArrayParam ordering
+              if (newBaseTypes.length > 0) {
+                const allowed = new Set([...result, ...newBaseTypes])
+                abilityParams[config.key] = reconcileArrayParam(
+                  result,
+                  validList.filter(item => allowed.has(item)),
+                )
+              } else {
+                abilityParams[config.key] = result
+              }
+            } else {
+              abilityParams[config.key] = kept
+            }
+          } else {
+            abilityParams[config.key] = kept
+          }
+        } else {
+          abilityParams[config.key] = reconcileArrayParam(arr, validList)
+        }
+
+        if (syncSnapshots) {
+          syncSnapshots.set(snapshotKey, validList)
+        }
       } else if (typeof currentValue === 'string') {
         abilityParams[config.key] = reconcileStringParam(
           currentValue,

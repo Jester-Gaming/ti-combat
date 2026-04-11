@@ -32,6 +32,7 @@ import {
 import {
   initializeAbilityDefaults,
   reconcileAbilitiesConfig,
+  type SyncSnapshots,
 } from './reconcile'
 import {
   serializeAbilities,
@@ -67,6 +68,7 @@ export class CombatSetup {
   private _factionOwnedKeys: Record<CombatSide, ReadonlySet<string>>
   private _stateData: CombatStateData
   private _engine: AbilitiesEngine
+  private _syncSnapshots: SyncSnapshots = new Map()
 
   constructor() {
     const defaultFaction = Object.keys(factions)[0] as FactionKey
@@ -125,6 +127,7 @@ export class CombatSetup {
       this._abilities,
       this._sideAbilities,
       this._combatMode,
+      this._syncSnapshots,
     )
 
     const wrapState = CombatState.fromDataStandalone(
@@ -222,6 +225,7 @@ export class CombatSetup {
       this._abilities,
       this._sideAbilities,
       this._combatMode,
+      this._syncSnapshots,
     )
     this.rebuildEngine()
   }
@@ -257,6 +261,7 @@ export class CombatSetup {
       this._abilities,
       this._sideAbilities,
       this._combatMode,
+      this._syncSnapshots,
     )
     // Force new stateData reference so React memoization triggers
     this._stateData = { ...this._stateData }
@@ -274,6 +279,7 @@ export class CombatSetup {
       this._abilities,
       this._sideAbilities,
       this._combatMode,
+      this._syncSnapshots,
     )
     this.rebuildEngine()
   }
@@ -300,6 +306,7 @@ export class CombatSetup {
       this._abilities,
       this._sideAbilities,
       this._combatMode,
+      this._syncSnapshots,
     )
     this.rebuildEngine()
   }
@@ -311,6 +318,7 @@ export class CombatSetup {
       this._abilities,
       this._sideAbilities,
       this._combatMode,
+      this._syncSnapshots,
     )
     // Force new stateData reference so React memoization triggers
     this._stateData = { ...this._stateData }
@@ -366,6 +374,7 @@ export class CombatSetup {
       this._abilities,
       this._sideAbilities,
       this._combatMode,
+      this._syncSnapshots,
     )
     this.rebuildEngine()
   }
@@ -463,6 +472,7 @@ export class CombatSetup {
       this._abilities,
       this._sideAbilities,
       this._combatMode,
+      this._syncSnapshots,
     )
 
     // Apply URL ability params on top of reconciled defaults
@@ -500,6 +510,7 @@ export class CombatSetup {
       this._abilities,
       this._sideAbilities,
       this._combatMode,
+      this._syncSnapshots,
     )
     this.rebuildEngine()
   }
@@ -555,6 +566,7 @@ export class CombatSetup {
         this._abilities,
         this._sideAbilities,
         this._combatMode,
+        this._syncSnapshots,
       )
       this.rebuildEngine()
     } else {
