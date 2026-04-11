@@ -148,6 +148,12 @@
   color: hsl(var(--muted-foreground));
 }
 
+.titleLink {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
 @media (width >= 640px) {
   .title {
     @apply text-lg;

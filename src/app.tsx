@@ -43,7 +43,9 @@ function App() {
           {/* Header */}
           <header className={clsx(styles.header, styles.animateFadeUp)}>
             <h1 className={styles.title}>
-              Twilight Imperium Combat Calculator
+              <a href="/" className={styles.titleLink}>
+                Twilight Imperium Combat Calculator
+              </a>
             </h1>
             <SettingsPanel settings={settings} onSettingsChange={setSettings} />
             <ShareButton />
