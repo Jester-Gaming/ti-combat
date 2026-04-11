@@ -12,6 +12,7 @@ export default defineConfig([
   globalIgnores(['dist', '.worktrees']),
   {
     files: ['**/*.{ts,tsx}'],
+    ignores: ['functions/**'],
     extends: [
       js.configs.recommended,
       tseslint.configs.recommended,
@@ -28,6 +29,24 @@ export default defineConfig([
     },
     rules: {
       'react-refresh/only-export-components': 'off',
+      'simple-import-sort/imports': 'error',
+      'simple-import-sort/exports': 'error',
+    },
+  },
+  {
+    files: ['functions/**/*.ts'],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+      prettierConfig,
+    ],
+    plugins: {
+      'simple-import-sort': simpleImportSort,
+    },
+    languageOptions: {
+      ecmaVersion: 2020,
+    },
+    rules: {
       'simple-import-sort/imports': 'error',
       'simple-import-sort/exports': 'error',
     },

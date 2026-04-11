@@ -4,6 +4,7 @@
     { "path": "./tsconfig.app.json" },
     { "path": "./tsconfig.node.json" },
     { "path": "./tsconfig.profile.json" },
-    { "path": "./tsconfig.snapshots.json" }
+    { "path": "./tsconfig.snapshots.json" },
+    { "path": "./tsconfig.functions.json" }
   ]
 }

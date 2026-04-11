@@ -321,8 +321,8 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   category: string
   subcategory?: string
   params: AbilityBaseParams & Params
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   paramsSchema?: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     safeParse: (data: unknown) => { success: boolean; data?: any }
   }
   headerUI?: 'isEnabled' | 'uses' | (string & keyof Params) // Param key to render in header (checkbox for boolean, number input for number)

@@ -6,7 +6,7 @@
   "kv_namespaces": [
     {
       "binding": "URL_SHORTENER",
-      "id": "88eed008821d4430b4b177b611fb2925"
-    }
-  ]
+      "id": "88eed008821d4430b4b177b611fb2925",
+    },
+  ],
 }
