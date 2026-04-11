@@ -1,5 +1,11 @@
 import { GROUND_FORCES, STRUCTURES } from '@/constants/units'
-import type { CombatSide, DiceGroup, UnitBaseType, UnitType } from '@/types'
+import type {
+  CombatSide,
+  DiceGroup,
+  UnitAbility,
+  UnitBaseType,
+  UnitType,
+} from '@/types'
 
 import {
   AbilitiesEngine,
@@ -7,6 +13,7 @@ import {
   cloneInvokes,
   type DicePool,
   type InvokeCollections,
+  type RunAbilitiesOptions,
   type SidedDiceData,
   type TimingContextMap,
 } from '../abilities-engine'
@@ -214,12 +221,13 @@ export class CombatState {
   private runAbilities<T extends AbilityTiming>(
     timing: T | T[],
     context?: TimingContextMap[T],
+    options?: RunAbilitiesOptions,
   ): TimingContextMap[T] {
     this._params.setCombatState(this, this._logger)
     return this._params.runAbilities(
       timing,
       context,
-      undefined,
+      options,
       this._logger?.child(this.data.currentPhase.meta),
     )
   }
@@ -477,6 +485,19 @@ export class CombatState {
   ): StateWithProbability[] {
     const { firing, hitSource, allowedUnitTypes } = config
 
+    // Check which firing sides have the unit ability blocked
+    const blockedSides = firing.filter(side =>
+      this.side(side).isAbilityBlocked(hitSource as UnitAbility),
+    )
+
+    // If all firing sides are blocked, skip entire unit ability phase
+    if (blockedSides.length === firing.length) {
+      this.data.currentPhase.micro = getLastMicroPhase(
+        this.data.currentPhase.meta,
+      )
+      return this.transitionPhase()
+    }
+
     // Collect dice based on firing configuration
     const attackerDice = firing.includes('attacker')
       ? this.side('attacker').collectDice(hitSource, allowedUnitTypes)
@@ -494,6 +515,7 @@ export class CombatState {
     const modifiedDice = this.runAbilities(
       'BEFORE_UNIT_ABILITY_ROLL',
       sidedDiceData,
+      blockedSides.length > 0 ? { skipSides: blockedSides } : undefined,
     )
 
     // Apply stored hit-value modifiers

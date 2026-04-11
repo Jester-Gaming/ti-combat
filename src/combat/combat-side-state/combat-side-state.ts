@@ -434,6 +434,26 @@ export class CombatSideState {
     })
   }
 
+  /** Check if a unit ability is fully blocked by a blanket restriction */
+  isAbilityBlocked(ability: UnitAbility): boolean {
+    for (const layer of ['lost', 'cannotBeUsed'] as const) {
+      const entries = this.data.unitAbilityRestrictions?.[layer]?.[ability]
+      if (!entries) continue
+      const visited = new Set<string>()
+      if (
+        entries.some(
+          e =>
+            !e.unitType &&
+            !e.category &&
+            !this.isSourceDisabled(e.reason, visited),
+        )
+      ) {
+        return true
+      }
+    }
+    return false
+  }
+
   /** Check if a unit type belongs to a category using runtime SETTINGS */
   private isCategoryMember(category: UnitCategory, baseType: string): boolean {
     const settings = this.stateData.abilities[this._side]['SETTINGS']

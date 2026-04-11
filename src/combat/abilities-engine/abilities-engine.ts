@@ -192,6 +192,7 @@ interface AbilityResult {
 
 export interface RunAbilitiesOptions {
   triggerSide?: CombatSide
+  skipSides?: CombatSide[]
 }
 
 // ── Main class ───────────────────────────────────────────────────────────
@@ -481,6 +482,12 @@ export class AbilitiesEngine {
     }
 
     while (consecutiveSkips < 2) {
+      if (options?.skipSides?.includes(currentSide)) {
+        consecutiveSkips += 1
+        currentSide = getOpponentSide(currentSide)
+        continue
+      }
+
       const result = this.tryResolveOne(
         timing,
         currentSide,

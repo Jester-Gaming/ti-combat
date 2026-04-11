@@ -47,30 +47,27 @@ const addCustomDiceAtSC: Ability = {
 }
 
 describe('engine: disabled unit ability blocks custom dice', () => {
-  it.fails(
-    'custom dice should not fire when the unit ability is disabled',
-    () => {
-      const t = combatTest({
-        mode: 'SPACE',
-        attacker: { faction: 'ARBOREC', units: { CRUISER: 1 } },
-        defender: {
-          faction: 'ARBOREC',
-          units: { PDS: 1 },
-          abilities: {
-            TEST_DISABLE_SC: true,
-            TEST_CUSTOM_SC_DICE: true,
-          },
+  it('custom dice should not fire when the unit ability is disabled', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: { faction: 'ARBOREC', units: { CRUISER: 1 } },
+      defender: {
+        faction: 'ARBOREC',
+        units: { PDS: 1 },
+        abilities: {
+          TEST_DISABLE_SC: true,
+          TEST_CUSTOM_SC_DICE: true,
         },
-        customAbilities: [disableSpaceCannon, addCustomDiceAtSC],
-      })
+      },
+      customAbilities: [disableSpaceCannon, addCustomDiceAtSC],
+    })
 
-      t.advanceTo('SPACE_COMBAT')
-      const pool = t.dicePool()
+    t.advanceTo('SPACE_COMBAT')
+    const pool = t.dicePool()
 
-      // PDS Space Cannon should be disabled
-      expect(pool.defender?.PDS).toBeUndefined()
-      // Custom dice added via addDiceGroup should also be blocked
-      expect(pool.defender).not.toContainDice('TEST_CUSTOM_SC_DICE')
-    },
-  )
+    // PDS Space Cannon should be disabled
+    expect(pool.defender?.PDS).toBeUndefined()
+    // Custom dice added via addDiceGroup should also be blocked
+    expect(pool.defender).not.toContainDice('TEST_CUSTOM_SC_DICE')
+  })
 })

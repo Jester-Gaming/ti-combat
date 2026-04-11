@@ -2,6 +2,7 @@ export {
   AbilitiesEngine,
   cloneInvokes,
   type InvokeCollections,
+  type RunAbilitiesOptions,
 } from './abilities-engine'
 export { declareParam } from './declare-param'
 export type {

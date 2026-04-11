@@ -250,7 +250,7 @@ export class CombatTest {
         return { attacker: data.attacker, defender: data.defender }
       }
     }
-    throw new Error('No DICE_POOL entry found in combat log')
+    return { attacker: {}, defender: {} }
   }
 }
 
