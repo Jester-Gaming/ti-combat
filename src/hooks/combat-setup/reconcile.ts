@@ -371,6 +371,7 @@ function reconcileSyncSources(
               genuinelyNew.filter(item => !item.includes(':')),
             )
             const toAdd = genuinelyNew.filter(item => {
+              if (keptSet.has(item)) return false
               const colonIdx = item.indexOf(':')
               if (colonIdx === -1) return true
               const base = item.slice(0, colonIdx)
