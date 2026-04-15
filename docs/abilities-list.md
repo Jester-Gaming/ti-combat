@@ -202,7 +202,7 @@
 - [x] **Reflective Shielding** — When one of your ships uses Sustain Damage during combat: Produce 2 hits against your opponent's ships in the active system.
 - [ ] **Scramble Frequency** — After another player makes a Bombardment, Space Cannon, or Anti-Fighter Barrage roll: That player rerolls all of their dice.
 - [x] **Solar Flare** — After you activate a system: During this movement, other players cannot use Space Cannon against your ships.
-- [ ] **Reveal Prototype** — At the start of a combat: Spend 4 resources to research a unit upgrade technology of the same type as 1 of your units that is participating in this combat.
+- [x] **Reveal Prototype** — At the start of a combat: Spend 4 resources to research a unit upgrade technology of the same type as 1 of your units that is participating in this combat.
 - [ ] **Rout** — At the start of the "Announce Retreats" step of space combat, if you are the defender: Your opponent must announce a retreat, if able.
 - [x] **Waylay** — Before you roll dice for Anti-Fighter Barrage: Hits from this roll are produced against all ships (not just fighters).
 

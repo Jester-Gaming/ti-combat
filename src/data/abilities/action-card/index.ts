@@ -8,6 +8,7 @@ import { fighterPrototype } from './fighter-prototype'
 import { maneuveringJets } from './maneuvering-jets'
 import { moraleBoost } from './morale-boost'
 import { reflectiveShielding } from './reflective-shielding'
+import { revealPrototype } from './reveal-prototype'
 import { shieldsHolding } from './shields-holding'
 import { solarFlare } from './solar-flare'
 import { waylay } from './waylay'
@@ -23,6 +24,7 @@ export default [
   maneuveringJets,
   moraleBoost,
   reflectiveShielding,
+  revealPrototype,
   shieldsHolding,
   solarFlare,
   waylay,

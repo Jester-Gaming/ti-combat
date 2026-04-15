@@ -1,0 +1,120 @@
+import { z } from 'zod/mini'
+
+import type { UnitBaseType, UnitStats } from '@/types'
+import { getFactionUnitConfig } from '@/utils/get-faction-unit-config'
+
+import type {
+  Ability,
+  AbilityReadContext,
+} from '../../../combat/abilities-engine/types'
+
+type Params = {
+  spacePriority: UnitBaseType[]
+  groundPriority: UnitBaseType[]
+}
+
+function isAlreadyUpgraded(
+  upgradedDef: Partial<UnitStats>,
+  current: UnitStats,
+): boolean {
+  for (const [key, upgradedValue] of Object.entries(upgradedDef)) {
+    if (key === 'ABILITIES') continue
+    if (key === 'UNIT_ABILITIES') {
+      const entries = Object.entries(
+        (upgradedValue ?? {}) as Record<string, unknown>,
+      )
+      for (const [abilKey, abilVal] of entries) {
+        const currentAbil = (
+          current.UNIT_ABILITIES as Record<string, unknown> | undefined
+        )?.[abilKey]
+        if (JSON.stringify(currentAbil) !== JSON.stringify(abilVal))
+          return false
+      }
+    } else {
+      const currentValue = (current as Record<string, unknown>)[key]
+      if (JSON.stringify(currentValue) !== JSON.stringify(upgradedValue))
+        return false
+    }
+  }
+  return true
+}
+
+function pickTarget(
+  params: Params,
+  ctx: AbilityReadContext,
+): UnitBaseType | undefined {
+  const priority =
+    ctx.state.combatMode === 'GROUND'
+      ? params.groundPriority
+      : params.spacePriority
+  const faction = getFactionUnitConfig(ctx.api.own.getFaction())
+
+  for (const type of priority) {
+    if (!ctx.api.own.hasUnitType(type)) continue
+    const upgraded = faction[type]?.UPGRADED
+    if (!upgraded || Object.keys(upgraded).length === 0) continue
+    const current = ctx.api.own.getUnitStats(type)
+    if (!current) continue
+    if (isAlreadyUpgraded(upgraded, current)) continue
+    return type
+  }
+  return undefined
+}
+
+export const revealPrototype: Ability<Params> = {
+  key: 'REVEAL_PROTOTYPE',
+  name: 'Reveal Prototype',
+  description:
+    'At the start of a combat: Spend 4 resources to research a unit upgrade technology of the same type as 1 of your units that is participating in this combat.',
+  category: 'ACTION_CARD',
+  paramsSchema: z.object({
+    spacePriority: z.array(z.string()),
+    groundPriority: z.array(z.string()),
+  }),
+  params: {
+    isEnabled: false,
+    uses: 1,
+    spacePriority: [],
+    groundPriority: [],
+  },
+  headerUI: 'isEnabled',
+  uiConfig: ctx => {
+    const isGround = ctx.state.combatMode === 'GROUND'
+    const key = isGround
+      ? ('groundPriority' as const)
+      : ('spacePriority' as const)
+    return [
+      {
+        key,
+        type: 'priority-list' as const,
+        items: ctx.api.own
+          .getUnitVariantsOptions()
+          .filter(opt => !opt.value.includes(':')),
+      },
+    ]
+  },
+  invoke: [
+    {
+      timing: 'START_OF_COMBAT',
+      isCallable: (params, ctx) => pickTarget(params, ctx) !== undefined,
+      call: (ctx, params) => {
+        const target = pickTarget(params, ctx)
+        if (!target) return
+
+        const faction = getFactionUnitConfig(ctx.api.own.getFaction())
+        const upgraded = faction[target].UPGRADED!
+        const current = ctx.api.own.getUnitStats(target)!
+
+        const delta: Partial<UnitStats> = { ...upgraded }
+        if (upgraded.UNIT_ABILITIES) {
+          delta.UNIT_ABILITIES = {
+            ...current.UNIT_ABILITIES,
+            ...upgraded.UNIT_ABILITIES,
+          }
+        }
+
+        ctx.api.own.modifyUnitType(target, delta)
+      },
+    },
+  ],
+}
