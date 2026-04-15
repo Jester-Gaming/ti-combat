@@ -695,7 +695,17 @@ export class CombatSideState {
         decl.name as UnitVariantId,
       ])
       if (addedSet.has(variantId)) continue
-      result.push(variantId)
+      let insertIdx = result.length
+      for (let i = result.length - 1; i >= 0; i--) {
+        if (
+          result[i] === decl.unitType ||
+          result[i].startsWith(decl.unitType + ':')
+        ) {
+          insertIdx = i + 1
+          break
+        }
+      }
+      result.splice(insertIdx, 0, variantId)
       addedSet.add(variantId)
     }
     return result

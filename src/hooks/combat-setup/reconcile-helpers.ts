@@ -13,6 +13,7 @@ export function sortByPrice(
 export function expandWithSubtypes(
   sortedTypes: UnitBaseType[],
   subtypes: DeclaredSubtype[],
+  direction: 'asc' | 'desc' = 'asc',
 ): string[] {
   const simpleByType = new Map<UnitBaseType, DeclaredSubtype[]>()
   const compound: DeclaredSubtype[] = []
@@ -28,15 +29,30 @@ export function expandWithSubtypes(
     }
   }
 
+  // Subtypes are treated as "better" variants: in desc (best-first) ordering
+  // they appear before their parent; in asc they appear after.
+  const subBeforeParent = direction === 'desc'
+
   const result: string[] = []
   const seen = new Set<string>()
   for (const unitType of sortedTypes) {
+    const subs = simpleByType.get(unitType)
+    if (subBeforeParent && subs) {
+      for (const sub of subs) {
+        const variantId = makeVariantId(sub.unitType, [
+          sub.name as UnitVariantId,
+        ])
+        if (!seen.has(variantId)) {
+          result.push(variantId)
+          seen.add(variantId)
+        }
+      }
+    }
     if (!seen.has(unitType)) {
       result.push(unitType)
       seen.add(unitType)
     }
-    const subs = simpleByType.get(unitType)
-    if (subs) {
+    if (!subBeforeParent && subs) {
       for (const sub of subs) {
         const variantId = makeVariantId(sub.unitType, [
           sub.name as UnitVariantId,
@@ -58,7 +74,8 @@ export function expandWithSubtypes(
     ])
     if (!seen.has(variantId)) {
       const parentIndex = result.indexOf(sub.unitType)
-      result.splice(parentIndex + 1, 0, variantId)
+      const insertAt = subBeforeParent ? parentIndex : parentIndex + 1
+      result.splice(insertAt, 0, variantId)
       seen.add(variantId)
     }
   }

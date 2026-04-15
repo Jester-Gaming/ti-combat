@@ -53,7 +53,7 @@ function buildValidList(
   const subtypes = config.side === 'own' ? ownSubtypes : opponentSubtypes
   const group = settings[config.group] as UnitBaseType[]
   const sorted = sortByPrice(group, config.sort)
-  return expandWithSubtypes(sorted, subtypes)
+  return expandWithSubtypes(sorted, subtypes, config.sort)
 }
 
 // ── Pure reconcile functions ────────────────────────────────────────────
@@ -378,35 +378,13 @@ function reconcileSyncSources(
               return keptSet.has(base) || newBases.has(base)
             })
             if (toAdd.length > 0) {
-              // Insert new items: subtypes go after their parent,
-              // base types use validList order via reconcileArrayParam
-              const newSubtypes = toAdd.filter(item => item.includes(':'))
-              const newBaseTypes = toAdd.filter(item => !item.includes(':'))
-
-              const result = [...kept]
-              // Insert subtypes right after their parent
-              for (const sub of newSubtypes) {
-                const base = sub.slice(0, sub.indexOf(':'))
-                let insertIdx = result.length
-                for (let i = result.length - 1; i >= 0; i--) {
-                  if (result[i] === base || result[i].startsWith(base + ':')) {
-                    insertIdx = i + 1
-                    break
-                  }
-                }
-                result.splice(insertIdx, 0, sub)
-              }
-
-              // Insert new base types via reconcileArrayParam ordering
-              if (newBaseTypes.length > 0) {
-                const allowed = new Set([...result, ...newBaseTypes])
-                abilityParams[config.key] = reconcileArrayParam(
-                  result,
-                  validList.filter(item => allowed.has(item)),
-                )
-              } else {
-                abilityParams[config.key] = result
-              }
+              // Place each new item at its natural validList position
+              // (respects the sort direction, including subtype placement).
+              const allowed = new Set([...kept, ...toAdd])
+              abilityParams[config.key] = reconcileArrayParam(
+                kept,
+                validList.filter(item => allowed.has(item)),
+              )
             } else {
               abilityParams[config.key] = kept
             }

@@ -114,13 +114,17 @@ export function PriorityList({
     if (newItems.length === 0) {
       return kept
     }
-    // Insert new items at their natural position relative to existing items
+    // Insert new items at their natural position: prefer value order for
+    // items already in value (so sort direction is respected), otherwise
+    // fall back to items order.
+    const valueSet = new Set(value)
     const result = [...kept]
     for (const newItem of newItems) {
-      const naturalIndex = itemsOrder.indexOf(newItem)
+      const refOrder = valueSet.has(newItem) ? value : itemsOrder
+      const naturalIndex = refOrder.indexOf(newItem)
       let insertAfter = -1
       for (let i = naturalIndex - 1; i >= 0; i--) {
-        const idx = result.indexOf(itemsOrder[i])
+        const idx = result.indexOf(refOrder[i])
         if (idx !== -1) {
           insertAfter = idx
           break
@@ -129,7 +133,7 @@ export function PriorityList({
       result.splice(insertAfter + 1, 0, newItem)
     }
     return result
-  }, [fullOrder, itemValues, items])
+  }, [fullOrder, itemValues, items, value])
 
   // Sync internal state if displayOrder diverged
   if (displayOrder !== fullOrder) {
