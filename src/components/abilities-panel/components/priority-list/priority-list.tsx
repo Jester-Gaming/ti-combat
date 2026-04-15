@@ -72,12 +72,16 @@ function SortableRow({
       {...attributes}
       {...listeners}
     >
+      <span className={styles.label}>{label}</span>
       <span className={styles.dragHandle}>
         <DragHandleDots2Icon />
       </span>
-      <span className={styles.label}>{label}</span>
-      <span className={styles.checkboxWrapper}>
-        <Checkbox checked={checked} onChange={() => {}} />
+      <span
+        className={styles.checkboxWrapper}
+        onPointerDown={e => e.stopPropagation()}
+        onClick={e => e.stopPropagation()}
+      >
+        <Checkbox checked={checked} onChange={() => onToggle(id)} />
       </span>
     </div>
   )

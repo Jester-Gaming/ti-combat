@@ -40,6 +40,7 @@ export function CheckboxList({
             className={clsx(styles.item, isSelected && styles.selected)}
             onClick={() => handleToggle(item.value)}
           >
+            <span className={styles.label}>{item.label}</span>
             <span
               className={styles.checkboxWrapper}
               onClick={e => e.stopPropagation()}
@@ -49,7 +50,6 @@ export function CheckboxList({
                 onChange={() => handleToggle(item.value)}
               />
             </span>
-            <span className={styles.label}>{item.label}</span>
           </div>
         )
       })}

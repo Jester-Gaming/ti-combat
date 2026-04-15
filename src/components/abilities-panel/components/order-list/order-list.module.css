@@ -46,6 +46,6 @@
 }
 
 .priorityNumber {
-  @apply ml-auto shrink-0 text-[10px];
+  @apply flex h-4 w-4 shrink-0 items-center justify-center text-[10px];
   color: hsl(var(--side-color) / 40%);
 }
