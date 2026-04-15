@@ -2,6 +2,7 @@ import mentakCoalitionIcon from '@/assets/faction/mentak_coalition.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
+import { ambush } from './ambush'
 import { fourthMoon } from './fourth-moon'
 import { mollTerminus } from './moll-terminus'
 import { sleeperCell } from './sleeper-cell'
@@ -10,6 +11,7 @@ export const mentak_coalition: Faction = {
   name: 'Mentak Coalition',
   icon: mentakCoalitionIcon,
   abilities: {
+    faction: [ambush],
     hero: [sleeperCell],
   },
   units: {
