@@ -44,7 +44,7 @@ export const assaultCannon: Ability<Params> = {
           params.targetPriority,
         )!
 
-        ctx.api.opponent.destroyUnit(target)
+        ctx.api.opponent.destroyUnits(target)
       },
     },
   ],

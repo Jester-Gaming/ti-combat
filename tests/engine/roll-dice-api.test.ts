@@ -79,7 +79,7 @@ const chainRollDiceAbility: Ability = {
       call: ctx => {
         ctx.rollDice([[5, 1]], (branchCtx, hits) => {
           if (hits[0] > 0 && branchCtx.api.opponent.hasUnitType('CRUISER')) {
-            branchCtx.api.opponent.destroyUnit('CRUISER')
+            branchCtx.api.opponent.destroyUnits('CRUISER')
           }
         })
       },

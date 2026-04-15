@@ -20,7 +20,7 @@ export const indoctrination: Ability = {
         return ctx.api.opponent.hasUnitType('INFANTRY')
       },
       call: ctx => {
-        ctx.api.opponent.removeUnit('INFANTRY')
+        ctx.api.opponent.removeUnits('INFANTRY')
         const [placedId] = ctx.api.own.placeUnits({ INFANTRY: 1 }).INFANTRY
         ctx.trigger('WHEN_INDOCTRINATION', placedId)
       },

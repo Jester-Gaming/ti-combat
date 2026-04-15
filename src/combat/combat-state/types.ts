@@ -90,7 +90,7 @@ export interface PhaseIdentifier {
 /** A pool of unassigned hits with valid targets */
 export interface HitPool {
   hits: number
-  validTargets: UnitType[]
+  validTargets?: UnitType[]
 }
 
 /** A single restriction entry explaining why an ability is restricted */

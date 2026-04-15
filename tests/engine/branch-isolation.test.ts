@@ -6,7 +6,7 @@ import { combatTest } from '../utils/combat-test'
  * Engine test: verify that ability mutations during ASSIGN_HITS in one
  * dice-roll branch don't leak into other branches via shared state.
  *
- * Direct Hit calls destroyUnit → removeUnit which mutates the units array
+ * Direct Hit calls destroyUnits → removeUnits which mutates the units array
  * in-place (splice). Since cloneStateForBranch shares the units object
  * between branches, this mutation affects all branches.
  */
@@ -63,14 +63,14 @@ describe('engine: branch isolation', () => {
     expect(defenderUnits['DREADNOUGHT'].length).toBe(1)
 
     // Process the hit branch through ASSIGN_HITS first.
-    // This triggers: sustain damage → Direct Hit → destroyUnit → removeUnit
-    // removeUnit splices the shared units array, contaminating other branches.
+    // This triggers: sustain damage → Direct Hit → destroyUnits → removeUnits
+    // removeUnits splices the shared units array, contaminating other branches.
     hitBranch.state.advance(1, true)
 
     expect(hitBranch.state.abilities.attacker.DIRECT_HIT.uses).toBe(0)
 
     // The no-hit branch should still have the defender's dreadnought.
-    // BUG: removeUnit mutated the shared units object via splice,
+    // BUG: removeUnits mutated the shared units object via splice,
     // so the dreadnought is gone from ALL branches.
     expect(noHitBranch.state.abilities.attacker.DIRECT_HIT.uses).toBe(1)
     expect(defenderUnits['DREADNOUGHT']).toBeDefined()

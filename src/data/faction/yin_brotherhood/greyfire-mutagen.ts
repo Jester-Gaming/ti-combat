@@ -21,7 +21,7 @@ export const greyfireMutagen: Ability = {
         return ctx.api.opponent.hasUnitType('INFANTRY')
       },
       call: ctx => {
-        ctx.api.opponent.removeUnit('INFANTRY')
+        ctx.api.opponent.removeUnits('INFANTRY')
         ctx.api.own.placeUnits({ INFANTRY: 1 })
       },
     },

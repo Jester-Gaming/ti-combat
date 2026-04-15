@@ -808,7 +808,7 @@ function cloneUnitState(
 
 /** Branch clone — copies hitPools, unitState, and abilities per side.
  *  units arrays stay shared with base — all mutation paths (assignHits,
- *  removeUnit) build new arrays instead of mutating originals.
+ *  removeUnits) build new arrays instead of mutating originals.
  *  unitState must be cloned because abilities like SUSTAIN_DAMAGE
  *  mutate entries (isDamaged) at BEFORE_ASSIGN_HITS — branches are
  *  processed sequentially, so earlier branches would corrupt later ones.

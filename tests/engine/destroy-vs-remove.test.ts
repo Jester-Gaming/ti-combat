@@ -6,7 +6,7 @@ import { combatTest } from '../utils/combat-test'
 
 /**
  * Engine test: verify that WHEN_DESTROY fires on unit destruction
- * (via destroyUnit) but NOT on unit removal (via removeUnit).
+ * (via destroyUnits) but NOT on unit removal (via removeUnits).
  */
 
 let whenDestroyFired = false
@@ -21,7 +21,7 @@ const destroyOpponentCruiser: Ability = {
       timing: 'START_OF_COMBAT_ROUND',
       isCallable: (_params, ctx) => ctx.api.opponent.hasUnitType('CRUISER'),
       call: ctx => {
-        ctx.api.opponent.destroyUnit('CRUISER')
+        ctx.api.opponent.destroyUnits('CRUISER')
       },
     },
   ],
@@ -37,7 +37,7 @@ const removeOpponentCruiser: Ability = {
       timing: 'START_OF_COMBAT_ROUND',
       isCallable: (_params, ctx) => ctx.api.opponent.hasUnitType('CRUISER'),
       call: ctx => {
-        ctx.api.opponent.removeUnit('CRUISER')
+        ctx.api.opponent.removeUnits('CRUISER')
       },
     },
   ],
@@ -66,7 +66,7 @@ describe('engine: destroy vs remove', () => {
     whenDestroyFired = false
   })
 
-  it('WHEN_DESTROY fires when destroyUnit is called', () => {
+  it('WHEN_DESTROY fires when destroyUnits is called', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {
@@ -89,7 +89,7 @@ describe('engine: destroy vs remove', () => {
     expect(t.defender.units.CRUISER).toBeUndefined()
   })
 
-  it('WHEN_DESTROY does NOT fire when removeUnit is called', () => {
+  it('WHEN_DESTROY does NOT fire when removeUnits is called', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {

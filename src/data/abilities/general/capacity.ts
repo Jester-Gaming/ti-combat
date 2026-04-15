@@ -65,7 +65,7 @@ function enforceCapacity(
       if (hasFleetPool) continue
       const units = api.getUnits(baseType, { includeVariants: true })
       for (const unitId of units) {
-        api.removeUnit(unitId)
+        api.removeUnits(unitId)
       }
     }
     return
@@ -96,7 +96,7 @@ function enforceCapacity(
     while (excess > 0) {
       const units = api.getUnits(priorityType)
       if (units.length === 0) break
-      api.removeUnit(units[0])
+      api.removeUnits(units[0])
       excess -= stats.CAPACITY_COST
     }
   }

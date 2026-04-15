@@ -78,7 +78,7 @@ export const vosHollow: Ability<Params> = {
             opponentShipsSet.has(type) &&
             ctx.api.opponent.hasUnitType(type)
           ) {
-            ctx.api.opponent.destroyUnit(type)
+            ctx.api.opponent.destroyUnits(type)
             return
           }
         }

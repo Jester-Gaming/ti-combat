@@ -20,7 +20,7 @@ export const moyinsAshes: Ability = {
         return ctx.api.own.countUnits('MECH') < UNIT_LIMITS.MECH
       },
       call: (ctx, _params, placedId) => {
-        ctx.api.own.removeUnit(placedId)
+        ctx.api.own.removeUnits(placedId)
         ctx.api.own.placeUnits({ MECH: 1 })
       },
     },

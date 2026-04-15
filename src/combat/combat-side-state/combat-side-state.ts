@@ -16,6 +16,7 @@ import type { CombatState } from '../combat-state/combat-state'
 import type {
   CombatMode,
   CombatStateData,
+  HitPool,
   HitSource,
   MetaPhase,
   RestrictionEntry,
@@ -176,6 +177,68 @@ export function getAssignHitsParams(
   return { participatingUnits, sacrificeOrder }
 }
 
+/** One variant's contribution to a hit-pool resolution plan. */
+interface AssignHitsPlanEntry {
+  variantId: UnitType
+  ids: UnitId[]
+}
+
+/** Walk the sacrifice order once and compute which UnitIds would be destroyed
+ *  by a single HitPool against the given units map. Used by both
+ *  `assignHitsForSide` (needs variant grouping for removal) and
+ *  `getAssignHitsTargets` (flattens to UnitId[]). */
+function planAssignHits(
+  units: SideStateData['units'],
+  sacrificeOrder: string[],
+  hitPool: HitPool,
+): AssignHitsPlanEntry[] {
+  const plan: AssignHitsPlanEntry[] = []
+  let remaining = hitPool.hits
+  if (remaining <= 0) return plan
+
+  const { validTargets } = hitPool
+
+  for (const variantId of sacrificeOrder) {
+    if (remaining <= 0) break
+    const vid = variantId as UnitType
+    if (
+      validTargets &&
+      validTargets.length > 0 &&
+      !validTargets.includes(vid) &&
+      !validTargets.includes(parseVariantId(vid).type)
+    )
+      continue
+
+    const ids = units[vid]
+    if (!ids || ids.length <= 0) continue
+
+    const toDestroy = Math.min(ids.length, remaining)
+    const picked: UnitId[] = []
+    for (let i = ids.length - toDestroy; i < ids.length; i++) {
+      picked.push(ids[i])
+    }
+    plan.push({ variantId: vid, ids: picked })
+    remaining -= toDestroy
+  }
+
+  return plan
+}
+
+/** Returns the UnitIds that would be destroyed if the given HitPool were
+ *  resolved now against this side's current units. Non-destructive. */
+export function getAssignHitsTargets(
+  sideData: SideStateData,
+  params: AssignHitsParams,
+  hitPool: HitPool,
+): UnitId[] {
+  const plan = planAssignHits(sideData.units, params.sacrificeOrder, hitPool)
+  const result: UnitId[] = []
+  for (const { ids } of plan) {
+    for (const id of ids) result.push(id)
+  }
+  return result
+}
+
 /** Standalone hit assignment — takes pre-computed params to avoid repeated lookups */
 export function assignHitsForSide(
   sideData: SideStateData,
@@ -184,49 +247,30 @@ export function assignHitsForSide(
 ): Record<string, UnitId[]> {
   if (sideData.hitPools.length === 0) return EMPTY_DESTROYED
 
-  const { sacrificeOrder } = params
   let destroyed: Record<string, UnitId[]> | undefined
   let units = sideData.units
 
   for (const pool of sideData.hitPools) {
-    let remaining = pool.hits
-    if (remaining <= 0) continue
+    if (pool.hits <= 0) continue
 
-    const validTargets = pool.validTargets
+    const plan = planAssignHits(units, params.sacrificeOrder, pool)
 
-    for (const variantId of sacrificeOrder) {
-      if (remaining <= 0) break
-      const vid = variantId as UnitType
-      if (
-        validTargets.length > 0 &&
-        !validTargets.includes(vid) &&
-        !validTargets.includes(parseVariantId(vid).type)
-      )
-        continue
-
-      const ids = units[vid]
-      if (!ids || ids.length <= 0) continue
-
-      const toDestroy = Math.min(ids.length, remaining)
-
+    for (const { variantId, ids: toRemove } of plan) {
       if (trackDestroyed) {
         if (!destroyed) destroyed = {}
         if (!destroyed[variantId]) destroyed[variantId] = []
-        for (let i = ids.length - toDestroy; i < ids.length; i++) {
-          destroyed[variantId].push(ids[i])
-        }
+        for (const id of toRemove) destroyed[variantId].push(id)
       }
 
-      const kept = ids.length - toDestroy
+      const existing = units[variantId]
+      const kept = existing.length - toRemove.length
       if (kept <= 0) {
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { [vid]: _removed, ...rest } = units
+        const { [variantId]: _removed, ...rest } = units
         units = rest as SideStateData['units']
       } else {
-        units = { ...units, [variantId]: ids.slice(0, kept) }
+        units = { ...units, [variantId]: existing.slice(0, kept) }
       }
-
-      remaining -= toDestroy
     }
   }
 
@@ -682,7 +726,8 @@ export class CombatSideState {
   /** Get hit pool valid targets (falls back to settings valid targets) */
   getHitPoolValidTargets(): UnitType[] {
     const pool = this.data.hitPools[0]
-    if (pool && pool.validTargets.length > 0) return pool.validTargets
+    if (pool && pool.validTargets && pool.validTargets.length > 0)
+      return pool.validTargets
     return this.getSettingsValidTargets()
   }
 
@@ -791,12 +836,30 @@ export class CombatSideState {
     return assignHitsForSide(stateData[this._side], params, trackDestroyed)
   }
 
+  /** Simulate resolving a single HitPool against this side's current units.
+   *  Returns the UnitIds that would be destroyed, in sacrifice order.
+   *  Non-destructive — does not mutate state. */
+  getAssignHitsTargets(hitPool: HitPool): UnitId[] {
+    const params = getAssignHitsParams(this.stateData, this._side)
+    return getAssignHitsTargets(this.data, params, hitPool)
+  }
+
   // ==========================================================================
   // MUTATION METHODS
   // ==========================================================================
 
-  /** Remove a unit by UnitId or base type (first found) */
-  removeUnit(unitTypeOrUnit: UnitBaseType | UnitId): void {
+  /** Remove one or more units by UnitId, UnitId[], or base type (first found).
+   *  Removals are applied sequentially; for a UnitId[] variant, each ID is
+   *  located against the current state after any preceding removals. */
+  removeUnits(target: UnitBaseType | UnitId | UnitId[]): void {
+    if (Array.isArray(target)) {
+      for (const id of target) this._removeOne(id)
+      return
+    }
+    this._removeOne(target)
+  }
+
+  private _removeOne(unitTypeOrUnit: UnitBaseType | UnitId): void {
     let unitId: UnitId
     let key: UnitType
     const data = this.data

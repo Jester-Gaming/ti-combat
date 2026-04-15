@@ -19,9 +19,9 @@ export const vanHauge: Ability = {
       timing: 'WHEN_DESTROY',
       call: ctx => {
         for (const type of SHIPS) {
-          while (ctx.api.own.hasUnitType(type)) ctx.api.own.destroyUnit(type)
+          while (ctx.api.own.hasUnitType(type)) ctx.api.own.destroyUnits(type)
           while (ctx.api.opponent.hasUnitType(type))
-            ctx.api.opponent.destroyUnit(type)
+            ctx.api.opponent.destroyUnits(type)
         }
       },
     },

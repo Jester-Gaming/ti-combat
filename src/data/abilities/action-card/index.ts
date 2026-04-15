@@ -1,5 +1,6 @@
 import { blitz } from './blitz'
 import { bunker } from './bunker'
+import { courageousToTheEnd } from './courageous-to-the-end'
 import { directHit } from './direct-hit'
 import { disable } from './disable'
 import { experimentalBattlestation } from './experimental-battlestation'
@@ -14,6 +15,7 @@ import { waylay } from './waylay'
 export default [
   blitz,
   bunker,
+  courageousToTheEnd,
   directHit,
   disable,
   experimentalBattlestation,

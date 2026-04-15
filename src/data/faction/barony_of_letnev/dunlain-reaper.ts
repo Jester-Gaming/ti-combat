@@ -28,7 +28,7 @@ export const dunlainReaper: Ability<Params> = {
         )
       },
       call: ctx => {
-        ctx.api.own.removeUnit('INFANTRY')
+        ctx.api.own.removeUnits('INFANTRY')
         ctx.api.own.placeUnits({ MECH: 1 })
       },
     },

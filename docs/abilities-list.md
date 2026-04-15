@@ -188,7 +188,7 @@
 ## ACTION CARDS
 
 - [x] **Bunker** — At the start of an invasion: During this invasion, apply -4 to the result of each Bombardment roll against planets you control.
-- [ ] **Courageous to the End** — After 1 of your ships is destroyed during a space combat: Roll 2 dice. For each result equal to or greater than that ship's combat value, your opponent must choose and destroy 1 of their ships.
+- [x] **Courageous to the End** — After 1 of your ships is destroyed during a space combat: Roll 2 dice. For each result equal to or greater than that ship's combat value, your opponent must choose and destroy 1 of their ships.
 - [x] **Direct Hit** (x4) — After another player's ship uses Sustain Damage to cancel a hit produced by your units or abilities: Destroy that ship.
 - [x] **Disable** — At the start of an invasion in a system that contains 1 or more of your opponents' PDS units: Your opponents' PDS units lose Planetary Shield and Space Cannon during this invasion.
 - [ ] **Emergency Repairs** — At the start or end of a combat round: Repair all of your units that have Sustain Damage in the active system.

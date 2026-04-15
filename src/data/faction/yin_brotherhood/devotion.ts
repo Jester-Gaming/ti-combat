@@ -60,7 +60,7 @@ export const devotion: Ability<Params> = {
         for (const variantId of params.targetPriority) {
           if (ctx.api.opponent.findUnitByPriority([variantId]) !== undefined) {
             ctx.api.opponent.addHits(1, [parseVariantId(variantId).type])
-            ctx.api.own.destroyUnit(sacrifice)
+            ctx.api.own.destroyUnits(sacrifice)
             return
           }
         }

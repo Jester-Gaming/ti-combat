@@ -16,7 +16,11 @@ import type {
 import type { CombatSideState } from '../../combat-side-state/combat-side-state'
 import { getOpponentSide } from '../../combat-side-state/combat-side-state'
 import { cloneStateForBranch } from '../../combat-state/combat-state'
-import type { CombatMode, CombatStateData } from '../../combat-state/types'
+import type {
+  CombatMode,
+  CombatStateData,
+  HitPool,
+} from '../../combat-state/types'
 import { getDiceOutcomes } from '../../combat-state/utils'
 import type { Logger } from '../../logger'
 import type { AbilitiesEngine, InvokeCollections } from '../abilities-engine'
@@ -118,6 +122,13 @@ export class SideApi {
     return this._sideState.findUnitByPriority(priority, participating)
   }
 
+  /** Simulate resolving a HitPool against this side's current units —
+   *  returns the UnitIds that would be destroyed, in sacrifice order.
+   *  Non-destructive. */
+  getAssignHitsTargets(hitPool: HitPool): UnitId[] {
+    return this._sideState.getAssignHitsTargets(hitPool)
+  }
+
   getUnitStats(unitTypeOrId: string | UnitId) {
     return this._sideState.getUnitStats(unitTypeOrId)
   }
@@ -152,36 +163,52 @@ export class SideApi {
     return this.state.abilities[this._side][key]
   }
 
-  destroyUnit(unitTypeOrUnit: UnitBaseType | UnitId): void {
-    let unitId: UnitId
-    let key: UnitType
+  /** Destroy one or more units and fire DESTROY/WHEN_DESTROY/AFTER_DESTROY
+   *  exactly once for the combined set (simultaneous destruction). */
+  destroyUnits(target: UnitBaseType | UnitId | UnitId[]): void {
+    const destroyed: Record<string, UnitId[]> = {}
 
-    if (typeof unitTypeOrUnit === 'string') {
-      const found = this._sideState.findFirstUnitId(unitTypeOrUnit)
-      if (!found) return
-      unitId = found.unitId
-      key = found.key
-    } else {
-      unitId = unitTypeOrUnit
-      const found = this._sideState.findVariantKey(unitId)
-      if (!found) return
-      key = found
+    const stage = (unitId: UnitId, key: UnitType) => {
+      const bucket = destroyed[key]
+      if (bucket) bucket.push(unitId)
+      else destroyed[key] = [unitId]
     }
 
-    this._sideState.removeUnit(unitId)
+    if (Array.isArray(target)) {
+      for (const id of target) {
+        const key = this._sideState.findVariantKey(id)
+        if (!key) continue
+        stage(id, key)
+      }
+    } else if (typeof target === 'string') {
+      const found = this._sideState.findFirstUnitId(target)
+      if (!found) return
+      stage(found.unitId, found.key)
+    } else {
+      const key = this._sideState.findVariantKey(target)
+      if (!key) return
+      stage(target, key)
+    }
+
+    // Remove everything staged, then fire destroy abilities once.
+    const keys = Object.keys(destroyed)
+    if (keys.length === 0) return
+    const flat: UnitId[] = []
+    for (const k of keys) for (const id of destroyed[k]) flat.push(id)
+    this._sideState.removeUnits(flat)
 
     if (this._abilitiesParams) {
-      const destroyed = {
+      const context = {
         attacker: {} as Record<string, UnitId[]>,
         defender: {} as Record<string, UnitId[]>,
       }
-      destroyed[this._side][key] = [unitId]
-      this._ctx.runDestroyAbilities(destroyed)
+      context[this._side] = destroyed
+      this._ctx.runDestroyAbilities(context)
     }
   }
 
-  removeUnit(unitTypeOrUnit: UnitBaseType | UnitId): void {
-    this._sideState.removeUnit(unitTypeOrUnit)
+  removeUnits(target: UnitBaseType | UnitId | UnitId[]): void {
+    this._sideState.removeUnits(target)
   }
 
   placeUnits(

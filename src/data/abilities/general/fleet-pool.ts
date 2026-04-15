@@ -118,7 +118,7 @@ export function enforceFleetPool(api: SideApi): void {
     })
     const toRemove = Math.min(Math.ceil(excess / cost), unitCount)
     for (let i = 0; i < toRemove; i++) {
-      api.removeUnit(type as UnitBaseType)
+      api.removeUnits(type as UnitBaseType)
       excess -= cost
     }
   }

@@ -219,7 +219,7 @@ describe('unit ability invocation', () => {
   })
 })
 
-describe('AFTER_DESTROY triggered by destroyUnit', () => {
+describe('AFTER_DESTROY triggered by destroyUnits', () => {
   it('should trigger AFTER_DESTROY when an ability destroys units', () => {
     const afterDestroyCalls: {
       own: Record<string, UnitId[]>
@@ -235,7 +235,7 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
         {
           timing: 'START_OF_COMBAT_ROUND',
           call: (ctx: AbilityCallContext) => {
-            ctx.api.opponent.destroyUnit('FIGHTER')
+            ctx.api.opponent.destroyUnits('FIGHTER')
           },
         },
       ],
@@ -372,7 +372,7 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
         {
           timing: 'START_OF_COMBAT_ROUND',
           call: (ctx: AbilityCallContext) => {
-            ctx.api.opponent.destroyUnit('FIGHTER')
+            ctx.api.opponent.destroyUnits('FIGHTER')
           },
         },
       ],
@@ -390,7 +390,7 @@ describe('AFTER_DESTROY triggered by destroyUnit', () => {
           call: (ctx: AbilityCallContext) => {
             afterDestroyCalls.push('called')
             // From defender's FIGHTER perspective, own = defender side
-            ctx.api.own.destroyUnit('CRUISER')
+            ctx.api.own.destroyUnits('CRUISER')
           },
         },
       ],

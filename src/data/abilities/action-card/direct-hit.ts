@@ -26,7 +26,7 @@ export const directHit: Ability = {
         return true
       },
       call: (ctx, _params, unitId) => {
-        ctx.api.opponent.destroyUnit(unitId)
+        ctx.api.opponent.destroyUnits(unitId)
       },
     },
   ],

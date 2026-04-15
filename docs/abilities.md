@@ -270,8 +270,8 @@ isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: string): boolean
 #### Unit Operations
 
 ```typescript
-destroyUnit(unitTypeOrUnit: UnitBaseType | UnitId): void  // Destroy by type (first found) or by UnitId
-removeUnit(unitTypeOrUnit: UnitBaseType | UnitId): void   // Remove without triggering destroy abilities
+destroyUnits(target: UnitBaseType | UnitId | UnitId[]): void  // Destroy by type (first found), UnitId, or UnitId[]; array variant fires destroy abilities once
+removeUnits(target: UnitBaseType | UnitId | UnitId[]): void   // Remove without triggering destroy abilities
 placeUnits(unitsToAdd: Partial<Record<UnitBaseType, number>>): void
 modifyUnitType(key: UnitType, updates: Partial<UnitStats>): void   // Modify stats for all units of a type
 modifyUnitState(unitId: UnitId, updates: Partial<UnitState>): void // Modify per-unit mutable state
