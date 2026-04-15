@@ -322,7 +322,7 @@ export class CombatState {
 
       case 'COMMIT_UNITS': {
         this.runAbilities('COMMIT_UNITS')
-        return this.transitionPhase()
+        return this.handleBranchesOrContinue(() => this.transitionPhase())
       }
 
       case 'SPACE_CANNON_DEFENSE':
@@ -422,6 +422,23 @@ export class CombatState {
             undefined,
             branchLogger?.child(metaPhase),
           )
+
+          // AFTER_DICE_ROLL / AFTER_UNIT_ABILITY_ROLL abilities may have
+          // branched further (e.g. via rollDice or cascading assignHits).
+          if (this._params.hasBranches()) {
+            const subBranches = this._params.consumeBranches()
+            for (const sub of subBranches) {
+              const subState = CombatState.fromData(sub.data, this._params)
+              subState._logger = sub.logger
+              subState._invokes = sub.invokes
+              subState._invokesOwned = true
+              results.push({
+                state: subState,
+                probability: probability * sub.probability,
+              })
+            }
+            continue
+          }
         }
 
         const branchState = CombatState.fromData(branchData, this._params)
@@ -450,14 +467,53 @@ export class CombatState {
   private completeTransition(): StateWithProbability[] {
     this.runAbilities('END_OF_COMBAT')
 
-    this.data.currentPhase = {
-      meta: 'COMPLETE' as const,
-      micro: getLastMicroPhase('COMPLETE'),
+    return this.handleBranchesOrContinue(() => {
+      this.data.currentPhase = {
+        meta: 'COMPLETE' as const,
+        micro: getLastMicroPhase('COMPLETE'),
+      }
+      const state = CombatState.fromData(this.data, this._params)
+      state._logger = this._logger
+      return [{ state, probability: 1 }]
+    })
+  }
+
+  /**
+   * If the most recent runAbilities call produced branches (via rollDice or
+   * any cascading operation), run `continuation` once per branch with this
+   * CombatState swapped to that branch's data/invokes/logger. Probabilities
+   * returned by the continuation are multiplied by the branch's probability.
+   * When no branching occurred, runs the continuation once on the current
+   * state (equivalent to just calling it directly).
+   */
+  private handleBranchesOrContinue(
+    continuation: () => StateWithProbability[],
+  ): StateWithProbability[] {
+    if (!this._params.hasBranches()) {
+      return continuation()
     }
 
-    const state = CombatState.fromData(this.data, this._params)
-    state._logger = this._logger
-    return [{ state, probability: 1 }]
+    const branches = this._params.consumeBranches()
+    const results: StateWithProbability[] = []
+
+    for (const branch of branches) {
+      this.data = branch.data
+      this._invokes = branch.invokes
+      // Sibling branches may share the same `invokes` reference; mark as
+      // unowned so the next mutation triggers COW and isolates this branch.
+      this._invokesOwned = false
+      this._logger = branch.logger
+
+      const branchResults = continuation()
+      for (const r of branchResults) {
+        results.push({
+          state: r.state,
+          probability: r.probability * branch.probability,
+        })
+      }
+    }
+
+    return results
   }
 
   // ===========================================================================
@@ -576,23 +632,25 @@ export class CombatState {
         : (['START_OF_COMBAT_ROUND'] as const)
     this.runAbilities([...timings])
 
-    // Re-check after abilities (e.g. Assault Cannon may destroy last ship)
-    if (noParticipatingUnits(this.data)) {
-      return this.completeTransition()
-    }
-
-    // In round 1 of SPACE_COMBAT, transition to AFB meta-phase
-    if (round === 1 && this.data.currentPhase.meta === 'SPACE_COMBAT') {
-      this.data.currentPhase = {
-        meta: 'AFB',
-        micro: getFirstMicroPhase('AFB'),
+    return this.handleBranchesOrContinue(() => {
+      // Re-check after abilities (e.g. Assault Cannon may destroy last ship)
+      if (noParticipatingUnits(this.data)) {
+        return this.completeTransition()
       }
-      const state = CombatState.fromData(this.data, this._params)
-      state._logger = this._logger
-      return [{ state, probability: 1 }]
-    }
 
-    return this.transitionPhase()
+      // In round 1 of SPACE_COMBAT, transition to AFB meta-phase
+      if (round === 1 && this.data.currentPhase.meta === 'SPACE_COMBAT') {
+        this.data.currentPhase = {
+          meta: 'AFB',
+          micro: getFirstMicroPhase('AFB'),
+        }
+        const state = CombatState.fromData(this.data, this._params)
+        state._logger = this._logger
+        return [{ state, probability: 1 }]
+      }
+
+      return this.transitionPhase()
+    })
   }
 
   private processDiceRoll(): StateWithProbability[] {
@@ -646,33 +704,42 @@ export class CombatState {
   private processAssignHits(): StateWithProbability[] {
     this.assignHits()
 
-    this.runAbilities('AFTER_ASSIGN_HITS_STEP')
+    return this.handleBranchesOrContinue(() => {
+      this.runAbilities('AFTER_ASSIGN_HITS_STEP')
 
-    // If either side is completely wiped, go directly to COMPLETE
-    if (
-      !hasAnyUnits(this.data.attacker.units) ||
-      !hasAnyUnits(this.data.defender.units)
-    ) {
-      return this.completeTransition()
-    }
+      return this.handleBranchesOrContinue(() => {
+        // If either side is completely wiped, go directly to COMPLETE
+        if (
+          !hasAnyUnits(this.data.attacker.units) ||
+          !hasAnyUnits(this.data.defender.units)
+        ) {
+          return this.completeTransition()
+        }
 
-    return this.transitionPhase()
+        return this.transitionPhase()
+      })
+    })
   }
 
   private processEndOfRound(): StateWithProbability[] {
     this.runAbilities('END_OF_COMBAT_ROUND')
-    this.runAbilities('CLEANUP_ROUND')
 
-    // Clear stored hit-value modifiers
-    if (
-      this.data.attacker.hitValueModifiers?.length ||
-      this.data.defender.hitValueModifiers?.length
-    ) {
-      delete this.data.attacker.hitValueModifiers
-      delete this.data.defender.hitValueModifiers
-    }
+    return this.handleBranchesOrContinue(() => {
+      this.runAbilities('CLEANUP_ROUND')
 
-    return this.transitionPhase()
+      return this.handleBranchesOrContinue(() => {
+        // Clear stored hit-value modifiers
+        if (
+          this.data.attacker.hitValueModifiers?.length ||
+          this.data.defender.hitValueModifiers?.length
+        ) {
+          delete this.data.attacker.hitValueModifiers
+          delete this.data.defender.hitValueModifiers
+        }
+
+        return this.transitionPhase()
+      })
+    })
   }
 }
 
@@ -747,7 +814,7 @@ function cloneUnitState(
  *  processed sequentially, so earlier branches would corrupt later ones.
  *  abilities must be cloned because abilities like DIRECT_HIT decrement
  *  `uses` — shared config would leak decrements across branches. */
-function cloneStateForBranch(
+export function cloneStateForBranch(
   base: CombatStateData,
   nextPhase: PhaseIdentifier,
 ): CombatStateData {

@@ -2,6 +2,7 @@ import type { UnitCategory } from '@/constants/units'
 import { enforceFleetPool } from '@/data/abilities/general/fleet-pool'
 import type {
   CombatSide,
+  DiceGroup,
   FactionKey,
   UnitAbility,
   UnitBaseType,
@@ -14,10 +15,31 @@ import type {
 
 import type { CombatSideState } from '../../combat-side-state/combat-side-state'
 import { getOpponentSide } from '../../combat-side-state/combat-side-state'
+import { cloneStateForBranch } from '../../combat-state/combat-state'
 import type { CombatMode, CombatStateData } from '../../combat-state/types'
+import { getDiceOutcomes } from '../../combat-state/utils'
 import type { Logger } from '../../logger'
-import type { AbilitiesEngine } from '../abilities-engine'
+import type { AbilitiesEngine, InvokeCollections } from '../abilities-engine'
 import type { AbilityTiming, SettingsParams, TimingContextMap } from '../types'
+
+// ============================================================================
+// BRANCH TYPES
+// ============================================================================
+
+export interface AbilityBranch {
+  data: CombatStateData
+  invokes: InvokeCollections
+  probability: number
+  logger?: Logger
+}
+
+/** Control-flow mechanism (not an Error — no stack trace overhead). */
+export class AbilityBranchInterrupt {
+  branches: AbilityBranch[]
+  constructor(branches: AbilityBranch[]) {
+    this.branches = branches
+  }
+}
 
 // ============================================================================
 // SIDE API
@@ -431,5 +453,75 @@ export class AbilityContext {
     timing: AbilityTiming | AbilityTiming[],
   ): { key: string; name: string }[] {
     return this._abilitiesParams.getAbilityKeysForTiming(this._side, timing)
+  }
+
+  /** See AbilityCallContext.rollDice for full docs.
+   *  For multi-outcome rolls, throws AbilityBranchInterrupt — the ability
+   *  engine's tryResolveOne catches it and handles per-branch post-processing. */
+  rollDice(
+    dice: DiceGroup[],
+    callback: (branchCtx: AbilityContext, hits: number[]) => void,
+  ): never {
+    const outcomes = getDiceOutcomes(dice)
+
+    // Fast path: single outcome (empty dice, zero counts, or hitValue=1 only)
+    // — run callback in place on the outer ctx, no branching.
+    if (outcomes.length === 1) {
+      callback(this, outcomes[0].hits)
+      return undefined as never
+    }
+
+    const combatState = this._abilitiesParams.combatState
+    const baseData = combatState.data
+    const baseInvokes = combatState._invokes
+    const baseInvokesOwned = combatState._invokesOwned
+    const baseLogger = this.logger
+    // Captured when upgradeForCall wired the api: this is the calling ability's key.
+    const abilityKey = this._api.own._abilityKey ?? ''
+
+    const branches: AbilityBranch[] = []
+
+    for (const outcome of outcomes) {
+      // COW-arm invokes (same pattern as rollDiceOutcomes in CombatState)
+      combatState._invokes = baseInvokes
+      combatState._invokesOwned = false
+
+      // Clone state for this branch. Keep same phase — we're branching
+      // within the current phase, not transitioning.
+      const branchData = cloneStateForBranch(baseData, baseData.currentPhase)
+      combatState.data = branchData
+
+      // Fork the logger so log entries from branches don't cross-contaminate.
+      const branchLogger = baseLogger?.fork()
+      branchLogger?.log({ diceHits: outcome.hits })
+
+      // Build a fresh AbilityContext bound to this branch. Inherits the outer
+      // ability's identity so updateAbilityConfig / getUnit() still behave
+      // as if running under the outer ability.
+      const branchCtx = new AbilityContext(this._side, this._abilitiesParams)
+      branchCtx.unitSource = this.unitSource
+      branchCtx.ownerFaction = this.ownerFaction
+      branchCtx.upgradeForCall(branchData, abilityKey, branchLogger)
+
+      callback(branchCtx, outcome.hits)
+
+      branchCtx.resetAfterCall()
+
+      branches.push({
+        data: combatState.data,
+        invokes: combatState._invokes,
+        probability: outcome.probability,
+        logger: branchLogger,
+      })
+    }
+
+    // Restore outer state. tryResolveOne will take over handling via the
+    // thrown interrupt — it clones/swaps branches for post-processing.
+    combatState._invokes = baseInvokes
+    combatState._invokesOwned = baseInvokesOwned
+    combatState.data = baseData
+    this.logger = baseLogger
+
+    throw new AbilityBranchInterrupt(branches)
   }
 }

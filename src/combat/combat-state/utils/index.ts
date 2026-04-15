@@ -1,1 +1,2 @@
 export { getCombinedDiceDistribution } from './get-combined-dice-distribution'
+export { type DiceOutcome, getDiceOutcomes } from './get-dice-outcomes'

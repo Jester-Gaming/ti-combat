@@ -172,6 +172,17 @@ export interface AbilityCallContext {
   ): { key: string; name: string }[]
   /** Returns true if the current side's faction owns this ability (faction or unit ability). */
   isOwner(): boolean
+  /** Roll dice mid-ability, creating probability branches.
+   *  Computes all per-group outcomes and calls the callback once per outcome,
+   *  passing a branch-scoped context that operates on that branch's state.
+   *
+   *  For multi-outcome rolls, throws AbilityBranchInterrupt after processing —
+   *  nothing after rollDice() executes. For empty/single-outcome rolls, the
+   *  callback runs in-place on the outer ctx and rollDice returns normally. */
+  rollDice(
+    dice: DiceGroup[],
+    callback: (branchCtx: AbilityCallContext, hits: number[]) => void,
+  ): never
 }
 
 // Auto-generate invoke type for each timing

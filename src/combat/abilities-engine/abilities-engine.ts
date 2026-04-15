@@ -14,7 +14,11 @@ import { CombatState } from '../combat-state/combat-state'
 import type { CombatStateData, SideStateData } from '../combat-state/types'
 import { Logger } from '../logger'
 import { parseVariantId } from '../utils/unit-variant'
-import { AbilityContext } from './api/ability-api'
+import {
+  type AbilityBranch,
+  AbilityBranchInterrupt,
+  AbilityContext,
+} from './api/ability-api'
 import { buildDiceApi, buildDiceReadApi } from './api/dice-api'
 import { extractDefaults } from './declare-param'
 import type {
@@ -188,6 +192,9 @@ interface AbilityResult {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context?: any
   unitsChanged?: boolean
+  /** Present when the ability branched (via rollDice) or when branching
+   *  was triggered by an inline assignHits / nested runAbilities call. */
+  branches?: AbilityBranch[]
 }
 
 export interface RunAbilitiesOptions {
@@ -208,6 +215,32 @@ export function cloneInvokes(invokes: InvokeCollections): InvokeCollections {
     attacker: new Map(Array.from(invokes.attacker, ([k, v]) => [k, [...v]])),
     defender: new Map(Array.from(invokes.defender, ([k, v]) => [k, [...v]])),
   }
+}
+
+/** Clone an invocation tracker for independent continuation in a branch. */
+function cloneTracker(tracker: InvocationTracker): InvocationTracker {
+  return {
+    attacker: {
+      configAbilities: new Set(tracker.attacker.configAbilities),
+      unitAbilities: new Map(
+        Array.from(tracker.attacker.unitAbilities, ([k, v]) => [k, new Set(v)]),
+      ),
+    },
+    defender: {
+      configAbilities: new Set(tracker.defender.configAbilities),
+      unitAbilities: new Map(
+        Array.from(tracker.defender.unitAbilities, ([k, v]) => [k, new Set(v)]),
+      ),
+    },
+  }
+}
+
+/** Snapshot of the pieces we need to restore after swapping to a branch. */
+interface BranchStateSnapshot {
+  data: CombatStateData
+  invokes: InvokeCollections
+  invokesOwned: boolean
+  logger?: Logger
 }
 
 /**
@@ -240,6 +273,11 @@ export class AbilitiesEngine {
 
   _logger?: Logger
 
+  /** Branches produced during the most recent runAbilities call.
+   *  null when no branching occurred. Set by _runAbilityLoop and
+   *  consumed by callers via consumeBranches(). */
+  _abilityBranches: AbilityBranch[] | null = null
+
   private get state(): CombatStateData {
     return this._combatState.data
   }
@@ -253,6 +291,47 @@ export class AbilitiesEngine {
     this._logger = logger
     this._destroyedIds = EMPTY_DESTROYED_IDS
     this._pendingUnitInvokes = EMPTY_PENDING
+  }
+
+  hasBranches(): boolean {
+    return this._abilityBranches !== null
+  }
+
+  consumeBranches(): AbilityBranch[] {
+    const branches = this._abilityBranches!
+    this._abilityBranches = null
+    return branches
+  }
+
+  /** Capture current engine/combatState state so it can be restored after
+   *  processing a branch. */
+  _saveBranchState(): BranchStateSnapshot {
+    return {
+      data: this._combatState.data,
+      invokes: this._combatState._invokes,
+      invokesOwned: this._combatState._invokesOwned,
+      logger: this._logger,
+    }
+  }
+
+  /** Swap engine/combatState to a given branch's data/invokes/logger.
+   *  Sibling branches from the same rollDice call may share the same `invokes`
+   *  reference (if the rollDice callback didn't trigger a COW). We mark the
+   *  invokes as unowned so the next mutation triggers `ensureOwnInvokes` and
+   *  isolates this branch's mutations from its siblings. */
+  _setBranchState(branch: AbilityBranch): void {
+    this._combatState.data = branch.data
+    this._combatState._invokes = branch.invokes
+    this._combatState._invokesOwned = false
+    this._logger = branch.logger
+  }
+
+  /** Restore state captured by _saveBranchState. */
+  _restoreBranchState(snap: BranchStateSnapshot): void {
+    this._combatState.data = snap.data
+    this._combatState._invokes = snap.invokes
+    this._combatState._invokesOwned = snap.invokesOwned
+    this._logger = snap.logger
   }
 
   // ── Read accessors ──────────────────────────────────────────────────
@@ -341,6 +420,7 @@ export class AbilitiesEngine {
     instance._combatState = combatState
     instance._destroyedIds = EMPTY_DESTROYED_IDS
     instance._pendingUnitInvokes = EMPTY_PENDING
+    instance._abilityBranches = null
     instance._abilities = abilities
     instance._unitAbilityKeys = unitAbilityKeys
     instance._factionOwnedKeys = factionOwnedKeys
@@ -365,6 +445,7 @@ export class AbilitiesEngine {
     instance._combatState = combatState
     instance._destroyedIds = EMPTY_DESTROYED_IDS
     instance._pendingUnitInvokes = EMPTY_PENDING
+    instance._abilityBranches = null
     instance._abilities = abilities
     instance._unitAbilityKeys = unitAbilityKeys
     instance._factionOwnedKeys = factionOwnedKeys
@@ -471,15 +552,45 @@ export class AbilitiesEngine {
       },
     }
 
-    let consecutiveSkips = 0
-    let currentSide: CombatSide = 'attacker'
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let workingContext: any = context
-
     const initialUnits = {
       attacker: this._combatState.attacker.countUnits(),
       defender: this._combatState.defender.countUnits(),
     }
+
+    return this._runAbilityLoop(
+      timing,
+      tracker,
+      'attacker',
+      context,
+      initialUnits,
+      options,
+      activeLogger,
+    ) as TimingContextMap[T]
+  }
+
+  /**
+   * Core alternation loop for runAbilities. Alternates sides resolving one
+   * ability at a time until both sides skip consecutively. Handles branching
+   * from two sources:
+   *   - direct: tryResolveOne returned { branches } (ability called rollDice)
+   *   - nested: tryResolveOne's inline assignHits / trigger set _abilityBranches
+   * On branching, recurses for each branch independently (with a cloned
+   * tracker), flattens nested branches (multiplying probabilities), and
+   * stores the final leaf set on _abilityBranches.
+   */
+  private _runAbilityLoop<T extends AbilityTiming>(
+    timing: T | T[],
+    tracker: InvocationTracker,
+    startSide: CombatSide,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    workingContext: any,
+    initialUnits: { attacker: number; defender: number },
+    options?: RunAbilitiesOptions,
+    logger?: Logger,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ): any {
+    let consecutiveSkips = 0
+    let currentSide: CombatSide = startSide
 
     while (consecutiveSkips < 2) {
       if (options?.skipSides?.includes(currentSide)) {
@@ -494,8 +605,72 @@ export class AbilitiesEngine {
         workingContext,
         tracker,
         options?.triggerSide,
-        activeLogger,
+        logger,
       )
+
+      // Collect branches from either direct or nested source.
+      let branches: AbilityBranch[] | null = null
+      if (result?.branches) {
+        branches = result.branches
+      } else if (this._abilityBranches) {
+        branches = this._abilityBranches
+        this._abilityBranches = null
+      }
+
+      if (branches) {
+        // Thread the pre-branch context update (non-branching tryResolveOne
+        // path that then produced nested branches) before forking.
+        const preBranchContext =
+          result && !result.branches && result.context !== undefined
+            ? result.context
+            : workingContext
+
+        const nextSide = getOpponentSide(currentSide)
+        const allBranches: AbilityBranch[] = []
+
+        for (const branch of branches) {
+          const saved = this._saveBranchState()
+          this._setBranchState(branch)
+
+          const branchTracker = cloneTracker(tracker)
+
+          this._runAbilityLoop(
+            timing,
+            branchTracker,
+            nextSide,
+            preBranchContext,
+            initialUnits,
+            options,
+            branch.logger,
+          )
+
+          // Recursive call may itself have branched further.
+          if (this._abilityBranches) {
+            const nested = this._abilityBranches
+            this._abilityBranches = null
+            for (const n of nested) {
+              allBranches.push({
+                data: n.data,
+                invokes: n.invokes,
+                probability: n.probability * branch.probability,
+                logger: n.logger,
+              })
+            }
+          } else {
+            allBranches.push({
+              data: this._combatState.data,
+              invokes: this._combatState._invokes,
+              probability: branch.probability,
+              logger: this._logger,
+            })
+          }
+
+          this._restoreBranchState(saved)
+        }
+
+        this._abilityBranches = allBranches
+        return workingContext
+      }
 
       if (result) {
         if (result.context !== undefined) {
@@ -519,7 +694,7 @@ export class AbilitiesEngine {
       currentSide = getOpponentSide(currentSide)
     }
 
-    return workingContext as TimingContextMap[T]
+    return workingContext
   }
 
   runDestroyAbilities(destroyed: {
@@ -532,11 +707,68 @@ export class AbilitiesEngine {
       defender: new Set(Object.values(destroyed.defender).flat()),
     }
 
-    this.runAbilities('DESTROY', destroyed)
-    this.runAbilities('WHEN_DESTROY', destroyed)
-    this.runAbilities('AFTER_DESTROY', destroyed)
+    this._runSequential(['DESTROY', 'WHEN_DESTROY', 'AFTER_DESTROY'], destroyed)
 
     this._destroyedIds = savedDestroyedIds
+  }
+
+  /**
+   * Run a sequence of ability timings, forking remaining timings per branch
+   * if any earlier timing branched. Used by runDestroyAbilities so that
+   * branching at DESTROY/WHEN_DESTROY doesn't short-circuit subsequent
+   * timings — they run per branch independently.
+   */
+  private _runSequential<T extends AbilityTiming>(
+    timings: T[],
+    context: TimingContextMap[T],
+  ): void {
+    for (let i = 0; i < timings.length; i++) {
+      this.runAbilities(timings[i], context)
+
+      if (!this._abilityBranches) continue
+
+      const branches = this._abilityBranches
+      this._abilityBranches = null
+      const remaining = timings.slice(i + 1)
+
+      if (remaining.length === 0) {
+        this._abilityBranches = branches
+        return
+      }
+
+      const finalBranches: AbilityBranch[] = []
+      for (const branch of branches) {
+        const saved = this._saveBranchState()
+        this._setBranchState(branch)
+
+        this._runSequential(remaining, context)
+
+        if (this._abilityBranches) {
+          const nested: AbilityBranch[] = this._abilityBranches
+          this._abilityBranches = null
+          for (const n of nested) {
+            finalBranches.push({
+              data: n.data,
+              invokes: n.invokes,
+              probability: n.probability * branch.probability,
+              logger: n.logger,
+            })
+          }
+        } else {
+          finalBranches.push({
+            data: this._combatState.data,
+            invokes: this._combatState._invokes,
+            probability: branch.probability,
+            logger: this._logger,
+          })
+        }
+
+        this._restoreBranchState(saved)
+      }
+
+      this._abilityBranches = finalBranches
+      return
+    }
   }
 
   // ── Private execution engine methods ──────────────────────────────
@@ -662,6 +894,18 @@ export class AbilitiesEngine {
 
         const childLogger = logger?.child(invoke.timing).child(ability.key)
 
+        const markInvoked = () => {
+          if (source.type === 'config' || source.type === 'deploy') {
+            sideTracker.configAbilities.add(invoke)
+          } else {
+            const key = `${invoke.timing}:${source.unitType}:${ability.key}`
+            const invokedIds =
+              sideTracker.unitAbilities.get(key) ?? new Set<UnitId>()
+            invokedIds.add(source.unitId)
+            sideTracker.unitAbilities.set(key, invokedIds)
+          }
+        }
+
         if (diceTiming && internalContext) {
           const rawDice = internalContext as OwnOpponentContext<DicePool>
           const diceCallCtx: DiceContext = {
@@ -678,25 +922,80 @@ export class AbilitiesEngine {
           }
         } else {
           ctx.upgradeForCall(state, ability.key, childLogger?.forSide(side))
-          const result = inv.call(ctx, freshParams, internalContext)
-          if (result !== undefined) resultContext = result
-          decrementUses(state, side, ability.key, freshParams, this)
-          ctx.resetAfterCall()
+          try {
+            const result = inv.call(ctx, freshParams, internalContext)
+            if (result !== undefined) resultContext = result
+            decrementUses(state, side, ability.key, freshParams, this)
+            ctx.resetAfterCall()
+          } catch (e) {
+            if (!(e instanceof AbilityBranchInterrupt)) throw e
+
+            ctx.resetAfterCall()
+            markInvoked()
+
+            // Per-branch post-processing: mirror the normal-flow post-call
+            // steps for each branch. The branch's state is swapped in
+            // temporarily so shared engine helpers (assignHits,
+            // runDestroyAbilities) operate on the branch data.
+            const inAssignHitsPhase =
+              state.currentPhase.micro === 'DICE_ROLL' ||
+              state.currentPhase.micro === 'ASSIGN_HITS'
+            const inBeforeAssignHits = timingArray.some(
+              t => t === 'BEFORE_ASSIGN_HITS',
+            )
+
+            const finalBranches: AbilityBranch[] = []
+
+            for (const branch of e.branches) {
+              const saved = this._saveBranchState()
+              this._setBranchState(branch)
+
+              decrementUses(branch.data, side, ability.key, freshParams, this)
+              this.flushPendingUnitInvokes()
+              branch.logger?.forSide(side).log()
+
+              const hitsPresent =
+                branch.data.attacker.hitPools.length > 0 ||
+                branch.data.defender.hitPools.length > 0
+
+              if (hitsPresent && !inAssignHitsPhase && !inBeforeAssignHits) {
+                this._combatState.assignHits()
+                // assignHits → runDestroyAbilities may have triggered more
+                // branching (e.g. AFTER_DESTROY rolled dice).
+                if (this._abilityBranches) {
+                  const nested = this._abilityBranches
+                  this._abilityBranches = null
+                  for (const n of nested) {
+                    finalBranches.push({
+                      data: n.data,
+                      invokes: n.invokes,
+                      probability: n.probability * branch.probability,
+                      logger: n.logger,
+                    })
+                  }
+                  this._restoreBranchState(saved)
+                  continue
+                }
+              }
+
+              finalBranches.push({
+                data: this._combatState.data,
+                invokes: this._combatState._invokes,
+                probability: branch.probability,
+                logger: this._logger,
+              })
+              this._restoreBranchState(saved)
+            }
+
+            return { branches: finalBranches, unitsChanged: true }
+          }
         }
 
         this.flushPendingUnitInvokes()
 
         childLogger?.forSide(side).log()
 
-        if (source.type === 'config' || source.type === 'deploy') {
-          sideTracker.configAbilities.add(invoke)
-        } else {
-          const key = `${invoke.timing}:${source.unitType}:${ability.key}`
-          const invokedIds =
-            sideTracker.unitAbilities.get(key) ?? new Set<UnitId>()
-          invokedIds.add(source.unitId)
-          sideTracker.unitAbilities.set(key, invokedIds)
-        }
+        markInvoked()
 
         if (
           !timingArray.some(t => t === 'BEFORE_ASSIGN_HITS') &&
@@ -706,6 +1005,15 @@ export class AbilitiesEngine {
             state.defender.hitPools.length > 0)
         ) {
           this._combatState.assignHits()
+
+          // assignHits → runDestroyAbilities may have produced branches
+          // (e.g. a destroyed ship triggered an AFTER_DESTROY ability that
+          // called rollDice). Surface them as branches of this resolution.
+          if (this._abilityBranches) {
+            const nested = this._abilityBranches
+            this._abilityBranches = null
+            return { branches: nested, unitsChanged: true }
+          }
         }
 
         const unitsChanged =
