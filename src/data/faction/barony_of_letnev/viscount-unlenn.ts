@@ -1,12 +1,7 @@
 import { z } from 'zod/mini'
 
 import baronyOfLetnevIcon from '@/assets/faction/barony_of_letnev.svg?raw'
-import {
-  type Ability,
-  declareParam,
-  makeVariantId,
-  parseVariantId,
-} from '@/combat'
+import { type Ability, declareParam, makeVariantId } from '@/combat'
 import type { DiceGroup, UnitType, UnitVariantId } from '@/types'
 
 type Params = {
@@ -56,8 +51,7 @@ export const viscountUnlenn: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT_ROUND',
       isCallable: (params, ctx) => {
-        const { type } = parseVariantId(params.unitType)
-        return ctx.api.own.hasUnitType(type)
+        return ctx.api.own.hasUnitType(params.unitType)
       },
       call: (ctx, params) => {
         ctx.api.own.addSubtype(params.unitType, VISCOUNT, parentStats => {
