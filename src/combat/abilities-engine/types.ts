@@ -145,6 +145,9 @@ export interface AbilityReadContext {
     readonly own: SideApi
     readonly opponent: SideApi
   }
+  /** All abilities registered for each side — available regardless of enabled state.
+   *  Use for UI generation (e.g., selects listing agents from both sides). */
+  readonly abilities: OwnOpponentContext<readonly Ability[]>
   /** Get the UnitId this ability is attached to. Throws if called from a non-unit ability. */
   getUnit(): UnitId
   /** Get enabled config abilities matching the given timing(s) for the current side. */
@@ -162,6 +165,8 @@ export interface AbilityCallContext {
     own: SideApi
     opponent: SideApi
   }
+  /** All abilities registered for each side — available regardless of enabled state. */
+  readonly abilities: OwnOpponentContext<readonly Ability[]>
   logger?: Logger
   /** Run abilities for the given timing inline during this call */
   trigger<K extends AbilityTiming>(name: K, context: TimingContextMap[K]): void
@@ -194,6 +199,11 @@ type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
   context?: MetaPhase | MetaPhase[]
   /** Filter invoke by trigger side. 'OWN' = only fires for the side that caused the trigger. 'OPPONENT' = only fires for the other side. Omit for no filtering. */
   side?: 'OWN' | 'OPPONENT'
+  /** System invokes bypass the `uses` accounting — they don't decrement `uses`
+   *  and aren't gated by `uses > 0`. Use for paired teardown invokes
+   *  (e.g. CLEANUP_ROUND after START_OF_COMBAT_ROUND setup) so the pair counts
+   *  as a single use. Rely on `isCallable` to gate firing. Default: false. */
+  system?: boolean
 } & (InternalTimingContextMap[T] extends void
   ? {
       // Void timings (PREPARE, START_OF_COMBAT, etc.)

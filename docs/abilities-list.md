@@ -125,6 +125,7 @@
 
 - [x] **The Cavalry** (Promissory Note) — At the start of a space combat against a player other than the Nomad: During this combat, treat 1 of your non-fighter ships as if it has the Sustain Damage ability, combat value, and Anti-Fighter Barrage value of the Nomad's flagship. Return this card to the Nomad player at the end of this combat.
 - [ ] **The Thundarian** (Agent) — After the "Roll Dice" step of combat: You may exhaust this card. If you do, hits are not assigned to either player's units. Return to the start of this combat round's "Roll Dice" step.
+- [x] **Temporal Command Suite** (Faction Technology) — After any player's agent becomes exhausted, you may exhaust this card to ready that agent; if you ready another player's agent, you may perform a transaction with that player.
 - [x] **Quantum Manipulator** (Mech) — While this unit is in a space area during combat, you may use its Sustain Damage ability to cancel a hit that is produced against your ships in this system.
 
 ### Ral Nel Consortium

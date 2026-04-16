@@ -13,14 +13,6 @@ export const tellurian: Ability = {
     isEnabled: false,
     uses: 1,
   },
-  uiConfig: [
-    {
-      type: 'number',
-      key: 'uses',
-      label: 'Usages',
-      min: 0,
-    },
-  ],
   invoke: [
     {
       timing: 'BEFORE_ASSIGN_HITS',

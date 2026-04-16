@@ -4,12 +4,14 @@ import type { Faction } from '@/types'
 
 import { cavalry } from './cavalry'
 import { quantumManipulator } from './quantum-manipulator'
+import { temporalCommandSuite } from './temporal-command-suite'
 
 export const nomad: Faction = {
   name: 'Nomad',
   icon: nomadIcon,
   abilities: {
     faction: [],
+    technology: [temporalCommandSuite],
     promissory: [cavalry],
   },
   units: {

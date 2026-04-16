@@ -26,7 +26,7 @@ export const viscountUnlenn: Ability<Params> = {
   paramsSchema: z.object({ unitType: z.string() }),
   params: {
     isEnabled: false,
-    uses: 2,
+    uses: 1,
     unitType: declareParam<UnitType>({
       default: 'DESTROYER',
       source: 'nonFighterShips',
@@ -69,6 +69,7 @@ export const viscountUnlenn: Ability<Params> = {
     },
     {
       timing: 'CLEANUP_ROUND',
+      system: true,
       isCallable: (params, ctx) => {
         const variantId = makeVariantId(params.unitType, [VISCOUNT])
         const unitId = ctx.api.own.findUnitByPriority([variantId])

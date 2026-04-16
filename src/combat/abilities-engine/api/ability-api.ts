@@ -24,7 +24,13 @@ import type {
 import { getDiceOutcomes } from '../../combat-state/utils'
 import type { Logger } from '../../logger'
 import type { AbilitiesEngine, InvokeCollections } from '../abilities-engine'
-import type { AbilityTiming, SettingsParams, TimingContextMap } from '../types'
+import type {
+  Ability,
+  AbilityTiming,
+  OwnOpponentContext,
+  SettingsParams,
+  TimingContextMap,
+} from '../types'
 
 // ============================================================================
 // BRANCH TYPES
@@ -406,6 +412,14 @@ export class AbilityContext {
 
   get api(): { own: SideApi; opponent: SideApi } {
     return this._api
+  }
+
+  get abilities(): OwnOpponentContext<readonly Ability[]> {
+    const opponent = getOpponentSide(this._side)
+    return {
+      own: this._abilitiesParams.getAbilities(this._side),
+      opponent: this._abilitiesParams.getAbilities(opponent),
+    }
   }
 
   upgradeForCall(draft: CombatStateData, abilityKey: string, logger?: Logger) {

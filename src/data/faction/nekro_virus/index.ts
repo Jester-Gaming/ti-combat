@@ -44,6 +44,14 @@ const technologyAbilities = Object.values(otherFactions).flatMap(faction =>
     .filter(a => a.subcategory === 'TECHNOLOGY')
     .map(ability => ({
       ...ability,
+      // External techs keep both the original and Nekro's copy visible.
+      // Rename the copy so the two entries don't dedup, and shallow-clone
+      // the invoke entries so each copy has its own references — the engine
+      // tracks "already invoked" by invoke object identity.
+      key: ability.allowExternal ? `NEKRO_${ability.key}` : ability.key,
+      invoke: ability.allowExternal
+        ? ability.invoke.map(inv => ({ ...inv }))
+        : ability.invoke,
       name: ability.name,
       icon: faction.icon,
     })),

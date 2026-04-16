@@ -855,6 +855,7 @@ export class AbilitiesEngine {
 
       if ('isEnabled' in freshParams && !freshParams.isEnabled) continue
       if (
+        !invoke.system &&
         'uses' in freshParams &&
         typeof freshParams.uses === 'number' &&
         freshParams.uses <= 0
@@ -906,6 +907,7 @@ export class AbilitiesEngine {
           }
         }
 
+        const shouldDecrementUses = !invoke.system
         if (diceTiming && internalContext) {
           const rawDice = internalContext as OwnOpponentContext<DicePool>
           const diceCallCtx: DiceContext = {
@@ -914,7 +916,8 @@ export class AbilitiesEngine {
           }
           ctx.upgradeForCall(state, ability.key, childLogger?.forSide(side))
           inv.call(ctx, freshParams, diceCallCtx)
-          decrementUses(state, side, ability.key, freshParams, this)
+          if (shouldDecrementUses)
+            decrementUses(state, side, ability.key, freshParams, this)
           ctx.resetAfterCall()
           resultContext = {
             own: diceCallCtx.own.getAll(),
@@ -925,7 +928,8 @@ export class AbilitiesEngine {
           try {
             const result = inv.call(ctx, freshParams, internalContext)
             if (result !== undefined) resultContext = result
-            decrementUses(state, side, ability.key, freshParams, this)
+            if (shouldDecrementUses)
+              decrementUses(state, side, ability.key, freshParams, this)
             ctx.resetAfterCall()
           } catch (e) {
             if (!(e instanceof AbilityBranchInterrupt)) throw e
@@ -950,7 +954,8 @@ export class AbilitiesEngine {
               const saved = this._saveBranchState()
               this._setBranchState(branch)
 
-              decrementUses(branch.data, side, ability.key, freshParams, this)
+              if (shouldDecrementUses)
+                decrementUses(branch.data, side, ability.key, freshParams, this)
               this.flushPendingUnitInvokes()
               branch.logger?.forSide(side).log()
 
@@ -1066,6 +1071,7 @@ export class AbilitiesEngine {
 
         for (const invoke of ability.invoke) {
           if (
+            !invoke.system &&
             'uses' in mergedParams &&
             typeof mergedParams.uses === 'number' &&
             mergedParams.uses <= 0
@@ -1141,6 +1147,7 @@ export class AbilitiesEngine {
           )
             continue
           if (
+            !invoke.system &&
             'uses' in mergedParams &&
             typeof mergedParams.uses === 'number' &&
             mergedParams.uses <= 0
@@ -1174,6 +1181,7 @@ export class AbilitiesEngine {
 
         for (const invoke of ability.invoke) {
           if (
+            !invoke.system &&
             'uses' in mergedParams &&
             typeof mergedParams.uses === 'number' &&
             mergedParams.uses <= 0
@@ -1318,6 +1326,7 @@ export class AbilitiesEngine {
     const sideMap = this._combatState._invokes[side]
     for (const invoke of ability.invoke) {
       if (
+        !invoke.system &&
         'uses' in mergedParams &&
         typeof mergedParams.uses === 'number' &&
         mergedParams.uses <= 0
@@ -1350,6 +1359,7 @@ export class AbilitiesEngine {
     const sideMap = this._combatState._invokes[side]
     for (const invoke of ability.invoke) {
       if (
+        !invoke.system &&
         'uses' in mergedParams &&
         typeof mergedParams.uses === 'number' &&
         mergedParams.uses <= 0

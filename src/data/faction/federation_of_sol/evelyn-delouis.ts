@@ -21,7 +21,7 @@ export const evelynDelouis: Ability<Params> = {
   paramsSchema: z.object({ unitType: z.string() }),
   params: {
     isEnabled: false,
-    uses: 2,
+    uses: 1,
     unitType: declareParam<UnitType>({
       default: 'INFANTRY',
       source: 'groundForces',
@@ -62,6 +62,7 @@ export const evelynDelouis: Ability<Params> = {
     },
     {
       timing: 'CLEANUP_ROUND',
+      system: true,
       isCallable: (params, ctx) => {
         const variantId = makeVariantId(params.unitType, [EVELYN])
         const unitId = ctx.api.own.findUnitByPriority([variantId])
