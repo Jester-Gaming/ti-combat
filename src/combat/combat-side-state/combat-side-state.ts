@@ -404,7 +404,35 @@ export class CombatSideState {
   findUnitByPriority(
     priority: UnitType[],
     participatingTypes?: ReadonlySet<UnitBaseType>,
-  ): UnitId | undefined {
+    amount?: undefined,
+  ): UnitId | undefined
+  findUnitByPriority(
+    priority: UnitType[],
+    participatingTypes: ReadonlySet<UnitBaseType> | undefined,
+    amount: number,
+  ): UnitId[]
+  findUnitByPriority(
+    priority: UnitType[],
+    participatingTypes?: ReadonlySet<UnitBaseType>,
+    amount?: number,
+  ): UnitId | UnitId[] | undefined {
+    if (amount !== undefined) {
+      const result: UnitId[] = []
+      const seen = new Set<UnitId>()
+      for (const variantId of priority) {
+        const { type } = parseVariantId(variantId)
+        if (participatingTypes && !participatingTypes.has(type)) continue
+        const ids = this.data.units[variantId]
+        if (!ids) continue
+        for (const id of ids) {
+          if (seen.has(id)) continue
+          seen.add(id)
+          result.push(id)
+          if (result.length >= amount) return result
+        }
+      }
+      return result
+    }
     for (const variantId of priority) {
       const { type } = parseVariantId(variantId)
       if (participatingTypes && !participatingTypes.has(type)) continue

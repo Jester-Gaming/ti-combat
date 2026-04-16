@@ -1,6 +1,7 @@
 import sardakkNorrIcon from '@/assets/faction/sardakk_norr.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import { cmorranNorr } from '@/data/faction/sardakk_norr/cmorran-norr'
+import { exotrireme } from '@/data/faction/sardakk_norr/exotrireme'
 import { ghomSekkus } from '@/data/faction/sardakk_norr/ghom-sekkus'
 import { tekklarLegion } from '@/data/faction/sardakk_norr/tekklar-legion'
 import { unrelenting } from '@/data/faction/sardakk_norr/unrelenting'
@@ -62,6 +63,7 @@ export const sardakk_norr: Faction = {
           'This unit cannot be destroyed by Direct Hit action cards. After a round of space combat, you may destroy this unit to destroy up to 2 ships in this system.',
         MOVE: 2,
         DIRECT_HIT_IMMUNE: true,
+        ABILITIES: [exotrireme, sustainDamage],
       },
     },
   },

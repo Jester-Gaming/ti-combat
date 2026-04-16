@@ -117,8 +117,16 @@ export class SideApi {
     return this._sideState.getUnitVariantOptions(filter)
   }
 
-  findUnitByPriority(priority: UnitType[]) {
+  findUnitByPriority(priority: UnitType[]): UnitId | undefined
+  findUnitByPriority(priority: UnitType[], amount: number): UnitId[]
+  findUnitByPriority(
+    priority: UnitType[],
+    amount?: number,
+  ): UnitId | UnitId[] | undefined {
     const participating = new Set(this._sideState.getParticipatingUnitTypes())
+    if (amount !== undefined) {
+      return this._sideState.findUnitByPriority(priority, participating, amount)
+    }
     return this._sideState.findUnitByPriority(priority, participating)
   }
 

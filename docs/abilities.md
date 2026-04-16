@@ -148,14 +148,15 @@ DESTROY               — when units are destroyed (internal destroy processing)
 WHEN_DESTROY          — when units are destroyed (before AFTER_DESTROY, fires from destroyed unit's ABILITIES)
 AFTER_DESTROY         — after units are destroyed
 END_OF_COMBAT_ROUND   — after each round
+AFTER_COMBAT_ROUND    — after END_OF_COMBAT_ROUND, before CLEANUP_ROUND
 END_OF_COMBAT         — when combat ends
-CLEANUP_ROUND         — after END_OF_COMBAT_ROUND, resets per-round state (e.g. usedSustainThisRound)
+CLEANUP_ROUND         — after AFTER_COMBAT_ROUND, resets per-round state (e.g. usedSustainThisRound)
 AFTER_ROUND           — after round cleanup
 ```
 
 ### Function Signatures by Timing
 
-**Void timings** (CLEANUP, PREPARE, COMMIT_UNITS, START_OF_COMBAT, START_OF_COMBAT_ROUND, AFTER_UNIT_ABILITY_ROLL, AFTER_DICE_ROLL, BEFORE_ASSIGN_HITS, AFTER_ASSIGN_HITS_STEP, END_OF_COMBAT_ROUND, END_OF_COMBAT, CLEANUP_ROUND, AFTER_ROUND):
+**Void timings** (CLEANUP, PREPARE, COMMIT_UNITS, START_OF_COMBAT, START_OF_COMBAT_ROUND, AFTER_UNIT_ABILITY_ROLL, AFTER_DICE_ROLL, BEFORE_ASSIGN_HITS, AFTER_ASSIGN_HITS_STEP, END_OF_COMBAT_ROUND, AFTER_COMBAT_ROUND, END_OF_COMBAT, CLEANUP_ROUND, AFTER_ROUND):
 
 ```typescript
 isCallable?: (params: Params, ctx: AbilityReadContext) => boolean

@@ -118,6 +118,7 @@ export interface TimingContextMap {
   WHEN_DESTROY: SidedContext<Record<UnitType, UnitId[]>>
   AFTER_DESTROY: SidedContext<Record<UnitType, UnitId[]>>
   END_OF_COMBAT_ROUND: void
+  AFTER_COMBAT_ROUND: void
   END_OF_COMBAT: void
   CLEANUP_ROUND: void
   AFTER_ROUND: void

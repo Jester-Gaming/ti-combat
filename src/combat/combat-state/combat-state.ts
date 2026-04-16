@@ -725,19 +725,23 @@ export class CombatState {
     this.runAbilities('END_OF_COMBAT_ROUND')
 
     return this.handleBranchesOrContinue(() => {
-      this.runAbilities('CLEANUP_ROUND')
+      this.runAbilities('AFTER_COMBAT_ROUND')
 
       return this.handleBranchesOrContinue(() => {
-        // Clear stored hit-value modifiers
-        if (
-          this.data.attacker.hitValueModifiers?.length ||
-          this.data.defender.hitValueModifiers?.length
-        ) {
-          delete this.data.attacker.hitValueModifiers
-          delete this.data.defender.hitValueModifiers
-        }
+        this.runAbilities('CLEANUP_ROUND')
 
-        return this.transitionPhase()
+        return this.handleBranchesOrContinue(() => {
+          // Clear stored hit-value modifiers
+          if (
+            this.data.attacker.hitValueModifiers?.length ||
+            this.data.defender.hitValueModifiers?.length
+          ) {
+            delete this.data.attacker.hitValueModifiers
+            delete this.data.defender.hitValueModifiers
+          }
+
+          return this.transitionPhase()
+        })
       })
     })
   }
