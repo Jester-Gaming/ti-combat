@@ -82,7 +82,7 @@
 - [x] **The Egeiro** (Flagship) — Apply +1 to the result of each of this unit's combat rolls for each non-home system that contains a planet you control.
 - [x] **Dame Briar** (Agent) — When a player's unit is destroyed: You may exhaust this card to galvanize another of that player's units in the destroyed unit's system.
 - [ ] **Entity 4X41A "Apollo"** (Hero) — When one of your galvanized units is destroyed: You may purge this card to roll 1 die for each unit in its system that belongs to another player; if the result is equal to or greater than the galvanized unit's combat value, destroy that unit.
-- [ ] **A3 Valiance** (Mech) — When this unit is destroyed, if it was galvanized, galvanize up to 3 of your infantry in its system.
+- [x] **A3 Valiance** (Mech) — When this unit is destroyed, if it was galvanized, galvanize up to 3 of your infantry in its system.
 
 ### L1Z1X Mindnet
 

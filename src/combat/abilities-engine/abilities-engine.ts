@@ -846,12 +846,7 @@ export class AbilitiesEngine {
       const inv = invoke as any
       const diceTiming = isDiceTiming(timing)
 
-      const isDestroyTiming =
-        invoke.timing === 'DESTROY' ||
-        invoke.timing === 'WHEN_DESTROY' ||
-        invoke.timing === 'AFTER_DESTROY'
-      const unitSource =
-        source.type === 'unit' && !isDestroyTiming ? source.unitId : undefined
+      const unitSource = source.type === 'unit' ? source.unitId : undefined
 
       if ('isEnabled' in freshParams && !freshParams.isEnabled) continue
       if (

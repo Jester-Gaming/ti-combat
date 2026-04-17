@@ -2,6 +2,7 @@ import lastBastionIcon from '@/assets/faction/last_bastion.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
+import { a3Valiance } from './a3-valiance'
 import { dameBriar } from './dame-briar'
 import { theEgeiro } from './the-egeiro'
 
@@ -40,7 +41,7 @@ export const last_bastion: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [sustainDamage, a3Valiance],
       },
     },
     SPACE_DOCK: {

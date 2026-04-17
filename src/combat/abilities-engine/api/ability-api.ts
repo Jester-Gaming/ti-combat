@@ -485,7 +485,7 @@ export class AbilityContext {
   }
 
   getUnit(): UnitId {
-    if (!this.unitSource) {
+    if (this.unitSource === undefined) {
       throw new Error('getUnit() can only be called from unit abilities')
     }
     return this.unitSource
