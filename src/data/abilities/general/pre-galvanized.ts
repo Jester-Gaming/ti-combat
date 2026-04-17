@@ -7,6 +7,7 @@ import type { SideApi } from '../../../combat/abilities-engine/api/ability-api'
 
 type Params = {
   galvanizedUnits: Partial<Record<UnitType, number | undefined>>
+  reinforcementTokens: number
 }
 
 export const GALVANIZED = 'Galvanized' as UnitVariantId
@@ -31,9 +32,26 @@ export function galvanizeStats(stats: UnitStats): UnitStats {
 }
 
 /** Galvanize one unit of the given type — moves it to the Galvanized subtype
- *  with +1 bonus die on COMBAT, BOMBARDMENT, AFB, and SPACE_CANNON. */
-export function galvanizeUnit(api: SideApi, unitType: UnitType): void {
+ *  with +1 bonus die on COMBAT, BOMBARDMENT, AFB, and SPACE_CANNON.
+ *  Pass `consumeToken: true` to consume one reinforcement token from
+ *  PRE_GALVANIZED; returns false if the token pool is empty. */
+export function galvanizeUnit(
+  api: SideApi,
+  unitType: UnitType,
+  consumeToken?: boolean,
+): boolean {
+  if (consumeToken) {
+    const tokens =
+      (api.getAbilityConfig('PRE_GALVANIZED')?.reinforcementTokens as
+        | number
+        | undefined) ?? 0
+    if (tokens <= 0) return false
+    api.updateAbilityConfig('PRE_GALVANIZED', {
+      reinforcementTokens: tokens - 1,
+    })
+  }
   api.addSubtype(unitType, GALVANIZED, galvanizeStats)
+  return true
 }
 
 /** Declare a Galvanized subtype for a given unit type — for use inside an
@@ -49,11 +67,13 @@ export const preGalvanized: Ability<Params> = {
   category: 'GENERAL',
   paramsSchema: z.object({
     galvanizedUnits: z.record(z.string(), z.optional(z.number())),
+    reinforcementTokens: z.number(),
   }),
   params: {
     isEnabled: true,
     uses: Infinity,
     galvanizedUnits: {},
+    reinforcementTokens: 7,
   },
   declareParamChange: params => {
     const changes: ParamChange[] = []
@@ -68,15 +88,23 @@ export const preGalvanized: Ability<Params> = {
       excludeSubtypes: [GALVANIZED],
     })
 
+    const tokens = {
+      key: 'reinforcementTokens' as const,
+      label: 'Tokens in reinforcement',
+      type: 'number' as const,
+      min: 0,
+    }
+
     return items.length > 0
       ? [
+          tokens,
           {
-            key: 'galvanizedUnits',
-            type: 'number-list',
+            key: 'galvanizedUnits' as const,
+            type: 'number-list' as const,
             items,
           },
         ]
-      : []
+      : [tokens]
   },
   invoke: [
     {
