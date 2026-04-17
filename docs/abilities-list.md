@@ -76,8 +76,8 @@
 ### Last Bastion
 
 - [x] **Galvanize** (Faction Ability) — Galvanized units roll 1 additional die for combat rolls and unit abilities.
-- [ ] **Phoenix Standard** (Faction Ability) — At the end of combat, you may galvanize 1 of your units that participated.
-- [ ] **Raise the Standard** (Promissory Note) — At the end of a combat: Galvanize 1 of your units that participated. Then, return this card to the Last Bastion player.
+- [x] **Phoenix Standard** (Faction Ability) — At the end of combat, you may galvanize 1 of your units that participated.
+- [x] **Raise the Standard** (Promissory Note) — At the end of a combat: Galvanize 1 of your units that participated. Then, return this card to the Last Bastion player.
 - [ ] **Proxima Targeting VI** (Faction Technology) — Cancel 1 hit produced by Bombardment rolls made against your ground forces for each of your galvanized units present. At the start of a round of ground combat you may resolve Bombardment 8 (x3) against your opponent's ground forces; if you do, make an identical roll against your own ground forces.
 - [x] **The Egeiro** (Flagship) — Apply +1 to the result of each of this unit's combat rolls for each non-home system that contains a planet you control.
 - [x] **Dame Briar** (Agent) — When a player's unit is destroyed: You may exhaust this card to galvanize another of that player's units in the destroyed unit's system.

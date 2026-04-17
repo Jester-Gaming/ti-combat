@@ -4,12 +4,16 @@ import type { Faction } from '@/types'
 
 import { a3Valiance } from './a3-valiance'
 import { dameBriar } from './dame-briar'
+import { phoenixStandard } from './phoenix-standard'
+import { raiseTheStandard } from './raise-the-standard'
 import { theEgeiro } from './the-egeiro'
 
 export const last_bastion: Faction = {
   name: 'Last Bastion',
   icon: lastBastionIcon,
   abilities: {
+    faction: [phoenixStandard],
+    promissory: [raiseTheStandard],
     agent: [dameBriar],
   },
   units: {
