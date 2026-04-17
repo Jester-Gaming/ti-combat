@@ -80,7 +80,7 @@
 - [ ] **Raise the Standard** (Promissory Note) — At the end of a combat: Galvanize 1 of your units that participated. Then, return this card to the Last Bastion player.
 - [ ] **Proxima Targeting VI** (Faction Technology) — Cancel 1 hit produced by Bombardment rolls made against your ground forces for each of your galvanized units present. At the start of a round of ground combat you may resolve Bombardment 8 (x3) against your opponent's ground forces; if you do, make an identical roll against your own ground forces.
 - [x] **The Egeiro** (Flagship) — Apply +1 to the result of each of this unit's combat rolls for each non-home system that contains a planet you control.
-- [ ] **Dame Briar** (Agent) — When a player's unit is destroyed: You may exhaust this card to galvanize another of that player's units in the destroyed unit's system.
+- [x] **Dame Briar** (Agent) — When a player's unit is destroyed: You may exhaust this card to galvanize another of that player's units in the destroyed unit's system.
 - [ ] **Entity 4X41A "Apollo"** (Hero) — When one of your galvanized units is destroyed: You may purge this card to roll 1 die for each unit in its system that belongs to another player; if the result is equal to or greater than the galvanized unit's combat value, destroy that unit.
 - [ ] **A3 Valiance** (Mech) — When this unit is destroyed, if it was galvanized, galvanize up to 3 of your infantry in its system.
 

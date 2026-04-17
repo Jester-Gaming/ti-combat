@@ -978,26 +978,20 @@ export class CombatSideState {
     const newKey = makeVariantId(type, newSubtypes as UnitVariantId[])
     if (newKey === sourceKey) return
 
-    const movedId = data.units[sourceKey].pop()!
-    if (data.units[sourceKey].length <= 0) {
-      delete data.units[sourceKey]
-    }
-
-    if (!data.units[newKey]) {
-      data.units[newKey] = []
-    }
-    data.units[newKey].push(movedId)
+    this._moveUnitVariant(sourceKey, newKey)
 
     if (!data.unitStats[newKey]) {
+      let value: UnitStats | ((parentStats: UnitStats) => UnitStats) | undefined
       if (statsFactory) {
-        data.unitStats[newKey] = statsFactory
+        value = statsFactory
       } else {
         const sourceStats =
           resolveUnitStats(data.unitStats, sourceKey) ??
           resolveUnitStats(data.unitStats, type)
-        if (sourceStats) {
-          data.unitStats[newKey] = { ...sourceStats }
-        }
+        if (sourceStats) value = { ...sourceStats }
+      }
+      if (value !== undefined) {
+        data.unitStats = { ...data.unitStats, [newKey]: value }
       }
     }
   }
@@ -1025,15 +1019,29 @@ export class CombatSideState {
     const newKey: UnitType =
       newSubtypes.length > 0 ? makeVariantId(type, newSubtypes) : type
 
-    const movedId = data.units[sourceKey].pop()!
-    if (data.units[sourceKey].length <= 0) {
-      delete data.units[sourceKey]
+    this._moveUnitVariant(sourceKey, newKey)
+  }
+
+  /** COW-safe move of one unit from sourceKey to newKey.
+   *  Rebuilds `data.units` and affected arrays without mutating shared refs —
+   *  safe to call inside branches that share arrays with the base state. */
+  private _moveUnitVariant(sourceKey: UnitType, newKey: UnitType): void {
+    const data = this.data
+    const source = data.units[sourceKey]
+    const movedId = source[source.length - 1]
+    const units = { ...data.units }
+
+    const newSource = source.slice(0, -1)
+    if (newSource.length === 0) {
+      delete units[sourceKey]
+    } else {
+      units[sourceKey] = newSource
     }
 
-    if (!data.units[newKey]) {
-      data.units[newKey] = []
-    }
-    data.units[newKey].push(movedId)
+    const existing = units[newKey]
+    units[newKey] = existing ? [...existing, movedId] : [movedId]
+
+    data.units = units
   }
 
   /**
