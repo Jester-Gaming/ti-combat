@@ -78,7 +78,7 @@
 - [x] **Galvanize** (Faction Ability) — Galvanized units roll 1 additional die for combat rolls and unit abilities.
 - [x] **Phoenix Standard** (Faction Ability) — At the end of combat, you may galvanize 1 of your units that participated.
 - [x] **Raise the Standard** (Promissory Note) — At the end of a combat: Galvanize 1 of your units that participated. Then, return this card to the Last Bastion player.
-- [ ] **Proxima Targeting VI** (Faction Technology) — Cancel 1 hit produced by Bombardment rolls made against your ground forces for each of your galvanized units present. At the start of a round of ground combat you may resolve Bombardment 8 (x3) against your opponent's ground forces; if you do, make an identical roll against your own ground forces.
+- [x] **Proxima Targeting VI** (Faction Technology) — Cancel 1 hit produced by Bombardment rolls made against your ground forces for each of your galvanized units present. At the start of a round of ground combat you may resolve Bombardment 8 (x3) against your opponent's ground forces; if you do, make an identical roll against your own ground forces.
 - [x] **The Egeiro** (Flagship) — Apply +1 to the result of each of this unit's combat rolls for each non-home system that contains a planet you control.
 - [x] **Dame Briar** (Agent) — When a player's unit is destroyed: You may exhaust this card to galvanize another of that player's units in the destroyed unit's system.
 - [ ] **Entity 4X41A "Apollo"** (Hero) — When one of your galvanized units is destroyed: You may purge this card to roll 1 die for each unit in its system that belongs to another player; if the result is equal to or greater than the galvanized unit's combat value, destroy that unit.
@@ -86,7 +86,7 @@
 
 ### L1Z1X Mindnet
 
-- [ ] **Harrow** (Faction Ability) — At the end of each round of ground combat, your ships in the active system may use their Bombardment abilities against your opponent's ground forces on the planet.
+- [x] **Harrow** (Faction Ability) — At the end of each round of ground combat, your ships in the active system may use their Bombardment abilities against your opponent's ground forces on the planet.
 - [ ] **[0.0.1]** (Flagship) — During a space combat, hits produced by this ship and by your dreadnoughts in this system must be assigned to non-fighter ships if able.
 - [x] **2RAM** (Commander) — Units that have Planetary Shield do not prevent you from using Bombardment.
 - [ ] **Annihilator** (Mech) — Bombardment 8. While not participating in ground combat, this unit can use its Bombardment ability on planets in its system as if it were a ship.

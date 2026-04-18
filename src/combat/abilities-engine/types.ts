@@ -12,6 +12,7 @@ import type {
   CombatMode,
   CombatStateData,
   MetaPhase,
+  UnitAbilityMeta,
 } from '../combat-state/types'
 import type { Logger } from '../logger'
 import type { SideApi } from './api/ability-api'
@@ -145,6 +146,8 @@ export interface AbilityReadContext {
     readonly own: SideApi
     readonly opponent: SideApi
   }
+  /** The absolute CombatSide this ability is currently running on. */
+  readonly side: CombatSide
   /** All abilities registered for each side — available regardless of enabled state.
    *  Use for UI generation (e.g., selects listing agents from both sides). */
   readonly abilities: OwnOpponentContext<readonly Ability[]>
@@ -165,6 +168,8 @@ export interface AbilityCallContext {
     own: SideApi
     opponent: SideApi
   }
+  /** The absolute CombatSide this ability is currently running on. */
+  readonly side: CombatSide
   /** All abilities registered for each side — available regardless of enabled state. */
   readonly abilities: OwnOpponentContext<readonly Ability[]>
   logger?: Logger
@@ -189,6 +194,32 @@ export interface AbilityCallContext {
     dice: DiceGroup[],
     callback: (branchCtx: AbilityCallContext, hits: number[]) => void,
   ): never
+
+  /** Resolve a full unit-ability step (DICE_POOL → BEFORE_UNIT_ABILITY_ROLL →
+   *  roll → AFTER_UNIT_ABILITY_ROLL → ASSIGN_HITS → AFTER_ASSIGN_HITS_STEP +
+   *  destroy cascade) from within another ability's call. The step runs with
+   *  currentPhase.meta temporarily swapped to `meta` so invoke-level `context`
+   *  filters and hit-value modifiers match; the outer phase is restored on
+   *  every resulting branch.
+   *
+   *  Fires from the calling ability's side (`ctx.side`).
+   *
+   *  Overrides:
+   *   - `dice`   — custom dice pool for the firing side; skips collectDice
+   *   - `target` — where hits land. `'OPPONENT'` (default) or `'OWN'`
+   *                (self-damage, e.g. Proxima's second roll)
+   *
+   *  Composition: to run multiple resolves sequentially, nest them inside
+   *  `callback`. Sequencing two top-level calls does NOT work because the
+   *  first will throw `AbilityBranchInterrupt` on multi-outcome. */
+  resolveStep<M extends UnitAbilityMeta>(
+    meta: M,
+    overrides?: {
+      dice?: DiceGroup[]
+      target?: 'OWN' | 'OPPONENT'
+    },
+    callback?: (branchCtx: AbilityCallContext) => void,
+  ): void
 }
 
 // Auto-generate invoke type for each timing

@@ -21,11 +21,13 @@ export {
   CombatState,
   type CombatStateData,
   getInitialPhaseIdentifier,
+  type HitSource,
   type MetaPhase,
   type MicroPhase,
   type SideStateData,
   type StateWithProbability,
   UNIT_ABILITY_PHASES,
+  type UnitAbilityMeta,
 } from './combat-state'
 export type { LogEntry } from './logger'
 export type { CombatOutcome, SurvivorSide } from './types'

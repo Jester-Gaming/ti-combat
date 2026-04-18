@@ -8,8 +8,10 @@ export {
   type AbilitiesConfig,
   type CombatMode,
   type CombatStateData,
+  type HitSource,
   type MetaPhase,
   type MicroPhase,
   type SideStateData,
   UNIT_ABILITY_PHASES,
+  type UnitAbilityMeta,
 } from './types'

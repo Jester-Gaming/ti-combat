@@ -32,6 +32,13 @@ import type {
  */
 export type CombatMode = 'SPACE' | 'GROUND'
 
+/** Subset of MetaPhase that can be used with AbilityCallContext.resolveStep. */
+export type UnitAbilityMeta =
+  | 'BOMBARDMENT'
+  | 'AFB'
+  | 'SPACE_CANNON_OFFENSE'
+  | 'SPACE_CANNON_DEFENSE'
+
 /**
  * MetaPhase represents the major combat stages in TI4.
  *
@@ -47,15 +54,13 @@ export type CombatMode = 'SPACE' | 'GROUND'
  *
  * Both flows end with COMPLETE when combat finishes.
  */
+
 export type MetaPhase =
-  | 'SPACE_CANNON_OFFENSE'
-  | 'AFB'
   | 'SPACE_COMBAT'
-  | 'BOMBARDMENT'
   | 'COMMIT_UNITS'
-  | 'SPACE_CANNON_DEFENSE'
   | 'GROUND_COMBAT'
   | 'COMPLETE'
+  | UnitAbilityMeta
 
 /** Meta-phases that correspond to unit ability rolls (bombardment, space cannon, AFB). */
 export const UNIT_ABILITY_PHASES: MetaPhase[] = [

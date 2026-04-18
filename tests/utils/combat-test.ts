@@ -3,6 +3,7 @@ import {
   CombatState,
   type CombatStateData,
   type DicePool,
+  type HitSource,
   type LogEntry,
   type MetaPhase,
   type MicroPhase,
@@ -235,22 +236,44 @@ export class CombatTest {
     })
   }
 
-  dicePool(): { attacker: DicePool; defender: DicePool } {
-    // Find the last DICE_POOL entry
-    for (let i = this._log.length - 1; i >= 0; i--) {
-      const entry = this._log[i]
-      if (entry.path[entry.path.length - 1] === 'DICE_POOL' && entry.data) {
-        const data = entry.data[0] as {
-          attacker: DicePool
-          defender: DicePool
-        }
-        if (this._reversed) {
-          return { attacker: data.defender, defender: data.attacker }
-        }
-        return { attacker: data.attacker, defender: data.defender }
+  /** Return a DICE_POOL entry's payload. Indexing follows `Array.prototype.at`
+   *  semantics: `0` is the first pool, `-1` (default) is the last, negative
+   *  values count from the end. Out-of-range indices yield an empty pool. */
+  dicePool(index: number = -1): {
+    attacker: DicePool
+    defender: DicePool
+    hitSource?: HitSource
+  } {
+    const pools: {
+      attacker: DicePool
+      defender: DicePool
+      hitSource?: HitSource
+    }[] = []
+    for (const entry of this._log) {
+      if (entry.path[entry.path.length - 1] !== 'DICE_POOL') continue
+      if (!entry.data) continue
+      const data = entry.data[0] as {
+        attacker: DicePool
+        defender: DicePool
+        hitSource?: HitSource
+      }
+      pools.push(data)
+    }
+
+    const data = pools.at(index)
+    if (!data) return { attacker: {}, defender: {} }
+    if (this._reversed) {
+      return {
+        attacker: data.defender,
+        defender: data.attacker,
+        hitSource: data.hitSource,
       }
     }
-    return { attacker: {}, defender: {} }
+    return {
+      attacker: data.attacker,
+      defender: data.defender,
+      hitSource: data.hitSource,
+    }
   }
 }
 

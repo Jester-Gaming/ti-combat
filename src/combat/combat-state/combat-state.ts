@@ -21,6 +21,7 @@ import {
   assignHitsForSide,
   CombatSideState,
   getAssignHitsParams,
+  getOpponentSide,
   getParticipatingUnitsSet,
 } from '../combat-side-state/combat-side-state'
 import { type LogEntry, Logger } from '../logger'
@@ -42,6 +43,7 @@ import type {
   MetaPhase,
   PhaseIdentifier,
   SideStateData,
+  UnitAbilityMeta,
 } from './types'
 import { getCombinedDiceDistribution } from './utils'
 
@@ -355,6 +357,11 @@ export class CombatState {
     modifiedDice: SidedDiceData,
     validTargets: { attacker: UnitType[]; defender: UnitType[] },
     afterRollTiming?: AbilityTiming,
+    opts?: {
+      overridePhase?: PhaseIdentifier
+      routing?: { attacker: CombatSide; defender: CombatSide }
+      firingSides?: CombatSide[]
+    },
   ): StateWithProbability[] {
     const attackerDist = getCombinedDiceDistribution(
       flattenDicePool(modifiedDice.attacker),
@@ -363,7 +370,8 @@ export class CombatState {
       flattenDicePool(modifiedDice.defender),
     )
 
-    const nextPhase = getNextMicroPhase(this.data.currentPhase)
+    const nextPhase =
+      opts?.overridePhase ?? getNextMicroPhase(this.data.currentPhase)
     const { meta: metaPhase } = this.data.currentPhase
 
     const results: StateWithProbability[] = []
@@ -376,8 +384,20 @@ export class CombatState {
     const runAfterRoll =
       afterRollTiming != null && this._params.hasCallableInvoke(afterRollTiming)
 
-    // this.data is the base for all branches (plain object, already mutated by
-    // preceding abilities). Each branch gets an independent shallow copy.
+    // Loop-invariant: routing targets and after-roll options depend only on
+    // opts, not on branch state. Hoist out of the per-branch dice loop.
+    const attackerHitTarget = opts?.routing?.attacker ?? 'defender'
+    const defenderHitTarget = opts?.routing?.defender ?? 'attacker'
+    const afterOptions =
+      runAfterRoll &&
+      afterRollTiming === 'AFTER_UNIT_ABILITY_ROLL' &&
+      opts?.firingSides
+        ? buildUnitAbilityRunOptions(opts.firingSides, opts.routing, {
+            firingOnly: true,
+            timing: 'after',
+          })
+        : undefined
+
     const baseData = this.data
 
     for (const attOutcome of attackerDist) {
@@ -385,18 +405,16 @@ export class CombatState {
         const probability = attOutcome.probability * defOutcome.probability
         if (probability === 0) continue
 
-        // Reset _invokes to baseline for this outcome (COW armed)
         this._invokes = baseInvokes
         this._invokesOwned = false
 
-        // Light copy per branch — only hitPools + currentPhase are new.
-        // units/unitState stay shared with base until abilities need them.
         const branchData = cloneStateForBranch(baseData, nextPhase)
         addHitsToData(
           branchData,
           attOutcome.hits,
           defOutcome.hits,
           validTargets,
+          opts?.routing,
         )
 
         const branchLogger = this._logger?.fork()
@@ -404,13 +422,15 @@ export class CombatState {
           attacker: attOutcome.hits,
           defender: defOutcome.hits,
         })
-        // Log raw hits *received* per side before AFTER_DICE_ROLL /
-        // AFTER_UNIT_ABILITY_ROLL abilities can modify hitPools.
-        // Used by test framework (pickOutcomeByHits) to select branches
-        // based on unmodified dice results.
+        let hitsToAttacker = 0
+        let hitsToDefender = 0
+        if (attackerHitTarget === 'attacker') hitsToAttacker += attOutcome.hits
+        else hitsToDefender += attOutcome.hits
+        if (defenderHitTarget === 'attacker') hitsToAttacker += defOutcome.hits
+        else hitsToDefender += defOutcome.hits
         branchLogger?.child(metaPhase).child('DICE_HITS').log({
-          attacker: defOutcome.hits,
-          defender: attOutcome.hits,
+          attacker: hitsToAttacker,
+          defender: hitsToDefender,
         })
 
         if (runAfterRoll) {
@@ -419,7 +439,7 @@ export class CombatState {
           this._params.runAbilities(
             afterRollTiming!,
             undefined,
-            undefined,
+            afterOptions,
             branchLogger?.child(metaPhase),
           )
 
@@ -535,46 +555,46 @@ export class CombatState {
     }
   }
 
-  /** Process dice roll for unit ability phases */
-  private processUnitAbilityDiceRoll(
-    config: UnitAbilityPhaseConfig,
-  ): StateWithProbability[] {
-    const { firing, hitSource, allowedUnitTypes } = config
-
-    // Check which firing sides have the unit ability blocked
+  /** Shared pre-roll pipeline for unit-ability phases. Runs block-check, dice
+   *  collection (or custom-dice override), BEFORE_UNIT_ABILITY_ROLL, stored
+   *  hit-value modifiers, and DICE_POOL logging. Returns `'ALL_BLOCKED'` when
+   *  no firing side can act — caller decides how to short-circuit. */
+  private prepareUnitAbilityDice(
+    firing: CombatSide[],
+    hitSource: HitSource,
+    allowedUnitTypes?: ReadonlySet<UnitBaseType>,
+    customDice?: SidedDiceData,
+    routing?: { attacker: CombatSide; defender: CombatSide },
+  ):
+    | {
+        modifiedDice: SidedDiceData
+        validTargets: { attacker: UnitType[]; defender: UnitType[] }
+      }
+    | 'ALL_BLOCKED' {
     const blockedSides = firing.filter(side =>
       this.side(side).isAbilityBlocked(hitSource as UnitAbility),
     )
+    if (blockedSides.length === firing.length) return 'ALL_BLOCKED'
 
-    // If all firing sides are blocked, skip entire unit ability phase
-    if (blockedSides.length === firing.length) {
-      this.data.currentPhase.micro = getLastMicroPhase(
-        this.data.currentPhase.meta,
-      )
-      return this.transitionPhase()
-    }
-
-    // Collect dice based on firing configuration
-    const attackerDice = firing.includes('attacker')
-      ? this.side('attacker').collectDice(hitSource, allowedUnitTypes)
+    const attackerDice: DicePool = firing.includes('attacker')
+      ? (customDice?.attacker ??
+        this.side('attacker').collectDice(hitSource, allowedUnitTypes))
       : {}
-    const defenderDice = firing.includes('defender')
-      ? this.side('defender').collectDice(hitSource, allowedUnitTypes)
+    const defenderDice: DicePool = firing.includes('defender')
+      ? (customDice?.defender ??
+        this.side('defender').collectDice(hitSource, allowedUnitTypes))
       : {}
 
-    const sidedDiceData: SidedDiceData = {
-      attacker: attackerDice,
-      defender: defenderDice,
-    }
-
-    // All unit ability timings use SidedDiceData context
+    const beforeOptions = buildUnitAbilityRunOptions(firing, routing, {
+      timing: 'before',
+    })
+    if (blockedSides.length > 0) beforeOptions.skipSides = blockedSides
     const modifiedDice = this.runAbilities(
       'BEFORE_UNIT_ABILITY_ROLL',
-      sidedDiceData,
-      blockedSides.length > 0 ? { skipSides: blockedSides } : undefined,
+      { attacker: attackerDice, defender: defenderDice },
+      beforeOptions,
     )
 
-    // Apply stored hit-value modifiers
     const meta = this.data.currentPhase.meta
     if (this.data.attacker.hitValueModifiers?.length) {
       applyStoredHitValueModifiers(
@@ -591,24 +611,123 @@ export class CombatState {
       )
     }
 
-    // Clear dice for sides not in firing config
-    // (abilities may inject dice for non-firing sides, e.g. attacker during SCD)
+    // Abilities may inject dice for non-firing sides (e.g. attacker during
+    // SCD); drop those so only firing sides contribute to the roll.
     if (!firing.includes('attacker')) modifiedDice.attacker = {}
     if (!firing.includes('defender')) modifiedDice.defender = {}
 
-    this._logger?.child(this.data.currentPhase.meta).child('DICE_POOL').log({
+    this._logger?.child(meta).child('DICE_POOL').log({
       attacker: modifiedDice.attacker,
       defender: modifiedDice.defender,
+      hitSource,
     })
 
-    return this.rollDiceOutcomes(
+    return {
       modifiedDice,
-      {
+      validTargets: {
         attacker: this.side('attacker').getValidTargetsForPhase(this.data),
         defender: this.side('defender').getValidTargetsForPhase(this.data),
       },
-      'AFTER_UNIT_ABILITY_ROLL',
+    }
+  }
+
+  private processUnitAbilityDiceRoll(
+    config: UnitAbilityPhaseConfig,
+  ): StateWithProbability[] {
+    const { firing, hitSource, allowedUnitTypes } = config
+    const prepared = this.prepareUnitAbilityDice(
+      firing,
+      hitSource,
+      allowedUnitTypes,
     )
+    if (prepared === 'ALL_BLOCKED') {
+      this.data.currentPhase.micro = getLastMicroPhase(
+        this.data.currentPhase.meta,
+      )
+      return this.transitionPhase()
+    }
+    return this.rollDiceOutcomes(
+      prepared.modifiedDice,
+      prepared.validTargets,
+      'AFTER_UNIT_ABILITY_ROLL',
+      { firingSides: firing },
+    )
+  }
+
+  /** Run a full unit-ability step (DICE_ROLL + ASSIGN_HITS) from an ability
+   *  at another timing. Temporarily sets `currentPhase.meta` to the step's
+   *  meta so invoke-level `context` filters and hit-value modifiers match,
+   *  then restores the outer phase on every resulting branch.
+   *
+   *  Used by AbilityContext.resolveStep. */
+  public runUnitAbilityStepForAbility(config: {
+    meta: UnitAbilityMeta
+    firing: CombatSide[]
+    hitSource: HitSource
+    customDice?: SidedDiceData
+    routing?: { attacker: CombatSide; defender: CombatSide }
+  }): StateWithProbability[] {
+    const { meta, firing, hitSource, customDice, routing } = config
+    const outerPhase = this.data.currentPhase
+
+    this.data.currentPhase = { meta, micro: 'DICE_ROLL' }
+
+    const prepared = this.prepareUnitAbilityDice(
+      firing,
+      hitSource,
+      undefined,
+      customDice,
+      routing,
+    )
+    if (prepared === 'ALL_BLOCKED') {
+      this.data.currentPhase = outerPhase
+      const state = CombatState.fromData(this.data, this._params)
+      state._logger = this._logger
+      return [{ state, probability: 1 }]
+    }
+
+    const diceRollBranches = this.rollDiceOutcomes(
+      prepared.modifiedDice,
+      prepared.validTargets,
+      'AFTER_UNIT_ABILITY_ROLL',
+      {
+        overridePhase: { meta, micro: 'ASSIGN_HITS' },
+        routing,
+        firingSides: firing,
+      },
+    )
+
+    const finalBranches: StateWithProbability[] = []
+
+    for (const { state: branchCS, probability } of diceRollBranches) {
+      this.data = branchCS.data
+      this._invokes = branchCS._invokes
+      this._invokesOwned = false
+      this._logger = branchCS._logger
+      this._params.setCombatState(this, this._logger)
+
+      this.assignHits()
+
+      const results = this.handleBranchesOrContinue(() => {
+        this.runAbilities('AFTER_ASSIGN_HITS_STEP')
+        return this.handleBranchesOrContinue(() => {
+          clearPhaseScopedHitValueModifiers(this.data, meta)
+          this.data.currentPhase = outerPhase
+          const state = CombatState.fromData(this.data, this._params)
+          state._logger = this._logger
+          return [{ state, probability: 1 }]
+        })
+      })
+
+      for (const r of results) {
+        finalBranches.push({
+          state: r.state,
+          probability: probability * r.probability,
+        })
+      }
+    }
+
+    return finalBranches
   }
 
   // ===========================================================================
@@ -689,6 +808,7 @@ export class CombatState {
     this._logger?.child(this.data.currentPhase.meta).child('DICE_POOL').log({
       attacker: modifiedDice.attacker,
       defender: modifiedDice.defender,
+      hitSource: 'COMBAT',
     })
 
     return this.rollDiceOutcomes(
@@ -708,6 +828,14 @@ export class CombatState {
       this.runAbilities('AFTER_ASSIGN_HITS_STEP')
 
       return this.handleBranchesOrContinue(() => {
+        // Clear phase-scoped hit-value modifiers so they don't stack across
+        // repeated phases (e.g. Bunker's -4 BOMBARDMENT modifier must apply
+        // once per bombardment, not accumulate if multiple BOMBARDMENTs run).
+        clearPhaseScopedHitValueModifiers(
+          this.data,
+          this.data.currentPhase.meta,
+        )
+
         // If either side is completely wiped, go directly to COMPLETE
         if (
           !hasAnyUnits(this.data.attacker.units) ||
@@ -744,6 +872,86 @@ export class CombatState {
         })
       })
     })
+  }
+}
+
+/** Compute RunAbilitiesOptions for a unit-ability phase's BEFORE/AFTER
+ *  unit-ability-roll abilities, based on who is firing and where their hits
+ *  are routed. This implements "mimic side" semantics: `ctx.api.opponent`
+ *  always points to the counterparty in the action regardless of the
+ *  attacker/defender labels, so abilities (Bunker, X-89, etc.) don't need
+ *  to know about custom routing.
+ *
+ *  Default remap (multi-firer phases, and AFTER_UNIT_ABILITY_ROLL):
+ *   - `firing` role: opponent = target side (where this side's hits go)
+ *   - `target`-only role: opponent = firing side
+ *   - self-bombard (firing == target): opponent = self
+ *   - `none` role: fall back to the natural opposite side
+ *
+ *  BEFORE_UNIT_ABILITY_ROLL in a single-firer phase (BOMBARDMENT,
+ *  SPACE_CANNON_DEFENSE): every invoker's opponent is that firer. Dice-
+ *  modifying abilities (Bunker, Antimass Deflectors) target the rolling pool
+ *  uniformly, so they work whether the owner is defender-vs-attacker-bombing
+ *  (normal case) or the owner themselves is firing via Proxima/Harrow.
+ *
+ *  When `firingOnly` is set, non-firing sides are skipped (used for
+ *  AFTER_UNIT_ABILITY_ROLL — only the side that rolled should react). */
+function buildUnitAbilityRunOptions(
+  firing: readonly CombatSide[],
+  routing?: { attacker: CombatSide; defender: CombatSide },
+  flags: { firingOnly?: boolean; timing?: 'before' | 'after' } = {},
+): RunAbilitiesOptions {
+  const firingSet = new Set(firing)
+  const targetOf = (side: CombatSide): CombatSide =>
+    routing?.[side] ?? getOpponentSide(side)
+
+  const targets = new Set<CombatSide>()
+  for (const f of firing) targets.add(targetOf(f))
+
+  const opponentFor = (side: CombatSide): CombatSide => {
+    if (flags.timing === 'before' && firing.length === 1) return firing[0]
+    if (firingSet.has(side)) return targetOf(side)
+    if (targets.has(side)) {
+      for (const f of firing) if (targetOf(f) === side) return f
+    }
+    return getOpponentSide(side)
+  }
+
+  const skipSides: CombatSide[] = []
+  if (flags.firingOnly) {
+    for (const side of ['attacker', 'defender'] as const) {
+      if (!firingSet.has(side)) skipSides.push(side)
+    }
+  }
+
+  return {
+    opponentSideByInvokerSide: {
+      attacker: opponentFor('attacker'),
+      defender: opponentFor('defender'),
+    },
+    skipSides: skipSides.length > 0 ? skipSides : undefined,
+  }
+}
+
+/** Drop hit-value modifiers scoped to a unit-ability phase meta after that
+ *  phase completes, so they don't accumulate across repeated phases.
+ *  Modifiers with COMBAT-phase contexts (SPACE_COMBAT / GROUND_COMBAT)
+ *  persist to END_OF_COMBAT_ROUND. */
+function clearPhaseScopedHitValueModifiers(
+  data: CombatStateData,
+  meta: MetaPhase,
+): void {
+  if (meta === 'SPACE_COMBAT' || meta === 'GROUND_COMBAT') return
+  for (const side of ['attacker', 'defender'] as const) {
+    const mods = data[side].hitValueModifiers
+    if (!mods?.length) continue
+    if (!mods.some(m => m.context === meta)) continue
+    const keep = mods.filter(m => m.context !== meta)
+    if (keep.length === 0) {
+      delete data[side].hitValueModifiers
+    } else {
+      data[side].hitValueModifiers = keep
+    }
   }
 }
 
@@ -839,25 +1047,28 @@ export function cloneStateForBranch(
   }
 }
 
-/** Add hits to data by mutating in-place */
+/** Add hits to data by mutating in-place.
+ *  `routing` maps firing side → target side. Defaults: attacker → defender,
+ *  defender → attacker. `validTargets` is keyed by target side. */
 function addHitsToData(
   data: CombatStateData,
   attackerHits: number,
   defenderHits: number,
   validTargets: { attacker: UnitType[]; defender: UnitType[] },
+  routing?: { attacker: CombatSide; defender: CombatSide },
 ): void {
-  // Defender's dice hit attacker
+  const defenderHitsTarget = routing?.defender ?? 'attacker'
+  const attackerHitsTarget = routing?.attacker ?? 'defender'
   if (defenderHits > 0) {
-    data.attacker.hitPools.push({
+    data[defenderHitsTarget].hitPools.push({
       hits: defenderHits,
-      validTargets: validTargets.attacker,
+      validTargets: validTargets[defenderHitsTarget],
     })
   }
-  // Attacker's dice hit defender
   if (attackerHits > 0) {
-    data.defender.hitPools.push({
+    data[attackerHitsTarget].hitPools.push({
       hits: attackerHits,
-      validTargets: validTargets.defender,
+      validTargets: validTargets[attackerHitsTarget],
     })
   }
 }

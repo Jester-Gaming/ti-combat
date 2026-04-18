@@ -5,6 +5,7 @@ import type { Faction } from '@/types'
 import { a3Valiance } from './a3-valiance'
 import { dameBriar } from './dame-briar'
 import { phoenixStandard } from './phoenix-standard'
+import { proximaTargetingVi } from './proxima-targeting-vi'
 import { raiseTheStandard } from './raise-the-standard'
 import { theEgeiro } from './the-egeiro'
 
@@ -13,6 +14,7 @@ export const last_bastion: Faction = {
   icon: lastBastionIcon,
   abilities: {
     faction: [phoenixStandard],
+    technology: [proximaTargetingVi],
     promissory: [raiseTheStandard],
     agent: [dameBriar],
   },

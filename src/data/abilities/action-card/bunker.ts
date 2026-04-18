@@ -9,7 +9,7 @@ export const bunker: Ability = {
   context: 'GROUND',
   params: {
     isEnabled: false,
-    uses: 1,
+    uses: Infinity,
   },
   headerUI: 'isEnabled',
   side: 'defender',

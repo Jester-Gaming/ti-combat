@@ -200,6 +200,13 @@ interface AbilityResult {
 export interface RunAbilitiesOptions {
   triggerSide?: CombatSide
   skipSides?: CombatSide[]
+  /** Remap `ctx.api.opponent` per invoker side. Used by unit-ability phases
+   *  (BOMBARDMENT, AFB, SPACE_CANNON_*) so abilities see "opponent" as their
+   *  counterparty in the action — target when firing, firing when targeted —
+   *  regardless of actual attacker/defender labels. Enables routed hits (e.g.
+   *  Proxima self-bombard) to look natural to abilities like X-89 and Bunker
+   *  without making them aware of the routing. */
+  opponentSideByInvokerSide?: { attacker: CombatSide; defender: CombatSide }
 }
 
 // ── Main class ───────────────────────────────────────────────────────────
@@ -606,6 +613,7 @@ export class AbilitiesEngine {
         tracker,
         options?.triggerSide,
         logger,
+        options?.opponentSideByInvokerSide,
       )
 
       // Collect branches from either direct or nested source.
@@ -780,6 +788,10 @@ export class AbilitiesEngine {
     tracker: InvocationTracker,
     triggerSide?: CombatSide,
     logger?: Logger,
+    opponentSideByInvokerSide?: {
+      attacker: CombatSide
+      defender: CombatSide
+    },
   ): AbilityResult | null {
     const state = this._combatState.data
     const invokes = this.getInvokesForTiming(timing, side, triggerSide)
@@ -861,179 +873,200 @@ export class AbilitiesEngine {
       ctx.unitSource = unitSource
       ctx.ownerFaction = ownerFaction
 
-      let canCall: boolean
-      if (inv.isCallable) {
-        if (inv.isCallable.length <= 1) {
-          canCall = inv.isCallable(freshParams)
-        } else if (diceTiming && internalContext) {
-          const rawDice = internalContext as OwnOpponentContext<DicePool>
-          const diceReadCtx: DiceReadContext = {
-            own: buildDiceReadApi(rawDice.own),
-            opponent: buildDiceReadApi(rawDice.opponent),
-          }
-          canCall = inv.isCallable(freshParams, ctx, diceReadCtx)
-        } else {
-          canCall = inv.isCallable(freshParams, ctx, internalContext)
-        }
-      } else {
-        canCall = true
-      }
+      // Rebind ctx.api.opponent if the caller passed a role-based remap
+      // (used for unit-ability phases so abilities see opponent = target when
+      // firing, or opponent = firing when targeted).
+      const remappedOpponent = opponentSideByInvokerSide?.[side]
+      const priorOpponentSide =
+        remappedOpponent !== undefined
+          ? ctx.api.opponent._rebindSide(remappedOpponent)
+          : undefined
 
-      if (canCall) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let resultContext: any
-
-        const timingArray = Array.isArray(timing) ? timing : [timing]
-
-        const prevAttackerUnitCount = countAllUnits(state.attacker.units)
-        const prevDefenderUnitCount = countAllUnits(state.defender.units)
-
-        const childLogger = logger?.child(invoke.timing).child(ability.key)
-
-        const markInvoked = () => {
-          if (source.type === 'config' || source.type === 'deploy') {
-            sideTracker.configAbilities.add(invoke)
+      try {
+        let canCall: boolean
+        if (inv.isCallable) {
+          if (inv.isCallable.length <= 1) {
+            canCall = inv.isCallable(freshParams)
+          } else if (diceTiming && internalContext) {
+            const rawDice = internalContext as OwnOpponentContext<DicePool>
+            const diceReadCtx: DiceReadContext = {
+              own: buildDiceReadApi(rawDice.own),
+              opponent: buildDiceReadApi(rawDice.opponent),
+            }
+            canCall = inv.isCallable(freshParams, ctx, diceReadCtx)
           } else {
-            const key = `${invoke.timing}:${source.unitType}:${ability.key}`
-            const invokedIds =
-              sideTracker.unitAbilities.get(key) ?? new Set<UnitId>()
-            invokedIds.add(source.unitId)
-            sideTracker.unitAbilities.set(key, invokedIds)
-          }
-        }
-
-        const shouldDecrementUses = !invoke.system
-        if (diceTiming && internalContext) {
-          const rawDice = internalContext as OwnOpponentContext<DicePool>
-          const diceCallCtx: DiceContext = {
-            own: buildDiceApi(rawDice.own),
-            opponent: buildDiceApi(rawDice.opponent),
-          }
-          ctx.upgradeForCall(state, ability.key, childLogger?.forSide(side))
-          inv.call(ctx, freshParams, diceCallCtx)
-          if (shouldDecrementUses)
-            decrementUses(state, side, ability.key, freshParams, this)
-          ctx.resetAfterCall()
-          resultContext = {
-            own: diceCallCtx.own.getAll(),
-            opponent: diceCallCtx.opponent.getAll(),
+            canCall = inv.isCallable(freshParams, ctx, internalContext)
           }
         } else {
-          ctx.upgradeForCall(state, ability.key, childLogger?.forSide(side))
-          try {
-            const result = inv.call(ctx, freshParams, internalContext)
-            if (result !== undefined) resultContext = result
+          canCall = true
+        }
+
+        if (canCall) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let resultContext: any
+
+          const timingArray = Array.isArray(timing) ? timing : [timing]
+
+          const prevAttackerUnitCount = countAllUnits(state.attacker.units)
+          const prevDefenderUnitCount = countAllUnits(state.defender.units)
+
+          const childLogger = logger?.child(invoke.timing).child(ability.key)
+
+          const markInvoked = () => {
+            if (source.type === 'config' || source.type === 'deploy') {
+              sideTracker.configAbilities.add(invoke)
+            } else {
+              const key = `${invoke.timing}:${source.unitType}:${ability.key}`
+              const invokedIds =
+                sideTracker.unitAbilities.get(key) ?? new Set<UnitId>()
+              invokedIds.add(source.unitId)
+              sideTracker.unitAbilities.set(key, invokedIds)
+            }
+          }
+
+          const shouldDecrementUses = !invoke.system
+          if (diceTiming && internalContext) {
+            const rawDice = internalContext as OwnOpponentContext<DicePool>
+            const diceCallCtx: DiceContext = {
+              own: buildDiceApi(rawDice.own),
+              opponent: buildDiceApi(rawDice.opponent),
+            }
+            ctx.upgradeForCall(state, ability.key, childLogger?.forSide(side))
+            inv.call(ctx, freshParams, diceCallCtx)
             if (shouldDecrementUses)
               decrementUses(state, side, ability.key, freshParams, this)
             ctx.resetAfterCall()
-          } catch (e) {
-            if (!(e instanceof AbilityBranchInterrupt)) throw e
-
-            ctx.resetAfterCall()
-            markInvoked()
-
-            // Per-branch post-processing: mirror the normal-flow post-call
-            // steps for each branch. The branch's state is swapped in
-            // temporarily so shared engine helpers (assignHits,
-            // runDestroyAbilities) operate on the branch data.
-            const inAssignHitsPhase =
-              state.currentPhase.micro === 'DICE_ROLL' ||
-              state.currentPhase.micro === 'ASSIGN_HITS'
-            const inBeforeAssignHits = timingArray.some(
-              t => t === 'BEFORE_ASSIGN_HITS',
-            )
-
-            const finalBranches: AbilityBranch[] = []
-
-            for (const branch of e.branches) {
-              const saved = this._saveBranchState()
-              this._setBranchState(branch)
-
+            resultContext = {
+              own: diceCallCtx.own.getAll(),
+              opponent: diceCallCtx.opponent.getAll(),
+            }
+          } else {
+            ctx.upgradeForCall(state, ability.key, childLogger?.forSide(side))
+            try {
+              const result = inv.call(ctx, freshParams, internalContext)
+              if (result !== undefined) resultContext = result
               if (shouldDecrementUses)
-                decrementUses(branch.data, side, ability.key, freshParams, this)
-              this.flushPendingUnitInvokes()
-              branch.logger?.forSide(side).log()
+                decrementUses(state, side, ability.key, freshParams, this)
+              ctx.resetAfterCall()
+            } catch (e) {
+              if (!(e instanceof AbilityBranchInterrupt)) throw e
 
-              const hitsPresent =
-                branch.data.attacker.hitPools.length > 0 ||
-                branch.data.defender.hitPools.length > 0
+              ctx.resetAfterCall()
+              markInvoked()
 
-              if (hitsPresent && !inAssignHitsPhase && !inBeforeAssignHits) {
-                this._combatState.assignHits()
-                // assignHits → runDestroyAbilities may have triggered more
-                // branching (e.g. AFTER_DESTROY rolled dice).
-                if (this._abilityBranches) {
-                  const nested = this._abilityBranches
-                  this._abilityBranches = null
-                  for (const n of nested) {
-                    finalBranches.push({
-                      data: n.data,
-                      invokes: n.invokes,
-                      probability: n.probability * branch.probability,
-                      logger: n.logger,
-                    })
+              // Per-branch post-processing: mirror the normal-flow post-call
+              // steps for each branch. The branch's state is swapped in
+              // temporarily so shared engine helpers (assignHits,
+              // runDestroyAbilities) operate on the branch data.
+              const inAssignHitsPhase =
+                state.currentPhase.micro === 'DICE_ROLL' ||
+                state.currentPhase.micro === 'ASSIGN_HITS'
+              const inBeforeAssignHits = timingArray.some(
+                t => t === 'BEFORE_ASSIGN_HITS',
+              )
+
+              const finalBranches: AbilityBranch[] = []
+
+              for (const branch of e.branches) {
+                const saved = this._saveBranchState()
+                this._setBranchState(branch)
+
+                if (shouldDecrementUses)
+                  decrementUses(
+                    branch.data,
+                    side,
+                    ability.key,
+                    freshParams,
+                    this,
+                  )
+                this.flushPendingUnitInvokes()
+                branch.logger?.forSide(side).log()
+
+                const hitsPresent =
+                  branch.data.attacker.hitPools.length > 0 ||
+                  branch.data.defender.hitPools.length > 0
+
+                if (hitsPresent && !inAssignHitsPhase && !inBeforeAssignHits) {
+                  this._combatState.assignHits()
+                  // assignHits → runDestroyAbilities may have triggered more
+                  // branching (e.g. AFTER_DESTROY rolled dice).
+                  if (this._abilityBranches) {
+                    const nested = this._abilityBranches
+                    this._abilityBranches = null
+                    for (const n of nested) {
+                      finalBranches.push({
+                        data: n.data,
+                        invokes: n.invokes,
+                        probability: n.probability * branch.probability,
+                        logger: n.logger,
+                      })
+                    }
+                    this._restoreBranchState(saved)
+                    continue
                   }
-                  this._restoreBranchState(saved)
-                  continue
                 }
+
+                finalBranches.push({
+                  data: this._combatState.data,
+                  invokes: this._combatState._invokes,
+                  probability: branch.probability,
+                  logger: this._logger,
+                })
+                this._restoreBranchState(saved)
               }
 
-              finalBranches.push({
-                data: this._combatState.data,
-                invokes: this._combatState._invokes,
-                probability: branch.probability,
-                logger: this._logger,
-              })
-              this._restoreBranchState(saved)
+              return { branches: finalBranches, unitsChanged: true }
             }
+          }
 
-            return { branches: finalBranches, unitsChanged: true }
+          this.flushPendingUnitInvokes()
+
+          childLogger?.forSide(side).log()
+
+          markInvoked()
+
+          if (
+            !timingArray.some(t => t === 'BEFORE_ASSIGN_HITS') &&
+            state.currentPhase.micro !== 'DICE_ROLL' &&
+            state.currentPhase.micro !== 'ASSIGN_HITS' &&
+            (state.attacker.hitPools.length > 0 ||
+              state.defender.hitPools.length > 0)
+          ) {
+            this._combatState.assignHits()
+
+            // assignHits → runDestroyAbilities may have produced branches
+            // (e.g. a destroyed ship triggered an AFTER_DESTROY ability that
+            // called rollDice). Surface them as branches of this resolution.
+            if (this._abilityBranches) {
+              const nested = this._abilityBranches
+              this._abilityBranches = null
+              return { branches: nested, unitsChanged: true }
+            }
+          }
+
+          const unitsChanged =
+            countAllUnits(state.attacker.units) !== prevAttackerUnitCount ||
+            countAllUnits(state.defender.units) !== prevDefenderUnitCount
+
+          if (
+            context !== undefined &&
+            resultContext !== undefined &&
+            isSidedContext(context)
+          ) {
+            resultContext = toSided(
+              resultContext as OwnOpponentContext<unknown>,
+              side,
+            )
+          }
+
+          return {
+            context: resultContext,
+            unitsChanged,
           }
         }
-
-        this.flushPendingUnitInvokes()
-
-        childLogger?.forSide(side).log()
-
-        markInvoked()
-
-        if (
-          !timingArray.some(t => t === 'BEFORE_ASSIGN_HITS') &&
-          state.currentPhase.micro !== 'DICE_ROLL' &&
-          state.currentPhase.micro !== 'ASSIGN_HITS' &&
-          (state.attacker.hitPools.length > 0 ||
-            state.defender.hitPools.length > 0)
-        ) {
-          this._combatState.assignHits()
-
-          // assignHits → runDestroyAbilities may have produced branches
-          // (e.g. a destroyed ship triggered an AFTER_DESTROY ability that
-          // called rollDice). Surface them as branches of this resolution.
-          if (this._abilityBranches) {
-            const nested = this._abilityBranches
-            this._abilityBranches = null
-            return { branches: nested, unitsChanged: true }
-          }
-        }
-
-        const unitsChanged =
-          countAllUnits(state.attacker.units) !== prevAttackerUnitCount ||
-          countAllUnits(state.defender.units) !== prevDefenderUnitCount
-
-        if (
-          context !== undefined &&
-          resultContext !== undefined &&
-          isSidedContext(context)
-        ) {
-          resultContext = toSided(
-            resultContext as OwnOpponentContext<unknown>,
-            side,
-          )
-        }
-
-        return {
-          context: resultContext,
-          unitsChanged,
+      } finally {
+        if (priorOpponentSide !== undefined) {
+          ctx.api.opponent._rebindSide(priorOpponentSide)
         }
       }
     }

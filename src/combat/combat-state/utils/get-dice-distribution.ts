@@ -32,8 +32,10 @@ export function getDiceDistribution(group: DiceGroup): DiceRollOutcome[] {
     return result
   }
 
-  // d10: hit on hitValue or higher (1-10 scale)
-  const hitProb = (11 - hitValue) / 10
+  // d10: hit on hitValue or higher (1-10 scale). Clamp to [0, 1] so
+  // modifier-pushed hit values outside the rollable range collapse to the
+  // correct bounds (>10 → always miss, <1 → always hit).
+  const hitProb = Math.max(0, Math.min(1, (11 - hitValue) / 10))
   const missProb = 1 - hitProb
 
   const distribution: DiceRollOutcome[] = []
