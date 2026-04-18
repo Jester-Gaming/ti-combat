@@ -1061,13 +1061,13 @@ function addHitsToData(
   const attackerHitsTarget = routing?.attacker ?? 'defender'
   if (defenderHits > 0) {
     data[defenderHitsTarget].hitPools.push({
-      hits: defenderHits,
+      hits: [defenderHits, 0],
       validTargets: validTargets[defenderHitsTarget],
     })
   }
   if (attackerHits > 0) {
     data[attackerHitsTarget].hitPools.push({
-      hits: attackerHits,
+      hits: [attackerHits, 0],
       validTargets: validTargets[attackerHitsTarget],
     })
   }

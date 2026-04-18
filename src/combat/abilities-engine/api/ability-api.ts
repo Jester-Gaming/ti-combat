@@ -112,8 +112,8 @@ export class SideApi {
     return this._sideState.countUnits(filter, options?.includeVariants)
   }
 
-  getPendingHits() {
-    return this._sideState.getPendingHits()
+  getPendingHits(filter?: { base?: true; bonus?: true }) {
+    return this._sideState.getPendingHits(filter)
   }
 
   getHitPoolValidTargets() {

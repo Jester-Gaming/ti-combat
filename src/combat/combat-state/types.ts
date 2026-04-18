@@ -92,9 +92,11 @@ export interface PhaseIdentifier {
   micro: MicroPhase
 }
 
-/** A pool of unassigned hits with valid targets */
+/** A pool of unassigned hits with valid targets.
+ *  hits[0] = base (from dice rolls), hits[1] = bonus (from abilities).
+ *  Abilities that double hits (e.g. X-89) only double base hits. */
 export interface HitPool {
-  hits: number
+  hits: [number, number]
   validTargets?: UnitType[]
 }
 

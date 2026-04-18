@@ -49,7 +49,7 @@ export const courageousToTheEnd: Ability<Params> = {
         if (!ownMatched) return false
 
         const targets = ctx.api.opponent.getAssignHitsTargets({
-          hits: 2,
+          hits: [2, 0],
         })
         return targets.every(targetId => {
           const topVariant = ctx.api.opponent.getUnitVariant(targetId)!
@@ -75,7 +75,7 @@ export const courageousToTheEnd: Ability<Params> = {
           const total = hits[0]
           if (total === 0) return
           const targets = branchCtx.api.opponent.getAssignHitsTargets({
-            hits: total,
+            hits: [total, 0],
           })
           branchCtx.api.opponent.destroyUnits(targets)
         })

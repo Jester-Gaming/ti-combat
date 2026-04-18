@@ -17,22 +17,22 @@ export const x89BacterialWeapon: Ability = {
       timing: 'AFTER_UNIT_ABILITY_ROLL',
       context: 'BOMBARDMENT',
       isCallable: (_params, ctx) => {
-        return ctx.api.opponent.getPendingHits() >= 1
+        return ctx.api.opponent.getPendingHits({ base: true }) >= 1
       },
       call: ctx => {
-        const pending = ctx.api.opponent.getPendingHits()
-        ctx.api.opponent.addHits(pending, [])
+        const base = ctx.api.opponent.getPendingHits({ base: true })
+        ctx.api.opponent.addHits(base, [])
       },
     },
     {
       timing: 'AFTER_DICE_ROLL',
       context: 'GROUND_COMBAT',
       isCallable: (_params, ctx) => {
-        return ctx.api.opponent.getPendingHits() >= 1
+        return ctx.api.opponent.getPendingHits({ base: true }) >= 1
       },
       call: ctx => {
-        const pending = ctx.api.opponent.getPendingHits()
-        ctx.api.opponent.addHits(pending, [])
+        const base = ctx.api.opponent.getPendingHits({ base: true })
+        ctx.api.opponent.addHits(base, [])
       },
     },
   ],

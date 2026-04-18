@@ -193,7 +193,7 @@ function planAssignHits(
   hitPool: HitPool,
 ): AssignHitsPlanEntry[] {
   const plan: AssignHitsPlanEntry[] = []
-  let remaining = hitPool.hits
+  let remaining = hitPool.hits[0] + hitPool.hits[1]
   if (remaining <= 0) return plan
 
   const { validTargets } = hitPool
@@ -251,7 +251,7 @@ export function assignHitsForSide(
   let units = sideData.units
 
   for (const pool of sideData.hitPools) {
-    if (pool.hits <= 0) continue
+    if (pool.hits[0] + pool.hits[1] <= 0) continue
 
     const plan = planAssignHits(units, params.sacrificeOrder, pool)
 
@@ -479,9 +479,14 @@ export class CombatSideState {
     return total
   }
 
-  /** Sum all pending hit pools */
-  getPendingHits(): number {
-    return this.data.hitPools.reduce((sum, pool) => sum + pool.hits, 0)
+  /** Sum pending hit pools. Without a filter returns base + bonus. */
+  getPendingHits(filter?: { base?: true; bonus?: true }): number {
+    const b = !filter || filter.base
+    const n = !filter || filter.bonus
+    return this.data.hitPools.reduce(
+      (sum, pool) => sum + (b ? pool.hits[0] : 0) + (n ? pool.hits[1] : 0),
+      0,
+    )
   }
 
   /** Check if a unit ability is restricted (variant-aware, category-aware) */
@@ -940,23 +945,26 @@ export class CombatSideState {
     Object.assign(data.unitState[unitId], updates)
   }
 
-  /** Reduce pending hits from hit pools */
+  /** Reduce pending hits from hit pools (reduces bonus first, then base) */
   reduceHits(amount: number): void {
     const data = this.data
     if (data.hitPools.length === 0 || amount <= 0) return
     let remaining = amount
     for (const pool of data.hitPools) {
-      const reduce = Math.min(remaining, pool.hits)
-      pool.hits -= reduce
+      const total = pool.hits[0] + pool.hits[1]
+      const reduce = Math.min(remaining, total)
+      const bonusReduce = Math.min(reduce, pool.hits[1])
+      const baseReduce = reduce - bonusReduce
+      pool.hits = [pool.hits[0] - baseReduce, pool.hits[1] - bonusReduce]
       remaining -= reduce
       if (remaining <= 0) break
     }
   }
 
-  /** Add a hit pool */
+  /** Add a hit pool (ability-produced hits go into bonus slot) */
   addHits(hits: number, validTargets: UnitType[]): void {
     if (hits === 0) return
-    this.data.hitPools.push({ hits, validTargets })
+    this.data.hitPools.push({ hits: [0, hits], validTargets })
   }
 
   /** Move a unit to a new variant with an added subtype */
