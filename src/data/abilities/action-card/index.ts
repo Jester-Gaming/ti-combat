@@ -3,6 +3,7 @@ import { bunker } from './bunker'
 import { courageousToTheEnd } from './courageous-to-the-end'
 import { directHit } from './direct-hit'
 import { disable } from './disable'
+import { emergencyRepairs } from './emergency-repairs'
 import { experimentalBattlestation } from './experimental-battlestation'
 import { fighterPrototype } from './fighter-prototype'
 import { maneuveringJets } from './maneuvering-jets'
@@ -19,6 +20,7 @@ export default [
   courageousToTheEnd,
   directHit,
   disable,
+  emergencyRepairs,
   experimentalBattlestation,
   fighterPrototype,
   maneuveringJets,
