@@ -89,7 +89,7 @@
 - [x] **Harrow** (Faction Ability) — At the end of each round of ground combat, your ships in the active system may use their Bombardment abilities against your opponent's ground forces on the planet.
 - [ ] **[0.0.1]** (Flagship) — During a space combat, hits produced by this ship and by your dreadnoughts in this system must be assigned to non-fighter ships if able.
 - [x] **2RAM** (Commander) — Units that have Planetary Shield do not prevent you from using Bombardment.
-- [ ] **Annihilator** (Mech) — Bombardment 8. While not participating in ground combat, this unit can use its Bombardment ability on planets in its system as if it were a ship.
+- [x] **Annihilator** (Mech) — Bombardment 8. While not participating in ground combat, this unit can use its Bombardment ability on planets in its system as if it were a ship.
 
 ### Mahact Gene-Sorcerers
 

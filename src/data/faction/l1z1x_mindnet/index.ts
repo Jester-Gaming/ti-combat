@@ -2,6 +2,7 @@ import l1z1xMindnetIcon from '@/assets/faction/l1z1x_mindnet.svg?raw'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
+import { annihilator } from './annihilator'
 import { harrow } from './harrow'
 import { twoRam } from './two-ram'
 
@@ -33,7 +34,7 @@ export const l1z1x_mindnet: Faction = {
       BASE: {
         NAME: 'Annihilator',
         DESCRIPTION:
-          'This unit may use its Bombardment ability to destroy 1 ground force on a planet that contains 1 or more of your units.',
+          'While not participating in ground combat, this unit can use its Bombardment ability on planets in its system as if it were a ship.',
         COST: 2,
         COMBAT: [6, 1],
         CAPACITY_COST: 1,
@@ -41,7 +42,7 @@ export const l1z1x_mindnet: Faction = {
           SUSTAIN_DAMAGE: true,
           BOMBARDMENT: [8, 1],
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [sustainDamage, annihilator],
       },
     },
     DREADNOUGHT: {
