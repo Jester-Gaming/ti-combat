@@ -9,6 +9,7 @@ type Params = {
   beforeDiceRoll: string[]
   beforeUnitAbilityRoll: string[]
   beforeAssignHits: string[]
+  endOfCombat: string[]
 }
 
 export const abilityOrder: Ability<Params> = {
@@ -20,6 +21,7 @@ export const abilityOrder: Ability<Params> = {
     beforeDiceRoll: z.array(z.string()),
     beforeUnitAbilityRoll: z.array(z.string()),
     beforeAssignHits: z.array(z.string()),
+    endOfCombat: z.array(z.string()),
   }),
   params: {
     isEnabled: true,
@@ -28,6 +30,7 @@ export const abilityOrder: Ability<Params> = {
     beforeDiceRoll: [],
     beforeUnitAbilityRoll: [],
     beforeAssignHits: [],
+    endOfCombat: [],
   },
   invoke: [],
   uiConfig: ctx => {

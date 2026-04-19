@@ -49,6 +49,11 @@ export const TIMING_GROUPS: {
     paramKey: 'beforeAssignHits',
     label: 'Before Assign Hits',
   },
+  {
+    timings: ['END_OF_COMBAT', 'END_OF_COMBAT_ROUND'],
+    paramKey: 'endOfCombat',
+    label: 'End of Combat (round)',
+  },
 ]
 
 const EMPTY_DESTROYED_IDS: { attacker: Set<UnitId>; defender: Set<UnitId> } = {
