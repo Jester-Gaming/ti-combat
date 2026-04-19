@@ -13,54 +13,6 @@ type Params = {
   groundPriority: UnitBaseType[]
 }
 
-function isAlreadyUpgraded(
-  upgradedDef: Partial<UnitStats>,
-  current: UnitStats,
-): boolean {
-  for (const [key, upgradedValue] of Object.entries(upgradedDef)) {
-    if (key === 'ABILITIES') continue
-    if (key === 'UNIT_ABILITIES') {
-      const entries = Object.entries(
-        (upgradedValue ?? {}) as Record<string, unknown>,
-      )
-      for (const [abilKey, abilVal] of entries) {
-        const currentAbil = (
-          current.UNIT_ABILITIES as Record<string, unknown> | undefined
-        )?.[abilKey]
-        if (JSON.stringify(currentAbil) !== JSON.stringify(abilVal))
-          return false
-      }
-    } else {
-      const currentValue = (current as Record<string, unknown>)[key]
-      if (JSON.stringify(currentValue) !== JSON.stringify(upgradedValue))
-        return false
-    }
-  }
-  return true
-}
-
-function pickTarget(
-  params: Params,
-  ctx: AbilityReadContext,
-): UnitBaseType | undefined {
-  const priority =
-    ctx.state.combatMode === 'GROUND'
-      ? params.groundPriority
-      : params.spacePriority
-  const faction = getFactionUnitConfig(ctx.api.own.getFaction())
-
-  for (const type of priority) {
-    if (!ctx.api.own.hasUnitType(type)) continue
-    const upgraded = faction[type]?.UPGRADED
-    if (!upgraded || Object.keys(upgraded).length === 0) continue
-    const current = ctx.api.own.getUnitStats(type)
-    if (!current) continue
-    if (isAlreadyUpgraded(upgraded, current)) continue
-    return type
-  }
-  return undefined
-}
-
 export const revealPrototype: Ability<Params> = {
   key: 'REVEAL_PROTOTYPE',
   name: 'Reveal Prototype',
@@ -117,4 +69,52 @@ export const revealPrototype: Ability<Params> = {
       },
     },
   ],
+}
+
+function isAlreadyUpgraded(
+  upgradedDef: Partial<UnitStats>,
+  current: UnitStats,
+): boolean {
+  for (const [key, upgradedValue] of Object.entries(upgradedDef)) {
+    if (key === 'ABILITIES') continue
+    if (key === 'UNIT_ABILITIES') {
+      const entries = Object.entries(
+        (upgradedValue ?? {}) as Record<string, unknown>,
+      )
+      for (const [abilKey, abilVal] of entries) {
+        const currentAbil = (
+          current.UNIT_ABILITIES as Record<string, unknown> | undefined
+        )?.[abilKey]
+        if (JSON.stringify(currentAbil) !== JSON.stringify(abilVal))
+          return false
+      }
+    } else {
+      const currentValue = (current as Record<string, unknown>)[key]
+      if (JSON.stringify(currentValue) !== JSON.stringify(upgradedValue))
+        return false
+    }
+  }
+  return true
+}
+
+function pickTarget(
+  params: Params,
+  ctx: AbilityReadContext,
+): UnitBaseType | undefined {
+  const priority =
+    ctx.state.combatMode === 'GROUND'
+      ? params.groundPriority
+      : params.spacePriority
+  const faction = getFactionUnitConfig(ctx.api.own.getFaction())
+
+  for (const type of priority) {
+    if (!ctx.api.own.hasUnitType(type)) continue
+    const upgraded = faction[type]?.UPGRADED
+    if (!upgraded || Object.keys(upgraded).length === 0) continue
+    const current = ctx.api.own.getUnitStats(type)
+    if (!current) continue
+    if (isAlreadyUpgraded(upgraded, current)) continue
+    return type
+  }
+  return undefined
 }

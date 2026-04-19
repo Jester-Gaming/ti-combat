@@ -5,6 +5,28 @@ import type {
 } from '../../../combat/abilities-engine/types'
 import type { UnitId } from '../../../types'
 
+export const emergencyRepairs: Ability = {
+  key: 'EMERGENCY_REPAIRS',
+  name: 'Emergency Repairs',
+  description:
+    'At the start or end of a combat round: Repair all of your units that have Sustain Damage in the active system.',
+  category: 'ACTION_CARD',
+  params: { isEnabled: false, uses: 1 },
+  headerUI: 'isEnabled',
+  invoke: [
+    {
+      timing: 'START_OF_COMBAT_ROUND',
+      isCallable,
+      call,
+    },
+    {
+      timing: 'END_OF_COMBAT_ROUND',
+      isCallable,
+      call,
+    },
+  ],
+}
+
 function getSustainUnits(
   ctx: AbilityReadContext | AbilityCallContext,
 ): UnitId[] {
@@ -33,26 +55,4 @@ function call(ctx: AbilityCallContext): void {
       ctx.api.own.modifyUnitState(id, { isDamaged: false })
     }
   }
-}
-
-export const emergencyRepairs: Ability = {
-  key: 'EMERGENCY_REPAIRS',
-  name: 'Emergency Repairs',
-  description:
-    'At the start or end of a combat round: Repair all of your units that have Sustain Damage in the active system.',
-  category: 'ACTION_CARD',
-  params: { isEnabled: false, uses: 1 },
-  headerUI: 'isEnabled',
-  invoke: [
-    {
-      timing: 'START_OF_COMBAT_ROUND',
-      isCallable,
-      call,
-    },
-    {
-      timing: 'END_OF_COMBAT_ROUND',
-      isCallable,
-      call,
-    },
-  ],
 }

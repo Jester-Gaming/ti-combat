@@ -7,9 +7,6 @@ type Params = {
   attackerPriority: UnitType[]
 }
 
-const ATTACKER_TYPES = ['CRUISER', 'DESTROYER'] as UnitBaseType[]
-const MAX_SHIPS = 2
-
 export const ambush: Ability<Params> = {
   key: 'AMBUSH',
   name: 'Ambush',
@@ -29,18 +26,26 @@ export const ambush: Ability<Params> = {
       source: 'ships',
       side: 'own',
       sort: 'desc',
-      filter: id => ATTACKER_TYPES.includes(parseVariantId(id).type),
+      filter: id =>
+        (['CRUISER', 'DESTROYER'] as UnitBaseType[]).includes(
+          parseVariantId(id).type,
+        ),
     }),
   },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'START_OF_COMBAT',
-      isCallable: (_params, ctx) =>
-        ctx.api.own.countUnits(ATTACKER_TYPES, {
-          includeVariants: true,
-        }) > 0,
+      isCallable: (_params, ctx) => {
+        const ATTACKER_TYPES = ['CRUISER', 'DESTROYER'] as UnitBaseType[]
+        return (
+          ctx.api.own.countUnits(ATTACKER_TYPES, {
+            includeVariants: true,
+          }) > 0
+        )
+      },
       call: (ctx, params) => {
+        const MAX_SHIPS = 2
         // Pick up to MAX_SHIPS cruisers/destroyers following the configured
         // priority. Fall back to any remaining cruisers/destroyers if the
         // priority list is empty or short.
@@ -71,7 +76,7 @@ export const ambush: Ability<Params> = {
       label: 'Ship Priority',
       type: 'priority-list' as const,
       items: ctx.api.own.getUnitVariantsOptions({
-        include: ATTACKER_TYPES,
+        include: ['CRUISER', 'DESTROYER'] as UnitBaseType[],
         combatMode: 'SPACE',
       }),
     },

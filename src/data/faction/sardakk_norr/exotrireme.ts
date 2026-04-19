@@ -13,22 +13,6 @@ type Params = {
   targetPriority: UnitType[]
 }
 
-function isHighestPrioritySacrifice(
-  params: Params,
-  ctx: AbilityReadContext,
-): boolean {
-  const myUnitId = ctx.getUnit()
-
-  for (const variantId of params.sacrificePriority) {
-    const units = ctx.api.own.getUnits(variantId)
-    if (units.length === 0) continue
-
-    return units[0] === myUnitId
-  }
-
-  return false
-}
-
 export const exotrireme: Ability<Params> = {
   key: 'EXOTRIREME',
   name: 'Exotrireme II',
@@ -107,4 +91,20 @@ export const exotrireme: Ability<Params> = {
       }),
     },
   ],
+}
+
+function isHighestPrioritySacrifice(
+  params: Params,
+  ctx: AbilityReadContext,
+): boolean {
+  const myUnitId = ctx.getUnit()
+
+  for (const variantId of params.sacrificePriority) {
+    const units = ctx.api.own.getUnits(variantId)
+    if (units.length === 0) continue
+
+    return units[0] === myUnitId
+  }
+
+  return false
 }

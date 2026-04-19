@@ -8,17 +8,6 @@ type Params = {
   resolveBombardment: boolean
 }
 
-function countGalvanizedUnits(ctx: AbilityReadContext): number {
-  const units = ctx.state[ctx.side].units
-  let count = 0
-  for (const key of Object.keys(units)) {
-    const { subtypes } = parseVariantId(key as UnitType)
-    if (!subtypes.includes(GALVANIZED)) continue
-    count += units[key as UnitType].length
-  }
-  return count
-}
-
 export const proximaTargetingVi: Ability<Params> = {
   key: 'PROXIMA_TARGETING_VI',
   name: 'Proxima Targeting VI',
@@ -69,4 +58,15 @@ export const proximaTargetingVi: Ability<Params> = {
       },
     },
   ],
+}
+
+function countGalvanizedUnits(ctx: AbilityReadContext): number {
+  const units = ctx.state[ctx.side].units
+  let count = 0
+  for (const key of Object.keys(units)) {
+    const { subtypes } = parseVariantId(key as UnitType)
+    if (!subtypes.includes(GALVANIZED)) continue
+    count += units[key as UnitType].length
+  }
+  return count
 }

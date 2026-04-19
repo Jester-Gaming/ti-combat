@@ -17,11 +17,81 @@ type Params = {
   [key: string]: unknown
 }
 
-const NONE = 'none'
+export const ssruu: Ability<Params> = {
+  key: 'SSRUU',
+  name: 'Ssruu',
+  description:
+    "This card has the text ability of each other player's agent, even if that agent is exhausted.",
+  icon: yssarilTribesIcon,
+  category: 'AGENT',
+  paramsSchema: z.object({ agentKey: z.string() }),
+  params: {
+    isEnabled: false,
+    uses: 1,
+    agentKey: 'none',
+  },
+  headerUI: 'isEnabled',
+  onParamSet: (params, key) => {
+    // When the agent switches, overlay the new agent's defaults onto Ssruu's
+    // params so UI controls start with the wrapped agent's defaults rather
+    // than stale values left over from a previously selected agent.
+    if (key !== 'agentKey') return
+    const agent = getAgents().find(a => a.key === params.agentKey)
+    if (!agent) return params
+    const defaults = extractDefaults(agent)
+    const next = { ...params } as Record<string, unknown>
+    for (const k of Object.keys(defaults)) {
+      if (k === 'isEnabled' || k === 'uses') continue
+      next[k] = defaults[k]
+    }
+    return next as typeof params
+  },
+  declareParamChange: (params, settings) => {
+    const agent = getAgents().find(a => a.key === params.agentKey)
+    if (!agent?.declareParamChange) return []
+    const merged = withAgentDefaults(agent, params)
+    return agent.declareParamChange(
+      merged as Parameters<NonNullable<Ability['declareParamChange']>>[0],
+      settings,
+    )
+  },
+  uiConfig: (ctx, params) => {
+    const agents = getAgents()
+    const selectItem = {
+      key: 'agentKey' as const,
+      label: 'Agent',
+      type: 'select' as const,
+      items: [
+        { label: 'None', value: 'none' },
+        ...agents.map(a => ({ label: a.name, value: a.key })),
+      ] satisfies SelectItem[],
+    }
+    const agent = agents.find(a => a.key === params.agentKey)
+    if (!agent?.uiConfig) return [selectItem]
+    const merged = withAgentDefaults(agent, params)
+    const agentItems =
+      typeof agent.uiConfig === 'function'
+        ? agent.uiConfig(
+            ctx,
+            merged as Parameters<
+              Extract<typeof agent.uiConfig, (...args: unknown[]) => unknown>
+            >[1],
+          )
+        : agent.uiConfig
+    return [selectItem, ...agentItems]
+  },
+  invoke: getAgents().flatMap(agent =>
+    agent.invoke.map(
+      inv => wrapInvoke(agent, inv as AbilityInvoke) as AbilityInvoke<Params>,
+    ),
+  ),
+}
 
-const OTHER_AGENTS: Ability[] = Object.values(otherFactions).flatMap(
-  faction => (faction.abilities?.agent ?? []) as Ability[],
-)
+function getAgents(): Ability[] {
+  return Object.values(otherFactions).flatMap(
+    faction => (faction.abilities?.agent ?? []) as Ability[],
+  )
+}
 
 /** Overlay the wrapped agent's defaults on Ssruu's params so every param
  *  the agent expects is defined, without baking a spread of every agent's
@@ -59,74 +129,4 @@ function wrapInvoke(agent: Ability, invoke: AbilityInvoke) {
       ;(invoke.call as GenericCall)(ctx, merged, extra)
     },
   } as const
-}
-
-export const ssruu: Ability<Params> = {
-  key: 'SSRUU',
-  name: 'Ssruu',
-  description:
-    "This card has the text ability of each other player's agent, even if that agent is exhausted.",
-  icon: yssarilTribesIcon,
-  category: 'AGENT',
-  paramsSchema: z.object({ agentKey: z.string() }),
-  params: {
-    isEnabled: false,
-    uses: 1,
-    agentKey: NONE,
-  },
-  headerUI: 'isEnabled',
-  onParamSet: (params, key) => {
-    // When the agent switches, overlay the new agent's defaults onto Ssruu's
-    // params so UI controls start with the wrapped agent's defaults rather
-    // than stale values left over from a previously selected agent.
-    if (key !== 'agentKey') return
-    const agent = OTHER_AGENTS.find(a => a.key === params.agentKey)
-    if (!agent) return params
-    const defaults = extractDefaults(agent)
-    const next = { ...params } as Record<string, unknown>
-    for (const k of Object.keys(defaults)) {
-      if (k === 'isEnabled' || k === 'uses') continue
-      next[k] = defaults[k]
-    }
-    return next as typeof params
-  },
-  declareParamChange: (params, settings) => {
-    const agent = OTHER_AGENTS.find(a => a.key === params.agentKey)
-    if (!agent?.declareParamChange) return []
-    const merged = withAgentDefaults(agent, params)
-    return agent.declareParamChange(
-      merged as Parameters<NonNullable<Ability['declareParamChange']>>[0],
-      settings,
-    )
-  },
-  uiConfig: (ctx, params) => {
-    const selectItem = {
-      key: 'agentKey' as const,
-      label: 'Agent',
-      type: 'select' as const,
-      items: [
-        { label: 'None', value: NONE },
-        ...OTHER_AGENTS.map(a => ({ label: a.name, value: a.key })),
-      ] satisfies SelectItem[],
-    }
-    const agentKey = params.agentKey
-    const agent = OTHER_AGENTS.find(a => a.key === agentKey)
-    if (!agent?.uiConfig) return [selectItem]
-    const merged = withAgentDefaults(agent, params)
-    const agentItems =
-      typeof agent.uiConfig === 'function'
-        ? agent.uiConfig(
-            ctx,
-            merged as Parameters<
-              Extract<typeof agent.uiConfig, (...args: unknown[]) => unknown>
-            >[1],
-          )
-        : agent.uiConfig
-    return [selectItem, ...agentItems]
-  },
-  invoke: OTHER_AGENTS.flatMap(agent =>
-    agent.invoke.map(
-      inv => wrapInvoke(agent, inv as AbilityInvoke) as AbilityInvoke<Params>,
-    ),
-  ),
 }

@@ -14,53 +14,6 @@ type SingularityAbilityEntry = {
   prepareCalls: ((ctx: AbilityCallContext, ...rest: unknown[]) => void)[]
 }
 
-const SUBCATEGORY_LABELS: Record<string, string> = {
-  FLAGSHIP: 'Flagship',
-  TECHNOLOGY: 'Technology',
-  UNIT: 'Unit',
-}
-
-function collectInvokes(ability: Ability): SingularityAbilityEntry {
-  const prepareCalls: ((
-    ctx: AbilityCallContext,
-    ...rest: unknown[]
-  ) => void)[] = []
-  for (const inv of ability.invoke) {
-    if (inv.timing === 'PREPARE')
-      prepareCalls.push(
-        inv.call as (ctx: AbilityCallContext, ...rest: unknown[]) => void,
-      )
-  }
-  return {
-    key: ability.key,
-    name: ability.name,
-    subcategory: ability.subcategory,
-    prepareCalls,
-  }
-}
-
-function buildSelectGroups(
-  entries: SingularityAbilityEntry[],
-  ctx: AbilityReadContext,
-  filter: (isEnabled: boolean) => boolean,
-): SelectGroup[] {
-  const grouped = new Map<string, { label: string; value: string }[]>()
-  for (const entry of entries) {
-    const config = ctx.api.own.getAbilityConfig(
-      entry.key as keyof AbilityConfigMap,
-    )
-    const isEnabled = !!config?.isEnabled
-    if (!filter(isEnabled)) continue
-    const sub = entry.subcategory ?? 'ABILITY'
-    if (!grouped.has(sub)) grouped.set(sub, [])
-    grouped.get(sub)!.push({ label: entry.name, value: entry.key })
-  }
-  return [...grouped.entries()].map(([sub, items]) => ({
-    group: SUBCATEGORY_LABELS[sub] ?? sub,
-    items,
-  }))
-}
-
 type TSParams = {
   enableAbilityKey: string
   disableAbilityKey: string
@@ -68,13 +21,12 @@ type TSParams = {
   opponentDestroyed?: boolean
 }
 
-const NONE = 'none'
-
 export function createTechnologicalSingularity(
   enableAbilityList: Ability[],
   disableAbilityList: Ability[],
   mordredAbility: Ability,
 ): Ability<TSParams> {
+  const NONE = 'none'
   const enableAbilities = enableAbilityList.map(collectInvokes)
   const disableAbilities = disableAbilityList.map(collectInvokes)
 
@@ -206,4 +158,50 @@ export function createTechnologicalSingularity(
       },
     ],
   }
+}
+
+function collectInvokes(ability: Ability): SingularityAbilityEntry {
+  const prepareCalls: ((
+    ctx: AbilityCallContext,
+    ...rest: unknown[]
+  ) => void)[] = []
+  for (const inv of ability.invoke) {
+    if (inv.timing === 'PREPARE')
+      prepareCalls.push(
+        inv.call as (ctx: AbilityCallContext, ...rest: unknown[]) => void,
+      )
+  }
+  return {
+    key: ability.key,
+    name: ability.name,
+    subcategory: ability.subcategory,
+    prepareCalls,
+  }
+}
+
+function buildSelectGroups(
+  entries: SingularityAbilityEntry[],
+  ctx: AbilityReadContext,
+  filter: (isEnabled: boolean) => boolean,
+): SelectGroup[] {
+  const SUBCATEGORY_LABELS: Record<string, string> = {
+    FLAGSHIP: 'Flagship',
+    TECHNOLOGY: 'Technology',
+    UNIT: 'Unit',
+  }
+  const grouped = new Map<string, { label: string; value: string }[]>()
+  for (const entry of entries) {
+    const config = ctx.api.own.getAbilityConfig(
+      entry.key as keyof AbilityConfigMap,
+    )
+    const isEnabled = !!config?.isEnabled
+    if (!filter(isEnabled)) continue
+    const sub = entry.subcategory ?? 'ABILITY'
+    if (!grouped.has(sub)) grouped.set(sub, [])
+    grouped.get(sub)!.push({ label: entry.name, value: entry.key })
+  }
+  return [...grouped.entries()].map(([sub, items]) => ({
+    group: SUBCATEGORY_LABELS[sub] ?? sub,
+    items,
+  }))
 }

@@ -8,21 +8,6 @@ type Params = {
   isActive: boolean
 }
 
-function collectDestroyedShips(
-  destroyed: Record<string, UnitId[]>,
-  ships: Set<UnitBaseType>,
-): Partial<Record<UnitBaseType, number>> {
-  const counts: Partial<Record<UnitBaseType, number>> = {}
-  for (const k in destroyed) {
-    const key = k as UnitType
-    const { type } = parseVariantId(key)
-    if (ships.has(type)) {
-      counts[type] = (counts[type] ?? 0) + destroyed[key].length
-    }
-  }
-  return counts
-}
-
 export const sleeperCell: Ability<Params> = {
   key: 'SLEEPER_CELL',
   name: 'Sleeper Cell',
@@ -79,4 +64,19 @@ export const sleeperCell: Ability<Params> = {
       },
     },
   ],
+}
+
+function collectDestroyedShips(
+  destroyed: Record<string, UnitId[]>,
+  ships: Set<UnitBaseType>,
+): Partial<Record<UnitBaseType, number>> {
+  const counts: Partial<Record<UnitBaseType, number>> = {}
+  for (const k in destroyed) {
+    const key = k as UnitType
+    const { type } = parseVariantId(key)
+    if (ships.has(type)) {
+      counts[type] = (counts[type] ?? 0) + destroyed[key].length
+    }
+  }
+  return counts
 }

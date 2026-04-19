@@ -4,46 +4,9 @@ import { type Ability, parseVariantId } from '@/combat'
 import type { SideApi } from '@/combat/abilities-engine/api/ability-api'
 import type { DiceGroup, UnitBaseType, UnitType } from '@/types'
 
-const STRUCTURE_TYPES: UnitBaseType[] = ['PDS', 'SPACE_DOCK']
-
 type Params = {
   structures: Record<string, number>
 }
-
-function expectedHits(sc: DiceGroup): number {
-  return (sc[1] + (sc[2] ?? 0)) * (11 - sc[0])
-}
-
-function hasStructures(params: Params): boolean {
-  return Object.values(params.structures).some(v => v > 0)
-}
-
-function findBestSpaceCannon(
-  params: Params,
-  api: SideApi,
-): { key: string; sc: DiceGroup } | null {
-  let best: { key: string; sc: DiceGroup } | null = null
-  for (const [key, count] of Object.entries(params.structures)) {
-    if (count <= 0) continue
-    const { type } = parseVariantId(key as UnitType)
-    const sc = api.getUnitStats(type)?.UNIT_ABILITIES?.SPACE_CANNON
-    if (sc && (!best || expectedHits(sc) > expectedHits(best.sc))) {
-      best = { key, sc: [...sc] as DiceGroup }
-    }
-  }
-  return best
-}
-
-const uiConfig: Ability<Params>['uiConfig'] = ctx => [
-  {
-    key: 'structures',
-    type: 'number-list',
-    items: ctx.api.own.getUnitVariantsOptions({
-      include: STRUCTURE_TYPES,
-      includeNonParticipating: true,
-    }),
-  },
-]
 
 // Linkship I: each structure can only be triggered once
 export const linkshipI: Ability<Params> = {
@@ -61,7 +24,19 @@ export const linkshipI: Ability<Params> = {
     structures: {},
   },
   headerUI: 'isEnabled',
-  uiConfig,
+  uiConfig: ctx => {
+    const STRUCTURE_TYPES: UnitBaseType[] = ['PDS', 'SPACE_DOCK']
+    return [
+      {
+        key: 'structures',
+        type: 'number-list',
+        items: ctx.api.own.getUnitVariantsOptions({
+          include: STRUCTURE_TYPES,
+          includeNonParticipating: true,
+        }),
+      },
+    ]
+  },
   invoke: [
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
@@ -98,7 +73,19 @@ export const linkshipII: Ability<Params> = {
     uses: Infinity,
     structures: {},
   },
-  uiConfig,
+  uiConfig: ctx => {
+    const STRUCTURE_TYPES: UnitBaseType[] = ['PDS', 'SPACE_DOCK']
+    return [
+      {
+        key: 'structures',
+        type: 'number-list',
+        items: ctx.api.own.getUnitVariantsOptions({
+          include: STRUCTURE_TYPES,
+          includeNonParticipating: true,
+        }),
+      },
+    ]
+  },
   invoke: [
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
@@ -112,4 +99,28 @@ export const linkshipII: Ability<Params> = {
       },
     },
   ],
+}
+
+function expectedHits(sc: DiceGroup): number {
+  return (sc[1] + (sc[2] ?? 0)) * (11 - sc[0])
+}
+
+function hasStructures(params: Params): boolean {
+  return Object.values(params.structures).some(v => v > 0)
+}
+
+function findBestSpaceCannon(
+  params: Params,
+  api: SideApi,
+): { key: string; sc: DiceGroup } | null {
+  let best: { key: string; sc: DiceGroup } | null = null
+  for (const [key, count] of Object.entries(params.structures)) {
+    if (count <= 0) continue
+    const { type } = parseVariantId(key as UnitType)
+    const sc = api.getUnitStats(type)?.UNIT_ABILITIES?.SPACE_CANNON
+    if (sc && (!best || expectedHits(sc) > expectedHits(best.sc))) {
+      best = { key, sc: [...sc] as DiceGroup }
+    }
+  }
+  return best
 }

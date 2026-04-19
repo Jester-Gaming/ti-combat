@@ -9,10 +9,6 @@ type Params = {
   agentKey: string
 }
 
-function findAgent(ctx: AbilityReadContext, key: string): Ability | undefined {
-  return ctx.abilities.own.find(a => a.key === key && a.category === 'AGENT')
-}
-
 export const temporalCommandSuite: Ability<Params> = {
   key: 'TEMPORAL_COMMAND_SUITE',
   name: 'Temporal Command Suite',
@@ -58,4 +54,8 @@ export const temporalCommandSuite: Ability<Params> = {
       },
     },
   ],
+}
+
+function findAgent(ctx: AbilityReadContext, key: string): Ability | undefined {
+  return ctx.abilities.own.find(a => a.key === key && a.category === 'AGENT')
 }

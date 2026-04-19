@@ -1,4 +1,4 @@
-import type { UnitBaseType } from '../types/unit'
+import type { UnitAbility, UnitBaseType } from '../types/unit'
 
 export const NON_FIGHTER_SHIPS: UnitBaseType[] = [
   'FLAGSHIP',
@@ -14,6 +14,15 @@ export const SHIPS: UnitBaseType[] = [...NON_FIGHTER_SHIPS, 'FIGHTER']
 export const GROUND_FORCES: UnitBaseType[] = ['MECH', 'INFANTRY']
 
 export const STRUCTURES: UnitBaseType[] = ['PDS', 'SPACE_DOCK']
+
+export const UNIT_ABILITIES: UnitAbility[] = [
+  'AFB',
+  'BOMBARDMENT',
+  'DEPLOY',
+  'SPACE_CANNON',
+  'SUSTAIN_DAMAGE',
+  'PLANETARY_SHIELD',
+]
 
 export type UnitCategory = keyof typeof UNIT_CATEGORIES
 

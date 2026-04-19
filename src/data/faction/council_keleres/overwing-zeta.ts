@@ -9,26 +9,6 @@ type Params = {
   ships: Record<string, number>
 }
 
-const ALLOWED_TYPES: UnitBaseType[] = ['FLAGSHIP', 'CRUISER', 'DESTROYER']
-
-function getShipsToPlace(ships: Record<string, number>) {
-  const toPlace: Partial<Record<UnitBaseType, number>> = {}
-  const flagship = Math.min(ships.FLAGSHIP ?? 0, 1)
-  if (flagship > 0) toPlace.FLAGSHIP = flagship
-
-  const cruisers = ships.CRUISER ?? 0
-  const destroyers = ships.DESTROYER ?? 0
-  let remaining = 2
-  const clampedCruisers = Math.min(cruisers, remaining)
-  remaining -= clampedCruisers
-  const clampedDestroyers = Math.min(destroyers, remaining)
-
-  if (clampedCruisers > 0) toPlace.CRUISER = clampedCruisers
-  if (clampedDestroyers > 0) toPlace.DESTROYER = clampedDestroyers
-
-  return toPlace
-}
-
 export const overwingZeta: Ability<Params> = {
   key: 'OVERWING_ZETA',
   name: 'Overwing Zeta',
@@ -91,25 +71,46 @@ export const overwingZeta: Ability<Params> = {
       },
     },
   ],
-  uiConfig: () => [
-    {
-      key: 'strategy' as const,
-      label: 'Strategy',
-      type: 'select' as const,
-      items: [
-        { label: 'Immediately (R1)', value: 'IMMEDIATELY' },
-        { label: 'Enough Fleet Pool', value: 'ENOUGH_FLEET_POOL' },
-      ],
-    },
-    {
-      key: 'ships' as const,
-      label: 'Ships',
-      type: 'number-list' as const,
-      items: ALLOWED_TYPES.map(type => ({
-        label: UNIT_DISPLAY_NAMES[type],
-        value: type,
-        max: type === 'FLAGSHIP' ? 1 : 2,
-      })),
-    },
-  ],
+  uiConfig: () => {
+    const ALLOWED_TYPES: UnitBaseType[] = ['FLAGSHIP', 'CRUISER', 'DESTROYER']
+    return [
+      {
+        key: 'strategy' as const,
+        label: 'Strategy',
+        type: 'select' as const,
+        items: [
+          { label: 'Immediately (R1)', value: 'IMMEDIATELY' },
+          { label: 'Enough Fleet Pool', value: 'ENOUGH_FLEET_POOL' },
+        ],
+      },
+      {
+        key: 'ships' as const,
+        label: 'Ships',
+        type: 'number-list' as const,
+        items: ALLOWED_TYPES.map(type => ({
+          label: UNIT_DISPLAY_NAMES[type],
+          value: type,
+          max: type === 'FLAGSHIP' ? 1 : 2,
+        })),
+      },
+    ]
+  },
+}
+
+function getShipsToPlace(ships: Record<string, number>) {
+  const toPlace: Partial<Record<UnitBaseType, number>> = {}
+  const flagship = Math.min(ships.FLAGSHIP ?? 0, 1)
+  if (flagship > 0) toPlace.FLAGSHIP = flagship
+
+  const cruisers = ships.CRUISER ?? 0
+  const destroyers = ships.DESTROYER ?? 0
+  let remaining = 2
+  const clampedCruisers = Math.min(cruisers, remaining)
+  remaining -= clampedCruisers
+  const clampedDestroyers = Math.min(destroyers, remaining)
+
+  if (clampedCruisers > 0) toPlace.CRUISER = clampedCruisers
+  if (clampedDestroyers > 0) toPlace.DESTROYER = clampedDestroyers
+
+  return toPlace
 }

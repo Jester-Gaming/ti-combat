@@ -8,22 +8,6 @@ type Params = {
   targetPriority: UnitType[]
 }
 
-function findDestroyedShipTypes(
-  destroyed: Record<UnitType, UnitId[]>,
-  ships: UnitBaseType[],
-): Set<UnitBaseType> {
-  const shipsSet = new Set<UnitBaseType>(ships)
-  const types = new Set<UnitBaseType>()
-  for (const k in destroyed) {
-    const key = k as UnitType
-    if (destroyed[key]?.length > 0) {
-      const { type } = parseVariantId(key)
-      if (shipsSet.has(type)) types.add(type)
-    }
-  }
-  return types
-}
-
 export const vosHollow: Ability<Params> = {
   key: 'VOS_HOLLOW',
   name: 'Vos Hollow',
@@ -96,4 +80,20 @@ export const vosHollow: Ability<Params> = {
       },
     ]
   },
+}
+
+function findDestroyedShipTypes(
+  destroyed: Record<UnitType, UnitId[]>,
+  ships: UnitBaseType[],
+): Set<UnitBaseType> {
+  const shipsSet = new Set<UnitBaseType>(ships)
+  const types = new Set<UnitBaseType>()
+  for (const k in destroyed) {
+    const key = k as UnitType
+    if (destroyed[key]?.length > 0) {
+      const { type } = parseVariantId(key)
+      if (shipsSet.has(type)) types.add(type)
+    }
+  }
+  return types
 }

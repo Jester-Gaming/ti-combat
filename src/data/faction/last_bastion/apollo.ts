@@ -5,12 +5,12 @@ import { type Ability, makeVariantId } from '@/combat'
 import { GALVANIZED } from '@/data/abilities/general/pre-galvanized'
 import type { DiceGroup, UnitId, UnitType, UnitVariantId } from '@/types'
 
-export const HERO = 'Hero' as UnitVariantId
-
 type Params = {
   heroUnit: UnitType | null
   heroDesignated: boolean
 }
+
+export const HERO = 'Hero' as UnitVariantId
 
 export const apollo: Ability<Params> = {
   key: 'APOLLO',

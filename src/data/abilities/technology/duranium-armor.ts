@@ -12,27 +12,6 @@ type Params = {
   groundRepairPriority: UnitType[]
 }
 
-function findRepairTarget(
-  params: Params,
-  ctx: AbilityReadContext,
-): UnitId | undefined {
-  const isGround = ctx.state.combatMode === 'GROUND'
-  const priority = isGround
-    ? params.groundRepairPriority
-    : params.spaceRepairPriority
-
-  for (const variantId of priority) {
-    for (const unitId of ctx.api.own.getUnits(variantId)) {
-      const state = ctx.api.own.getUnitState(unitId)
-      if (!state?.isDamaged) continue
-      if (state.usedSustainThisRound) continue
-      return unitId
-    }
-  }
-
-  return undefined
-}
-
 export const duraniumArmor: Ability<Params> = {
   key: 'DURANIUM_ARMOR',
   name: 'Duranium Armor',
@@ -117,4 +96,25 @@ export const duraniumArmor: Ability<Params> = {
       },
     ]
   },
+}
+
+function findRepairTarget(
+  params: Params,
+  ctx: AbilityReadContext,
+): UnitId | undefined {
+  const isGround = ctx.state.combatMode === 'GROUND'
+  const priority = isGround
+    ? params.groundRepairPriority
+    : params.spaceRepairPriority
+
+  for (const variantId of priority) {
+    for (const unitId of ctx.api.own.getUnits(variantId)) {
+      const state = ctx.api.own.getUnitState(unitId)
+      if (!state?.isDamaged) continue
+      if (state.usedSustainThisRound) continue
+      return unitId
+    }
+  }
+
+  return undefined
 }

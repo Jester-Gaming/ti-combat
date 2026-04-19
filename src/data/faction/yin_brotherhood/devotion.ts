@@ -8,8 +8,6 @@ type Params = {
   targetPriority: UnitType[]
 }
 
-const SACRIFICE_TYPES = new Set(['CRUISER', 'DESTROYER'])
-
 export const devotion: Ability<Params> = {
   key: 'DEVOTION',
   name: 'Devotion',
@@ -29,7 +27,10 @@ export const devotion: Ability<Params> = {
       default: [],
       source: 'ships',
       side: 'own',
-      filter: id => SACRIFICE_TYPES.has(parseVariantId(id).type),
+      filter: id => {
+        const SACRIFICE_TYPES = new Set(['CRUISER', 'DESTROYER'])
+        return SACRIFICE_TYPES.has(parseVariantId(id).type)
+      },
     }),
     targetPriority: declareParam({
       default: [],

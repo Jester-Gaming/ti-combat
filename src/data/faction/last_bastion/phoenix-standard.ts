@@ -13,16 +13,6 @@ type Params = {
   groundUnitPriority: UnitType[]
 }
 
-function findTarget(
-  api: { hasUnitType: (t: UnitType) => boolean },
-  priority: UnitType[],
-): UnitType | undefined {
-  return priority.find(t => {
-    if (parseVariantId(t).subtypes.includes(GALVANIZED)) return false
-    return api.hasUnitType(t)
-  })
-}
-
 export const phoenixStandard: Ability<Params> = {
   key: 'PHOENIX_STANDARD',
   name: 'Phoenix Standard',
@@ -94,4 +84,14 @@ export const phoenixStandard: Ability<Params> = {
       },
     },
   ],
+}
+
+function findTarget(
+  api: { hasUnitType: (t: UnitType) => boolean },
+  priority: UnitType[],
+): UnitType | undefined {
+  return priority.find(t => {
+    if (parseVariantId(t).subtypes.includes(GALVANIZED)) return false
+    return api.hasUnitType(t)
+  })
 }

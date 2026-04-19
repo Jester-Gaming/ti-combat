@@ -1,15 +1,6 @@
-import type { UnitAbility } from '@/types'
+import { UNIT_ABILITIES } from '@/constants/units'
 
 import type { Ability } from '../../../combat/abilities-engine/types'
-
-const UNIT_ABILITIES: UnitAbility[] = [
-  'AFB',
-  'BOMBARDMENT',
-  'DEPLOY',
-  'SPACE_CANNON',
-  'SUSTAIN_DAMAGE',
-  'PLANETARY_SHIELD',
-]
 
 export const entropicScar: Ability = {
   key: 'ENTROPIC_SCAR',

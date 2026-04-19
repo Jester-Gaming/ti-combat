@@ -19,6 +19,62 @@ declare global {
   }
 }
 
+export const capacity: Ability<Params> = {
+  key: 'CAPACITY',
+  name: 'Enforce Capacity',
+  category: 'ADVANCED',
+  context: 'SPACE',
+  paramsSchema: z.object({
+    removePriority: z.array(z.string()),
+  }),
+  params: {
+    isEnabled: false,
+    uses: Infinity,
+    removePriority: ['FIGHTER', 'INFANTRY', 'MECH'],
+  },
+  headerUI: 'isEnabled',
+  invoke: [
+    {
+      timing: 'PREPARE',
+      call: (ctx, params) => {
+        enforceCapacity(ctx, params.removePriority)
+      },
+    },
+    {
+      timing: 'AFTER_ASSIGN_HITS_STEP',
+      context: 'SPACE_CANNON_OFFENSE',
+      call: (ctx, params) => {
+        enforceCapacity(ctx, params.removePriority)
+      },
+    },
+    {
+      timing: 'CLEANUP',
+      context: 'SPACE_COMBAT',
+      call: (ctx, params) => {
+        enforceCapacity(ctx, params.removePriority)
+      },
+    },
+  ],
+  uiConfig: ctx => {
+    const carriedBaseTypes = UNIT_TYPES.filter(t => {
+      const stats = ctx.api.own.getUnitStats(t)
+      return stats?.CAPACITY_COST != null
+    })
+
+    return [
+      {
+        key: 'removePriority' as const,
+        label: 'Removal Priority',
+        type: 'order-list' as const,
+        items: ctx.api.own.getUnitVariantsOptions({
+          include: carriedBaseTypes,
+          includeNonParticipating: true,
+        }),
+      },
+    ]
+  },
+}
+
 /** Compute total ship capacity for a side */
 export function computeTotalCapacity(ctx: AbilityCallContext): number {
   const api = ctx.api.own
@@ -104,60 +160,4 @@ function enforceCapacity(
       excess -= stats.CAPACITY_COST
     }
   }
-}
-
-export const capacity: Ability<Params> = {
-  key: 'CAPACITY',
-  name: 'Enforce Capacity',
-  category: 'ADVANCED',
-  context: 'SPACE',
-  paramsSchema: z.object({
-    removePriority: z.array(z.string()),
-  }),
-  params: {
-    isEnabled: false,
-    uses: Infinity,
-    removePriority: ['FIGHTER', 'INFANTRY', 'MECH'],
-  },
-  headerUI: 'isEnabled',
-  invoke: [
-    {
-      timing: 'PREPARE',
-      call: (ctx, params) => {
-        enforceCapacity(ctx, params.removePriority)
-      },
-    },
-    {
-      timing: 'AFTER_ASSIGN_HITS_STEP',
-      context: 'SPACE_CANNON_OFFENSE',
-      call: (ctx, params) => {
-        enforceCapacity(ctx, params.removePriority)
-      },
-    },
-    {
-      timing: 'END_OF_COMBAT',
-      context: 'SPACE_COMBAT',
-      call: (ctx, params) => {
-        enforceCapacity(ctx, params.removePriority)
-      },
-    },
-  ],
-  uiConfig: ctx => {
-    const carriedBaseTypes = UNIT_TYPES.filter(t => {
-      const stats = ctx.api.own.getUnitStats(t)
-      return stats?.CAPACITY_COST != null
-    })
-
-    return [
-      {
-        key: 'removePriority' as const,
-        label: 'Removal Priority',
-        type: 'order-list' as const,
-        items: ctx.api.own.getUnitVariantsOptions({
-          include: carriedBaseTypes,
-          includeNonParticipating: true,
-        }),
-      },
-    ]
-  },
 }

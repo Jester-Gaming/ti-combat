@@ -13,16 +13,6 @@ type Params = {
   groundUnitPriority: UnitType[]
 }
 
-function findTarget(
-  api: { hasUnitType: (t: UnitType) => boolean },
-  priority: UnitType[],
-): UnitType | undefined {
-  return priority.find(t => {
-    if (parseVariantId(t).subtypes.includes(GALVANIZED)) return false
-    return api.hasUnitType(t)
-  })
-}
-
 export const raiseTheStandard: Ability<Params> = {
   key: 'RAISE_THE_STANDARD',
   name: 'Raise the Standard',
@@ -93,4 +83,14 @@ export const raiseTheStandard: Ability<Params> = {
       },
     },
   ],
+}
+
+function findTarget(
+  api: { hasUnitType: (t: UnitType) => boolean },
+  priority: UnitType[],
+): UnitType | undefined {
+  return priority.find(t => {
+    if (parseVariantId(t).subtypes.includes(GALVANIZED)) return false
+    return api.hasUnitType(t)
+  })
 }

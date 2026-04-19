@@ -1,3 +1,5 @@
+import { UNIT_ABILITIES } from '@/constants/units'
+
 import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
@@ -21,19 +23,10 @@ export const articlesOfWar: Ability<Params> = {
       timing: 'PREPARE',
       isCallable: (params: Params) => params.isEnabled,
       call: ctx => {
-        ctx.api.own.setUnitAbilityLost('BOMBARDMENT', 'ARTICLES_OF_WAR', 'MECH')
-        ctx.api.own.setUnitAbilityLost('AFB', 'ARTICLES_OF_WAR', 'MECH')
-        ctx.api.own.setUnitAbilityLost(
-          'SPACE_CANNON',
-          'ARTICLES_OF_WAR',
-          'MECH',
-        )
-        ctx.api.own.setUnitAbilityLost(
-          'PLANETARY_SHIELD',
-          'ARTICLES_OF_WAR',
-          'MECH',
-        )
-        ctx.api.own.setUnitAbilityLost('DEPLOY', 'ARTICLES_OF_WAR', 'MECH')
+        for (const ability of UNIT_ABILITIES) {
+          if (ability === 'SUSTAIN_DAMAGE') continue
+          ctx.api.own.setUnitAbilityLost(ability, 'ARTICLES_OF_WAR', 'MECH')
+        }
 
         // Remove printed Ability objects from mech units (keep only Sustain Damage)
         const mechStats = ctx.api.own.getUnitStats('MECH')

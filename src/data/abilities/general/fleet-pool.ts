@@ -15,6 +15,50 @@ declare global {
   }
 }
 
+export const fleetPool: Ability<Params> = {
+  key: 'FLEET_POOL',
+  name: 'Enforce Fleet Pool',
+  category: 'ADVANCED',
+  context: 'SPACE',
+  params: {
+    isEnabled: false,
+    uses: Infinity,
+    fleetPool: 8,
+    shipPriority: declareParam({
+      default: [],
+      source: 'spaceCombatParticipating',
+      side: 'own',
+      sort: 'desc',
+    }),
+  },
+  headerUI: 'isEnabled',
+  invoke: [
+    {
+      timing: 'PREPARE',
+      call: ctx => {
+        enforceFleetPool(ctx.api.own)
+      },
+    },
+  ],
+  uiConfig: ctx => [
+    {
+      key: 'fleetPool' as const,
+      label: 'Fleet Pool',
+      type: 'number' as const,
+      min: 1,
+      max: 20,
+    },
+    {
+      key: 'shipPriority' as const,
+      label: 'Ship Keep Priority',
+      type: 'order-list' as const,
+      items: ctx.api.own.getUnitVariantsOptions({
+        combatMode: 'SPACE',
+      }),
+    },
+  ],
+}
+
 export function enforceFleetPool(api: SideApi): void {
   const config = api.getAbilityConfig('FLEET_POOL')
   if (!config?.isEnabled) return
@@ -123,48 +167,4 @@ export function enforceFleetPool(api: SideApi): void {
       excess -= cost
     }
   }
-}
-
-export const fleetPool: Ability<Params> = {
-  key: 'FLEET_POOL',
-  name: 'Enforce Fleet Pool',
-  category: 'ADVANCED',
-  context: 'SPACE',
-  params: {
-    isEnabled: false,
-    uses: Infinity,
-    fleetPool: 8,
-    shipPriority: declareParam({
-      default: [],
-      source: 'spaceCombatParticipating',
-      side: 'own',
-      sort: 'desc',
-    }),
-  },
-  headerUI: 'isEnabled',
-  invoke: [
-    {
-      timing: 'PREPARE',
-      call: ctx => {
-        enforceFleetPool(ctx.api.own)
-      },
-    },
-  ],
-  uiConfig: ctx => [
-    {
-      key: 'fleetPool' as const,
-      label: 'Fleet Pool',
-      type: 'number' as const,
-      min: 1,
-      max: 20,
-    },
-    {
-      key: 'shipPriority' as const,
-      label: 'Ship Keep Priority',
-      type: 'order-list' as const,
-      items: ctx.api.own.getUnitVariantsOptions({
-        combatMode: 'SPACE',
-      }),
-    },
-  ],
 }
