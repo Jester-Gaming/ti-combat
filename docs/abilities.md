@@ -131,7 +131,6 @@ context: ['BOMBARDMENT', 'SPACE_CANNON_OFFENSE'] // During either phase
 Timings define when abilities fire. They run in this order during combat:
 
 ```
-CLEANUP               — internal cleanup (resets state between phases)
 PREPARE               — once at combat construction
 COMMIT_UNITS          — during COMMIT_UNITS phase (ground combat unit commitment)
 START_OF_COMBAT       — before first round
@@ -152,12 +151,12 @@ END_OF_COMBAT_ROUND   — after each round
 AFTER_COMBAT_ROUND    — after END_OF_COMBAT_ROUND, before CLEANUP_ROUND
 END_OF_COMBAT         — when combat ends
 CLEANUP_ROUND         — after AFTER_COMBAT_ROUND, resets per-round state (e.g. usedSustainThisRound)
-AFTER_ROUND           — after round cleanup
+CLEANUP               — once after combat ends, after END_OF_COMBAT (pair with PREPARE for combat-level teardown)
 ```
 
 ### Function Signatures by Timing
 
-**Void timings** (CLEANUP, PREPARE, COMMIT_UNITS, START_OF_COMBAT, START_OF_COMBAT_ROUND, AFTER_UNIT_ABILITY_ROLL, AFTER_DICE_ROLL, BEFORE_ASSIGN_HITS, AFTER_ASSIGN_HITS_STEP, END_OF_COMBAT_ROUND, AFTER_COMBAT_ROUND, END_OF_COMBAT, CLEANUP_ROUND, AFTER_ROUND):
+**Void timings** (PREPARE, COMMIT_UNITS, START_OF_COMBAT, START_OF_COMBAT_ROUND, AFTER_UNIT_ABILITY_ROLL, AFTER_DICE_ROLL, BEFORE_ASSIGN_HITS, AFTER_ASSIGN_HITS_STEP, END_OF_COMBAT_ROUND, AFTER_COMBAT_ROUND, END_OF_COMBAT, CLEANUP_ROUND, CLEANUP):
 
 ```typescript
 isCallable?: (params: Params, ctx: AbilityReadContext) => boolean

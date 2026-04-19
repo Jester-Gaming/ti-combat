@@ -1,7 +1,7 @@
 import { z } from 'zod/mini'
 
 import nomadIcon from '@/assets/faction/nomad.svg?raw'
-import { type Ability, declareParam } from '@/combat'
+import { type Ability, declareParam, makeVariantId } from '@/combat'
 import type { UnitType, UnitVariantId } from '@/types'
 import { getEffectiveStats } from '@/utils/get-simulation-units'
 
@@ -87,6 +87,14 @@ export const cavalry: Ability<Params> = {
             AFB: memoriaStats.UNIT_ABILITIES?.AFB,
           },
         }))
+      },
+    },
+    {
+      timing: 'CLEANUP',
+      system: true,
+      call: (ctx, params) => {
+        const variantId = makeVariantId(params.unitType, [CAVALRY])
+        ctx.api.own.removeSubtype(variantId, CAVALRY)
       },
     },
   ],

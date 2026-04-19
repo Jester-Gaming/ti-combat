@@ -489,13 +489,21 @@ export class CombatState {
     this.runAbilities('END_OF_COMBAT')
 
     return this.handleBranchesOrContinue(() => {
-      this.data.currentPhase = {
-        meta: 'COMPLETE' as const,
-        micro: getLastMicroPhase('COMPLETE'),
-      }
-      const state = CombatState.fromData(this.data, this._params)
-      state._logger = this._logger
-      return [{ state, probability: 1 }]
+      this.runAbilities('CLEANUP_ROUND')
+
+      return this.handleBranchesOrContinue(() => {
+        this.runAbilities('CLEANUP')
+
+        return this.handleBranchesOrContinue(() => {
+          this.data.currentPhase = {
+            meta: 'COMPLETE' as const,
+            micro: getLastMicroPhase('COMPLETE'),
+          }
+          const state = CombatState.fromData(this.data, this._params)
+          state._logger = this._logger
+          return [{ state, probability: 1 }]
+        })
+      })
     })
   }
 

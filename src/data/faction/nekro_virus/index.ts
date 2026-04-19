@@ -6,7 +6,6 @@ import type {
   SettingsParams,
 } from '@/combat/abilities-engine/types'
 import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
-import baseUnits from '@/data/base-units'
 import type { Faction, UnitBaseType, UnitDefinition } from '@/types'
 import { getEffectiveStats } from '@/utils/get-simulation-units'
 
@@ -77,11 +76,6 @@ function createFactionUnitAbility(
 ): Ability {
   const key = `NEKRO_UNIT_${factionKey}_${unitType}`
   const stats = getEffectiveStats(unitDef.BASE, unitDef.UPGRADED, true)
-  const defaultStats = {
-    ...(baseUnits as Record<string, { BASE: Record<string, unknown> }>)[
-      unitType
-    ]?.BASE,
-  }
   const displayName = stats.NAME ?? unitDef.BASE.NAME ?? unitType
 
   const mainAbility = (stats.ABILITIES ?? []).find(
@@ -133,34 +127,17 @@ function createFactionUnitAbility(
         timing: 'PREPARE' as const,
         call: (ctx: AbilityCallContext) => {
           // Save original stats before overwriting
-          const original = ctx.api.own.getUnitStats(unitType)
-          if (original) {
-            ctx.api.own.updateAbilityConfig(key, {
-              _savedStats: { ...original },
-            })
-          }
+          const original = { ...ctx.api.own.getUnitStats(unitType)! }
+          ctx.api.own.updateAbilityConfig(key, {
+            reset: () => (ctx: AbilityCallContext) => {
+              ctx.api.own.modifyUnitType(unitType, original)
+            },
+          })
           ctx.api.own.modifyUnitType(unitType, effectiveStats)
           // Run child ability's config-level PREPARE invokes
           if (mainAbility) {
             for (const inv of mainAbility.invoke) {
               if (inv.timing !== 'PREPARE') continue
-              ;(inv.call as (c: AbilityCallContext) => void)(ctx)
-            }
-          }
-        },
-      },
-      {
-        timing: 'CLEANUP' as const,
-        call: (ctx: AbilityCallContext) => {
-          const config = ctx.api.own.getAbilityConfig(key)
-          const saved = config?._savedStats as
-            | Record<string, unknown>
-            | undefined
-          ctx.api.own.modifyUnitType(unitType, saved ?? defaultStats)
-          // Run child ability's config-level CLEANUP invokes
-          if (mainAbility) {
-            for (const inv of mainAbility.invoke) {
-              if (inv.timing !== 'CLEANUP') continue
               ;(inv.call as (c: AbilityCallContext) => void)(ctx)
             }
           }

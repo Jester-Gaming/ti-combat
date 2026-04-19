@@ -112,5 +112,14 @@ export const apollo: Ability<Params> = {
         })
       },
     },
+    {
+      timing: 'CLEANUP',
+      system: true,
+      isCallable: params => !!params.heroUnit,
+      call: (ctx, params) => {
+        const variantId = makeVariantId(params.heroUnit!, [HERO])
+        ctx.api.own.removeSubtype(variantId, HERO)
+      },
+    },
   ],
 }

@@ -12,7 +12,6 @@ type SingularityAbilityEntry = {
   name: string
   subcategory?: string
   prepareCalls: ((ctx: AbilityCallContext, ...rest: unknown[]) => void)[]
-  cleanupCalls: ((ctx: AbilityCallContext) => void)[]
 }
 
 const SUBCATEGORY_LABELS: Record<string, string> = {
@@ -26,21 +25,17 @@ function collectInvokes(ability: Ability): SingularityAbilityEntry {
     ctx: AbilityCallContext,
     ...rest: unknown[]
   ) => void)[] = []
-  const cleanupCalls: ((ctx: AbilityCallContext) => void)[] = []
   for (const inv of ability.invoke) {
     if (inv.timing === 'PREPARE')
       prepareCalls.push(
         inv.call as (ctx: AbilityCallContext, ...rest: unknown[]) => void,
       )
-    if (inv.timing === 'CLEANUP')
-      cleanupCalls.push(inv.call as (ctx: AbilityCallContext) => void)
   }
   return {
     key: ability.key,
     name: ability.name,
     subcategory: ability.subcategory,
     prepareCalls,
-    cleanupCalls,
   }
 }
 
@@ -170,15 +165,14 @@ export function createTechnologicalSingularity(
         call: (ctx, params) => {
           ctx.api.own.updateAbilityConfig({ opponentDestroyed: true })
 
-          // Run disables first so their CLEANUP reverts don't overwrite
+          // Run disables first so their reset reverts don't overwrite
           // newly applied PREPARE stats
           if (params.disableAbilityKey !== NONE) {
-            const entry = abilityLookup.get(params.disableAbilityKey)
-            if (entry) {
-              for (const call of entry.cleanupCalls) call(ctx)
-              ctx.api.own.updateAbilityConfig(params.disableAbilityKey, {
-                isEnabled: false,
-              })
+            const config = ctx.api.own.getAbilityConfig(
+              params.disableAbilityKey,
+            ) as { reset: (ctx: AbilityCallContext) => void }
+            if (config.reset) {
+              config.reset(ctx)
             }
           }
 

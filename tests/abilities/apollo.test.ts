@@ -106,11 +106,14 @@ describe('APOLLO', () => {
       mode: 'SPACE',
       attacker: {
         faction: 'LAST_BASTION',
-        units: { CRUISER: 1 },
+        units: { CRUISER: 2 },
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
             galvanizedUnits: { CRUISER: 1 },
+          },
+          UNIT_PRIORITY: {
+            spaceUnitPriority: ['CRUISER:Galvanized,Hero', 'CRUISER'],
           },
           APOLLO: { isEnabled: true, heroUnit: 'CRUISER:Galvanized' },
         },

@@ -107,7 +107,6 @@ export type DiceContext = OwnOpponentContext<DiceApi>
 // Single source of truth - map timing to context type (external API uses sided format)
 // void = no context, other type = required context
 export interface TimingContextMap {
-  CLEANUP: void
   PREPARE: void
   COMMIT_UNITS: void
   START_OF_COMBAT: void
@@ -127,9 +126,9 @@ export interface TimingContextMap {
   AFTER_DESTROY: SidedContext<Record<UnitType, UnitId[]>>
   END_OF_COMBAT_ROUND: void
   AFTER_COMBAT_ROUND: void
-  END_OF_COMBAT: void
   CLEANUP_ROUND: void
-  AFTER_ROUND: void
+  END_OF_COMBAT: void
+  CLEANUP: void
 }
 
 // Internal map for ability calls (uses own/opponent)
