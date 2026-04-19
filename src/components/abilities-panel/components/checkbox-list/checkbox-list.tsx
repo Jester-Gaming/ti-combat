@@ -94,7 +94,9 @@ export function CheckboxList({
             className={clsx(styles.item, isSelected && styles.selected)}
             onClick={() => handleToggle(val)}
           >
-            <span className={styles.label}>{labelMap.get(val) ?? val}</span>
+            <span className={styles.label} title={labelMap.get(val) ?? val}>
+              {labelMap.get(val) ?? val}
+            </span>
             <span
               className={styles.checkboxWrapper}
               onClick={e => e.stopPropagation()}

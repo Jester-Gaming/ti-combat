@@ -72,7 +72,9 @@ function SortableRow({
       {...attributes}
       {...listeners}
     >
-      <span className={styles.label}>{label}</span>
+      <span className={styles.label} title={label}>
+        {label}
+      </span>
       <span className={styles.dragHandle}>
         <DragHandleDots2Icon />
       </span>

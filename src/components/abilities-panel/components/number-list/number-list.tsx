@@ -40,7 +40,9 @@ export function NumberList({
             key={item.value}
             className={clsx(styles.item, isActive && styles.active)}
           >
-            <span className={styles.label}>{item.label}</span>
+            <span className={styles.label} title={item.label}>
+              {item.label}
+            </span>
             <input
               type="number"
               className={styles.input}
