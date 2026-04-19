@@ -877,6 +877,7 @@ export class AbilitiesEngine {
       const ctx = this.context(side)
       ctx.unitSource = unitSource
       ctx.ownerFaction = ownerFaction
+      ctx.ability = ability
 
       // Rebind ctx.api.opponent if the caller passed a role-based remap
       // (used for unit-ability phases so abilities see opponent = target when
@@ -936,7 +937,7 @@ export class AbilitiesEngine {
               own: buildDiceApi(rawDice.own),
               opponent: buildDiceApi(rawDice.opponent),
             }
-            ctx.upgradeForCall(state, ability.key, childLogger?.forSide(side))
+            ctx.upgradeForCall(state, ability, childLogger?.forSide(side))
             inv.call(ctx, freshParams, diceCallCtx)
             if (shouldDecrementUses)
               decrementUses(state, side, ability.key, freshParams, this)
@@ -946,7 +947,7 @@ export class AbilitiesEngine {
               opponent: diceCallCtx.opponent.getAll(),
             }
           } else {
-            ctx.upgradeForCall(state, ability.key, childLogger?.forSide(side))
+            ctx.upgradeForCall(state, ability, childLogger?.forSide(side))
             try {
               const result = inv.call(ctx, freshParams, internalContext)
               if (result !== undefined) resultContext = result

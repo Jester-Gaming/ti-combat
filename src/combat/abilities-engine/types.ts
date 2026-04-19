@@ -31,6 +31,12 @@ export interface SyncSourceConfig<
 export interface DeclaredSubtype {
   name: UnitVariantId
   unitType: UnitType
+  /** Ability key that declared this subtype — auto-populated by the reconcile
+   *  pass from `ability.declareParamChange`. Abilities don't set this
+   *  themselves. Used by `excludeSubtypeSource` on `getUnitVariantsOptions`
+   *  so an ability can hide its own declarations while keeping equivalent
+   *  declarations from other abilities visible. */
+  source?: string
 }
 
 export type SettingsParams = {
@@ -151,6 +157,10 @@ export interface AbilityReadContext {
   /** All abilities registered for each side — available regardless of enabled state.
    *  Use for UI generation (e.g., selects listing agents from both sides). */
   readonly abilities: OwnOpponentContext<readonly Ability[]>
+  /** Reference to the ability that is currently running — set by the engine
+   *  before each `isCallable`/`call` invocation and by the UI before `uiConfig`.
+   *  Lets helpers like `excludeSubtypeSource: [ctx.this.key]` stay generic. */
+  readonly this: Ability
   /** Get the UnitId this ability is attached to. Throws if called from a non-unit ability. */
   getUnit(): UnitId
   /** Get enabled config abilities matching the given timing(s) for the current side. */
@@ -172,6 +182,9 @@ export interface AbilityCallContext {
   readonly side: CombatSide
   /** All abilities registered for each side — available regardless of enabled state. */
   readonly abilities: OwnOpponentContext<readonly Ability[]>
+  /** Reference to the ability that is currently running — set by the engine
+   *  before each `isCallable`/`call` invocation. */
+  readonly this: Ability
   logger?: Logger
   /** Run abilities for the given timing inline during this call */
   trigger<K extends AbilityTiming>(name: K, context: TimingContextMap[K]): void
@@ -277,6 +290,10 @@ export type AbilityInvoke<TParams = Record<string, unknown>> = {
 interface UIConfigItemBase<TParams = Record<string, unknown>> {
   key: keyof TParams // Property name in params (e.g., 'riskDirectHit')
   label?: string // Display label (e.g., 'Risk Direct Hit?')
+  /** Override the rendered default. When set, takes precedence over the
+   *  value extracted from `ability.params`. Used when an ability's UI
+   *  needs to mirror another ability's saved state (e.g. Ssruu). */
+  defaultValue?: unknown
 }
 
 interface UIConfigCheckbox<
@@ -347,7 +364,7 @@ interface UIConfigNumberList<
   }[]
 }
 
-type UIConfigItem<TParams = Record<string, unknown>> =
+export type UIConfigItem<TParams = Record<string, unknown>> =
   | UIConfigCheckbox<TParams>
   | UIConfigOrderList<TParams>
   | UIConfigCheckboxList<TParams>

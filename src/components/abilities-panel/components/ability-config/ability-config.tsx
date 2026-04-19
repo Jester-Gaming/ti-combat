@@ -53,7 +53,12 @@ export function AbilityConfig({
       return ability.uiConfig
     }
     const effectiveParams = { ...defaults, ...params }
-    return ability.uiConfig(readContext, effectiveParams)
+    // Inherit readContext via prototype so class getters (`state`, `api`, …)
+    // still resolve; shadow `this` with the ability being rendered.
+    const ctx: AbilityReadContext = Object.create(readContext, {
+      this: { value: ability, enumerable: true },
+    })
+    return ability.uiConfig(ctx, effectiveParams)
   }, [ability, defaults, readContext, params])
 
   const hasConfigItems = uiConfigItems && uiConfigItems.length > 0
@@ -212,7 +217,7 @@ export function AbilityConfig({
         <div className={styles.configItems} onClick={e => e.stopPropagation()}>
           {uiConfigItems!.map(config => {
             const key = config.key as string
-            const defaultValue = defaults?.[key]
+            const defaultValue = config.defaultValue ?? defaults?.[key]
 
             if (config.type === 'checkbox') {
               const value = params[key] ?? defaultValue ?? false

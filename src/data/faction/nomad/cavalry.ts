@@ -53,7 +53,7 @@ export const cavalry: Ability<Params> = {
         items: ctx.api.own
           .getUnitVariantsOptions({
             exclude: ['FIGHTER'],
-            excludeSubtypes: [CAVALRY],
+            excludeSubtypeSource: [ctx.this.key],
             combatMode: 'SPACE',
           })
           .reverse(),

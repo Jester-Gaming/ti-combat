@@ -39,7 +39,7 @@ export const evelynDelouis: Ability<Params> = {
         type: 'select',
         items: ctx.api.own
           .getUnitVariantsOptions({
-            excludeSubtypes: [EVELYN],
+            excludeSubtypeSource: [ctx.this.key],
             combatMode: 'GROUND',
           })
           .reverse(),

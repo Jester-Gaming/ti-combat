@@ -40,7 +40,7 @@ export const viscountUnlenn: Ability<Params> = {
         items: ctx.api.own
           .getUnitVariantsOptions({
             exclude: ['FIGHTER'],
-            excludeSubtypes: [VISCOUNT],
+            excludeSubtypeSource: [ctx.this.key],
             combatMode: 'SPACE',
           })
           .reverse(),

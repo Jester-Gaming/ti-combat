@@ -124,14 +124,18 @@ function resetBaseGroups(
     // Two passes: first builds groups (groundForces, etc.),
     // second resolves cross-group deps (e.g. Alastor copies groundForces → ships)
     for (let pass = 0; pass < 2; pass++) {
+      // Reset subtypes each pass — only the final pass's declarations are
+      // authoritative.
+      settings.subtypes = []
       const changes = collectParamChanges(sideAbilities, config[side], settings)
       for (const change of changes) {
         if (change.key === 'subtypes') {
           if (
             !settings.subtypes.some(
-              s =>
-                s.name === change.value.name &&
-                s.unitType === change.value.unitType,
+              d =>
+                d.source === change.value.source &&
+                d.name === change.value.name &&
+                d.unitType === change.value.unitType,
             )
           ) {
             settings.subtypes.push(change.value)
@@ -303,7 +307,16 @@ function collectParamChanges(
     }
 
     const declared = ability.declareParamChange(abilityParams, settings)
-    result.push(...declared)
+    for (const change of declared) {
+      if (change.key === 'subtypes') {
+        result.push({
+          ...change,
+          value: { ...change.value, source: ability.key },
+        })
+      } else {
+        result.push(change)
+      }
+    }
   }
 
   return result
@@ -476,14 +489,17 @@ export function resetSettingsToBase(
 
     // Collect subtypes only (no group additions) — abilities add at runtime
     for (let pass = 0; pass < 2; pass++) {
+      // Reset each pass — only the final pass is authoritative.
+      settings.subtypes = []
       const changes = collectParamChanges(sideAbilities, config[side], settings)
       for (const change of changes) {
         if (change.key === 'subtypes') {
           if (
             !settings.subtypes.some(
-              s =>
-                s.name === change.value.name &&
-                s.unitType === change.value.unitType,
+              d =>
+                d.source === change.value.source &&
+                d.name === change.value.name &&
+                d.unitType === change.value.unitType,
             )
           ) {
             settings.subtypes.push(change.value)

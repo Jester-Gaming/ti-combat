@@ -129,9 +129,10 @@ export class SideApi {
   }
 
   getUnitVariantsOptions(filter?: {
-    include?: UnitBaseType[]
-    exclude?: UnitBaseType[]
+    include?: UnitType[]
+    exclude?: UnitType[]
     excludeSubtypes?: UnitVariantId[]
+    excludeSubtypeSource?: string[]
     combatMode?: CombatMode
     includeNonParticipating?: boolean
   }) {
@@ -402,6 +403,7 @@ export class AbilityContext {
   logger?: Logger
   unitSource?: UnitId
   ownerFaction?: FactionKey
+  ability?: Ability
 
   private _abilitiesParams: AbilitiesEngine
   private _side: CombatSide
@@ -425,6 +427,13 @@ export class AbilityContext {
     return this._side
   }
 
+  get this(): Ability {
+    if (!this.ability) {
+      throw new Error('ctx.this is not set — no ability is currently running')
+    }
+    return this.ability
+  }
+
   sideState(side: CombatSide): CombatSideState {
     return this._abilitiesParams.combatState.side(side)
   }
@@ -441,18 +450,20 @@ export class AbilityContext {
     }
   }
 
-  upgradeForCall(draft: CombatStateData, abilityKey: string, logger?: Logger) {
+  upgradeForCall(draft: CombatStateData, ability: Ability, logger?: Logger) {
     this._draftState = draft
     this.logger = logger
-    this._api.own._abilityKey = abilityKey
+    this.ability = ability
+    this._api.own._abilityKey = ability.key
     this._api.own._abilitiesParams = this._abilitiesParams
-    this._api.opponent._abilityKey = abilityKey
+    this._api.opponent._abilityKey = ability.key
     this._api.opponent._abilitiesParams = this._abilitiesParams
   }
 
   resetAfterCall() {
     this._draftState = undefined
     this.logger = undefined
+    this.ability = undefined
     this._api.own._abilityKey = undefined
     this._api.own._abilitiesParams = undefined
     this._api.opponent._abilityKey = undefined
@@ -465,6 +476,7 @@ export class AbilityContext {
       unitSource: this.unitSource,
       ownerFaction: this.ownerFaction,
       logger: this.logger,
+      ability: this.ability,
       ownAbilityKey: this._api.own._abilityKey,
       ownAbilityEngine: this._api.own._abilitiesParams,
       opponentAbilityKey: this._api.opponent._abilityKey,
@@ -474,6 +486,7 @@ export class AbilityContext {
     this.unitSource = saved.unitSource
     this.ownerFaction = saved.ownerFaction
     this.logger = saved.logger
+    this.ability = saved.ability
     this._api.own._abilityKey = saved.ownAbilityKey
     this._api.own._abilitiesParams = saved.ownAbilityEngine
     this._api.opponent._abilityKey = saved.opponentAbilityKey
@@ -544,8 +557,8 @@ export class AbilityContext {
     const baseInvokes = combatState._invokes
     const baseInvokesOwned = combatState._invokesOwned
     const baseLogger = this.logger
-    // Captured when upgradeForCall wired the api: this is the calling ability's key.
-    const abilityKey = this._api.own._abilityKey ?? ''
+    // Captured when upgradeForCall wired the ctx: the calling ability.
+    const ability = this.ability
 
     const branches: AbilityBranch[] = []
 
@@ -569,7 +582,7 @@ export class AbilityContext {
       const branchCtx = new AbilityContext(this._side, this._abilitiesParams)
       branchCtx.unitSource = this.unitSource
       branchCtx.ownerFaction = this.ownerFaction
-      branchCtx.upgradeForCall(branchData, abilityKey, branchLogger)
+      if (ability) branchCtx.upgradeForCall(branchData, ability, branchLogger)
 
       callback(branchCtx, outcome.hits)
 
@@ -603,7 +616,7 @@ export class AbilityContext {
     callback?: (branchCtx: AbilityContext) => void,
   ): void {
     const combatState = this._abilitiesParams.combatState
-    const abilityKey = this._api.own._abilityKey ?? ''
+    const ability = this.ability
 
     const mySide = this._side
     const firing: CombatSide[] = [mySide]
@@ -675,7 +688,8 @@ export class AbilityContext {
         const branchCtx = new AbilityContext(this._side, this._abilitiesParams)
         branchCtx.unitSource = this.unitSource
         branchCtx.ownerFaction = this.ownerFaction
-        branchCtx.upgradeForCall(branchState.data, abilityKey, branchLogger)
+        if (ability)
+          branchCtx.upgradeForCall(branchState.data, ability, branchLogger)
 
         try {
           callback(branchCtx)

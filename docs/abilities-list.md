@@ -182,7 +182,7 @@
 
 ### Yssaril Tribes
 
-- [ ] **Ssruu** (Agent) — This card has the text ability of each other player's agent, even if that agent is exhausted.
+- [x] **Ssruu** (Agent) — This card has the text ability of each other player's agent, even if that agent is exhausted.
 
 ---
 

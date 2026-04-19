@@ -30,7 +30,6 @@ import { vuilraith_cabal } from './vuilraith_cabal'
 import { winnu } from './winnu'
 import { xxcha_kingdom } from './xxcha_kingdom'
 import { yin_brotherhood } from './yin_brotherhood'
-import { yssaril_tribes } from './yssaril_tribes'
 
 export const otherFactions = {
   ARBOREC: arborec,
@@ -62,6 +61,5 @@ export const otherFactions = {
   WINNU: winnu,
   XXCHA_KINGDOM: xxcha_kingdom,
   YIN_BROTHERHOOD: yin_brotherhood,
-  YSSARIL_TRIBES: yssaril_tribes,
   NEUTRAL: neutral,
 } satisfies Record<string, Faction>
