@@ -101,7 +101,7 @@
 - [x] **Fourth Moon** (Flagship) — Other players' ships in this system cannot use Sustain Damage.
 - [x] **Sleeper Cell** (Hero) — At the start of a space combat that you are participating in: You may purge this card; if you do, for each other player's ship that is destroyed during this combat, place 1 ship of that type from your reinforcements in the active system.
 - [x] **Moll Terminus** (Mech) — Other players' ground forces on this planet cannot use Sustain Damage.
-- [ ] **Salvage Operations** (Faction Technology) — After you win or lose a space combat, gain 1 trade good; if you won the combat, you may also produce 1 ship in that system of any ship type that was destroyed during the combat.
+- [x] **Salvage Operations** (Faction Technology) — After you win or lose a space combat, gain 1 trade good; if you won the combat, you may also produce 1 ship in that system of any ship type that was destroyed during the combat.
 
 ### Naalu Collective
 

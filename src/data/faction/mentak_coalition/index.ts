@@ -5,6 +5,7 @@ import type { Faction } from '@/types'
 import { ambush } from './ambush'
 import { fourthMoon } from './fourth-moon'
 import { mollTerminus } from './moll-terminus'
+import { salvageOperations } from './salvage-operations'
 import { sleeperCell } from './sleeper-cell'
 
 export const mentak_coalition: Faction = {
@@ -12,6 +13,7 @@ export const mentak_coalition: Faction = {
   icon: mentakCoalitionIcon,
   abilities: {
     faction: [ambush],
+    technology: [salvageOperations],
     hero: [sleeperCell],
   },
   units: {
