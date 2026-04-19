@@ -11,6 +11,12 @@ import type {
   SettingsParams,
 } from '../../../combat/abilities-engine/types'
 
+declare global {
+  interface AbilityConfigMap {
+    SETTINGS: SettingsParams
+  }
+}
+
 export const settings: Ability<SettingsParams> = {
   key: 'SETTINGS',
   name: 'Settings',

@@ -23,6 +23,12 @@ type Params = {
   reinforcementTokens: number
 }
 
+declare global {
+  interface AbilityConfigMap {
+    PRE_GALVANIZED: Params
+  }
+}
+
 export const GALVANIZED = 'Galvanized' as UnitVariantId
 
 const bumpDice = <T extends [number, number] | [number, number, number]>(
@@ -57,9 +63,7 @@ export function galvanizeUnit(
   const api = ctx.api.own
   if (consumeToken) {
     const tokens =
-      (api.getAbilityConfig('PRE_GALVANIZED')?.reinforcementTokens as
-        | number
-        | undefined) ?? 0
+      api.getAbilityConfig('PRE_GALVANIZED')?.reinforcementTokens ?? 0
     if (tokens <= 0) return false
     api.updateAbilityConfig('PRE_GALVANIZED', {
       reinforcementTokens: tokens - 1,

@@ -1,6 +1,7 @@
 export {
   AbilitiesEngine,
   type Ability,
+  type AbilityBaseParams,
   type AbilityCallContext,
   type AbilityReadContext,
   type DeclaredSubtype,

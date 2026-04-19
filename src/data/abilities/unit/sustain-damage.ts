@@ -22,6 +22,12 @@ type Params = {
   groundPriority: UnitType[]
 }
 
+declare global {
+  interface AbilityConfigMap {
+    SUSTAIN_DAMAGE: Params
+  }
+}
+
 /**
  * Check if this unit is the highest-priority sustain target.
  * Iterates the priority list and returns true only if the first

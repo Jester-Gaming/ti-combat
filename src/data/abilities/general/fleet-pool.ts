@@ -2,23 +2,24 @@ import type { UnitBaseType } from '@/types'
 
 import type { SideApi } from '../../../combat/abilities-engine/api/ability-api'
 import { declareParam } from '../../../combat/abilities-engine/declare-param'
-import type {
-  Ability,
-  SettingsParams,
-} from '../../../combat/abilities-engine/types'
+import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
-  isEnabled: boolean
   fleetPool: number
   shipPriority: string[]
+}
+
+declare global {
+  interface AbilityConfigMap {
+    FLEET_POOL: Params
+  }
 }
 
 export function enforceFleetPool(api: SideApi): void {
   const config = api.getAbilityConfig('FLEET_POOL')
   if (!config?.isEnabled) return
 
-  const fleetPool = config.fleetPool as number
-  const shipPriority = config.shipPriority as string[]
+  const { fleetPool, shipPriority } = config
 
   const capacityConfig = api.getAbilityConfig('CAPACITY')
   const capacityEnabled = !!capacityConfig?.isEnabled
@@ -27,7 +28,7 @@ export function enforceFleetPool(api: SideApi): void {
   let totalCapacity = Infinity
   if (capacityEnabled) {
     totalCapacity = 0
-    const settings = api.getAbilityConfig('SETTINGS') as SettingsParams
+    const settings = api.getAbilityConfig('SETTINGS')
     const allTypes = [
       ...settings.ships,
       ...settings.groundForces,
@@ -47,7 +48,7 @@ export function enforceFleetPool(api: SideApi): void {
   // Compute capacity used by units WITHOUT fleet pool fallback
   let capacityUsedByNonFP = 0
   if (totalCapacity !== Infinity) {
-    const settings = api.getAbilityConfig('SETTINGS') as SettingsParams
+    const settings = api.getAbilityConfig('SETTINGS')
     const allTypes = [
       ...settings.ships,
       ...settings.groundForces,

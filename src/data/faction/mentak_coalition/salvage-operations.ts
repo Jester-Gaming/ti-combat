@@ -32,9 +32,7 @@ export const salvageOperations: Ability<Params> = {
   },
   headerUI: 'isEnabled',
   uiConfig: ctx => {
-    const { ships } = ctx.api.own.getAbilityConfig('SETTINGS') as {
-      ships: UnitBaseType[]
-    }
+    const { ships } = ctx.api.own.getAbilityConfig('SETTINGS')
     return [
       {
         key: 'shipPriority' as const,
@@ -48,9 +46,7 @@ export const salvageOperations: Ability<Params> = {
     {
       timing: 'DESTROY',
       call: (ctx, params, units) => {
-        const { ships } = ctx.api.own.getAbilityConfig('SETTINGS') as {
-          ships: UnitBaseType[]
-        }
+        const { ships } = ctx.api.own.getAbilityConfig('SETTINGS')
         const shipsSet = new Set<UnitBaseType>(ships)
         const collected = new Set<UnitBaseType>(params._destroyedShipTypes)
         for (const side of [units.own, units.opponent]) {

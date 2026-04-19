@@ -13,7 +13,11 @@ type Params = {
   removePriority: UnitType[]
 }
 
-const DEFAULT_PRIORITY: UnitBaseType[] = ['FIGHTER', 'INFANTRY', 'MECH']
+declare global {
+  interface AbilityConfigMap {
+    CAPACITY: Params
+  }
+}
 
 /** Compute total ship capacity for a side */
 export function computeTotalCapacity(ctx: AbilityCallContext): number {
@@ -113,7 +117,7 @@ export const capacity: Ability<Params> = {
   params: {
     isEnabled: false,
     uses: Infinity,
-    removePriority: DEFAULT_PRIORITY as UnitType[],
+    removePriority: ['FIGHTER', 'INFANTRY', 'MECH'],
   },
   headerUI: 'isEnabled',
   invoke: [

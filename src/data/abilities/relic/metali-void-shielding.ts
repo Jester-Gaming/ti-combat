@@ -3,11 +3,11 @@ import type {
   AbilityReadContext,
 } from '../../../combat/abilities-engine/types'
 import { parseVariantId } from '../../../combat/utils/unit-variant'
-import type { UnitId, UnitType } from '../../../types'
+import type { UnitId } from '../../../types'
 
 function findVoidShieldTarget(ctx: AbilityReadContext): UnitId | undefined {
   const sustainConfig = ctx.api.own.getAbilityConfig('SUSTAIN_DAMAGE')
-  const priority = (sustainConfig?.spacePriority as UnitType[]) ?? []
+  const priority = sustainConfig?.spacePriority ?? []
 
   const validTargets = ctx.api.own.getHitPoolValidTargets()
   const validTargetSet = validTargets.length > 0 ? new Set(validTargets) : null

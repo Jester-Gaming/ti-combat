@@ -12,6 +12,12 @@ type Params = {
   scoUnitPriority: UnitType[]
 }
 
+declare global {
+  interface AbilityConfigMap {
+    UNIT_PRIORITY: Params
+  }
+}
+
 export const unitPriority: Ability<Params> = {
   key: 'UNIT_PRIORITY',
   name: 'Assign Hits Order',

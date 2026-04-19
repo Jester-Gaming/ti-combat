@@ -75,8 +75,8 @@ export const dameBriar: Ability<Params> = {
             : params.spaceUnitType
         if (!ctx.api.own.hasUnitType(target)) return false
         const tokens =
-          (ctx.api.own.getAbilityConfig('PRE_GALVANIZED')
-            ?.reinforcementTokens as number | undefined) ?? 0
+          ctx.api.own.getAbilityConfig('PRE_GALVANIZED')?.reinforcementTokens ??
+          0
         return tokens > 0
       },
       call: (ctx, params) => {

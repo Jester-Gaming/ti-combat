@@ -29,10 +29,10 @@ import type { Logger } from '../../logger'
 import type { AbilitiesEngine, InvokeCollections } from '../abilities-engine'
 import type {
   Ability,
+  AbilityBaseParams,
   AbilityTiming,
   DicePool,
   OwnOpponentContext,
-  SettingsParams,
   SidedDiceData,
 } from '../types'
 
@@ -187,8 +187,9 @@ export class SideApi {
     return this._sideState.isRestricted('cannotBeUsed', ability, unitType)
   }
 
-  getAbilityConfig(key: 'SETTINGS'): SettingsParams
-  getAbilityConfig(key: string): Record<string, unknown>
+  getAbilityConfig<K extends keyof AbilityConfigMap>(
+    key: K,
+  ): AbilityBaseParams & AbilityConfigMap[K]
   getAbilityConfig(key: string) {
     return this.state.abilities[this._side][key]
   }

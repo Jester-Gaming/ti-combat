@@ -46,7 +46,9 @@ function buildSelectGroups(
 ): SelectGroup[] {
   const grouped = new Map<string, { label: string; value: string }[]>()
   for (const entry of entries) {
-    const config = ctx.api.own.getAbilityConfig(entry.key)
+    const config = ctx.api.own.getAbilityConfig(
+      entry.key as keyof AbilityConfigMap,
+    )
     const isEnabled = !!config?.isEnabled
     if (!filter(isEnabled)) continue
     const sub = entry.subcategory ?? 'ABILITY'
@@ -169,8 +171,8 @@ export function createTechnologicalSingularity(
           // newly applied PREPARE stats
           if (params.disableAbilityKey !== NONE) {
             const config = ctx.api.own.getAbilityConfig(
-              params.disableAbilityKey,
-            ) as { reset: (ctx: AbilityCallContext) => void }
+              params.disableAbilityKey as keyof AbilityConfigMap,
+            ) as unknown as { reset: (ctx: AbilityCallContext) => void }
             if (config.reset) {
               config.reset(ctx)
             }
@@ -180,7 +182,9 @@ export function createTechnologicalSingularity(
             const entry = abilityLookup.get(params.enableAbilityKey)
             if (entry) {
               const abilityParams =
-                ctx.api.own.getAbilityConfig(entry.key) ?? {}
+                ctx.api.own.getAbilityConfig(
+                  entry.key as keyof AbilityConfigMap,
+                ) ?? {}
               for (const call of entry.prepareCalls) call(ctx, abilityParams)
               ctx.api.own.updateAbilityConfig(params.enableAbilityKey, {
                 isEnabled: true,
@@ -190,7 +194,12 @@ export function createTechnologicalSingularity(
 
           if (params.enableMordred) {
             for (const call of mordredEntry.prepareCalls)
-              call(ctx, ctx.api.own.getAbilityConfig('MORDRED') ?? {})
+              call(
+                ctx,
+                ctx.api.own.getAbilityConfig(
+                  'MORDRED' as keyof AbilityConfigMap,
+                ) ?? {},
+              )
             ctx.api.own.updateAbilityConfig('MORDRED', { isEnabled: true })
           }
         },

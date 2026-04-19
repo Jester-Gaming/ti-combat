@@ -132,6 +132,14 @@ declare global {
 
     COMMIT_UNITS: void
   }
+
+  /** Per-ability params registry. Each ability file augments this with its
+   *  own `Params` type so `getAbilityConfig(key)` returns the correct shape.
+   *  The returned value is also intersected with `AbilityBaseParams`
+   *  (`isEnabled`, `uses`) by the API signature. */
+  interface AbilityConfigMap {
+    SETTINGS: SettingsParams
+  }
 }
 
 // Internal map for ability calls (uses own/opponent)
@@ -381,7 +389,7 @@ type UIConfig<Params = Record<string, unknown>> =
   | ((ctx: AbilityReadContext, params: Params) => UIConfigItem<Params>[])
 
 /** Base params present on every ability. Managed by the tracker — abilities don't check these themselves. */
-interface AbilityBaseParams {
+export interface AbilityBaseParams {
   isEnabled: boolean
   uses: number
 }

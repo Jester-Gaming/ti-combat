@@ -34,8 +34,8 @@ export const a3Valiance: Ability = {
           if (units.own[key as UnitType]?.includes(myId)) {
             if (!ctx.api.own.hasUnitType('INFANTRY')) return false
             const tokens =
-              (ctx.api.own.getAbilityConfig('PRE_GALVANIZED')
-                ?.reinforcementTokens as number | undefined) ?? 0
+              ctx.api.own.getAbilityConfig('PRE_GALVANIZED')
+                ?.reinforcementTokens ?? 0
             return tokens > 0
           }
         }

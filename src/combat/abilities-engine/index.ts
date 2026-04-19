@@ -7,6 +7,7 @@ export {
 export { declareParam } from './declare-param'
 export type {
   Ability,
+  AbilityBaseParams,
   AbilityCallContext,
   AbilityReadContext,
   AbilityTiming,

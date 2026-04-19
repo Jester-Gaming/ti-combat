@@ -19,8 +19,7 @@ export const reflectiveShielding: Ability = {
       context: 'SPACE_COMBAT',
       isCallable: (_params, ctx, unitId) => {
         // Only trigger for ships — not mechs or ground forces
-        const settings = ctx.api.own.getAbilityConfig('SETTINGS')
-        const ships = settings?.ships ?? []
+        const { ships } = ctx.api.own.getAbilityConfig('SETTINGS')
         for (const shipType of ships) {
           if (
             ctx.api.own

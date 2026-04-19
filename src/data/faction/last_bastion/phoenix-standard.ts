@@ -79,8 +79,8 @@ export const phoenixStandard: Ability<Params> = {
             : params.spaceUnitPriority
         if (findTarget(ctx.api.own, priority) === undefined) return false
         const tokens =
-          (ctx.api.own.getAbilityConfig('PRE_GALVANIZED')
-            ?.reinforcementTokens as number | undefined) ?? 0
+          ctx.api.own.getAbilityConfig('PRE_GALVANIZED')?.reinforcementTokens ??
+          0
         return tokens > 0
       },
       call: (ctx, params) => {
