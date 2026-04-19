@@ -166,24 +166,27 @@ function SurvivorList({
       {entries.map(([unitType, units], i) => {
         if (!units) return null
         const name = UNIT_SHORT_NAMES[unitType as UnitBaseType] ?? unitType
-        const damaged = units.filter(u => u.isDamaged).length
-        const healthy = units.length - damaged
-        const subtypes = units[0]?.subtypes
+
+        // Group units by subtypes so mixed variants render separately
+        const groups = new Map<string, { healthy: number; damaged: number }>()
+        for (const u of units) {
+          const key = u.subtypes?.join(',') ?? ''
+          const g = groups.get(key) ?? { healthy: 0, damaged: 0 }
+          if (u.isDamaged) g.damaged++
+          else g.healthy++
+          groups.set(key, g)
+        }
 
         const parts: string[] = []
-
-        if (healthy > 0) {
-          const label = subtypes?.length
-            ? `${name}:${subtypes.join(',')}`
-            : name
-          parts.push(healthy > 1 ? `${healthy}${label}` : label)
-        }
-        if (damaged > 0) {
-          const label = subtypes?.length
-            ? `${name}:${subtypes.join(',')}`
-            : name
-          const dmgLabel = `${label}-`
-          parts.push(damaged > 1 ? `${damaged}${dmgLabel}` : dmgLabel)
+        for (const [subtypeKey, { healthy, damaged }] of groups) {
+          const label = subtypeKey ? `${name}:${subtypeKey}` : name
+          if (healthy > 0) {
+            parts.push(healthy > 1 ? `${healthy}${label}` : label)
+          }
+          if (damaged > 0) {
+            const dmgLabel = `${label}-`
+            parts.push(damaged > 1 ? `${damaged}${dmgLabel}` : dmgLabel)
+          }
         }
 
         return (
