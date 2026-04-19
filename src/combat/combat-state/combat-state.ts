@@ -235,7 +235,8 @@ export class CombatState {
   }
 
   assignHits(): void {
-    const trackDestroyed = !!this._logger || this._params.hasDestroyAbilities()
+    const trackDestroyed =
+      !!this._logger || this._params.hasDestroyAbilities(this._invokes)
 
     this.runAbilities('BEFORE_ASSIGN_HITS')
 

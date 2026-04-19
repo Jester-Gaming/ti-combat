@@ -697,6 +697,7 @@ export class CombatSideState {
     exclude?: UnitType[]
     excludeSubtypes?: string[]
     excludeSubtypeSource?: string[]
+    includeSubtypes?: string[]
     combatMode?: CombatMode
     includeNonParticipating?: boolean
   }): UnitType[] {
@@ -745,6 +746,10 @@ export class CombatSideState {
     const excludeSubtypeSet = filter?.excludeSubtypes
       ? new Set<string>(filter.excludeSubtypes)
       : undefined
+    const includeSubtypeSet =
+      filter?.includeSubtypes && filter.includeSubtypes.length > 0
+        ? new Set<string>(filter.includeSubtypes)
+        : undefined
     const matches = (
       variantParsed: { type: UnitBaseType; subtypes: UnitVariantId[] },
       entry: { type: UnitBaseType; subtypes: UnitVariantId[] },
@@ -774,6 +779,12 @@ export class CombatSideState {
         return !subtypes.some(s => excludeSubtypeSet.has(s))
       })
     }
+    if (includeSubtypeSet) {
+      filtered = filtered.filter(v => {
+        const { subtypes } = parseVariantId(v)
+        return subtypes.some(s => includeSubtypeSet.has(s))
+      })
+    }
     return filtered
   }
 
@@ -783,6 +794,7 @@ export class CombatSideState {
     exclude?: UnitType[]
     excludeSubtypes?: string[]
     excludeSubtypeSource?: string[]
+    includeSubtypes?: string[]
     combatMode?: CombatMode
     includeNonParticipating?: boolean
   }): { label: string; value: UnitType }[] {

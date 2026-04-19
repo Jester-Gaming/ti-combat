@@ -119,6 +119,7 @@ export interface TimingContextMap {
   BEFORE_ASSIGN_HITS: void
   AFTER_ASSIGN_HITS_STEP: void
   WHEN_INDOCTRINATION: UnitId
+  WHEN_GALVANIZE: UnitId
   WHEN_SUSTAIN_DAMAGE_USE: UnitId
   AFTER_SUSTAIN_DAMAGE_USE: UnitId
   DESTROY: SidedContext<Record<UnitType, UnitId[]>>

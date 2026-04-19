@@ -1,9 +1,12 @@
 import { z } from 'zod/mini'
 
-import type { Ability, ParamChange } from '@/combat'
+import {
+  type Ability,
+  type AbilityCallContext,
+  makeVariantId,
+  type ParamChange,
+} from '@/combat'
 import type { UnitStats, UnitType, UnitVariantId } from '@/types'
-
-import type { SideApi } from '../../../combat/abilities-engine/api/ability-api'
 
 type Params = {
   galvanizedUnits: Partial<Record<UnitType, number | undefined>>
@@ -32,14 +35,16 @@ export function galvanizeStats(stats: UnitStats): UnitStats {
 }
 
 /** Galvanize one unit of the given type — moves it to the Galvanized subtype
- *  with +1 bonus die on COMBAT, BOMBARDMENT, AFB, and SPACE_CANNON.
+ *  with +1 bonus die on COMBAT, BOMBARDMENT, AFB, and SPACE_CANNON. Emits
+ *  `WHEN_GALVANIZE` with the newly galvanized UnitId.
  *  Pass `consumeToken: true` to consume one reinforcement token from
  *  PRE_GALVANIZED; returns false if the token pool is empty. */
 export function galvanizeUnit(
-  api: SideApi,
+  ctx: AbilityCallContext,
   unitType: UnitType,
   consumeToken?: boolean,
 ): boolean {
+  const api = ctx.api.own
   if (consumeToken) {
     const tokens =
       (api.getAbilityConfig('PRE_GALVANIZED')?.reinforcementTokens as
@@ -51,6 +56,10 @@ export function galvanizeUnit(
     })
   }
   api.addSubtype(unitType, GALVANIZED, galvanizeStats)
+  const galvanizedVariant = makeVariantId(unitType, [GALVANIZED])
+  const ids = api.getUnits(galvanizedVariant)
+  const movedId = ids[ids.length - 1]
+  if (movedId !== undefined) ctx.trigger('WHEN_GALVANIZE', movedId)
   return true
 }
 
@@ -116,7 +125,7 @@ export const preGalvanized: Ability<Params> = {
           const ids = ctx.api.own.getUnits(unitType as UnitType)
           const max = Math.min(count ?? 0, ids.length)
           for (let i = 0; i < max; i++) {
-            galvanizeUnit(ctx.api.own, unitType as UnitType)
+            galvanizeUnit(ctx, unitType as UnitType)
           }
         }
       },

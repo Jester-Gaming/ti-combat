@@ -84,7 +84,7 @@ export const dameBriar: Ability<Params> = {
           ctx.state.combatMode === 'GROUND'
             ? params.groundUnitType
             : params.spaceUnitType
-        galvanizeUnit(ctx.api.own, target, true)
+        galvanizeUnit(ctx, target, true)
       },
     },
   ],

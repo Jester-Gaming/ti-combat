@@ -3,6 +3,7 @@ import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 import { a3Valiance } from './a3-valiance'
+import { apollo } from './apollo'
 import { dameBriar } from './dame-briar'
 import { phoenixStandard } from './phoenix-standard'
 import { proximaTargetingVi } from './proxima-targeting-vi'
@@ -17,6 +18,7 @@ export const last_bastion: Faction = {
     technology: [proximaTargetingVi],
     promissory: [raiseTheStandard],
     agent: [dameBriar],
+    hero: [apollo],
   },
   units: {
     FLAGSHIP: {

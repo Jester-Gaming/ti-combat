@@ -133,6 +133,7 @@ export class SideApi {
     exclude?: UnitType[]
     excludeSubtypes?: UnitVariantId[]
     excludeSubtypeSource?: string[]
+    includeSubtypes?: UnitVariantId[]
     combatMode?: CombatMode
     includeNonParticipating?: boolean
   }) {

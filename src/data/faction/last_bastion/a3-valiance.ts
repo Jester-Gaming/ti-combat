@@ -44,7 +44,7 @@ export const a3Valiance: Ability = {
       call: ctx => {
         for (let i = 0; i < 3; i++) {
           if (!ctx.api.own.hasUnitType('INFANTRY')) break
-          if (!galvanizeUnit(ctx.api.own, 'INFANTRY', true)) break
+          if (!galvanizeUnit(ctx, 'INFANTRY', true)) break
         }
       },
     },

@@ -90,7 +90,7 @@ export const phoenixStandard: Ability<Params> = {
             : params.spaceUnitPriority
         const target = findTarget(ctx.api.own, priority)
         if (target === undefined) return
-        galvanizeUnit(ctx.api.own, target, true)
+        galvanizeUnit(ctx, target, true)
       },
     },
   ],

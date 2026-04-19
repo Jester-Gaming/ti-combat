@@ -144,6 +144,7 @@ BEFORE_ASSIGN_HITS    — before hit assignment (sustain damage fires here)
 AFTER_ASSIGN_HITS_STEP — after hits are assigned and destroyed units processed
 WHEN_SUSTAIN_DAMAGE_USE  — triggered immediately when a sustain damage use occurs (before AFTER)
 AFTER_SUSTAIN_DAMAGE_USE — triggered immediately after a sustain damage use
+WHEN_GALVANIZE        — triggered immediately after a unit becomes galvanized (Last Bastion)
 DESTROY               — when units are destroyed (internal destroy processing)
 WHEN_DESTROY          — when units are destroyed (before AFTER_DESTROY, fires from destroyed unit's ABILITIES)
 AFTER_DESTROY         — after units are destroyed
@@ -177,7 +178,7 @@ isCallable?: (params: Params, ctx: AbilityReadContext, units: OwnOpponentContext
 call: (ctx: AbilityCallContext, params: Params, units: OwnOpponentContext<Record<UnitType, UnitId[]>>) => OwnOpponentContext<Record<UnitType, UnitId[]>> | void
 ```
 
-**Sustain damage timings** (WHEN_SUSTAIN_DAMAGE_USE, AFTER_SUSTAIN_DAMAGE_USE) — context is `UnitId`:
+**UnitId timings** (WHEN_SUSTAIN_DAMAGE_USE, AFTER_SUSTAIN_DAMAGE_USE, WHEN_INDOCTRINATION, WHEN_GALVANIZE) — context is `UnitId`:
 
 ```typescript
 isCallable?: (params: Params, ctx: AbilityReadContext, unitId: UnitId) => boolean

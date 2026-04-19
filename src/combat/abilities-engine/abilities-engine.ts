@@ -393,8 +393,8 @@ export class AbilitiesEngine {
   }
 
   /** Fast check: any DESTROY/WHEN_DESTROY/AFTER_DESTROY invokes registered? */
-  hasDestroyAbilities(): boolean {
-    const invokes = this._combatState._invokes
+  hasDestroyAbilities(invokes?: InvokeCollections): boolean {
+    invokes ??= this._combatState._invokes
     if (invokes._hasDestroyAbilities !== undefined)
       return invokes._hasDestroyAbilities
     let result = false
