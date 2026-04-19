@@ -6,7 +6,17 @@ import {
   makeVariantId,
   type ParamChange,
 } from '@/combat'
-import type { UnitStats, UnitType, UnitVariantId } from '@/types'
+import type { UnitId, UnitStats, UnitType, UnitVariantId } from '@/types'
+
+/** Fires immediately after a unit becomes Galvanized. Payload is the newly
+ *  galvanized UnitId. Declared here so only abilities that care (Last Bastion)
+ *  participate — registered via global interface merging instead of being
+ *  listed in the core `TimingContextMap`. */
+declare global {
+  interface TimingContextMap {
+    WHEN_GALVANIZE: UnitId
+  }
+}
 
 type Params = {
   galvanizedUnits: Partial<Record<UnitType, number | undefined>>

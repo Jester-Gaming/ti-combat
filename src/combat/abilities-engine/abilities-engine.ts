@@ -31,7 +31,6 @@ import type {
   InternalTimingContextMap,
   OwnOpponentContext,
   SidedContext,
-  TimingContextMap,
 } from './types'
 
 export const TIMING_GROUPS: {

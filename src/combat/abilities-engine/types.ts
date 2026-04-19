@@ -104,31 +104,34 @@ export interface DiceApi extends DiceReadApi {
 export type DiceReadContext = OwnOpponentContext<DiceReadApi>
 export type DiceContext = OwnOpponentContext<DiceApi>
 
-// Single source of truth - map timing to context type (external API uses sided format)
-// void = no context, other type = required context
-export interface TimingContextMap {
-  PREPARE: void
-  COMMIT_UNITS: void
-  START_OF_COMBAT: void
-  START_OF_COMBAT_ROUND: void
-  BEFORE_UNIT_ABILITY_ROLL: SidedDiceData
-  AFTER_UNIT_ABILITY_ROLL: void
-  BEFORE_DICE_ROLL: SidedDiceData
-  AFTER_DICE_ROLL: void
-  BEFORE_ASSIGN_HITS: void
-  AFTER_ASSIGN_HITS_STEP: void
-  WHEN_INDOCTRINATION: UnitId
-  WHEN_GALVANIZE: UnitId
-  WHEN_SUSTAIN_DAMAGE_USE: UnitId
-  AFTER_SUSTAIN_DAMAGE_USE: UnitId
-  DESTROY: SidedContext<Record<UnitType, UnitId[]>>
-  WHEN_DESTROY: SidedContext<Record<UnitType, UnitId[]>>
-  AFTER_DESTROY: SidedContext<Record<UnitType, UnitId[]>>
-  END_OF_COMBAT_ROUND: void
-  AFTER_COMBAT_ROUND: void
-  CLEANUP_ROUND: void
-  END_OF_COMBAT: void
-  CLEANUP: void
+// Single source of truth — map timing to context type (external API uses sided format).
+// void = no context, other type = required context.
+// Declared globally so ability files can add their own timings via interface
+// merging without touching this core list. See pre-galvanized.ts for an example.
+declare global {
+  interface TimingContextMap {
+    PREPARE: void
+    START_OF_COMBAT: void
+    START_OF_COMBAT_ROUND: void
+    BEFORE_DICE_ROLL: SidedDiceData
+    AFTER_DICE_ROLL: void
+    BEFORE_ASSIGN_HITS: void
+    AFTER_ASSIGN_HITS_STEP: void
+    END_OF_COMBAT_ROUND: void
+    END_OF_COMBAT: void
+    AFTER_COMBAT_ROUND: void
+    CLEANUP_ROUND: void
+    CLEANUP: void
+
+    BEFORE_UNIT_ABILITY_ROLL: SidedDiceData
+    AFTER_UNIT_ABILITY_ROLL: void
+
+    DESTROY: SidedContext<Record<UnitType, UnitId[]>>
+    WHEN_DESTROY: SidedContext<Record<UnitType, UnitId[]>>
+    AFTER_DESTROY: SidedContext<Record<UnitType, UnitId[]>>
+
+    COMMIT_UNITS: void
+  }
 }
 
 // Internal map for ability calls (uses own/opponent)

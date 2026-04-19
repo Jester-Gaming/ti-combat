@@ -1,4 +1,12 @@
 import type { Ability } from '@/combat'
+import type { UnitId } from '@/types'
+
+/** Fires with the UnitId of the infantry swapped in by Indoctrination. */
+declare global {
+  interface TimingContextMap {
+    WHEN_INDOCTRINATION: UnitId
+  }
+}
 
 export const indoctrination: Ability = {
   key: 'INDOCTRINATION',

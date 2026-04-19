@@ -34,7 +34,6 @@ import type {
   OwnOpponentContext,
   SettingsParams,
   SidedDiceData,
-  TimingContextMap,
 } from '../types'
 
 // ============================================================================

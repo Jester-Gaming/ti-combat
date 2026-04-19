@@ -16,5 +16,4 @@ export type {
   SettingsParams,
   SidedDiceData,
   SyncSourceConfig,
-  TimingContextMap,
 } from './types'

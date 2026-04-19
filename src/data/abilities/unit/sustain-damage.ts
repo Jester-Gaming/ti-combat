@@ -6,7 +6,16 @@ import {
   declareParam,
   parseVariantId,
 } from '@/combat'
-import type { UnitType } from '@/types'
+import type { UnitId, UnitType } from '@/types'
+
+/** Fires around a Sustain Damage use. Payload is the sustaining unit's id.
+ *  `WHEN_` fires immediately; `AFTER_` fires right after. */
+declare global {
+  interface TimingContextMap {
+    WHEN_SUSTAIN_DAMAGE_USE: UnitId
+    AFTER_SUSTAIN_DAMAGE_USE: UnitId
+  }
+}
 
 type Params = {
   spacePriority: UnitType[]
