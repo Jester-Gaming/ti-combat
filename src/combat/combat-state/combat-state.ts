@@ -475,20 +475,44 @@ export class CombatState {
   }
 
   private transitionPhase(): StateWithProbability[] {
-    this.data.currentPhase = isLastMicroPhase(this.data.currentPhase)
-      ? getNextMetaPhase(this.data.currentPhase, this.combatMode)
-      : getNextMicroPhase(this.data.currentPhase)
+    if (this.data.transitionTarget) {
+      if (isLastMicroPhase(this.data.currentPhase)) {
+        // At END: consume target and transition
+        const target = this.data.transitionTarget
+        delete this.data.transitionTarget
+        if (target === 'COMPLETE') {
+          return this.completeTransition()
+        }
+        this.data.currentPhase = {
+          meta: target,
+          micro: getFirstMicroPhase(target),
+        }
+      } else {
+        // Skip to END so END_OF_COMBAT_ROUND still fires
+        this.data.currentPhase = {
+          meta: this.data.currentPhase.meta,
+          micro: getLastMicroPhase(this.data.currentPhase.meta),
+        }
+      }
+    } else {
+      this.data.currentPhase = isLastMicroPhase(this.data.currentPhase)
+        ? getNextMetaPhase(this.data.currentPhase, this.combatMode)
+        : getNextMicroPhase(this.data.currentPhase)
+    }
 
     const state = CombatState.fromData(this.data, this._params)
     state._logger = this._logger
     return [{ state, probability: 1 }]
   }
 
-  private completeTransition(): StateWithProbability[] {
+  private completeTransition(skipCleanupRound = false): StateWithProbability[] {
+    // Clear transition target — we're already completing
+    delete this.data.transitionTarget
+
     this.runAbilities('END_OF_COMBAT')
 
     return this.handleBranchesOrContinue(() => {
-      this.runAbilities('CLEANUP_ROUND')
+      if (!skipCleanupRound) this.runAbilities('CLEANUP_ROUND')
 
       return this.handleBranchesOrContinue(() => {
         this.runAbilities('CLEANUP')
@@ -781,6 +805,15 @@ export class CombatState {
   }
 
   private processDiceRoll(): StateWithProbability[] {
+    // Run ANNOUNCE_RETREAT timing (space combat only, after AFB before dice)
+    if (this.data.currentPhase.meta === 'SPACE_COMBAT') {
+      this.runAbilities('ANNOUNCE_RETREAT_STEP')
+    }
+
+    return this.handleBranchesOrContinue(() => this._processDiceRollInner())
+  }
+
+  private _processDiceRollInner(): StateWithProbability[] {
     // Check participating units (e.g. AFB may have destroyed last ship)
     if (noParticipatingUnits(this.data)) {
       return this.completeTransition()
@@ -836,23 +869,36 @@ export class CombatState {
       this.runAbilities('AFTER_ASSIGN_HITS_STEP')
 
       return this.handleBranchesOrContinue(() => {
-        // Clear phase-scoped hit-value modifiers so they don't stack across
-        // repeated phases (e.g. Bunker's -4 BOMBARDMENT modifier must apply
-        // once per bombardment, not accumulate if multiple BOMBARDMENTs run).
-        clearPhaseScopedHitValueModifiers(
-          this.data,
-          this.data.currentPhase.meta,
-        )
-
-        // If either side is completely wiped, go directly to COMPLETE
+        // Run RETREAT timing (space combat only, after assign hits)
+        // Skip if either side is wiped or transition already requested
         if (
-          !hasAnyUnits(this.data.attacker.units) ||
-          !hasAnyUnits(this.data.defender.units)
+          this.data.currentPhase.meta === 'SPACE_COMBAT' &&
+          !this.data.transitionTarget &&
+          hasAnyUnits(this.data.attacker.units) &&
+          hasAnyUnits(this.data.defender.units)
         ) {
-          return this.completeTransition()
+          this.runAbilities('RETREAT_STEP')
         }
 
-        return this.transitionPhase()
+        return this.handleBranchesOrContinue(() => {
+          // Clear phase-scoped hit-value modifiers so they don't stack across
+          // repeated phases (e.g. Bunker's -4 BOMBARDMENT modifier must apply
+          // once per bombardment, not accumulate if multiple BOMBARDMENTs run).
+          clearPhaseScopedHitValueModifiers(
+            this.data,
+            this.data.currentPhase.meta,
+          )
+
+          // If either side is completely wiped, go directly to COMPLETE
+          if (
+            !hasAnyUnits(this.data.attacker.units) ||
+            !hasAnyUnits(this.data.defender.units)
+          ) {
+            return this.completeTransition()
+          }
+
+          return this.transitionPhase()
+        })
       })
     })
   }

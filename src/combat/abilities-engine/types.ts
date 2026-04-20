@@ -113,10 +113,12 @@ declare global {
     PREPARE: void
     START_OF_COMBAT: void
     START_OF_COMBAT_ROUND: void
+    ANNOUNCE_RETREAT_STEP: void
     BEFORE_DICE_ROLL: SidedDiceData
     AFTER_DICE_ROLL: void
     BEFORE_ASSIGN_HITS: void
     AFTER_ASSIGN_HITS_STEP: void
+    RETREAT_STEP: void
     END_OF_COMBAT_ROUND: void
     END_OF_COMBAT: void
     AFTER_COMBAT_ROUND: void
@@ -207,6 +209,11 @@ export interface AbilityCallContext {
   ): { key: string; name: string }[]
   /** Returns true if the current side's faction owns this ability (faction or unit ability). */
   isOwner(): boolean
+  /** Override the next meta-phase transition. The remaining micro-phases of the
+   *  current round still complete normally; the override fires when the last
+   *  micro-phase transitions to the next meta-phase.
+   *  @param outcome - 'DRAW' forces a draw, 'LOST' means the calling side loses. */
+  transitionTo(target: MetaPhase, outcome?: 'DRAW' | 'LOST'): void
   /** Roll dice mid-ability, creating probability branches.
    *  Computes all per-group outcomes and calls the callback once per outcome,
    *  passing a branch-scoped context that operates on that branch's state.
@@ -375,6 +382,17 @@ interface UIConfigNumberList<
   }[]
 }
 
+interface UIConfigPriorityNumberList<
+  TParams = Record<string, unknown>,
+> extends UIConfigItemBase<TParams> {
+  type: 'priority-number-list'
+  items: {
+    label: string
+    value: string
+    max?: number
+  }[]
+}
+
 export type UIConfigItem<TParams = Record<string, unknown>> =
   | UIConfigCheckbox<TParams>
   | UIConfigOrderList<TParams>
@@ -383,6 +401,7 @@ export type UIConfigItem<TParams = Record<string, unknown>> =
   | UIConfigNumber<TParams>
   | UIConfigSelect<TParams>
   | UIConfigNumberList<TParams>
+  | UIConfigPriorityNumberList<TParams>
 
 type UIConfig<Params = Record<string, unknown>> =
   | UIConfigItem<Params>[]

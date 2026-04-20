@@ -1,5 +1,6 @@
 import type { UnitCategory } from '@/constants/units'
 import type {
+  CombatSide,
   FactionKey,
   UnitAbility,
   UnitBaseType,
@@ -153,6 +154,10 @@ export interface CombatStateData {
   abilities: AbilitiesConfig
   combatMode: CombatMode
   currentPhase: PhaseIdentifier
+  /** When set, the next meta-phase transition goes to this target instead of the normal next phase. */
+  transitionTarget?: MetaPhase
+  /** Override the winner determination. Set by abilities via transitionTo. */
+  winnerOverride?: CombatSide | 'draw'
 }
 
 /** Hit source determines dice collection */

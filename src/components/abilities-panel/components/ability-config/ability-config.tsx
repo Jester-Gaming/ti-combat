@@ -27,6 +27,7 @@ import { CheckboxList } from '../checkbox-list'
 import { NumberList } from '../number-list'
 import { OrderList } from '../order-list'
 import { PriorityList } from '../priority-list'
+import { PriorityNumberList } from '../priority-number-list'
 import styles from './ability-config.module.css'
 
 interface AbilityConfigProps {
@@ -326,11 +327,18 @@ export function AbilityConfig({
               )
             }
 
-            if (config.type === 'number-list') {
+            if (
+              config.type === 'number-list' ||
+              config.type === 'priority-number-list'
+            ) {
               const value = (params[key] ?? defaultValue ?? {}) as Record<
                 string,
                 number
               >
+              const ListComp =
+                config.type === 'priority-number-list'
+                  ? PriorityNumberList
+                  : NumberList
               return (
                 <div key={key} className={styles.configItemGroup}>
                   {config.label && (
@@ -338,7 +346,7 @@ export function AbilityConfig({
                       {config.label}
                     </span>
                   )}
-                  <NumberList
+                  <ListComp
                     items={config.items}
                     value={value}
                     onChange={record => handleRecordNumberChange(key, record)}

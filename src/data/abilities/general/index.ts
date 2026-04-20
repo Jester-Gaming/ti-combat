@@ -3,6 +3,7 @@ import { capacity } from './capacity'
 import { fleetPool } from './fleet-pool'
 import { preDamaged } from './pre-damaged'
 import { preGalvanized } from './pre-galvanized'
+import { retreat } from './retreat'
 import { settings } from './settings'
 import { unitPriority } from './unit-priority'
 
@@ -14,4 +15,5 @@ export default [
   preGalvanized,
   fleetPool,
   capacity,
+  retreat,
 ]

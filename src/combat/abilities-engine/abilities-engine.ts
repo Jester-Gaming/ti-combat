@@ -699,6 +699,11 @@ export class AbilitiesEngine {
         ) {
           break
         }
+
+        // Stop resolving if an ability requested a phase transition (e.g. retreat)
+        if (this._combatState.data.transitionTarget) {
+          break
+        }
       } else {
         consecutiveSkips += 1
       }

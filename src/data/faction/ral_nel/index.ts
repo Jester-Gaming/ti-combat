@@ -3,11 +3,16 @@ import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
 import type { Faction } from '@/types'
 
 import { alarum } from './alarum'
+import { lastDispatch } from './last-dispatch'
 import { linkshipI, linkshipII } from './linkship'
+import { watchfulOjz } from './watchful-ojz'
 
 export const ral_nel: Faction = {
   name: 'Ral Nel Consortium',
   icon: ralNelIcon,
+  abilities: {
+    commander: [watchfulOjz],
+  },
   units: {
     FLAGSHIP: {
       BASE: {
@@ -22,7 +27,7 @@ export const ral_nel: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [lastDispatch, sustainDamage],
       },
     },
     MECH: {

@@ -1,0 +1,105 @@
+import { describe, expect, it } from 'vitest'
+
+import type { SavedRetreatData } from '../../src/data/abilities/general/retreat'
+import { combatTest } from '../utils/combat-test'
+
+function getRetreatSaved(
+  t: ReturnType<typeof combatTest>,
+  side: 'attacker' | 'defender',
+) {
+  return (t.state.abilities[side].RETREAT as Record<string, unknown>)
+    ?._saved as SavedRetreatData | undefined
+}
+
+describe.forEachSide('RETREAT', () => {
+  it('ends combat after 1 round with surviving units', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 3 },
+        abilities: { RETREAT: { isEnabled: true, rounds: 1 } },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 3 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+
+    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    // Retreated units stored in RETREAT config
+    expect(getRetreatSaved(t, 'attacker')?.savedUnits.CRUISER).toHaveLength(3)
+    expect(t.defender.units.CRUISER).toHaveLength(3)
+  })
+
+  it('ends combat after 2 rounds', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 3 },
+        abilities: { RETREAT: { isEnabled: true, rounds: 2 } },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 3 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound() // round 1
+
+    expect(t.state.currentPhase.meta).not.toBe('COMPLETE')
+
+    t.advanceRound() // round 2
+
+    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(getRetreatSaved(t, 'attacker')?.savedUnits.CRUISER).toHaveLength(3)
+    expect(t.defender.units.CRUISER).toHaveLength(3)
+  })
+
+  it('earlier retreat triggers when both sides have different rounds', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 3 },
+        abilities: { RETREAT: { isEnabled: true, rounds: 1 } },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 3 },
+        abilities: { RETREAT: { isEnabled: true, rounds: 3 } },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceRound()
+
+    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(getRetreatSaved(t, 'attacker')?.savedUnits.CRUISER).toHaveLength(3)
+    expect(t.defender.units.CRUISER).toHaveLength(3)
+  })
+
+  it('does not fire during AFB phase', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { DESTROYER: 2 },
+        abilities: { RETREAT: { isEnabled: true, rounds: 1 } },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { FIGHTER: 2 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+
+    expect(t.state.currentPhase.meta).toBe('SPACE_COMBAT')
+  })
+})

@@ -2,7 +2,10 @@ import { CombatState } from '../combat-state/combat-state'
 import type { CombatStateData } from '../combat-state/types'
 import type { CombatOutcome, ProbabilityNode } from '../types'
 import { determineWinner } from './utils/determine-winner'
-import { extractSurvivors } from './utils/extract-survivors'
+import {
+  extractSurvivors,
+  mergeRetreatSurvivors,
+} from './utils/extract-survivors'
 import { generateCompactOutcomeKey } from './utils/generate-compact-outcome-key'
 import type { OutcomeRecord } from './utils/types'
 
@@ -163,7 +166,9 @@ export class CombatEngine {
                 defenderData: outcome.defenderData,
                 attackerParticipating: outcome.attackerParticipating,
                 defenderParticipating: outcome.defenderParticipating,
+                abilities: outcome.abilities,
                 probability: outcome.probability * totalProb,
+                winnerOverride: outcome.winnerOverride,
               })
             }
           }
@@ -192,7 +197,9 @@ export class CombatEngine {
                 defenderData: outcome.defenderData,
                 attackerParticipating: outcome.attackerParticipating,
                 defenderParticipating: outcome.defenderParticipating,
+                abilities: outcome.abilities,
                 probability: adjustedProb,
+                winnerOverride: outcome.winnerOverride,
               })
             }
           }
@@ -243,19 +250,23 @@ export class CombatEngine {
 function makeLeafOutcome(state: CombatState): OutcomeRecord {
   const attackerParticipating = state.side('attacker').getParticipatingUnits()
   const defenderParticipating = state.side('defender').getParticipatingUnits()
-  const key = generateCompactOutcomeKey(
+  const winnerOverride = state.data.winnerOverride
+  let key = generateCompactOutcomeKey(
     state.data.attacker,
     state.data.defender,
     attackerParticipating,
     defenderParticipating,
   )
+  if (winnerOverride) key += `#${winnerOverride}`
   const record: OutcomeRecord = new Map()
   record.set(key, {
     attackerData: state.data.attacker,
     defenderData: state.data.defender,
     attackerParticipating,
     defenderParticipating,
+    abilities: state.data.abilities,
     probability: 1,
+    winnerOverride,
   })
   return record
 }
@@ -263,12 +274,16 @@ function makeLeafOutcome(state: CombatState): OutcomeRecord {
 function outcomeRecordToArray(record: OutcomeRecord): CombatOutcome[] {
   const results: CombatOutcome[] = []
   for (const [, o] of record) {
-    results.push({
-      attacker: extractSurvivors(o.attackerData, o.attackerParticipating),
-      defender: extractSurvivors(o.defenderData, o.defenderParticipating),
-      winner: determineWinner(o),
-      probability: o.probability,
-    })
+    // Determine winner BEFORE merging retreat-saved units
+    const winner = determineWinner(o)
+    const attacker = extractSurvivors(o.attackerData, o.attackerParticipating)
+    const defender = extractSurvivors(o.defenderData, o.defenderParticipating)
+
+    // Merge retreat-saved units into survivors (display only, doesn't affect winner)
+    mergeRetreatSurvivors(attacker, o.abilities, 'attacker')
+    mergeRetreatSurvivors(defender, o.abilities, 'defender')
+
+    results.push({ attacker, defender, winner, probability: o.probability })
   }
   return results
 }

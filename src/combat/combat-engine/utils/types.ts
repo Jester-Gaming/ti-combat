@@ -1,6 +1,6 @@
-import type { UnitBaseType } from '@/types'
+import type { CombatSide, UnitBaseType } from '@/types'
 
-import type { SideStateData } from '../../combat-state/types'
+import type { AbilitiesConfig, SideStateData } from '../../combat-state/types'
 
 /**
  * Outcome with probability relative to reaching the node.
@@ -12,7 +12,9 @@ export interface RelativeOutcome {
   defenderData: SideStateData
   attackerParticipating: ReadonlySet<UnitBaseType>
   defenderParticipating: ReadonlySet<UnitBaseType>
+  abilities: AbilitiesConfig
   probability: number
+  winnerOverride?: CombatSide | 'draw'
 }
 
 export type OutcomeRecord = Map<string, RelativeOutcome>

@@ -11,6 +11,7 @@ import { moraleBoost } from './morale-boost'
 import { reflectiveShielding } from './reflective-shielding'
 import { revealPrototype } from './reveal-prototype'
 import { shieldsHolding } from './shields-holding'
+import { skilledRetreat } from './skilled-retreat'
 import { solarFlare } from './solar-flare'
 import { waylay } from './waylay'
 
@@ -28,6 +29,7 @@ export default [
   reflectiveShielding,
   revealPrototype,
   shieldsHolding,
+  skilledRetreat,
   solarFlare,
   waylay,
 ]

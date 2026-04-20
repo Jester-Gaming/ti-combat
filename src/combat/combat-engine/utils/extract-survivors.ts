@@ -1,6 +1,7 @@
-import type { UnitBaseType, UnitType } from '@/types'
+import type { CombatSide, UnitBaseType, UnitId, UnitType } from '@/types'
 
-import type { SideStateData } from '../../combat-state/types'
+import type { SavedRetreatData } from '../../../data/abilities/general/retreat'
+import type { AbilitiesConfig, SideStateData } from '../../combat-state/types'
 import type { SurvivorSide } from '../../types'
 import { parseVariantId } from '../../utils/unit-variant'
 
@@ -35,4 +36,32 @@ export function extractSurvivors(
   }
 
   return survivors
+}
+
+/**
+ * Merge retreat-saved units into a survivor side.
+ * Called AFTER determineWinner so retreated units don't affect the outcome.
+ */
+export function mergeRetreatSurvivors(
+  survivors: SurvivorSide,
+  abilities: AbilitiesConfig,
+  side: CombatSide,
+): void {
+  const retreatConfig = abilities[side]?.['RETREAT'] as
+    | Record<string, unknown>
+    | undefined
+  const saved = retreatConfig?._saved as SavedRetreatData | undefined
+  if (!saved) return
+
+  for (const [key, ids] of Object.entries(saved.savedUnits)) {
+    const { type, subtypes } = parseVariantId(key as UnitType)
+    if (!survivors[type]) survivors[type] = []
+    for (const id of ids as unknown as UnitId[]) {
+      const us = saved.savedUnitState[id as unknown as number]
+      survivors[type]!.push({
+        isDamaged: us?.isDamaged,
+        subtypes: subtypes.length ? subtypes : undefined,
+      })
+    }
+  }
 }

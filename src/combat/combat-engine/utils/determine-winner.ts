@@ -6,8 +6,11 @@ import type { RelativeOutcome } from './types'
 /**
  * Determine the winner from compact state by checking
  * if either side has participating units remaining.
+ * Respects winnerOverride set by abilities (e.g. retreat).
  */
 export function determineWinner(outcome: RelativeOutcome): CombatSide | 'draw' {
+  if (outcome.winnerOverride) return outcome.winnerOverride
+
   const hasAttacker = hasParticipatingUnits(
     outcome.attackerData.units,
     outcome.attackerParticipating,

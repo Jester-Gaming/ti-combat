@@ -1,0 +1,69 @@
+@reference "tailwindcss";
+
+.list {
+  @apply flex flex-col gap-1;
+}
+
+.item {
+  @apply flex cursor-grab items-center gap-2 rounded border px-2 py-1 text-[12px] select-none;
+  border-color: hsl(var(--side-color) / 15%);
+  background-color: hsl(var(--side-color) / 5%);
+  color: hsl(var(--muted-foreground));
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+}
+
+.item:hover {
+  border-color: hsl(var(--side-color) / 30%);
+  background-color: hsl(var(--side-color) / 10%);
+}
+
+.active {
+  border-color: hsl(var(--side-color) / 40%);
+  background-color: hsl(var(--side-color) / 12%);
+}
+
+.dragging {
+  @apply z-10 opacity-90 shadow-lg;
+  border-color: hsl(var(--side-color) / 50%);
+  background-color: hsl(var(--side-color) / 15%);
+}
+
+.item:active {
+  cursor: grabbing;
+}
+
+.label {
+  @apply flex-1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dragHandle {
+  @apply flex h-4 w-4 shrink-0 items-center justify-center;
+  color: hsl(var(--foreground) / 25%);
+}
+
+.item:hover .dragHandle {
+  color: hsl(var(--side-color) / 60%);
+}
+
+.input {
+  @apply h-4 w-4 shrink-0 rounded border bg-transparent p-0 text-center text-[12px];
+  border-color: hsl(var(--side-color) / 25%);
+  color: inherit;
+  appearance: textfield;
+}
+
+.input::-webkit-inner-spin-button,
+.input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.input:focus {
+  @apply outline-none;
+  border-color: hsl(var(--side-color) / 50%);
+}

@@ -5,6 +5,7 @@
 - [x] **Neutral units**
 - [x] **Fleet Pool**
 - [x] **Capacity check between phases**
+- [x] **Retreat flow**
 
 ## Faction
 
@@ -133,7 +134,8 @@
 - [x] **Linkship I** (Special Unit) — Anti-Fighter Barrage 9 (x2). This unit can use the Space Cannon ability of one of your structures in its space area; each structure can only be triggered once.
 - [x] **Linkship II** (Faction Technology) — Anti-Fighter Barrage 6 (x3). This unit can use the Space Cannon ability of one of your structures in its space area; each linkship can trigger the same structure.
 - [x] **Alarum** (Mech) — At the end of a round of ground combat on this planet, you may move up to 2 of your ground forces to this planet from planets in adjacent systems.
-- [ ] **Last Dispatch** (Flagship) — When this unit retreats, you may destroy 1 ship in the active system that does not have Sustain Damage.
+- [x] **Last Dispatch** (Flagship) — When this unit retreats, you may destroy 1 ship in the active system that does not have Sustain Damage.
+- [x] **Watchful Ojz** (Commander) — When you declare a retreat: Immediately retreat up to 2 of your ships from the active system to an adjacent system that does not contain another player's ships. Place a command token from your reinforcements into that system.
 
 ### Sardakk N'orr
 
@@ -203,8 +205,9 @@
 - [x] **Reflective Shielding** — When one of your ships uses Sustain Damage during combat: Produce 2 hits against your opponent's ships in the active system.
 - [ ] **Scramble Frequency** — After another player makes a Bombardment, Space Cannon, or Anti-Fighter Barrage roll: That player rerolls all of their dice.
 - [x] **Solar Flare** — After you activate a system: During this movement, other players cannot use Space Cannon against your ships.
+- [x] **Skilled Retreat** — At the start of a combat round: Move all of your ships from the active system into an adjacent system that does not contain another player's ships; the space combat ends in a draw. Then, place a command token from your reinforcements in that system.
 - [x] **Reveal Prototype** — At the start of a combat: Spend 4 resources to research a unit upgrade technology of the same type as 1 of your units that is participating in this combat.
-- [ ] **Rout** — At the start of the "Announce Retreats" step of space combat, if you are the defender: Your opponent must announce a retreat, if able.
+- [x] **Rout** — At the start of the "Announce Retreats" step of space combat, if you are the defender: Your opponent must announce a retreat, if able.
 - [x] **Waylay** — Before you roll dice for Anti-Fighter Barrage: Hits from this roll are produced against all ships (not just fighters).
 
 ---

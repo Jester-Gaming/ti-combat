@@ -22,6 +22,7 @@ import type {
   CombatStateData,
   HitPool,
   HitSource,
+  MetaPhase,
   UnitAbilityMeta,
 } from '../../combat-state/types'
 import { getDiceOutcomes } from '../../combat-state/utils'
@@ -506,6 +507,16 @@ export class AbilityContext {
         this.logger,
       )
     })
+  }
+
+  transitionTo(target: MetaPhase, outcome?: 'DRAW' | 'LOST'): void {
+    if (this.state.transitionTarget) return
+    this.state.transitionTarget = target
+    if (outcome === 'DRAW') {
+      this.state.winnerOverride = 'draw'
+    } else if (outcome === 'LOST') {
+      this.state.winnerOverride = getOpponentSide(this._side)
+    }
   }
 
   runDestroyAbilities(destroyed: {
