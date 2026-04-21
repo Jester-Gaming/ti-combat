@@ -18,7 +18,7 @@ describe('DIRECT_HIT + DYNAMO', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Dreadnought sustains → Dynamo (attacker/OWN) repairs
     // → Direct Hit (defender/OPPONENT) kills it anyway
     t.advanceRound({ attacker: 1 })
@@ -43,7 +43,7 @@ describe('DIRECT_HIT + DYNAMO', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Dreadnought sustains → DH (attacker/OPPONENT) fires first → destroys it
     // Dynamo (defender/OWN) can't repair dead unit
     t.advanceRound({ defender: 1 })

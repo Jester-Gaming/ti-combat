@@ -17,7 +17,7 @@ describe.forEachSide('EMERGENCY_REPAIRS + QUANTUM_MANIPULATOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Cruiser takes a hit → Quantum Manipulator uses the mech's sustain to cancel it.
     // Mech is the only sustain-in-stats unit → condition met at END_OF_COMBAT_ROUND → ER repairs it.
     t.advanceRound({ attacker: 1 })
@@ -44,7 +44,7 @@ describe.forEachSide('EMERGENCY_REPAIRS + QUANTUM_MANIPULATOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Mech starts damaged; dread (also sustain-in-stats) is undamaged.
     // Condition "all sustain units damaged" fails → ER must not fire.
     expect(t.attacker.units.MECH![0].isDamaged).toBe(true)

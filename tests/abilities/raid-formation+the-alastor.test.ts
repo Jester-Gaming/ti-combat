@@ -24,7 +24,7 @@ describe.forEachSide('RAID_FORMATION + THE_ALASTOR', () => {
 
     // Alastor makes mechs participate as ships (has sustain)
     // 3 destroyers, no fighters, 3 excess hits
-    t.advanceTo('AFB', 'ASSIGN_HITS', 3)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 3, 'AFB')
 
     // Both mechs and flagship have sustain, all 3 should be damaged
     expect(t.defender.units.MECH![0].isDamaged).toBe(true)

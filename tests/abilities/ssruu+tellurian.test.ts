@@ -17,7 +17,7 @@ describe('SSRUU + TELLURIAN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     expect(t.attacker.units.CRUISER).toHaveLength(2)
@@ -41,7 +41,7 @@ describe('SSRUU + TELLURIAN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Round 1: both fire → 2 of 2 hits cancelled
     t.advanceRound({ attacker: 2 })
     expect(t.attacker.units.CRUISER).toHaveLength(3)

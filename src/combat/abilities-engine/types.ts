@@ -12,6 +12,7 @@ import type {
   CombatMode,
   CombatStateData,
   MetaPhase,
+  PhaseTransitionTarget,
   UnitAbilityMeta,
 } from '../combat-state/types'
 import type { Logger } from '../logger'
@@ -139,6 +140,9 @@ export interface AbilityReadContext {
     readonly own: SideApi
     readonly opponent: SideApi
   }
+  /** Innermost active meta-phase for the currently-running ability
+   *  (e.g. 'AFB' when the phase stack is ['SPACE_COMBAT', 'AFB']). */
+  readonly meta: MetaPhase
   /** The absolute CombatSide this ability is currently running on. */
   readonly side: CombatSide
   /** All abilities registered for each side — available regardless of enabled state.
@@ -165,6 +169,9 @@ export interface AbilityCallContext {
     own: SideApi
     opponent: SideApi
   }
+  /** Innermost active meta-phase for the currently-running ability
+   *  (e.g. 'AFB' when the phase stack is ['SPACE_COMBAT', 'AFB']). */
+  readonly meta: MetaPhase
   /** The absolute CombatSide this ability is currently running on. */
   readonly side: CombatSide
   /** All abilities registered for each side — available regardless of enabled state. */
@@ -183,11 +190,12 @@ export interface AbilityCallContext {
   ): { key: string; name: string }[]
   /** Returns true if the current side's faction owns this ability (faction or unit ability). */
   isOwner(): boolean
-  /** Override the next meta-phase transition. The remaining micro-phases of the
-   *  current round still complete normally; the override fires when the last
-   *  micro-phase transitions to the next meta-phase.
+  /** Override the next meta-phase transition. The current round's remaining
+   *  steps still complete normally; the override fires when the script's
+   *  closing transition step runs. Pass `'COMPLETE'` to run end-of-combat
+   *  cleanup and finish the battle.
    *  @param outcome - 'DRAW' forces a draw, 'LOST' means the calling side loses. */
-  transitionTo(target: MetaPhase, outcome?: 'DRAW' | 'LOST'): void
+  transitionTo(target: PhaseTransitionTarget, outcome?: 'DRAW' | 'LOST'): void
   /** Roll dice mid-ability, creating probability branches.
    *  Computes all per-group outcomes and calls the callback once per outcome,
    *  passing a branch-scoped context that operates on that branch's state.
@@ -200,12 +208,13 @@ export interface AbilityCallContext {
     callback: (branchCtx: AbilityCallContext, hits: number[]) => void,
   ): never
 
-  /** Resolve a full unit-ability step (DICE_POOL → BEFORE_UNIT_ABILITY_ROLL →
+  /** Queue a full unit-ability step (DICE_POOL → BEFORE_UNIT_ABILITY_ROLL →
    *  roll → AFTER_UNIT_ABILITY_ROLL → ASSIGN_HITS → AFTER_ASSIGN_HITS_STEP +
-   *  destroy cascade) from within another ability's call. The step runs with
-   *  currentPhase.meta temporarily swapped to `meta` so invoke-level `context`
-   *  filters and hit-value modifiers match; the outer phase is restored on
-   *  every resulting branch.
+   *  destroy cascade) as nested script entries. Runs after the current
+   *  ability's `call` returns: the engine parks the outer pass (pendingSteps
+   *  grew) and `advance()` dispatches the pushed step before the outer pass
+   *  resumes. The nested phase stack is `[...outerPhase, meta]` so invoke-
+   *  level `context` filters and hit-value modifiers match.
    *
    *  Fires from the calling ability's side (`ctx.side`).
    *
@@ -214,16 +223,15 @@ export interface AbilityCallContext {
    *   - `target` — where hits land. `'OPPONENT'` (default) or `'OWN'`
    *                (self-damage, e.g. Proxima's second roll)
    *
-   *  Composition: to run multiple resolves sequentially, nest them inside
-   *  `callback`. Sequencing two top-level calls does NOT work because the
-   *  first will throw `AbilityBranchInterrupt` on multi-outcome. */
+   *  Composition: multiple `resolveStep` calls in one `call` execute in
+   *  reverse call-order (LIFO): the last push sits on top of the script
+   *  stack. To run step A before step B, push B first, then A. */
   resolveStep<M extends UnitAbilityMeta>(
     meta: M,
     overrides?: {
       dice?: DiceGroup[]
       target?: 'OWN' | 'OPPONENT'
     },
-    callback?: (branchCtx: AbilityCallContext) => void,
   ): void
 }
 
@@ -231,7 +239,11 @@ export interface AbilityCallContext {
 // Uses InternalTimingContextMap for ability perspective (own/opponent)
 type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
   timing: T
-  /** Restrict this invoke to specific meta-phase(s). When set, the invoke only fires if the current meta-phase matches. SPACE_COMBAT also matches AFB (since AFB is part of space combat). */
+  /** Restrict this invoke to specific meta-phase(s). When set, the invoke
+   *  fires only if any phase in the active phase stack matches. Nested
+   *  phases propagate: AFB nested inside SPACE_COMBAT has active stack
+   *  ['SPACE_COMBAT', 'AFB'], so an invoke with `context: ['SPACE_COMBAT']`
+   *  still fires during AFB. */
   context?: MetaPhase | MetaPhase[]
   /** System invokes bypass the `uses` accounting — they don't decrement `uses`
    *  and aren't gated by `uses > 0`. Use for paired teardown invokes

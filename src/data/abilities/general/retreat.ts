@@ -133,8 +133,8 @@ export const retreat: Ability<Params> = {
           allIds.push(...ctx.api.own.getUnits(type, { includeVariants: true }))
         }
 
-        retreatUnits(ctx, allIds)
         ctx.transitionTo('COMPLETE', 'LOST')
+        retreatUnits(ctx, allIds)
       },
     },
     {

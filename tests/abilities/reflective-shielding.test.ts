@@ -17,7 +17,7 @@ describe.forEachSide('REFLECTIVE_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     // Dreadnought sustains, Reflective Shielding produces 2 hits against opponent
@@ -42,7 +42,7 @@ describe.forEachSide('REFLECTIVE_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', undefined, { attacker: 1 })
+    t.advanceTo('SPACE_COMBAT', { attacker: 1 })
 
     // Dreadnought sustained from SCO hit
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
@@ -64,7 +64,7 @@ describe.forEachSide('REFLECTIVE_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     // Mech sustains

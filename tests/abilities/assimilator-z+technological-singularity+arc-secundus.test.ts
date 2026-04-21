@@ -25,7 +25,7 @@ describe('ASSIMILATOR_Z + TECHNOLOGICAL_SINGULARITY + ARC_SECUNDUS', () => {
 
     // START_OF_COMBAT: AC kills → TS enables Arc Secundus
     // START_OF_COMBAT_ROUND: Arc Secundus repairs flagship
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     expect(t.defender.units.CRUISER).toHaveLength(2) // 3 - 1 from AC
@@ -53,7 +53,7 @@ describe('ASSIMILATOR_Z + TECHNOLOGICAL_SINGULARITY + ARC_SECUNDUS', () => {
 
     expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBe(true)
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     // Round 1: defender loses 1 cruiser → TS enables Arc Secundus
     t.advanceRound({ defender: 1 })

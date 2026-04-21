@@ -20,7 +20,7 @@ describe.forEachSide('DYNAMO + METALI_VOID_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 1 hit to attacker: MVS grants sustain to cruiser (normally no sustain),
     // cruiser sustains, Dynamo repairs
     t.advanceRound({ attacker: 2 })

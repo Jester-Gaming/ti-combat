@@ -16,7 +16,7 @@ describe.forEachSide('CAVALRY', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('CAVALRY')).not.toHaveLength(0)

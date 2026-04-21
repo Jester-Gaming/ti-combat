@@ -23,7 +23,7 @@ describe.forEachSide('EVELYN_DELOUIS + PRE_GALVANIZED', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     const pool = t.dicePool()

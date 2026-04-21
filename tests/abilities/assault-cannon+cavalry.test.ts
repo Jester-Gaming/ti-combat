@@ -22,7 +22,9 @@ describe('ASSAULT_CANNON + CAVALRY', () => {
         },
       })
 
-      t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+      t.advanceTo('SPACE_COMBAT')
+
+      t.advanceRound()
 
       expect(t.abilityLog('ASSAULT_CANNON')).not.toHaveLength(0)
       expect(t.abilityLog('CAVALRY')).not.toHaveLength(0)
@@ -52,7 +54,9 @@ describe('ASSAULT_CANNON + CAVALRY', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('ASSAULT_CANNON')).not.toHaveLength(0)
     // Cruiser targeted and destroyed beforeCavalry
@@ -83,7 +87,9 @@ describe('ASSAULT_CANNON + CAVALRY', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('ASSAULT_CANNON')).not.toHaveLength(0)
     // Cavalry Cruiser targeted and destroyed

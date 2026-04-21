@@ -17,7 +17,7 @@ describe('EIDOLON + THE_ALASTOR + VOS_HOLLOW', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Eidolon fires at START, defender MECH becomes Z-Grav (ship)
     // 1 hit destroys defender's mech → VH fires → destroys attacker's mech
     t.advanceRound({ defender: 1 })

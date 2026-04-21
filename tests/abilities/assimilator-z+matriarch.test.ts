@@ -14,7 +14,7 @@ describe.forEachSide('ASSIMILATOR_Z + MATRIARCH', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 

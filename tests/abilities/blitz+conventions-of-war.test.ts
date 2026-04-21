@@ -21,7 +21,7 @@ describe('BLITZ + CONVENTIONS_OF_WAR', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     const pool = t.dicePool()
 
     // No bombardment dice (CoW blocked BOMBARDMENT)

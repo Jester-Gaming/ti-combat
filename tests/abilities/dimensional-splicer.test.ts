@@ -17,7 +17,9 @@ describe.forEachSide('DIMENSIONAL_SPLICER', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.defender.units.CRUISER).toHaveLength(1)
   })
@@ -36,7 +38,9 @@ describe.forEachSide('DIMENSIONAL_SPLICER', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // Dreadnought sustains the hit
     expect(t.defender.units.DREADNOUGHT).toHaveLength(1)
@@ -60,7 +64,7 @@ describe.forEachSide('DIMENSIONAL_SPLICER', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     // DS fires at START_OF_COMBAT → dreadnought already damaged → can't sustain → destroyed
     t.advanceRound()
@@ -83,7 +87,9 @@ describe.forEachSide('DIMENSIONAL_SPLICER', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.defender.units.FIGHTER).toHaveLength(2)
   })

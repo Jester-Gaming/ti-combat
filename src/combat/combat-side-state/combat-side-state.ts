@@ -18,11 +18,14 @@ import type {
   CombatStateData,
   HitPool,
   HitSource,
+  HitValueModifier,
   MetaPhase,
+  PendingStep,
   RestrictionEntry,
   SideStateData,
   UnitAbilityRestrictions,
 } from '../combat-state/types'
+import { isDiceRollContext } from '../combat-state/types'
 import { nextUnitIds } from '../utils/unit-id'
 import {
   getVariantDisplayName,
@@ -97,13 +100,31 @@ export function getOpponentSide(side: CombatSide): CombatSide {
   return side === 'attacker' ? 'defender' : 'attacker'
 }
 
+/** Walk `pendingSteps` in execution order (from top of stack downward) and
+ *  return the first `DiceRollContext` group whose innermost phase matches
+ *  `meta`. Used by `addHitValueModifier` to attach modifiers to the correct
+ *  upcoming roll (current group for BEFORE_(UNIT_ABILITY_)?DICE_ROLL, next
+ *  group in the script for START_OF_COMBAT / START_OF_COMBAT_ROUND). */
+function findPendingDiceRollGroup(
+  pendingSteps: readonly PendingStep[],
+  meta: MetaPhase,
+): Extract<PendingStep, { kind: 'group' }> | undefined {
+  for (let i = pendingSteps.length - 1; i >= 0; i--) {
+    const s = pendingSteps[i]
+    if (s.kind !== 'group' || !isDiceRollContext(s.data)) continue
+    const inner = s.steps[s.steps.length - 1] ?? s.steps[0]
+    if (inner && inner.phase[inner.phase.length - 1] === meta) return s
+  }
+  return undefined
+}
+
 // Cache for getParticipatingUnits: source array → Set
 const participatingUnitsCache = new WeakMap<
   UnitBaseType[],
   ReadonlySet<UnitBaseType>
 >()
 
-export function getParticipatingUnitsSet(
+function getParticipatingUnitsSet(
   units: UnitBaseType[],
 ): ReadonlySet<UnitBaseType> {
   let cached = participatingUnitsCache.get(units)
@@ -156,6 +177,7 @@ export interface AssignHitsParams {
 export function getAssignHitsParams(
   stateData: CombatStateData,
   side: CombatSide,
+  meta: MetaPhase,
 ): AssignHitsParams {
   const settings = stateData.abilities[side]['SETTINGS']
   if (!settings) throw new Error('No SETTINGS in getAssignHitsParams')
@@ -173,7 +195,7 @@ export function getAssignHitsParams(
   const key =
     stateData.combatMode === 'GROUND'
       ? 'groundUnitPriority'
-      : stateData.currentPhase.meta === 'SPACE_CANNON_OFFENSE'
+      : meta === 'SPACE_CANNON_OFFENSE'
         ? 'scoUnitPriority'
         : 'spaceUnitPriority'
   const sacrificeOrder = getFilteredSacrificeOrder(
@@ -811,20 +833,20 @@ export class CombatSideState {
     }))
   }
 
-  /** Resolve valid targets from SETTINGS for current phase */
-  getSettingsValidTargets(): UnitBaseType[] {
+  /** Resolve valid targets from SETTINGS for the given meta. */
+  getSettingsValidTargets(meta: MetaPhase): UnitBaseType[] {
     const state = this.stateData
     const settings = state.abilities[this._side]['SETTINGS']
     if (!settings) return []
-    return getSettingsValidTargetsUtil(settings, state.currentPhase.meta)
+    return getSettingsValidTargetsUtil(settings, meta)
   }
 
   /** Get hit pool valid targets (falls back to settings valid targets) */
-  getHitPoolValidTargets(): UnitType[] {
+  getHitPoolValidTargets(meta: MetaPhase): UnitType[] {
     const pool = this.data.hitPools[0]
     if (pool && pool.validTargets && pool.validTargets.length > 0)
       return pool.validTargets
-    return this.getSettingsValidTargets()
+    return this.getSettingsValidTargets(meta)
   }
 
   // ==========================================================================
@@ -848,9 +870,23 @@ export class CombatSideState {
     return getParticipatingUnitsSet(units)
   }
 
-  /** Get valid targets for the current phase from SETTINGS ability */
+  /** True if the side still holds any unit whose base type participates in the
+   *  current combat mode. Non-participants (e.g., PDS in ground combat,
+   *  infantry in space combat) don't count. */
+  hasParticipatingUnits(): boolean {
+    const participating = this.getParticipatingUnits()
+    const { units } = this.data
+    for (const key of Object.keys(units)) {
+      if (units[key as UnitType].length <= 0) continue
+      if (participating.has(parseVariantId(key as UnitType).type)) return true
+    }
+    return false
+  }
+
+  /** Get valid targets from SETTINGS for the given meta. */
   getValidTargetsForPhase(
-    stateData: CombatStateData = this.stateData,
+    stateData: CombatStateData,
+    meta: MetaPhase,
   ): UnitBaseType[] {
     const settings = stateData.abilities[this._side]['SETTINGS']
 
@@ -858,10 +894,7 @@ export class CombatSideState {
       throw new Error('No SETTINGS in getValidTargetsForPhase')
     }
 
-    return getSettingsValidTargetsUtil(
-      settings,
-      this._combatState.currentPhase.meta,
-    )
+    return getSettingsValidTargetsUtil(settings, meta)
   }
 
   collectDice(
@@ -926,17 +959,18 @@ export class CombatSideState {
    *  When trackDestroyed is false, skips building the destroyed record. */
   assignHits(
     stateData: CombatStateData,
+    meta: MetaPhase,
     trackDestroyed?: boolean,
   ): Record<string, UnitId[]> {
-    const params = getAssignHitsParams(stateData, this._side)
+    const params = getAssignHitsParams(stateData, this._side, meta)
     return assignHitsForSide(stateData[this._side], params, trackDestroyed)
   }
 
   /** Simulate resolving a single HitPool against this side's current units.
    *  Returns the UnitIds that would be destroyed, in sacrifice order.
    *  Non-destructive — does not mutate state. */
-  getAssignHitsTargets(hitPool: HitPool): UnitId[] {
-    const params = getAssignHitsParams(this.stateData, this._side)
+  getAssignHitsTargets(hitPool: HitPool, meta: MetaPhase): UnitId[] {
+    const params = getAssignHitsParams(this.stateData, this._side, meta)
     return getAssignHitsTargets(this.data, params, hitPool)
   }
 
@@ -1206,33 +1240,41 @@ export class CombatSideState {
     return placed
   }
 
-  /** Add a hit-value modifier */
-  addHitValueModifier(
-    amount: number,
-    target: unknown,
-    context: MetaPhase,
-  ): void {
-    const data = this.data
-    if (!data.hitValueModifiers) {
-      data.hitValueModifiers = []
+  /** Add a hit-value modifier to the pending dice-roll group for `meta`.
+   *  The modifier rides on the group's `DiceRollContext` and is discarded
+   *  when the group drains, so no explicit clearing is needed. */
+  addHitValueModifier(amount: number, target: unknown, meta: MetaPhase): void {
+    const group = findPendingDiceRollGroup(this._combatState.pendingSteps, meta)
+    if (!group) {
+      throw new Error(
+        `addHitValueModifier: no pending dice-roll group for meta ${meta}`,
+      )
     }
-    const base = { amount, context }
+    const ctx = group.data
+    if (!isDiceRollContext(ctx)) {
+      throw new Error(
+        'addHitValueModifier: group data is not a DiceRollContext',
+      )
+    }
+    if (!ctx.hitValueModifiers) ctx.hitValueModifiers = {}
+    const list = (ctx.hitValueModifiers[this._side] ??= [])
+    const base: HitValueModifier = { amount }
 
     if (target === undefined) {
-      data.hitValueModifiers.push(base)
+      list.push(base)
     } else if (typeof target === 'string') {
-      data.hitValueModifiers.push({ ...base, unitType: target })
+      list.push({ ...base, unitType: target })
     } else if (
       typeof target === 'object' &&
       target !== null &&
       'exclude' in target
     ) {
-      data.hitValueModifiers.push({
+      list.push({
         ...base,
         excludeUnitTypes: (target as { exclude: string[] }).exclude,
       })
     } else {
-      data.hitValueModifiers.push({
+      list.push({
         ...base,
         unitId: target as UnitId,
       })

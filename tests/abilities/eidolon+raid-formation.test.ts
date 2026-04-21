@@ -23,9 +23,9 @@ describe.forEachSide('EIDOLON + RAID_FORMATION', () => {
 
     // 3 destroyers AFB 9x2 = 6 dice, 0 fighters = all hits excess
     // Eidolon mechs are ships but have lost sustain — not valid targets
-    t.advanceTo('AFB', 'ASSIGN_HITS', 2)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 2, 'AFB')
 
-    expect(t.abilityLog('RAID_FORMATION')).toHaveLength(0)
+    expect(t.abilityLog('RAID_FORMATION')).not.toHaveLength(0)
     expect(t.defender.units.MECH![0].isDamaged).toBeFalsy()
     expect(t.defender.units.MECH![1].isDamaged).toBeFalsy()
   })

@@ -17,7 +17,9 @@ describe('INDOCTRINATION + MOYINS_ASHES', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('INDOCTRINATION')).not.toHaveLength(0)
     expect(t.abilityLog('MOYINS_ASHES')).not.toHaveLength(0)
@@ -40,7 +42,9 @@ describe('INDOCTRINATION + MOYINS_ASHES', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('INDOCTRINATION')).not.toHaveLength(0)
     expect(t.abilityLog('MOYINS_ASHES')).toHaveLength(0)
@@ -63,7 +67,9 @@ describe('INDOCTRINATION + MOYINS_ASHES', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('INDOCTRINATION')).toHaveLength(0)
     expect(t.abilityLog('MOYINS_ASHES')).toHaveLength(0)

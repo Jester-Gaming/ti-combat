@@ -17,7 +17,7 @@ describe('BROTHER_MILOR + VAN_HAUGE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Damage Van Hauge (sustain)
     t.advanceRound({ defender: 3 })
 
@@ -29,29 +29,26 @@ describe('BROTHER_MILOR + VAN_HAUGE', () => {
     expect(t.attacker.units.CRUISER).toBeUndefined()
   })
 
-  it.fails(
-    'Opponent Brother Milor places fighters after Van Hauge destroys their ships',
-    () => {
-      const t = combatTest({
-        mode: 'SPACE',
-        attacker: {
-          faction: 'ARBOREC',
-          units: { CRUISER: 2 },
-          abilities: { BROTHER_MILOR: true },
-        },
-        defender: {
-          faction: 'YIN_BROTHERHOOD',
-          units: { FLAGSHIP: 1 },
-        },
-      })
+  it('Opponent Brother Milor places fighters after Van Hauge destroys their ships', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+        abilities: { BROTHER_MILOR: true },
+      },
+      defender: {
+        faction: 'YIN_BROTHERHOOD',
+        units: { FLAGSHIP: 1 },
+      },
+    })
 
-      t.advanceTo('SPACE_COMBAT', 'START')
-      t.advanceRound({ defender: 2 })
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound({ defender: 2 })
 
-      expect(t.abilityLog('VAN_HAUGE')).not.toHaveLength(0)
-      expect(t.abilityLog('BROTHER_MILOR')).not.toHaveLength(0)
-      // Attacker gets 2 fighters from BM
-      expect(t.attacker.units.FIGHTER).toHaveLength(2)
-    },
-  )
+    expect(t.abilityLog('VAN_HAUGE')).not.toHaveLength(0)
+    expect(t.abilityLog('BROTHER_MILOR')).not.toHaveLength(0)
+    // Attacker gets 2 fighters from BM
+    expect(t.attacker.units.FIGHTER).toHaveLength(2)
+  })
 })

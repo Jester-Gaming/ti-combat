@@ -21,7 +21,9 @@ describe('CAVALRY + IMPULSE_CORE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // Cavalry destroyer sacrificed, plain destroyer survives
     expect(t.defender.units.DESTROYER).toHaveLength(1)
@@ -47,7 +49,9 @@ describe('CAVALRY + IMPULSE_CORE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // Plain destroyer sacrificed, Cavalry destroyer survives
     expect(t.defender.units.DESTROYER).toHaveLength(1)
@@ -78,7 +82,9 @@ describe('CAVALRY + IMPULSE_CORE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // Impulse Core fired: destroyer sacrificed
     expect(t.defender.units.DESTROYER).toBeUndefined()
@@ -108,7 +114,9 @@ describe('CAVALRY + IMPULSE_CORE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // No plain cruiser to target — Impulse Core does not fire
     expect(t.defender.units.DESTROYER).toHaveLength(1)

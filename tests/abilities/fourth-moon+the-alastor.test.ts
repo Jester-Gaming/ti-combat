@@ -16,7 +16,7 @@ describe.forEachSide('FOURTH_MOON + THE_ALASTOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 1 hit to defender: mech can't sustain (FM blocks ships, Alastor adds mech to ships)
     t.advanceRound({ defender: 1 })
 

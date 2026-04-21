@@ -9,8 +9,10 @@ import type {
 
 import {
   AbilitiesEngine,
-  type AbilityTiming,
+  type AbilityBranch,
+  AbilityBranchInterrupt,
   cloneInvokes,
+  cloneTracker,
   type DicePool,
   type InvokeCollections,
   type RunAbilitiesOptions,
@@ -21,29 +23,23 @@ import {
   CombatSideState,
   getAssignHitsParams,
   getOpponentSide,
-  getParticipatingUnitsSet,
 } from '../combat-side-state/combat-side-state'
 import { type LogEntry, Logger } from '../logger'
-import { parseVariantId } from '../utils'
-import {
-  getFirstMicroPhase,
-  getInitialPhaseIdentifier,
-  getLastMicroPhase,
-  getNextMetaPhase,
-  getNextMicroPhase,
-  isLastMicroPhase,
-} from './phase-utils'
 import type {
   AbilitiesConfig,
   CombatMode,
   CombatStateData,
+  DiceRollContext,
   HitSource,
   HitValueModifier,
   MetaPhase,
-  PhaseIdentifier,
+  PendingStep,
+  PhaseStep,
+  PhaseStepGroup,
   SideStateData,
   UnitAbilityMeta,
 } from './types'
+import { isDiceRollContext } from './types'
 import { getCombinedDiceDistribution } from './utils'
 
 /** A state with its probability */
@@ -52,10 +48,31 @@ export interface StateWithProbability {
   probability: number
 }
 
+/** Innermost meta in a phase stack. Used for logger children, hit-value
+ *  modifier scoping, and unit-ability config selection — they all key on the
+ *  most deeply nested meta (e.g. 'AFB' when the stack is ['SPACE_COMBAT', 'AFB']). */
+function innerMeta(phase: MetaPhase[]): MetaPhase {
+  return phase[phase.length - 1]
+}
+
 interface UnitAbilityPhaseConfig {
   firing: CombatSide[]
   hitSource: HitSource
   allowedUnitTypes?: ReadonlySet<UnitBaseType>
+}
+
+/** True when neither side has any dice entries — a unit-ability phase with
+ *  no firing units and no ability-injected dice should skip its ASSIGN_HITS
+ *  tail entirely, since there can be no hits to resolve. */
+function isDicePoolEmpty(dice: SidedDiceData): boolean {
+  return isSidePoolEmpty(dice.attacker) && isSidePoolEmpty(dice.defender)
+}
+
+function isSidePoolEmpty(pool: DicePool): boolean {
+  for (const entries of Object.values(pool)) {
+    if (entries && entries.length > 0) return false
+  }
+  return true
 }
 
 /** Flatten a DicePool into DiceGroup[] for probability calculation */
@@ -88,13 +105,36 @@ export class CombatState {
   private _defender: CombatSideState | undefined
   public _invokes!: InvokeCollections
   public _invokesOwned = true
+  /** LIFO stack of steps for the current meta's phase script. `advance()`
+   *  pops one step per call. Stored in reverse execution order so `.pop()`
+   *  yields the next-to-execute step. Instance-level (not on `data`) because
+   *  steps hold direct method references that can't go through structuredClone.
+   *
+   *  Entries are either standalone `PhaseStep`s or `PhaseStepGroup`s whose
+   *  inner steps share a context (e.g. the destroyed-units map driving a
+   *  DESTROY / WHEN_DESTROY / AFTER_DESTROY cascade). Inside a group, the
+   *  innermost step at `steps.at(-1)` is the next to execute; when the
+   *  group's steps drain, the group is removed and its context released. */
+  public pendingSteps: PendingStep[] = []
+
+  /** The timing step currently dispatching a `runAbilities` pass, or
+   *  `undefined` outside a dispatch (PREPARE, tests, between steps). Derived
+   *  from `pendingSteps` by walking from the top and returning the innermost
+   *  timing step — skipping groups whose innermost pending step is a method
+   *  (e.g. a freshly-pushed dice-roll group whose `_collectDice` hasn't run
+   *  yet). Exposed so the abilities engine can read the phase stack and
+   *  park-state slot without plumbing them through its public API. */
+  get currentStep(): Extract<PhaseStep, { kind: 'timing' }> | undefined {
+    for (let i = this.pendingSteps.length - 1; i >= 0; i--) {
+      const entry = this.pendingSteps[i]
+      const step = entry.kind === 'group' ? entry.steps.at(-1) : entry
+      if (step?.kind === 'timing') return step
+    }
+    return undefined
+  }
 
   get log(): LogEntry[] | undefined {
     return this._logger?.entries as LogEntry[] | undefined
-  }
-
-  get currentPhase(): PhaseIdentifier {
-    return this.data.currentPhase
   }
 
   ensureOwnInvokes(): void {
@@ -134,7 +174,6 @@ export class CombatState {
     defender: SideStateData,
     combatMode: CombatMode,
     abilitiesConfig?: AbilitiesConfig,
-    currentPhase?: PhaseIdentifier,
     abilities?: Record<
       import('@/types').CombatSide,
       import('../abilities-engine').Ability[]
@@ -156,7 +195,6 @@ export class CombatState {
       defender,
       abilities: config,
       combatMode,
-      currentPhase: currentPhase ?? getInitialPhaseIdentifier(combatMode),
     }
 
     const emptyKeys = {
@@ -165,6 +203,7 @@ export class CombatState {
     }
 
     instance.data = baseData
+    instance.pendingSteps = []
     instance._params = AbilitiesEngine.fromConfig(
       instance,
       abilities ?? { attacker: [], defender: [] },
@@ -184,6 +223,7 @@ export class CombatState {
   ): CombatState {
     const instance = Object.create(CombatState.prototype) as CombatState
     instance.data = data
+    instance.pendingSteps = []
     instance._params = params
     const source = params.combatState
     instance._invokes = source._invokes
@@ -210,6 +250,7 @@ export class CombatState {
     }
     const instance = Object.create(CombatState.prototype) as CombatState
     instance.data = data
+    instance.pendingSteps = []
     instance._params = AbilitiesEngine.wrap(
       instance,
       abilities ?? { attacker: [], defender: [] },
@@ -219,29 +260,284 @@ export class CombatState {
     return instance
   }
 
-  private runAbilities<T extends AbilityTiming>(
-    timing: T,
-    context?: TimingContextMap[T],
-    options?: RunAbilitiesOptions,
-  ): void {
-    this._params.setCombatState(this, this._logger)
-    this._params.runAbilities(
-      timing,
-      context,
-      options,
-      this._logger?.child(this.data.currentPhase.meta),
-    )
+  assignHits(phase: MetaPhase[]): void {
+    this.pushScript(this.getAssignHitsScript(phase))
   }
 
-  assignHits(): void {
+  isFinished(): boolean {
+    return this.data.isFinished === true
+  }
+
+  getAssignHitsScript(phase: MetaPhase[]): PhaseStep[] {
+    return [
+      {
+        kind: 'timing',
+        timing: 'BEFORE_ASSIGN_HITS',
+        phase,
+      },
+      {
+        kind: 'method',
+        fn: CombatState.prototype._applyHitAssignmentStep,
+        phase,
+      },
+    ]
+  }
+
+  getHash(): string {
+    return `${getSideHash(this.data.attacker)}|${getSideHash(this.data.defender)}|${getAbilitiesHash(this.abilities)}`
+  }
+
+  /**
+   * Phase state machine driver: pops and executes steps from
+   * `pendingSteps` until one of: (a) a step branches, (b) `pendingSteps`
+   * drains, (c) `isFinished()` becomes true, or (d) `stopAt` matches the
+   * next step. Deterministic runs return `[{ state: this, probability: 1 }]`
+   * — literally `this`, no allocation.
+   *
+   * The caller (combat-engine / test harness) owns phase flow — it must
+   * explicitly `loadPhaseScript()` before calling `advance()` on an empty
+   * stack, and must resolve transitions (via the flow arrays /
+   * `transitionTarget`) between scripts.
+   */
+  public advance(
+    enableLog = false,
+    stopAt?: (step: PhaseStep) => boolean,
+  ): StateWithProbability[] {
+    if (enableLog && !this._logger) {
+      this._logger = Logger.create()
+    }
+
+    while (this.pendingSteps.length > 0 && !this.isFinished()) {
+      const top = this.pendingSteps.at(-1)!
+      const step: PhaseStep = top.kind === 'group' ? top.steps.at(-1)! : top
+      const groupData: unknown | undefined =
+        top.kind === 'group' ? top.data : undefined
+
+      if (stopAt?.(step)) {
+        return [{ state: this, probability: 1 }]
+      }
+
+      if (step.kind === 'timing') {
+        const data = step.data !== undefined ? step.data : groupData
+        const branches = this._runTimingStep(step, data)
+        if (branches !== undefined) return branches
+        // Parked (pass wrote a frame back) — leave the step in place so the
+        // next iteration re-peeks it. `stopAt` may match on the resume path.
+        if (step.frame) continue
+        this._popTopStep()
+        continue
+      }
+
+      this._popTopStep()
+      const result = step.fn.call(this, step.phase, step.payload)
+      if (result !== undefined) return result
+    }
+
+    return [{ state: this, probability: 1 }]
+  }
+
+  /** Pop the current pending step from the top of the stack. If the top is
+   *  a group, pop its innermost step; when the group drains, remove it. */
+  private _popTopStep(): void {
+    const top = this.pendingSteps[this.pendingSteps.length - 1]
+    if (top.kind === 'group') {
+      top.steps.pop()
+      if (top.steps.length === 0) this.pendingSteps.pop()
+    } else {
+      this.pendingSteps.pop()
+    }
+  }
+
+  /** Return the `PhaseStep` that `advance()` will dispatch next, or
+   *  `undefined` when the stack is empty. Groups are transparent to
+   *  callers — the unwrapped inner step is returned. Used by the test
+   *  harness and engine consumers that inspect what's about to run. */
+  public peekStep(): PhaseStep | undefined {
+    const top = this.pendingSteps.at(-1)
+    if (!top) return undefined
+    if (top.kind === 'group') return top.steps.at(-1)
+    return top
+  }
+
+  /** `data` of the top-of-stack `PhaseStepGroup`, or `undefined` when
+   *  the top entry is a standalone step (or the stack is empty). Exposed
+   *  so API layers (e.g. `AbilityContext.getDicePool`) can reach the
+   *  current script data without plumbing. */
+  get currentGroupData(): unknown {
+    const top = this.pendingSteps.at(-1)
+    return top?.kind === 'group' ? top.data : undefined
+  }
+
+  /** Populate `pendingSteps` with the full script for the given meta.
+   *  Called by combat-engine / the test harness when the stack is empty
+   *  and combat is still ongoing. Stored in reverse execution order. */
+  public loadPhaseScript(meta: MetaPhase, round: number): void {
+    const script = this.getPhaseScript(meta, round)
+    // Reverse so pop() yields execution order.
+    this.pendingSteps = script.slice().reverse()
+  }
+
+  /** One script per meta — defines the ordered steps a single round (or
+   *  full traversal, for non-combat metas) will run through. Written in
+   *  execution order for readability; `loadPhaseScript` reverses for the
+   *  LIFO stack. When the script drains, the engine advances to the next
+   *  meta. Round-selection for SPACE_COMBAT/GROUND_COMBAT uses the `round`
+   *  argument — the caller (combat-engine / test harness) owns it. */
+  public getPhaseScript(
+    meta: MetaPhase,
+    round: number,
+    parentMeta?: MetaPhase[],
+  ): PendingStep[] {
+    const phase: MetaPhase[] = parentMeta ? [...parentMeta, meta] : [meta]
+    switch (meta) {
+      case 'SPACE_CANNON_OFFENSE':
+      case 'AFB':
+      case 'BOMBARDMENT':
+      case 'SPACE_CANNON_DEFENSE': {
+        const abilityConfig = this._getUnitAbilityConfig(meta)
+        return [
+          buildUnitAbilityDiceRollGroup(phase, abilityConfig),
+          ...this.getAssignHitsScript(phase),
+          { kind: 'timing', timing: 'AFTER_ASSIGN_HITS_STEP', phase },
+          {
+            kind: 'method',
+            fn: CombatState.prototype._postAssignHits,
+            phase,
+          },
+        ]
+      }
+
+      case 'SPACE_COMBAT':
+      case 'GROUND_COMBAT': {
+        return [
+          {
+            kind: 'timing',
+            timing: round === 1 ? 'START_OF_COMBAT' : 'START_OF_COMBAT_ROUND',
+            phase,
+          },
+          ...(meta === 'SPACE_COMBAT' && round === 1
+            ? this.getPhaseScript('AFB', round, phase)
+            : []),
+          { kind: 'timing', timing: 'ANNOUNCE_RETREAT_STEP', phase },
+          buildCombatDiceRollGroup(phase),
+          ...this.getAssignHitsScript(phase),
+          { kind: 'timing', timing: 'AFTER_ASSIGN_HITS_STEP', phase },
+          { kind: 'timing', timing: 'RETREAT_STEP', phase },
+          {
+            kind: 'method',
+            fn: CombatState.prototype._postAssignHits,
+            phase,
+          },
+          { kind: 'timing', timing: 'END_OF_COMBAT_ROUND', phase },
+          { kind: 'timing', timing: 'AFTER_COMBAT_ROUND', phase },
+          { kind: 'timing', timing: 'CLEANUP_ROUND', phase },
+        ]
+      }
+
+      case 'COMMIT_UNITS':
+        return [{ kind: 'timing', timing: 'COMMIT_UNITS', phase }]
+    }
+  }
+
+  /** Execute a timing step — a single runAbilities call. Returns branches on
+   *  ability-pass interrupt, otherwise `undefined`. `advance()` inspects
+   *  `step.frame` afterwards to tell whether the pass parked. */
+  private _runTimingStep(
+    step: Extract<PhaseStep, { kind: 'timing' }>,
+    data: unknown | undefined,
+  ): StateWithProbability[] | undefined {
+    this._params.setCombatState(this, this._logger)
+
+    try {
+      this._params.runAbilities(
+        step.timing,
+        data as never,
+        step.options,
+        this._logger?.child(innerMeta(step.phase)),
+      )
+    } catch (e) {
+      if (!(e instanceof AbilityBranchInterrupt)) throw e
+      return this._branchesToStates(e.branches)
+    }
+    return undefined
+  }
+
+  // ===========================================================================
+  // STEP METHODS (referenced by PhaseStep entries in getPhaseScript)
+  // ===========================================================================
+
+  /** After ASSIGN_HITS completes: trigger completion if either side is
+   *  wiped; otherwise return so the script continues draining. Combat metas
+   *  (SPACE_COMBAT / GROUND_COMBAT / AFB) have further steps queued;
+   *  non-combat metas drain to empty and the engine picks up the transition. */
+  private _postAssignHits(phase: MetaPhase[]): void {
+    const meta = innerMeta(phase)
+    // Unit-ability phases (BOMBARDMENT / SCD / AFB / SCO) must let later
+    // phases run even when the phase wiped a side's participants — e.g. PDS
+    // still fires in SCD after bombardment clears ground forces. Only the
+    // combat-round metas can shortcut on missing participants.
+    const isCombatRound = meta === 'SPACE_COMBAT' || meta === 'GROUND_COMBAT'
+    const attackerOut = isCombatRound
+      ? !this.side('attacker').hasParticipatingUnits()
+      : !hasAnyUnits(this.data.attacker.units)
+    const defenderOut = isCombatRound
+      ? !this.side('defender').hasParticipatingUnits()
+      : !hasAnyUnits(this.data.defender.units)
+    if (attackerOut || defenderOut) {
+      this._triggerCompletion(phase)
+    }
+  }
+
+  private _setComplete(): void {
+    this.data.isFinished = true
+  }
+
+  /** Replace any in-flight pending steps with the completion sequence.
+   *  Stored reversed (pop yields END_OF_COMBAT first). */
+  private _triggerCompletion(phase: MetaPhase[]): void {
+    delete this.data.transitionTarget
+    this.pendingSteps = []
+    this.pushScript([
+      { kind: 'timing', timing: 'END_OF_COMBAT', phase },
+      { kind: 'timing', timing: 'CLEANUP_ROUND', phase },
+      { kind: 'timing', timing: 'CLEANUP', phase },
+      {
+        kind: 'method',
+        fn: CombatState.prototype._setComplete,
+        phase,
+      },
+    ])
+  }
+
+  /** Public entry point mirroring `_triggerCompletion`, used by the engine
+   *  and test harness when an explicit phase transition target is
+   *  `'COMPLETE'` — we still need to run the END_OF_COMBAT / CLEANUP_ROUND /
+   *  CLEANUP sequence before finishing. The caller provides its tracked
+   *  current meta (engine / test harness own the flow variable). */
+  public loadCompletionSteps(currentMeta: MetaPhase): void {
+    this._triggerCompletion([currentMeta])
+  }
+
+  private pushScript(entity: PendingStep[]) {
+    this.pendingSteps.push(...entity.reverse())
+  }
+  /** Apply pending hit pools deterministically. When destroyed units need
+   *  tracking (logger attached or destroy-timing abilities registered), logs
+   *  the destroyed context and pushes a destroy-cascade group onto
+   *  `pendingSteps`. Otherwise returns early for speed.
+   *
+   *  Script-based cascade: the group carries the destroyed-units map as
+   *  shared context. When called from an ability (via `assignHits`), the
+   *  outer pass is parked by `tryResolveOne` on return and the cascade
+   *  drains before the pass resumes. When called as a script step, the
+   *  group runs before the rest of the remaining script. */
+  private _applyHitAssignmentStep(phase: MetaPhase[]): void {
     const trackDestroyed =
       !!this._logger || this._params.hasDestroyAbilities(this._invokes)
 
-    this.runAbilities('BEFORE_ASSIGN_HITS')
-
-    // Pre-compute params once — avoids 2x redundant settings navigation
-    const attackerParams = getAssignHitsParams(this.data, 'attacker')
-    const defenderParams = getAssignHitsParams(this.data, 'defender')
+    const meta = innerMeta(phase)
+    const attackerParams = getAssignHitsParams(this.data, 'attacker', meta)
+    const defenderParams = getAssignHitsParams(this.data, 'defender', meta)
 
     const attackerDestroyed = assignHitsForSide(
       this.data.attacker,
@@ -254,7 +550,6 @@ export class CombatState {
       trackDestroyed,
     )
 
-    // Fast path: no destroy abilities and no logger — skip destroyed tracking entirely
     if (!trackDestroyed) return
 
     const destroyedContext = {
@@ -262,106 +557,150 @@ export class CombatState {
       defender: defenderDestroyed,
     }
 
-    this._logger
-      ?.child(this.data.currentPhase.meta)
-      .child('ASSIGN_HITS')
-      .log(destroyedContext)
+    this._logger?.child(meta).child('ASSIGN_HITS').log(destroyedContext)
 
     const hasDestroyed =
       Object.keys(destroyedContext.attacker).length > 0 ||
       Object.keys(destroyedContext.defender).length > 0
 
     if (hasDestroyed) {
-      // Run DESTROY → WHEN_DESTROY → AFTER_DESTROY sequence
-      this._params.runDestroyAbilities(destroyedContext)
+      this.pendingSteps.push(buildDestroyGroup(destroyedContext, phase))
     }
   }
 
-  isFinished(): boolean {
-    return this.data.currentPhase.meta === 'COMPLETE'
-  }
-
-  getHash(): string {
-    return `${getSideHash(this.data.attacker)}|${getSideHash(this.data.defender)}|${getAbilitiesHash(this.abilities)}`
-  }
-
-  /**
-   * Advance using the two-tier phase system.
-   * Handles meta-phase routing to appropriate processing methods.
-   */
-  public advance(round: number, enableLog = false): StateWithProbability[] {
-    if (enableLog && !this._logger) {
-      this._logger = Logger.create()
-    }
-    const { meta } = this.data.currentPhase
-
-    if (meta === 'COMPLETE') {
-      return [{ state: this, probability: 1 }]
+  /** Populate a dice-roll group's context. For unit-ability phases:
+   *  check block state and short-circuit when every firing side is
+   *  blocked (drop this meta's script); if some sides are blocked,
+   *  extend the BEFORE timing step's `options.skipSides`. Then collect
+   *  each firing side's dice (or use `customDice` if provided) and
+   *  store `dicePool` / `validTargets` on the group context. */
+  _collectDice(phase: MetaPhase[]): void {
+    const ctx = this.currentGroupData
+    if (!isDiceRollContext(ctx)) {
+      throw new Error('_collectDice called outside a dice-roll group')
     }
 
-    switch (meta) {
-      case 'SPACE_CANNON_OFFENSE':
-        return this.advanceUnitAbilityPhase({
-          firing: ['attacker', 'defender'],
-          hitSource: 'SPACE_CANNON',
-        })
-
-      case 'AFB':
-        return this.advanceUnitAbilityPhase({
-          firing: ['attacker', 'defender'],
-          hitSource: 'AFB',
-        })
-
-      case 'SPACE_COMBAT':
-      case 'GROUND_COMBAT':
-        return this.advanceCombatPhase(round)
-
-      case 'BOMBARDMENT':
-        return this.advanceUnitAbilityPhase({
-          firing: ['attacker'],
-          hitSource: 'BOMBARDMENT',
-        })
-
-      case 'COMMIT_UNITS': {
-        this.runAbilities('COMMIT_UNITS')
-        return this.handleBranchesOrContinue(() => this.transitionPhase())
+    if (ctx.isUnitAbility) {
+      const blocked = ctx.firing.filter(side =>
+        this.side(side).isAbilityBlocked(ctx.hitSource as UnitAbility),
+      )
+      if (blocked.length === ctx.firing.length) {
+        this._discardCurrentMetaScript(phase)
+        return
       }
-
-      case 'SPACE_CANNON_DEFENSE':
-        return this.advanceUnitAbilityPhase({
-          firing: ['defender'],
-          hitSource: 'SPACE_CANNON',
-          allowedUnitTypes: new Set([...GROUND_FORCES, ...STRUCTURES]),
-        })
+      if (blocked.length > 0) {
+        // Extend BEFORE timing's skipSides. Precedent: runUnitAbilityStepForAbility
+        // used to mutate the DICE_ROLL step's payload.
+        const top = this.pendingSteps.at(-1)!
+        if (top.kind === 'group') {
+          const beforeStep = top.steps.at(-1)
+          if (beforeStep?.kind === 'timing') {
+            beforeStep.options = {
+              ...beforeStep.options,
+              skipSides: blocked,
+            }
+          }
+        }
+      }
     }
+
+    const attackerDice: DicePool = ctx.firing.includes('attacker')
+      ? (ctx.customDice?.attacker ??
+        this.side('attacker').collectDice(ctx.hitSource, ctx.allowedUnitTypes))
+      : {}
+    const defenderDice: DicePool = ctx.firing.includes('defender')
+      ? (ctx.customDice?.defender ??
+        this.side('defender').collectDice(ctx.hitSource, ctx.allowedUnitTypes))
+      : {}
+
+    ctx.dicePool = { attacker: attackerDice, defender: defenderDice }
+    // validTargets deferred to _rollDice so BEFORE_UNIT_ABILITY_ROLL abilities
+    // (e.g. WAYLAY expanding targets, EIDOLON_MAXIMUM removing MECH) can
+    // affect SETTINGS before targets are computed.
   }
 
-  private advanceCombatPhase(round: number): StateWithProbability[] {
-    const micro = this.data.currentPhase.micro
-
-    switch (micro) {
-      case 'START':
-        return this.processStartOfRound(round)
-      case 'DICE_ROLL':
-        return this.processDiceRoll()
-      case 'ASSIGN_HITS':
-        return this.processAssignHits()
-      case 'END':
-        return this.processEndOfRound()
-      default:
-        return this.transitionPhase()
+  /** Read the populated dice pool, apply stored hit-value modifiers,
+   *  log DICE_POOL, and branch by outcome. Each resulting branch
+   *  inherits the group (with AFTER timing still inside), so
+   *  AFTER_(UNIT_ABILITY_)?DICE_ROLL runs per-branch as the next
+   *  script step. */
+  _rollDice(phase: MetaPhase[]): StateWithProbability[] | void {
+    const ctx = this.currentGroupData
+    if (!isDiceRollContext(ctx) || !ctx.dicePool) {
+      throw new Error('_rollDice called without a populated dice-roll context')
     }
+
+    const modifiedDice = ctx.dicePool
+    const meta = innerMeta(phase)
+
+    // Compute validTargets here (after BEFORE_UNIT_ABILITY_ROLL) so that
+    // abilities which modify SETTINGS (e.g. WAYLAY, EIDOLON_MAXIMUM) are
+    // reflected in target resolution before we branch by outcome.
+    const validTargets = {
+      attacker: this.side('attacker').getValidTargetsForPhase(this.data, meta),
+      defender: this.side('defender').getValidTargetsForPhase(this.data, meta),
+    }
+
+    const attackerModifiers = ctx.hitValueModifiers?.attacker
+    if (attackerModifiers?.length) {
+      applyStoredHitValueModifiers(modifiedDice.attacker, attackerModifiers)
+    }
+    const defenderModifiers = ctx.hitValueModifiers?.defender
+    if (defenderModifiers?.length) {
+      applyStoredHitValueModifiers(modifiedDice.defender, defenderModifiers)
+    }
+
+    if (ctx.isUnitAbility) {
+      // Abilities may have injected dice for non-firing sides during
+      // BEFORE_UNIT_ABILITY_ROLL; drop them so only firing sides roll.
+      if (!ctx.firing.includes('attacker')) modifiedDice.attacker = {}
+      if (!ctx.firing.includes('defender')) modifiedDice.defender = {}
+
+      if (isDicePoolEmpty(modifiedDice)) {
+        // Nothing to roll — skip the rest of this meta's script so
+        // ASSIGN_HITS doesn't run for non-existent hits.
+        this._discardCurrentMetaScript(phase)
+        return
+      }
+    }
+
+    this._logger?.child(meta).child('DICE_POOL').log({
+      attacker: modifiedDice.attacker,
+      defender: modifiedDice.defender,
+      hitSource: ctx.hitSource,
+    })
+
+    return this.rollDiceOutcomes(modifiedDice, validTargets, phase, ctx.routing)
   }
 
+  /** Convert engine-produced branches (each with its own data/invokes)
+   *  into StateWithProbability entries for combat-engine. Each branch
+   *  gets a per-branch copy of `pendingSteps`: either the branch's own
+   *  continuation (for branches that pushed script state from inside a
+   *  rollDice callback) or a clone of the current stack. Parked ability
+   *  pass state travels with the cloned steps via `PhaseStep.frame`. */
+  private _branchesToStates(branches: AbilityBranch[]): StateWithProbability[] {
+    const remainder = this.pendingSteps
+    return branches.map(b => {
+      const state = CombatState.fromData(b.data, this._params)
+      state._logger = b.logger
+      state._invokes = b.invokes
+      state._invokesOwned = false
+      state.pendingSteps = clonePendingSteps(b.pendingSteps ?? remainder)
+      return { state, probability: b.probability }
+    })
+  }
+
+  /** Branch by dice-outcome: for each (attacker, defender) combination,
+   *  clone state, add hits, log, and push a branch. Each branch inherits
+   *  the caller's `pendingSteps` — the dice-roll group's AFTER timing
+   *  step (if any) lands on every branch and runs per-branch through
+   *  the normal script-dispatch machinery. */
   private rollDiceOutcomes(
     modifiedDice: SidedDiceData,
     validTargets: { attacker: UnitType[]; defender: UnitType[] },
-    afterRollTiming?: AbilityTiming,
-    opts?: {
-      overridePhase?: PhaseIdentifier
-      routing?: { attacker: CombatSide; defender: CombatSide }
-      firingSides?: CombatSide[]
-    },
+    phase: MetaPhase[],
+    routing?: { attacker: CombatSide; defender: CombatSide },
   ): StateWithProbability[] {
     const attackerDist = getCombinedDiceDistribution(
       flattenDicePool(modifiedDice.attacker),
@@ -370,35 +709,14 @@ export class CombatState {
       flattenDicePool(modifiedDice.defender),
     )
 
-    const nextPhase =
-      opts?.overridePhase ?? getNextMicroPhase(this.data.currentPhase)
-    const { meta: metaPhase } = this.data.currentPhase
-
+    const metaPhase = innerMeta(phase)
     const results: StateWithProbability[] = []
-
-    // Save baseline _invokes reference — COW protects it from mutation
     const baseInvokes = this._invokes
-
-    // Check once whether after-roll abilities exist — avoids per-branch
-    // deepCloneSides + runAbilities overhead when no abilities are registered.
-    const runAfterRoll =
-      afterRollTiming != null && this._params.hasCallableInvoke(afterRollTiming)
-
-    // Loop-invariant: routing targets and after-roll options depend only on
-    // opts, not on branch state. Hoist out of the per-branch dice loop.
-    const attackerHitTarget = opts?.routing?.attacker ?? 'defender'
-    const defenderHitTarget = opts?.routing?.defender ?? 'attacker'
-    const afterOptions =
-      runAfterRoll &&
-      afterRollTiming === 'AFTER_UNIT_ABILITY_ROLL' &&
-      opts?.firingSides
-        ? buildUnitAbilityRunOptions(opts.firingSides, opts.routing, {
-            firingOnly: true,
-            timing: 'after',
-          })
-        : undefined
-
     const baseData = this.data
+    const basePendingSteps = this.pendingSteps
+
+    const attackerHitTarget = routing?.attacker ?? 'defender'
+    const defenderHitTarget = routing?.defender ?? 'attacker'
 
     for (const attOutcome of attackerDist) {
       for (const defOutcome of defenderDist) {
@@ -408,13 +726,13 @@ export class CombatState {
         this._invokes = baseInvokes
         this._invokesOwned = false
 
-        const branchData = cloneStateForBranch(baseData, nextPhase)
+        const branchData = cloneStateForBranch(baseData)
         addHitsToData(
           branchData,
           attOutcome.hits,
           defOutcome.hits,
           validTargets,
-          opts?.routing,
+          routing,
         )
 
         const branchLogger = this._logger?.fork()
@@ -422,6 +740,7 @@ export class CombatState {
           attacker: attOutcome.hits,
           defender: defOutcome.hits,
         })
+
         let hitsToAttacker = 0
         let hitsToDefender = 0
         if (attackerHitTarget === 'attacker') hitsToAttacker += attOutcome.hits
@@ -433,499 +752,140 @@ export class CombatState {
           defender: hitsToDefender,
         })
 
-        if (runAfterRoll) {
-          this.data = branchData
-          this._params.setCombatState(this, branchLogger)
-          this._params.runAbilities(
-            afterRollTiming!,
-            undefined,
-            afterOptions,
-            branchLogger?.child(metaPhase),
-          )
-
-          // AFTER_DICE_ROLL / AFTER_UNIT_ABILITY_ROLL abilities may have
-          // branched further (e.g. via rollDice or cascading assignHits).
-          if (this._params.hasBranches()) {
-            const subBranches = this._params.consumeBranches()
-            for (const sub of subBranches) {
-              const subState = CombatState.fromData(sub.data, this._params)
-              subState._logger = sub.logger
-              subState._invokes = sub.invokes
-              subState._invokesOwned = true
-              results.push({
-                state: subState,
-                probability: probability * sub.probability,
-              })
-            }
-            continue
-          }
-        }
-
         const branchState = CombatState.fromData(branchData, this._params)
         branchState._logger = branchLogger
+        branchState.pendingSteps = clonePendingSteps(basePendingSteps)
         results.push({ state: branchState, probability })
       }
     }
 
-    // Restore baseline
+    this.pendingSteps = basePendingSteps
     this._invokes = baseInvokes
     this._invokesOwned = true
 
     return results
   }
 
-  private transitionPhase(): StateWithProbability[] {
-    if (this.data.transitionTarget) {
-      if (isLastMicroPhase(this.data.currentPhase)) {
-        // At END: consume target and transition
-        const target = this.data.transitionTarget
-        delete this.data.transitionTarget
-        if (target === 'COMPLETE') {
-          return this.completeTransition()
+  /** Derive the unit-ability firing config from the given meta. */
+  private _getUnitAbilityConfig(meta: MetaPhase): UnitAbilityPhaseConfig {
+    switch (meta) {
+      case 'SPACE_CANNON_OFFENSE':
+        return { firing: ['attacker', 'defender'], hitSource: 'SPACE_CANNON' }
+      case 'AFB':
+        return { firing: ['attacker', 'defender'], hitSource: 'AFB' }
+      case 'BOMBARDMENT':
+        return { firing: ['attacker'], hitSource: 'BOMBARDMENT' }
+      case 'SPACE_CANNON_DEFENSE':
+        return {
+          firing: ['defender'],
+          hitSource: 'SPACE_CANNON',
+          allowedUnitTypes: new Set([...GROUND_FORCES, ...STRUCTURES]),
         }
-        this.data.currentPhase = {
-          meta: target,
-          micro: getFirstMicroPhase(target),
-        }
-      } else {
-        // Skip to END so END_OF_COMBAT_ROUND still fires
-        this.data.currentPhase = {
-          meta: this.data.currentPhase.meta,
-          micro: getLastMicroPhase(this.data.currentPhase.meta),
-        }
-      }
-    } else {
-      this.data.currentPhase = isLastMicroPhase(this.data.currentPhase)
-        ? getNextMetaPhase(this.data.currentPhase, this.combatMode)
-        : getNextMicroPhase(this.data.currentPhase)
-    }
-
-    const state = CombatState.fromData(this.data, this._params)
-    state._logger = this._logger
-    return [{ state, probability: 1 }]
-  }
-
-  private completeTransition(skipCleanupRound = false): StateWithProbability[] {
-    // Clear transition target — we're already completing
-    delete this.data.transitionTarget
-
-    this.runAbilities('END_OF_COMBAT')
-
-    return this.handleBranchesOrContinue(() => {
-      if (!skipCleanupRound) this.runAbilities('CLEANUP_ROUND')
-
-      return this.handleBranchesOrContinue(() => {
-        this.runAbilities('CLEANUP')
-
-        return this.handleBranchesOrContinue(() => {
-          this.data.currentPhase = {
-            meta: 'COMPLETE' as const,
-            micro: getLastMicroPhase('COMPLETE'),
-          }
-          const state = CombatState.fromData(this.data, this._params)
-          state._logger = this._logger
-          return [{ state, probability: 1 }]
-        })
-      })
-    })
-  }
-
-  /**
-   * If the most recent runAbilities call produced branches (via rollDice or
-   * any cascading operation), run `continuation` once per branch with this
-   * CombatState swapped to that branch's data/invokes/logger. Probabilities
-   * returned by the continuation are multiplied by the branch's probability.
-   * When no branching occurred, runs the continuation once on the current
-   * state (equivalent to just calling it directly).
-   */
-  private handleBranchesOrContinue(
-    continuation: () => StateWithProbability[],
-  ): StateWithProbability[] {
-    if (!this._params.hasBranches()) {
-      return continuation()
-    }
-
-    const branches = this._params.consumeBranches()
-    const results: StateWithProbability[] = []
-
-    for (const branch of branches) {
-      this.data = branch.data
-      this._invokes = branch.invokes
-      // Sibling branches may share the same `invokes` reference; mark as
-      // unowned so the next mutation triggers COW and isolates this branch.
-      this._invokesOwned = false
-      this._logger = branch.logger
-
-      const branchResults = continuation()
-      for (const r of branchResults) {
-        results.push({
-          state: r.state,
-          probability: r.probability * branch.probability,
-        })
-      }
-    }
-
-    return results
-  }
-
-  // ===========================================================================
-  // UNIT ABILITY PHASE PROCESSING (Space Cannon, Bombardment)
-  // ===========================================================================
-
-  private advanceUnitAbilityPhase(
-    config: UnitAbilityPhaseConfig,
-  ): StateWithProbability[] {
-    const micro = this.data.currentPhase.micro
-
-    switch (micro) {
-      case 'DICE_ROLL':
-        return this.processUnitAbilityDiceRoll(config)
-      case 'ASSIGN_HITS':
-        return this.processAssignHits()
       default:
-        throw new Error(`Incorrect micro phase: ${micro}`)
+        throw new Error(`Unexpected meta for unit-ability dice roll: ${meta}`)
     }
   }
 
-  /** Shared pre-roll pipeline for unit-ability phases. Runs block-check, dice
-   *  collection (or custom-dice override), BEFORE_UNIT_ABILITY_ROLL, stored
-   *  hit-value modifiers, and DICE_POOL logging. Returns `'ALL_BLOCKED'` when
-   *  no firing side can act — caller decides how to short-circuit. */
-  private prepareUnitAbilityDice(
-    firing: CombatSide[],
-    hitSource: HitSource,
-    allowedUnitTypes?: ReadonlySet<UnitBaseType>,
-    customDice?: SidedDiceData,
-    routing?: { attacker: CombatSide; defender: CombatSide },
-  ):
-    | {
-        modifiedDice: SidedDiceData
-        validTargets: { attacker: UnitType[]; defender: UnitType[] }
-      }
-    | 'ALL_BLOCKED' {
-    const blockedSides = firing.filter(side =>
-      this.side(side).isAbilityBlocked(hitSource as UnitAbility),
-    )
-    if (blockedSides.length === firing.length) return 'ALL_BLOCKED'
-
-    const attackerDice: DicePool = firing.includes('attacker')
-      ? (customDice?.attacker ??
-        this.side('attacker').collectDice(hitSource, allowedUnitTypes))
-      : {}
-    const defenderDice: DicePool = firing.includes('defender')
-      ? (customDice?.defender ??
-        this.side('defender').collectDice(hitSource, allowedUnitTypes))
-      : {}
-
-    const beforeOptions = buildUnitAbilityRunOptions(firing, routing, {
-      timing: 'before',
-    })
-    if (blockedSides.length > 0) beforeOptions.skipSides = blockedSides
-    this._params._currentDicePool = {
-      attacker: attackerDice,
-      defender: defenderDice,
-    }
-    this.runAbilities('BEFORE_UNIT_ABILITY_ROLL', undefined, beforeOptions)
-    const modifiedDice: SidedDiceData = this._params._currentDicePool
-    this._params._currentDicePool = undefined
-
-    const meta = this.data.currentPhase.meta
-    if (this.data.attacker.hitValueModifiers?.length) {
-      applyStoredHitValueModifiers(
-        modifiedDice.attacker,
-        this.data.attacker.hitValueModifiers,
-        meta,
-      )
-    }
-    if (this.data.defender.hitValueModifiers?.length) {
-      applyStoredHitValueModifiers(
-        modifiedDice.defender,
-        this.data.defender.hitValueModifiers,
-        meta,
-      )
-    }
-
-    // Abilities may inject dice for non-firing sides (e.g. attacker during
-    // SCD); drop those so only firing sides contribute to the roll.
-    if (!firing.includes('attacker')) modifiedDice.attacker = {}
-    if (!firing.includes('defender')) modifiedDice.defender = {}
-
-    this._logger?.child(meta).child('DICE_POOL').log({
-      attacker: modifiedDice.attacker,
-      defender: modifiedDice.defender,
-      hitSource,
-    })
-
-    return {
-      modifiedDice,
-      validTargets: {
-        attacker: this.side('attacker').getValidTargetsForPhase(this.data),
-        defender: this.side('defender').getValidTargetsForPhase(this.data),
-      },
+  /** Pop pending steps that belong to the given phase (reference-equal
+   *  phase array from the same getPhaseScript emission). For standalone
+   *  metas this empties the stack; for a nested meta (AFB inside
+   *  SPACE_COMBAT), the outer script's steps — which carry a different
+   *  phase array — survive. Groups are homogeneous (all inner steps share
+   *  a phase), so checking the group's next-to-run step is sufficient. */
+  private _discardCurrentMetaScript(phase: MetaPhase[]): void {
+    while (this.pendingSteps.length > 0) {
+      const top = this.pendingSteps[this.pendingSteps.length - 1]
+      const topPhase =
+        top.kind === 'group'
+          ? top.steps[top.steps.length - 1]?.phase
+          : top.phase
+      if (topPhase !== phase) break
+      this.pendingSteps.pop()
     }
   }
 
-  private processUnitAbilityDiceRoll(
-    config: UnitAbilityPhaseConfig,
-  ): StateWithProbability[] {
-    const { firing, hitSource, allowedUnitTypes } = config
-    const prepared = this.prepareUnitAbilityDice(
-      firing,
-      hitSource,
-      allowedUnitTypes,
-    )
-    if (prepared === 'ALL_BLOCKED') {
-      this.data.currentPhase.micro = getLastMicroPhase(
-        this.data.currentPhase.meta,
-      )
-      return this.transitionPhase()
-    }
-    return this.rollDiceOutcomes(
-      prepared.modifiedDice,
-      prepared.validTargets,
-      'AFTER_UNIT_ABILITY_ROLL',
-      { firingSides: firing },
-    )
-  }
-
-  /** Run a full unit-ability step (DICE_ROLL + ASSIGN_HITS) from an ability
-   *  at another timing. Temporarily sets `currentPhase.meta` to the step's
-   *  meta so invoke-level `context` filters and hit-value modifiers match,
-   *  then restores the outer phase on every resulting branch.
+  /** Queue a full unit-ability step (DICE_ROLL + ASSIGN_HITS) as nested
+   *  script entries. Called from `AbilityContext.resolveStep`: the outer
+   *  ability is inside a script-driven pass, so after its `call` returns
+   *  the engine parks the pass (pendingSteps grew) and `advance()`
+   *  dispatches the pushed step(s) before the outer pass resumes.
    *
-   *  Used by AbilityContext.resolveStep. */
+   *  The group carries firing-side restriction, optional custom dice,
+   *  and optional hit routing (e.g. `target: 'OWN'` self-damage).
+   *  Everything else (BEFORE/AFTER ASSIGN_HITS, destroy cascade,
+   *  completion check) flows through the standard phase script. */
   public runUnitAbilityStepForAbility(config: {
     meta: UnitAbilityMeta
     firing: CombatSide[]
-    hitSource: HitSource
+    outerPhase: MetaPhase[]
     customDice?: SidedDiceData
     routing?: { attacker: CombatSide; defender: CombatSide }
-  }): StateWithProbability[] {
-    const { meta, firing, hitSource, customDice, routing } = config
-    const outerPhase = this.data.currentPhase
-
-    this.data.currentPhase = { meta, micro: 'DICE_ROLL' }
-
-    const prepared = this.prepareUnitAbilityDice(
-      firing,
-      hitSource,
-      undefined,
-      customDice,
-      routing,
-    )
-    if (prepared === 'ALL_BLOCKED') {
-      this.data.currentPhase = outerPhase
-      const state = CombatState.fromData(this.data, this._params)
-      state._logger = this._logger
-      return [{ state, probability: 1 }]
-    }
-
-    const diceRollBranches = this.rollDiceOutcomes(
-      prepared.modifiedDice,
-      prepared.validTargets,
-      'AFTER_UNIT_ABILITY_ROLL',
-      {
-        overridePhase: { meta, micro: 'ASSIGN_HITS' },
+  }): void {
+    const { meta, firing, outerPhase, customDice, routing } = config
+    const phase: MetaPhase[] = [...outerPhase, meta]
+    const baseConfig = this._getUnitAbilityConfig(meta)
+    this.pushScript([
+      buildUnitAbilityDiceRollGroup(phase, {
+        firing,
+        hitSource: baseConfig.hitSource,
+        allowedUnitTypes: baseConfig.allowedUnitTypes,
+        customDice,
         routing,
-        firingSides: firing,
-      },
-    )
-
-    const finalBranches: StateWithProbability[] = []
-
-    for (const { state: branchCS, probability } of diceRollBranches) {
-      this.data = branchCS.data
-      this._invokes = branchCS._invokes
-      this._invokesOwned = false
-      this._logger = branchCS._logger
-      this._params.setCombatState(this, this._logger)
-
-      this.assignHits()
-
-      const results = this.handleBranchesOrContinue(() => {
-        this.runAbilities('AFTER_ASSIGN_HITS_STEP')
-        return this.handleBranchesOrContinue(() => {
-          clearPhaseScopedHitValueModifiers(this.data, meta)
-          this.data.currentPhase = outerPhase
-          const state = CombatState.fromData(this.data, this._params)
-          state._logger = this._logger
-          return [{ state, probability: 1 }]
-        })
-      })
-
-      for (const r of results) {
-        finalBranches.push({
-          state: r.state,
-          probability: probability * r.probability,
-        })
-      }
-    }
-
-    return finalBranches
+      }),
+      ...this.getAssignHitsScript(phase),
+      { kind: 'timing', timing: 'AFTER_ASSIGN_HITS_STEP', phase },
+      { kind: 'method', fn: CombatState.prototype._postAssignHits, phase },
+    ])
   }
 
   // ===========================================================================
   // COMBAT PHASE PROCESSING (shared by SPACE_COMBAT and GROUND_COMBAT)
   // ===========================================================================
+}
 
-  /**
-   * Process start of combat round.
-   * In round 1, START_OF_COMBAT and START_OF_COMBAT_ROUND share a timing window.
-   * In round 1 of SPACE_COMBAT, transitions to AFB meta-phase instead of DICE_ROLL.
-   */
-  private processStartOfRound(round: number): StateWithProbability[] {
-    // Check that both sides have participating units before entering combat round
-    if (noParticipatingUnits(this.data)) {
-      return this.completeTransition()
-    }
-
-    this.runAbilities(round === 1 ? 'START_OF_COMBAT' : 'START_OF_COMBAT_ROUND')
-
-    return this.handleBranchesOrContinue(() => {
-      // Re-check after abilities (e.g. Assault Cannon may destroy last ship)
-      if (noParticipatingUnits(this.data)) {
-        return this.completeTransition()
-      }
-
-      // In round 1 of SPACE_COMBAT, transition to AFB meta-phase
-      if (round === 1 && this.data.currentPhase.meta === 'SPACE_COMBAT') {
-        this.data.currentPhase = {
-          meta: 'AFB',
-          micro: getFirstMicroPhase('AFB'),
-        }
-        const state = CombatState.fromData(this.data, this._params)
-        state._logger = this._logger
-        return [{ state, probability: 1 }]
-      }
-
-      return this.transitionPhase()
-    })
+/** Build a PhaseStepGroup that fires the DESTROY → WHEN_DESTROY →
+ *  AFTER_DESTROY cascade once, sharing the destroyed-units map as the
+ *  group's `data`. Steps are stored in reverse execution order so the
+ *  group pops DESTROY first. */
+export function buildDestroyGroup(
+  destroyedContext: {
+    attacker: Record<string, import('@/types').UnitId[]>
+    defender: Record<string, import('@/types').UnitId[]>
+  },
+  phase: MetaPhase[],
+): PhaseStepGroup {
+  return {
+    kind: 'group',
+    data: destroyedContext,
+    steps: [
+      { kind: 'timing', timing: 'AFTER_DESTROY', phase },
+      { kind: 'timing', timing: 'WHEN_DESTROY', phase },
+      { kind: 'timing', timing: 'DESTROY', phase },
+    ],
   }
+}
 
-  private processDiceRoll(): StateWithProbability[] {
-    // Run ANNOUNCE_RETREAT timing (space combat only, after AFB before dice)
-    if (this.data.currentPhase.meta === 'SPACE_COMBAT') {
-      this.runAbilities('ANNOUNCE_RETREAT_STEP')
+/** Clone a pending-steps stack for branching. Groups get a new wrapper
+ *  and a new inner `steps` array, and every timing step is shallow-
+ *  copied (with `frame.tracker` deep-cloned) so sibling branches don't
+ *  share mutable engine state. Method steps are immutable from the
+ *  engine's perspective and can be shared by reference. */
+export function clonePendingSteps(steps: PendingStep[]): PendingStep[] {
+  return steps.map(s =>
+    s.kind === 'group' ? { ...s, steps: s.steps.map(cloneStep) } : cloneStep(s),
+  )
+}
+
+function cloneStep(step: PhaseStep): PhaseStep {
+  if (step.kind !== 'timing') return step
+  const cloned = { ...step }
+  if (cloned.frame) {
+    cloned.frame = {
+      ...cloned.frame,
+      tracker: cloneTracker(cloned.frame.tracker),
     }
-
-    return this.handleBranchesOrContinue(() => this._processDiceRollInner())
   }
-
-  private _processDiceRollInner(): StateWithProbability[] {
-    // Check participating units (e.g. AFB may have destroyed last ship)
-    if (noParticipatingUnits(this.data)) {
-      return this.completeTransition()
-    }
-
-    const attackerDice = this.side('attacker').collectDice('COMBAT')
-    const defenderDice = this.side('defender').collectDice('COMBAT')
-
-    this._params._currentDicePool = {
-      attacker: attackerDice,
-      defender: defenderDice,
-    }
-    this.runAbilities('BEFORE_DICE_ROLL')
-    const modifiedDice: SidedDiceData = this._params._currentDicePool
-    this._params._currentDicePool = undefined
-
-    // Apply stored hit-value modifiers (from ctx.api.own.modifyHitValue)
-    const meta = this.data.currentPhase.meta
-    if (this.data.attacker.hitValueModifiers?.length) {
-      applyStoredHitValueModifiers(
-        modifiedDice.attacker,
-        this.data.attacker.hitValueModifiers,
-        meta,
-      )
-    }
-    if (this.data.defender.hitValueModifiers?.length) {
-      applyStoredHitValueModifiers(
-        modifiedDice.defender,
-        this.data.defender.hitValueModifiers,
-        meta,
-      )
-    }
-
-    this._logger?.child(this.data.currentPhase.meta).child('DICE_POOL').log({
-      attacker: modifiedDice.attacker,
-      defender: modifiedDice.defender,
-      hitSource: 'COMBAT',
-    })
-
-    return this.rollDiceOutcomes(
-      modifiedDice,
-      {
-        attacker: this.side('attacker').getValidTargetsForPhase(this.data),
-        defender: this.side('defender').getValidTargetsForPhase(this.data),
-      },
-      'AFTER_DICE_ROLL',
-    )
-  }
-
-  private processAssignHits(): StateWithProbability[] {
-    this.assignHits()
-
-    return this.handleBranchesOrContinue(() => {
-      this.runAbilities('AFTER_ASSIGN_HITS_STEP')
-
-      return this.handleBranchesOrContinue(() => {
-        // Run RETREAT timing (space combat only, after assign hits)
-        // Skip if either side is wiped or transition already requested
-        if (
-          this.data.currentPhase.meta === 'SPACE_COMBAT' &&
-          !this.data.transitionTarget &&
-          hasAnyUnits(this.data.attacker.units) &&
-          hasAnyUnits(this.data.defender.units)
-        ) {
-          this.runAbilities('RETREAT_STEP')
-        }
-
-        return this.handleBranchesOrContinue(() => {
-          // Clear phase-scoped hit-value modifiers so they don't stack across
-          // repeated phases (e.g. Bunker's -4 BOMBARDMENT modifier must apply
-          // once per bombardment, not accumulate if multiple BOMBARDMENTs run).
-          clearPhaseScopedHitValueModifiers(
-            this.data,
-            this.data.currentPhase.meta,
-          )
-
-          // If either side is completely wiped, go directly to COMPLETE
-          if (
-            !hasAnyUnits(this.data.attacker.units) ||
-            !hasAnyUnits(this.data.defender.units)
-          ) {
-            return this.completeTransition()
-          }
-
-          return this.transitionPhase()
-        })
-      })
-    })
-  }
-
-  private processEndOfRound(): StateWithProbability[] {
-    this.runAbilities('END_OF_COMBAT_ROUND')
-
-    return this.handleBranchesOrContinue(() => {
-      this.runAbilities('AFTER_COMBAT_ROUND')
-
-      return this.handleBranchesOrContinue(() => {
-        this.runAbilities('CLEANUP_ROUND')
-
-        return this.handleBranchesOrContinue(() => {
-          // Clear stored hit-value modifiers
-          if (
-            this.data.attacker.hitValueModifiers?.length ||
-            this.data.defender.hitValueModifiers?.length
-          ) {
-            delete this.data.attacker.hitValueModifiers
-            delete this.data.defender.hitValueModifiers
-          }
-
-          return this.transitionPhase()
-        })
-      })
-    })
-  }
+  return cloned
 }
 
 /** Compute RunAbilitiesOptions for a unit-ability phase's BEFORE/AFTER
@@ -986,25 +946,74 @@ function buildUnitAbilityRunOptions(
   }
 }
 
-/** Drop hit-value modifiers scoped to a unit-ability phase meta after that
- *  phase completes, so they don't accumulate across repeated phases.
- *  Modifiers with COMBAT-phase contexts (SPACE_COMBAT / GROUND_COMBAT)
- *  persist to END_OF_COMBAT_ROUND. */
-function clearPhaseScopedHitValueModifiers(
-  data: CombatStateData,
-  meta: MetaPhase,
-): void {
-  if (meta === 'SPACE_COMBAT' || meta === 'GROUND_COMBAT') return
-  for (const side of ['attacker', 'defender'] as const) {
-    const mods = data[side].hitValueModifiers
-    if (!mods?.length) continue
-    if (!mods.some(m => m.context === meta)) continue
-    const keep = mods.filter(m => m.context !== meta)
-    if (keep.length === 0) {
-      delete data[side].hitValueModifiers
-    } else {
-      data[side].hitValueModifiers = keep
-    }
+/** Build the four-step group that resolves a combat dice roll:
+ *  _collectDice → BEFORE_DICE_ROLL → _rollDice → AFTER_DICE_ROLL.
+ *  Stored reversed for the LIFO stack. */
+export function buildCombatDiceRollGroup(phase: MetaPhase[]): PhaseStepGroup {
+  const data: DiceRollContext = {
+    hitSource: 'COMBAT',
+    firing: ['attacker', 'defender'],
+    isUnitAbility: false,
+  }
+  return {
+    kind: 'group',
+    data,
+    steps: [
+      { kind: 'timing', timing: 'AFTER_DICE_ROLL', phase },
+      { kind: 'method', fn: CombatState.prototype._rollDice, phase },
+      { kind: 'timing', timing: 'BEFORE_DICE_ROLL', phase },
+      { kind: 'method', fn: CombatState.prototype._collectDice, phase },
+    ],
+  }
+}
+
+/** Build the four-step group that resolves a unit-ability dice roll.
+ *  Config is derived from `_getUnitAbilityConfig` for phase-script
+ *  emissions and merged with overrides from
+ *  `runUnitAbilityStepForAbility` (firing restricted to the caller's
+ *  side, optional `customDice`, optional `routing`). */
+export function buildUnitAbilityDiceRollGroup(
+  phase: MetaPhase[],
+  config: {
+    firing: CombatSide[]
+    hitSource: HitSource
+    allowedUnitTypes?: ReadonlySet<UnitBaseType>
+    customDice?: SidedDiceData
+    routing?: { attacker: CombatSide; defender: CombatSide }
+  },
+): PhaseStepGroup {
+  const data: DiceRollContext = {
+    hitSource: config.hitSource,
+    firing: config.firing,
+    allowedUnitTypes: config.allowedUnitTypes,
+    customDice: config.customDice,
+    routing: config.routing,
+    isUnitAbility: true,
+  }
+  return {
+    kind: 'group',
+    data,
+    steps: [
+      {
+        kind: 'timing',
+        timing: 'AFTER_UNIT_ABILITY_ROLL',
+        phase,
+        options: buildUnitAbilityRunOptions(config.firing, config.routing, {
+          firingOnly: true,
+          timing: 'after',
+        }),
+      },
+      { kind: 'method', fn: CombatState.prototype._rollDice, phase },
+      {
+        kind: 'timing',
+        timing: 'BEFORE_UNIT_ABILITY_ROLL',
+        phase,
+        options: buildUnitAbilityRunOptions(config.firing, config.routing, {
+          timing: 'before',
+        }),
+      },
+      { kind: 'method', fn: CombatState.prototype._collectDice, phase },
+    ],
   }
 }
 
@@ -1012,11 +1021,8 @@ function clearPhaseScopedHitValueModifiers(
 function applyStoredHitValueModifiers(
   pool: DicePool,
   modifiers: readonly HitValueModifier[],
-  currentMeta: MetaPhase,
 ): void {
   for (const mod of modifiers) {
-    if (mod.context !== currentMeta) continue
-
     if (mod.unitId !== undefined) {
       // Target specific unit by UnitId
       for (const dice of Object.values(pool)) {
@@ -1078,14 +1084,14 @@ function cloneUnitState(
  *  mutate entries (isDamaged) at BEFORE_ASSIGN_HITS — branches are
  *  processed sequentially, so earlier branches would corrupt later ones.
  *  abilities must be cloned because abilities like DIRECT_HIT decrement
- *  `uses` — shared config would leak decrements across branches. */
-export function cloneStateForBranch(
-  base: CombatStateData,
-  nextPhase: PhaseIdentifier,
-): CombatStateData {
+ *  `uses` — shared config would leak decrements across branches.
+ *
+ *  Parked ability-pass frames live on the timing steps themselves (in
+ *  `PhaseStep.frame`), so they ride along with `pendingSteps` cloning
+ *  via `clonePendingSteps` and don't need separate handling here. */
+export function cloneStateForBranch(base: CombatStateData): CombatStateData {
   return {
     ...base,
-    currentPhase: nextPhase,
     abilities: base.abilities,
     attacker: {
       ...base.attacker,
@@ -1126,41 +1132,10 @@ function addHitsToData(
   }
 }
 
-/** Check if either side lacks participating units for the current combat mode */
-function noParticipatingUnits(data: CombatStateData): boolean {
-  const mode = data.combatMode
-  const key =
-    mode === 'GROUND' ? 'groundCombatParticipating' : 'spaceCombatParticipating'
-
-  for (const side of ['attacker', 'defender'] as const) {
-    const settings = data.abilities[side]['SETTINGS']
-    if (!settings) return true
-
-    const participating = getParticipatingUnitsSet(
-      settings[key] as UnitBaseType[],
-    )
-    if (!hasParticipatingUnits(data[side].units, participating)) return true
-  }
-  return false
-}
-
 /** Check if units record has any units at all (no type filtering) */
 function hasAnyUnits(units: Record<string, unknown[]>): boolean {
   for (const key in units) {
     if (units[key].length > 0) return true
-  }
-  return false
-}
-
-/** Check if units record has any units of participating types (early exit) */
-function hasParticipatingUnits(
-  units: Record<string, unknown[]>,
-  participatingUnits: ReadonlySet<UnitBaseType>,
-): boolean {
-  for (const key in units) {
-    if (units[key].length <= 0) continue
-    const { type } = parseVariantId(key as UnitType)
-    if (participatingUnits.has(type)) return true
   }
   return false
 }

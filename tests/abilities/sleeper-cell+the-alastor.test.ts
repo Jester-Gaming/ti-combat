@@ -17,7 +17,7 @@ describe.forEachSide('SLEEPER_CELL + THE_ALASTOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 2 hits destroy both infantry
     t.advanceRound({ defender: 2 })
 
@@ -39,7 +39,7 @@ describe.forEachSide('SLEEPER_CELL + THE_ALASTOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 2 hits destroy both mechs
     t.advanceRound({ defender: 2 })
 

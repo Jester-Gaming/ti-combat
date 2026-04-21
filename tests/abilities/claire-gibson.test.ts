@@ -17,7 +17,7 @@ describe('Claire Gibson', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('CLAIRE_GIBSON')).not.toHaveLength(0)
@@ -40,9 +40,9 @@ describe('Claire Gibson', () => {
 
     // Bombardment: dreadnought [5, 1] — pick 1-hit branch to kill
     // the defender's only infantry
-    t.advanceTo('COMPLETE', undefined, 1)
+    t.advanceTo('COMPLETE', 1)
 
-    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(t.isFinished()).toBe(true)
     expect(t.defender.units.INFANTRY).toBeUndefined()
   })
 
@@ -60,7 +60,7 @@ describe('Claire Gibson', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     // Attacker should not gain infantry

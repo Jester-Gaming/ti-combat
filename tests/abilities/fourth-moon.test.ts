@@ -16,7 +16,7 @@ describe.forEachSide('FOURTH_MOON', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Dreadnought can't sustain (Fourth Moon disabled it), fighter is destroyed
@@ -37,7 +37,7 @@ describe.forEachSide('FOURTH_MOON', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     // Round 1: flagship sustains — sustain restriction still active
     t.advanceRound({ attacker: 1 })

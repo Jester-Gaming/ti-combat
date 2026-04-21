@@ -91,7 +91,7 @@ describe('engine: dice modification interactions', () => {
       customAbilities: [modifyHitValueA, modifyHitValueB],
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -111,7 +111,7 @@ describe('engine: dice modification interactions', () => {
       customAbilities: [modifyHitValueA, addDiceCountA],
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -131,7 +131,7 @@ describe('engine: dice modification interactions', () => {
       customAbilities: [addDiceCountB, modifyHitValueB],
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -151,7 +151,7 @@ describe('engine: dice modification interactions', () => {
       customAbilities: [addDiceCountA, addDiceCountB],
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 

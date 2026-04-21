@@ -16,7 +16,7 @@ describe.forEachSide('SALAI_SAI_CORIAN', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -34,7 +34,7 @@ describe.forEachSide('SALAI_SAI_CORIAN', () => {
       defender: { faction: 'ARBOREC', units: { FIGHTER: 4 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -54,7 +54,7 @@ describe.forEachSide('SALAI_SAI_CORIAN', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 

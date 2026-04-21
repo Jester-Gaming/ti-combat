@@ -17,7 +17,7 @@ describe.forEachSide('METALI_VOID_SHIELDING + NON_EUCLIDEAN_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 2 hits on defender: MVS-granted sustain on cruiser + NES cancels 2nd hit
     t.advanceRound({ defender: 2 })
 

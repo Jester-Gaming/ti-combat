@@ -17,7 +17,7 @@ describe('NON_EUCLIDEAN_SHIELDING + VALKYRIE_EXOSKELETON', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // Both sides produce 1 hit
     t.advanceRound({ attacker: 1, defender: 1 })
 
@@ -49,7 +49,7 @@ describe('NON_EUCLIDEAN_SHIELDING + VALKYRIE_EXOSKELETON', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // Both sides produce 1 hit
     t.advanceRound({ attacker: 1, defender: 1 })
 

@@ -19,7 +19,7 @@ describe.forEachSide('CAPACITY', () => {
     })
 
     // SCO hits carrier (only ship target) → capacity 0 → all infantry removed
-    t.advanceTo('SPACE_COMBAT', 'START', { attacker: 1 })
+    t.advanceTo('SPACE_COMBAT', { attacker: 1 })
 
     expect(t.attacker.units.CARRIER).toBeUndefined()
     expect(t.attacker.units.INFANTRY).toBeUndefined()
@@ -47,7 +47,7 @@ describe.forEachSide('CAPACITY', () => {
     })
 
     // SCO hits carrier (first in SCO priority) → cruiser survives but has no capacity
-    t.advanceTo('SPACE_COMBAT', 'START', { attacker: 1 })
+    t.advanceTo('SPACE_COMBAT', { attacker: 1 })
 
     expect(t.attacker.units.CARRIER).toBeUndefined()
     expect(t.attacker.units.CRUISER).toHaveLength(1)
@@ -71,7 +71,7 @@ describe.forEachSide('CAPACITY', () => {
 
     // No hits during SCO → capacity = 4, carried = 5
     // Default priority: MECH, INFANTRY, FIGHTER → remove 1 infantry
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     expect(t.attacker.units.FIGHTER).toHaveLength(2)
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
@@ -118,7 +118,7 @@ describe.forEachSide('CAPACITY', () => {
     })
 
     // No SCO damage, within capacity. Enter space combat.
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     expect(t.attacker.units.FIGHTER).toHaveLength(2)
 
     // Round 1: attacker receives 1 hit (carrier), defender receives 1 hit (cruiser dies)
@@ -150,7 +150,7 @@ describe.forEachSide('CAPACITY', () => {
 
     // 5 carried units, 4 capacity → remove 1
     // Custom priority: fighters first → remove 1 fighter
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     expect(t.attacker.units.FIGHTER).toHaveLength(2)
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
@@ -171,7 +171,7 @@ describe.forEachSide('CAPACITY', () => {
 
     // Capacity disabled (default), cruiser has no capacity
     // Fighters should survive
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     expect(t.attacker.units.FIGHTER).toHaveLength(3)
   })

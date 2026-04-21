@@ -17,7 +17,7 @@ describe.forEachSide('DYNAMO', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     // Dreadnought sustained then got repaired by Dynamo
@@ -40,7 +40,7 @@ describe.forEachSide('DYNAMO', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Defender dreadnought sustained — NOT repaired (only own side)
@@ -62,7 +62,7 @@ describe.forEachSide('DYNAMO', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     // Dreadnought sustained but not repaired
@@ -85,7 +85,7 @@ describe.forEachSide('DYNAMO', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 2 hits: dreadnought sustains + repaired, remaining hit destroys cruiser
     // Dreadnought does NOT sustain a second time in the same pool
     t.advanceRound({ attacker: 2 })
@@ -116,7 +116,7 @@ describe.forEachSide('DYNAMO', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     // 1 hit: flagship sustains → Dynamo repairs → Direct Hit kills flagship
     // DESTROY handler disables Dynamo

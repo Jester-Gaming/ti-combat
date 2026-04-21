@@ -25,7 +25,7 @@ describe('engine: branch isolation', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP')
 
     // Dice roll produces multiple branches (different hit combinations)
     const branches = t.step()
@@ -65,7 +65,19 @@ describe('engine: branch isolation', () => {
     // Process the hit branch through ASSIGN_HITS first.
     // This triggers: sustain damage → Direct Hit → destroyUnits → removeUnits
     // removeUnits splices the shared units array, contaminating other branches.
-    hitBranch.state.advance(1, true)
+    // advance() is step-atomic; drive until the ASSIGN_HITS micro completes.
+    {
+      let s = hitBranch.state
+      while (!s.isFinished() && s.pendingSteps.length > 0) {
+        const top = s.peekStep()
+        if (!top) break
+        if (top.phase[top.phase.length - 1] !== 'SPACE_COMBAT') break
+        const outcomes = s.advance(true)
+        if (outcomes.length !== 1 || outcomes[0].probability !== 1) break
+        s = outcomes[0].state
+      }
+      hitBranch.state = s
+    }
 
     expect(hitBranch.state.abilities.attacker.DIRECT_HIT.uses).toBe(0)
 

@@ -24,7 +24,9 @@ describe.forEachSide('FLEET_POOL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // Carrier removed (lowest priority), cruisers kept
     expect(t.attacker.units.CRUISER).toHaveLength(3)
@@ -55,7 +57,9 @@ describe.forEachSide('FLEET_POOL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.CRUISER).toHaveLength(2)
     expect(t.attacker.units.DESTROYER).toBeUndefined()
@@ -84,7 +88,9 @@ describe.forEachSide('FLEET_POOL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.CRUISER).toHaveLength(1)
     expect(t.attacker.units.CARRIER).toBeUndefined()
@@ -111,7 +117,9 @@ describe.forEachSide('FLEET_POOL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.CRUISER).toHaveLength(1)
     expect(t.attacker.units.FIGHTER).toHaveLength(5)
@@ -137,7 +145,9 @@ describe.forEachSide('FLEET_POOL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.CRUISER).toHaveLength(1)
     expect(t.attacker.units.CARRIER).toHaveLength(1)
@@ -165,7 +175,9 @@ describe.forEachSide('FLEET_POOL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // 1 fighter removed (lowest priority), cruiser + 2 fighters kept
     expect(t.attacker.units.CRUISER).toHaveLength(1)
@@ -194,7 +206,9 @@ describe.forEachSide('FLEET_POOL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // Total cost = 1 + 4*0.5 = 3 = pool → no removal
     expect(t.attacker.units.CRUISER).toHaveLength(1)
@@ -221,7 +235,9 @@ describe.forEachSide('FLEET_POOL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.CRUISER).toHaveLength(2)
     expect(t.attacker.units.CARRIER).toHaveLength(2)

@@ -24,7 +24,8 @@ describe.forEachSide('DIRECT_HIT + WAYLAY', () => {
     // Waylay makes AFB target all ships → Dreadnought is valid target
     // 1 AFB hit → Dreadnought sustains → Direct Hit destroys it
     // Advance past AFB to SPACE_COMBAT:DICE_ROLL so ASSIGN_HITS runs
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL', 1)
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound(1)
 
     expect(t.abilityLog('WAYLAY')).not.toHaveLength(0)
     expect(t.abilityLog('DIRECT_HIT')).not.toHaveLength(0)

@@ -21,7 +21,7 @@ describe('VALKYRIE_PARTICLE_WEAVE + X_89_BACTERIAL_WEAPON', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // Sardakk produces hits + X-89 doubles + VPW adds 1
     // Defender also produces hits -> VPW triggers
     t.advanceRound({ attacker: 1, defender: 2 })

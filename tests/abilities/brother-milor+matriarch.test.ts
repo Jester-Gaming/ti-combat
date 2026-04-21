@@ -16,7 +16,7 @@ describe('BROTHER_MILOR + MATRIARCH', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // Attacker receives 1 hit — fighter destroyed, Brother Milor fires
     t.advanceRound({ attacker: 1 })
 

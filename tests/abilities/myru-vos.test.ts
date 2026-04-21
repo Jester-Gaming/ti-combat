@@ -19,7 +19,7 @@ describe.forEachSide('MYRU_VOS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     const pool = t.dicePool()
 
     expect(pool.defender.PDS).toBeUndefined()

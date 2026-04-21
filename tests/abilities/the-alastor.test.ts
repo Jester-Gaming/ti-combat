@@ -13,7 +13,7 @@ describe.forEachSide('THE_ALASTOR', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -31,7 +31,7 @@ describe.forEachSide('THE_ALASTOR', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -50,7 +50,7 @@ describe.forEachSide('THE_ALASTOR', () => {
     })
 
     // 2 hits: 1 absorbed by flagship sustain, 1 destroys infantry
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     expect(t.attacker.units.INFANTRY).toBeUndefined()
@@ -68,7 +68,7 @@ describe.forEachSide('THE_ALASTOR', () => {
     })
 
     // 2 hits: both units sustain
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBe(true)

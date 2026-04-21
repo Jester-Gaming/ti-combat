@@ -17,7 +17,7 @@ describe.forEachSide('VALKYRIE_PARTICLE_WEAVE', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // attacker receives 1 hit from defender dice; VPW adds 1 hit to defender
     t.advanceRound({ attacker: 1 })
 
@@ -40,7 +40,7 @@ describe.forEachSide('VALKYRIE_PARTICLE_WEAVE', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // attacker receives 0 hits
     t.advanceRound({ attacker: 0 })
 

@@ -17,7 +17,9 @@ describe.forEachSide('GREYFIRE_MUTAGEN', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('GREYFIRE_MUTAGEN')).not.toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
@@ -38,7 +40,9 @@ describe.forEachSide('GREYFIRE_MUTAGEN', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('GREYFIRE_MUTAGEN')).toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(1)
@@ -59,7 +63,9 @@ describe.forEachSide('GREYFIRE_MUTAGEN', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('GREYFIRE_MUTAGEN')).toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(1)
@@ -80,7 +86,9 @@ describe.forEachSide('GREYFIRE_MUTAGEN', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('GREYFIRE_MUTAGEN')).toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(1)
@@ -101,7 +109,9 @@ describe.forEachSide('GREYFIRE_MUTAGEN', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('GREYFIRE_MUTAGEN')).not.toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(2)

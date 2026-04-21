@@ -17,7 +17,7 @@ describe.forEachSide('REVEAL_PROTOTYPE + VISCOUNT_UNLENN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 

@@ -50,7 +50,7 @@ describe('EXPERIMENTAL_BATTLESTATION', () => {
     })
 
     // SCO hits: attacker receives 2 hits from defender's battlestation dice
-    t.advanceTo('AFB', undefined, { attacker: 2 })
+    t.advanceTo('AFB', { attacker: 2 })
 
     expect(t.attacker.units.CRUISER).toHaveLength(1)
   })
@@ -67,7 +67,7 @@ describe('EXPERIMENTAL_BATTLESTATION', () => {
     })
 
     // SCO runs despite defender having 0 units
-    t.advanceTo('COMPLETE', undefined, { attacker: 2 })
+    t.advanceTo('COMPLETE', { attacker: 2 })
 
     expect(t.attacker.units.CRUISER).toHaveLength(1)
   })

@@ -19,7 +19,7 @@ describe('EIDOLON + SLEEPER_CELL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Z-Grav mech has no sustain. 1 hit destroys it.
     t.advanceRound({ defender: 1 })
 

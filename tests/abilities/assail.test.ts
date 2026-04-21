@@ -14,7 +14,7 @@ describe('ASSAIL', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -37,7 +37,7 @@ describe('ASSAIL', () => {
     })
 
     // AFB dice pool is logged during AFB phase
-    t.advanceTo('AFB', 'ASSIGN_HITS')
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 0, 'AFB')
     const pool = t.dicePool()
 
     // Destroyer AFB base: [9, 2], Assail -1 = [8, 2]
@@ -79,7 +79,7 @@ describe('ASSAIL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     const pool = t.dicePool()
 
     // PDS space cannon base: [6, 1], Assail -1 = [5, 1]
@@ -97,7 +97,7 @@ describe('ASSAIL', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -116,7 +116,7 @@ describe('ASSAIL', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 

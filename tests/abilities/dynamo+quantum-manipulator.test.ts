@@ -17,7 +17,7 @@ describe.forEachSide('DYNAMO + QUANTUM_MANIPULATOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 1 hit to defender: QM sustains, Dynamo repairs
     t.advanceRound({ defender: 1 })
 

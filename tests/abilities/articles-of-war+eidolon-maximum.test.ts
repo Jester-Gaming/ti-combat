@@ -17,7 +17,7 @@ describe.forEachSide('ARTICLES_OF_WAR + EIDOLON_MAXIMUM', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -42,7 +42,7 @@ describe.forEachSide('ARTICLES_OF_WAR + EIDOLON_MAXIMUM', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Round 1: mech takes a hit, sustains
     t.advanceRound({ attacker: 1 })
     expect(t.attacker.units.MECH![0].isDamaged).toBe(true)
@@ -69,7 +69,7 @@ describe.forEachSide('ARTICLES_OF_WAR + EIDOLON_MAXIMUM', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     // Sustain Damage preserved by AoW

@@ -18,7 +18,7 @@ describe.forEachSide('ASSIMILATOR_Z + QUIETUS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 2, defender: 2 })
 
     // Opponent dreadnought could not sustain — destroyed
@@ -45,7 +45,7 @@ describe.forEachSide('ASSIMILATOR_Z + QUIETUS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     // Round 1: sustain
     t.advanceRound({ attacker: 1 })
@@ -72,7 +72,7 @@ describe.forEachSide('ASSIMILATOR_Z + QUIETUS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     // Round 1: Alastor takes 1 hit → destroyed (can't sustain, Crimson Quietus active)
     // NEKRO_FLAGSHIP_QUIETUS DESTROY fires → lifts restrictions on Crimson
@@ -105,7 +105,7 @@ describe.forEachSide('ASSIMILATOR_Z + QUIETUS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     // Round 1: Crimson flagship takes 1 hit → destroyed (can't sustain, Nekro Quietus active)
     // QUIETUS DESTROY fires → lifts restrictions on Nekro

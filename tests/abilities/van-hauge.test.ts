@@ -16,7 +16,7 @@ describe.forEachSide('VAN_HAUGE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Round 1: damage the flagship (sustains 1 hit)
     t.advanceRound({ attacker: 1 })
     expect(t.attacker.units.FLAGSHIP).toHaveLength(1)
@@ -44,7 +44,7 @@ describe.forEachSide('VAN_HAUGE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 1 hit on attacker: flagship sustains
     t.advanceRound({ attacker: 1 })
 

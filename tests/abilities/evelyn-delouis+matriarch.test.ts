@@ -20,7 +20,7 @@ describe('EVELYN_DELOUIS + MATRIARCH', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('EVELYN_DELOUIS')).not.toHaveLength(0)

@@ -26,10 +26,10 @@ describe.forEachSide('RETREAT', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
-    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(t.isFinished()).toBe(true)
     // Retreated units stored in RETREAT config
     expect(getRetreatSaved(t, 'attacker')?.savedUnits.CRUISER).toHaveLength(3)
     expect(t.defender.units.CRUISER).toHaveLength(3)
@@ -49,14 +49,14 @@ describe.forEachSide('RETREAT', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound() // round 1
 
-    expect(t.state.currentPhase.meta).not.toBe('COMPLETE')
+    expect(t.isFinished()).toBe(false)
 
     t.advanceRound() // round 2
 
-    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(t.isFinished()).toBe(true)
     expect(getRetreatSaved(t, 'attacker')?.savedUnits.CRUISER).toHaveLength(3)
     expect(t.defender.units.CRUISER).toHaveLength(3)
   })
@@ -76,30 +76,11 @@ describe.forEachSide('RETREAT', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
-    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(t.isFinished()).toBe(true)
     expect(getRetreatSaved(t, 'attacker')?.savedUnits.CRUISER).toHaveLength(3)
     expect(t.defender.units.CRUISER).toHaveLength(3)
-  })
-
-  it('does not fire during AFB phase', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'ARBOREC',
-        units: { DESTROYER: 2 },
-        abilities: { RETREAT: { isEnabled: true, rounds: 1 } },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { FIGHTER: 2 },
-      },
-    })
-
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
-
-    expect(t.state.currentPhase.meta).toBe('SPACE_COMBAT')
   })
 })

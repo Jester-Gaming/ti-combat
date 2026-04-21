@@ -17,7 +17,7 @@ describe('SSRUU', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     // Only Tellurian fires (1 hit cancelled → 1 cruiser destroyed)
@@ -38,7 +38,7 @@ describe('SSRUU', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     // Ssruu alone cancels 1 hit → 1 cruiser lost
@@ -59,7 +59,7 @@ describe('SSRUU', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 4 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Round 1: Ssruu-Tellurian copy cancels 1 of 2 hits → 1 cruiser lost
     t.advanceRound({ attacker: 2 })
     expect(t.attacker.units.CRUISER).toHaveLength(3)

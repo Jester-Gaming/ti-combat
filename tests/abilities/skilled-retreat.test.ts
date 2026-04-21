@@ -17,10 +17,10 @@ describe.forEachSide('SKILLED_RETREAT', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
-    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(t.isFinished()).toBe(true)
     expect(t.attacker.units.CRUISER).toHaveLength(3)
     expect(t.defender.units.CRUISER).toHaveLength(3)
   })
@@ -39,14 +39,14 @@ describe.forEachSide('SKILLED_RETREAT', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound() // round 1 plays out fully
 
-    expect(t.state.currentPhase.meta).not.toBe('COMPLETE')
+    expect(t.isFinished()).toBe(false)
 
     t.advanceRound() // round 2 — retreats at START before dice
 
-    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(t.isFinished()).toBe(true)
     expect(t.attacker.units.CRUISER).toHaveLength(3)
     expect(t.defender.units.CRUISER).toHaveLength(3)
   })

@@ -17,7 +17,7 @@ describe.forEachSide('QUANTUM_MANIPULATOR + REFLECTIVE_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Mech sustains but Reflective Shielding doesn't trigger (mech is not a ship)

@@ -21,7 +21,7 @@ describe('APOLLO + DAME_BRIAR', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     // Verify the destruction happened

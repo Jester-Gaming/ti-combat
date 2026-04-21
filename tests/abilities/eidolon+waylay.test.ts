@@ -20,7 +20,8 @@ describe.forEachSide('EIDOLON + WAYLAY', () => {
     // Advance past AFB. Waylay expands targets to all ships.
     // Destroyers AFB 9x2 each = 4 dice total.
     // Z-Grav Eidolon (no sustain) and Cruiser are valid targets.
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL', { attacker: 2 })
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound({ attacker: 2 })
 
     // With 2 hits from AFB targeting all ships,
     // both mech and cruiser could be destroyed

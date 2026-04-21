@@ -17,7 +17,7 @@ describe.forEachSide('DIRECT_HIT + VAN_HAUGE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 1 hit on attacker: flagship sustains → Direct Hit destroys it → Van Hauge triggers
     t.advanceRound({ attacker: 1 })
 

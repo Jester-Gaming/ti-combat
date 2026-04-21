@@ -14,7 +14,7 @@ describe.forEachSide('METALI_VOID_ARMAMENTS', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP')
     const pool = t.dicePool()
 
     expect(pool.attacker).toContainDice('METALI_VOID_ARMAMENTS', [6, 3])
@@ -31,7 +31,7 @@ describe.forEachSide('METALI_VOID_ARMAMENTS', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP')
     const pool = t.dicePool()
 
     // Destroyer AFB: [9, 2]

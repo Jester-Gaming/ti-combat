@@ -17,7 +17,7 @@ describe('SSRUU + BROTHER_MILOR', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Attacker loses 1 fighter; Milor places 2 fighters, Ssruu copy places 2 more
     t.advanceRound({ attacker: 1 })
 

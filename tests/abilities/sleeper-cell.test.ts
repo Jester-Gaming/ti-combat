@@ -17,7 +17,7 @@ describe.forEachSide('SLEEPER_CELL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Defender receives 1 hit → 1 cruiser destroyed
     t.advanceRound({ defender: 1 })
 
@@ -42,7 +42,7 @@ describe.forEachSide('SLEEPER_CELL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Defender receives 2 hits → both cruiser and fighter destroyed
     t.advanceRound({ defender: 2 })
 
@@ -76,7 +76,7 @@ describe.forEachSide('SLEEPER_CELL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Defender receives 1 hit → 1 cruiser destroyed
     // Attacker gains 1 cruiser → 3 cruisers + 1 carrier = 4 non-fighters → excess 1
     // Fighters not counted, not removed
@@ -105,7 +105,7 @@ describe.forEachSide('SLEEPER_CELL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Defender receives 2 hits → 2 cruisers destroyed
     // Attacker has 7 cruisers, limit 8 → can only place 1
     t.advanceRound({ defender: 2 })
@@ -129,7 +129,7 @@ describe.forEachSide('SLEEPER_CELL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Round 1: defender loses 1 cruiser
     t.advanceRound({ defender: 1 })
     expect(t.attacker.units.CRUISER).toHaveLength(3) // 2 + 1

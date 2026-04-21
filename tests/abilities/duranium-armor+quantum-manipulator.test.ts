@@ -17,7 +17,7 @@ describe.forEachSide('DURANIUM_ARMOR + QUANTUM_MANIPULATOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Mech sustains via Quantum Manipulator

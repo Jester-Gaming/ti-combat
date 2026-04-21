@@ -22,7 +22,7 @@ describe('TECHNOLOGICAL_SINGULARITY + ADVANCED_CARRIER + DIRECT_HIT', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     // 1 hit on each side:
     // Defender: dreadnought sustains → Direct Hit kills it → TS enables Advanced Carrier

@@ -20,7 +20,7 @@ describe.forEachSide('NON_EUCLIDEAN_SHIELDING + RAID_FORMATION', () => {
 
     // 3 destroyers AFB 9x2 = 6 dice, 0 fighters = all hits are excess
     // 2 hits: 2 excess, both dreadnoughts should be damaged
-    t.advanceTo('AFB', 'ASSIGN_HITS', 2)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 2, 'AFB')
 
     // NES should not fire (Raid Formation doesn't trigger sustain)
     expect(t.abilityLog('NON_EUCLIDEAN_SHIELDING')).toHaveLength(0)

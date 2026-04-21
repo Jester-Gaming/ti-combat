@@ -19,7 +19,7 @@ describe.forEachSide('TEKKLAR_LEGION', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -45,7 +45,7 @@ describe.forEachSide('TEKKLAR_LEGION', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -69,7 +69,7 @@ describe.forEachSide('TEKKLAR_LEGION', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
 
     // Round 1: Tekklar fires, infantry rolls at 7
     t.advanceRound(0)

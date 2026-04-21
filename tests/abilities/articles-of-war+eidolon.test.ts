@@ -14,7 +14,7 @@ describe.forEachSide('ARTICLES_OF_WAR + EIDOLON', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -38,7 +38,7 @@ describe.forEachSide('ARTICLES_OF_WAR + EIDOLON', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 1 })
     const pool = t.dicePool()
 

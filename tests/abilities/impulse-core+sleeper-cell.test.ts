@@ -22,7 +22,8 @@ describe('IMPULSE_CORE + SLEEPER_CELL', () => {
 
     // SC activates, then Impulse Core fires:
     // IC destroys defender's own destroyer (sacrifice) and hits attacker's ship
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound()
 
     expect(t.abilityLog('IMPULSE_CORE')).not.toHaveLength(0)
     // IC destroyed defender's own destroyer — SC copies opponent's destroyed ships

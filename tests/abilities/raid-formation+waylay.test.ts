@@ -19,7 +19,7 @@ describe.forEachSide('RAID_FORMATION + WAYLAY', () => {
 
     // 3 destroyers AFB 9x2 = 6 dice, 1 fighter
     // 3 hits: 3 - 1 fighter = 2 excess -> both dreadnoughts damaged by Raid Formation
-    t.advanceTo('AFB', 'ASSIGN_HITS', 3)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 3, 'AFB')
 
     // Raid Formation should fire
     expect(t.abilityLog('RAID_FORMATION')).not.toHaveLength(0)
@@ -46,7 +46,7 @@ describe.forEachSide('RAID_FORMATION + WAYLAY', () => {
     // 3 destroyers AFB 9x2 = 6 dice, 0 fighters = all hits are excess
     // 2 hits: 2 excess, both dreadnoughts damaged by Raid Formation
     // Then those 2 hits must be assigned to ships (Waylay makes all ships valid)
-    t.advanceTo('AFB', 'ASSIGN_HITS', 2)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 2, 'AFB')
 
     expect(t.abilityLog('RAID_FORMATION')).not.toHaveLength(0)
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)

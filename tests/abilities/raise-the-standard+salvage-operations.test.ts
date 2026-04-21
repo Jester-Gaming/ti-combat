@@ -27,7 +27,7 @@ describe('RAISE_THE_STANDARD + SALVAGE_OPERATIONS', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
     t.advanceTo('COMPLETE')
 
@@ -64,7 +64,7 @@ describe('RAISE_THE_STANDARD + SALVAGE_OPERATIONS', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Attacker loses 1 cruiser, defender eliminated
     t.advanceRound({ attacker: 1, defender: 1 })
     t.advanceTo('COMPLETE')

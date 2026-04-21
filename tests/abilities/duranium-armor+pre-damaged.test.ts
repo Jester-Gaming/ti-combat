@@ -21,7 +21,7 @@ describe.forEachSide('DURANIUM_ARMOR + PRE_DAMAGED', () => {
     })
 
     // SCO has ASSIGN_HITS (defender PDS fires), but Duranium should not trigger
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
     expect(t.abilityLog('DURANIUM_ARMOR')).toHaveLength(0)
   })
@@ -43,7 +43,7 @@ describe.forEachSide('DURANIUM_ARMOR + PRE_DAMAGED', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
 
     // Round 1: 0 hits — Dreadnought was pre-damaged, didn't sustain → repaired

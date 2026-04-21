@@ -10,21 +10,15 @@ import type {
   UnitType,
 } from '@/types'
 
-// ============================================================================
-// TWO-TIER PHASE SYSTEM
-// ============================================================================
-//
-// The TI4 combat system uses a two-tier phase structure:
-//
-// 1. MetaPhase - The major combat stages that define the overall flow.
-//    Different combat modes (space vs ground) have different sequences.
-//
-// 2. MicroPhase - The steps within each meta-phase (START, DICE_ROLL, etc.)
-//
-// This allows the state machine to track both "what stage of combat are we in"
-// (MetaPhase) and "what step within that stage" (MicroPhase).
-//
-// ============================================================================
+import type {
+  AbilityPassFrame,
+  AbilityTiming,
+  RunAbilitiesOptions,
+  SidedDiceData,
+} from '../abilities-engine'
+// `PhaseStep` references `CombatState` in its method `fn` signature; the
+// import is type-only to avoid a runtime cycle.
+import type { CombatState, StateWithProbability } from './combat-state'
 
 /**
  * Combat mode determines which meta-phase flow to use.
@@ -53,15 +47,21 @@ export type UnitAbilityMeta =
  * - SPACE_CANNON_DEFENSE: Defender's PDS fire at invading ground forces
  * - GROUND_COMBAT: Standard ground combat rounds
  *
- * Both flows end with COMPLETE when combat finishes.
+ * Completion is tracked out-of-band via `CombatStateData.isFinished`, not a
+ * dedicated meta. Phase-flow helpers (`getNextPhaseInFlow`) and transition
+ * targets use `MetaPhase | 'COMPLETE'`; 'COMPLETE' is a completion signal,
+ * never a real script-driven meta.
  */
 
 export type MetaPhase =
   | 'SPACE_COMBAT'
   | 'COMMIT_UNITS'
   | 'GROUND_COMBAT'
-  | 'COMPLETE'
   | UnitAbilityMeta
+
+/** Where a transition can point: any real meta, or the `'COMPLETE'` sentinel
+ *  that signals "run the end-of-combat cleanup and mark combat finished." */
+export type PhaseTransitionTarget = MetaPhase | 'COMPLETE'
 
 /** Meta-phases that correspond to unit ability rolls (bombardment, space cannon, AFB). */
 export const UNIT_ABILITY_PHASES: MetaPhase[] = [
@@ -72,26 +72,11 @@ export const UNIT_ABILITY_PHASES: MetaPhase[] = [
 ]
 
 /**
- * MicroPhase represents the steps within a meta-phase.
- *
- * Each meta-phase (except COMPLETE) goes through these steps:
- * - START: Entry point, setup for this meta-phase
- * - DICE_ROLL: Roll combat dice
- * - ASSIGN_HITS: Assign hits to enemy units
- * - END: Cleanup, check for combat continuation, transition to next meta-phase
+ * PhaseMarker names a transient sub-step within a meta-phase. Only used by
+ * the engine and test harness to navigate within a script; not part of the
+ * authoritative combat state data.
  */
-export type MicroPhase = 'START' | 'DICE_ROLL' | 'ASSIGN_HITS' | 'END'
-
-/**
- * PhaseIdentifier combines meta and micro phases for complete phase tracking.
- *
- * Example: { meta: 'AFB', micro: 'DICE_ROLL' } means we're rolling dice
- * during the Anti-Fighter Barrage phase.
- */
-export interface PhaseIdentifier {
-  meta: MetaPhase
-  micro: MicroPhase
-}
+export type PhaseMarker = 'START' | 'DICE_ROLL' | 'ASSIGN_HITS' | 'END'
 
 /** A pool of unassigned hits with valid targets.
  *  hits[0] = base (from dice rolls), hits[1] = bonus (from abilities).
@@ -114,13 +99,14 @@ export interface UnitAbilityRestrictions {
   lost?: Partial<Record<UnitAbility, RestrictionEntry[]>>
 }
 
-/** A stored hit-value modifier applied after BEFORE_DICE_ROLL abilities */
+/** A stored hit-value modifier applied after BEFORE_DICE_ROLL abilities.
+ *  Scoped to a dice-roll group via `DiceRollContext.hitValueModifiers`, so
+ *  it's naturally discarded once the group processes. */
 export interface HitValueModifier {
   amount: number
   unitType?: string
   excludeUnitTypes?: string[]
   unitId?: UnitId
-  context: MetaPhase
 }
 
 /** A stats entry: either concrete stats or a factory that derives from parent type stats */
@@ -137,8 +123,6 @@ export interface SideStateData {
   unitStats: Record<UnitType, UnitStatsEntry>
   hitPools: HitPool[]
   unitAbilityRestrictions?: UnitAbilityRestrictions
-  /** Stored hit-value modifiers from abilities, applied to dice after BEFORE_DICE_ROLL */
-  hitValueModifiers?: HitValueModifier[]
 }
 
 /** Ability configuration for both sides */
@@ -147,17 +131,107 @@ export interface AbilitiesConfig {
   defender: Record<string, Record<string, unknown>>
 }
 
+/** A single step in the phase-handler script. `advance()` pops one step
+ *  and runs it. Branching steps propagate the remainder to each branch.
+ *
+ *  `phase` is the full stack of active meta-phases for this step, ordered
+ *  outer→inner. A plain SPACE_COMBAT step has `['SPACE_COMBAT']`; an AFB
+ *  step nested inside SPACE_COMBAT round 1 has `['SPACE_COMBAT', 'AFB']`.
+ *  Ability invokes with `context` match if any of the step's phases
+ *  appears in `context`.
+ *
+ *  `data` carries the timing-context payload passed to `runAbilities`
+ *  (e.g. the destroyed-units map for DESTROY). When a step lives inside
+ *  a `PhaseStepGroup`, the step's own `data` wins if set, otherwise the
+ *  group's `data` is used. Method steps ignore it. */
+export type PhaseStep = { phase: MetaPhase[]; data?: unknown } & (
+  | {
+      kind: 'timing'
+      timing: AbilityTiming
+      options?: RunAbilitiesOptions
+      /** In-flight pass state — populated by the ability engine when the
+       *  pass parks (e.g. after `ctx.trigger`) or branches; consumed on
+       *  resume. Cloned per-branch through `clonePendingSteps` so each
+       *  branch carries its own resume point. */
+      frame?: AbilityPassFrame
+    }
+  | {
+      kind: 'method'
+      fn: (
+        this: CombatState,
+        phase: MetaPhase[],
+        payload?: unknown,
+      ) => StateWithProbability[] | void
+      payload?: unknown
+    }
+)
+
+/** A bundle of PhaseStep entries that share `data`. When the group
+ *  executes, each inner timing step receives the group's `data` as the
+ *  `context` arg to `runAbilities` (e.g. the destroyed-units map for
+ *  DESTROY / WHEN_DESTROY / AFTER_DESTROY), unless the step carries its
+ *  own `data`. The group is popped once its `steps` drains, discarding
+ *  the data. */
+export interface PhaseStepGroup {
+  kind: 'group'
+  data: unknown
+  steps: PhaseStep[]
+}
+
+/** Entry on the pending-steps stack — either a standalone step or a
+ *  group of steps sharing a context. */
+export type PendingStep = PhaseStep | PhaseStepGroup
+
+/** Group context for a dice-roll group (combat or unit-ability).
+ *  Seeded by the group builder with invariant params; `_collectDice`
+ *  populates `dicePool` / `validTargets`; BEFORE timing abilities read
+ *  the pool via `ctx.api.own.getDicePool()` and mutate it in place;
+ *  `_rollDice` reads it back. */
+export interface DiceRollContext {
+  hitSource: HitSource
+  firing: CombatSide[]
+  routing?: { attacker: CombatSide; defender: CombatSide }
+  customDice?: SidedDiceData
+  allowedUnitTypes?: ReadonlySet<UnitBaseType>
+  isUnitAbility: boolean
+  dicePool?: SidedDiceData
+  validTargets?: { attacker: UnitType[]; defender: UnitType[] }
+  /** Hit-value modifiers queued for this dice roll, per side. Written by
+   *  `modifyHitValue` during START_OF_COMBAT / BEFORE_(UNIT_ABILITY_)?DICE_ROLL
+   *  timings and consumed by `_rollDice`. Dropped when the group drains. */
+  hitValueModifiers?: {
+    attacker?: HitValueModifier[]
+    defender?: HitValueModifier[]
+  }
+}
+
+/** Type guard used by `SideApi.getDicePool` to recognize a dice-roll
+ *  group's context on top of `pendingSteps`. */
+export function isDiceRollContext(ctx: unknown): ctx is DiceRollContext {
+  return (
+    typeof ctx === 'object' &&
+    ctx !== null &&
+    'isUnitAbility' in ctx &&
+    'hitSource' in ctx
+  )
+}
+
 /** Complete combat state data */
 export interface CombatStateData {
   attacker: SideStateData
   defender: SideStateData
   abilities: AbilitiesConfig
   combatMode: CombatMode
-  currentPhase: PhaseIdentifier
-  /** When set, the next meta-phase transition goes to this target instead of the normal next phase. */
-  transitionTarget?: MetaPhase
+  /** When set, the next meta-phase transition goes to this target instead of
+   *  the normal next phase. `'COMPLETE'` is a sentinel that runs the
+   *  end-of-combat cleanup and flips `isFinished`. */
+  transitionTarget?: PhaseTransitionTarget
   /** Override the winner determination. Set by abilities via transitionTo. */
   winnerOverride?: CombatSide | 'draw'
+  /** True once combat has completed — set by `_setComplete` after the
+   *  END_OF_COMBAT / CLEANUP_ROUND / CLEANUP timings run. Engine/test
+   *  harness check this instead of reading the (now-removed) `currentPhase`. */
+  isFinished?: boolean
 }
 
 /** Hit source determines dice collection */

@@ -17,7 +17,11 @@ describe('BLITZ + HARROW', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'END', { attacker: 0, defender: 0 })
+    t.advanceToTiming(
+      'END_OF_COMBAT_ROUND',
+      { attacker: 0, defender: 0 },
+      'GROUND_COMBAT',
+    )
     t.advanceRound({ attacker: 0, defender: 3 })
 
     expect(t.dicePool().hitSource).toBe('BOMBARDMENT')
@@ -39,7 +43,11 @@ describe('BLITZ + HARROW', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'END', { attacker: 0, defender: 0 })
+    t.advanceToTiming(
+      'END_OF_COMBAT_ROUND',
+      { attacker: 0, defender: 0 },
+      'GROUND_COMBAT',
+    )
 
     t.advanceRound({ attacker: 0, defender: 3 })
     expect(t.dicePool().hitSource).toBe('BOMBARDMENT')

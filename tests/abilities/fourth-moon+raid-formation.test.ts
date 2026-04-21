@@ -20,7 +20,7 @@ describe('FOURTH_MOON + RAID_FORMATION', () => {
 
     // 3 destroyers AFB [9,2] each = 6 dice, no fighters
     // 3 hits: all excess, but dreadnought sustain is blocked by FM
-    t.advanceTo('AFB', 'ASSIGN_HITS', 3)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 3, 'AFB')
 
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBeTruthy()
     expect(t.defender.units.FLAGSHIP![0].isDamaged).toBeTruthy()

@@ -23,7 +23,7 @@ describe('DIRECT_HIT + EIDOLON_MAXIMUM', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Direct Hit fires after sustain: mech destroyed
@@ -53,7 +53,7 @@ describe('DIRECT_HIT + EIDOLON_MAXIMUM', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Direct Hit fires after sustain: mech destroyed in ground combat

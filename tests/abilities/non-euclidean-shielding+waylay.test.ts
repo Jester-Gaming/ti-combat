@@ -21,7 +21,7 @@ describe.forEachSide('NON_EUCLIDEAN_SHIELDING + WAYLAY', () => {
     // 3 destroyers AFB 9x2 = 6 dice, Waylay targets all ships
     // Pick branch with 2 hits against defender
     // Dreadnought sustains once, NES cancels extra hit (2 total)
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL', { defender: 2 })
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP', { defender: 2 })
 
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
     expect(t.defender.units.DREADNOUGHT).toHaveLength(1)

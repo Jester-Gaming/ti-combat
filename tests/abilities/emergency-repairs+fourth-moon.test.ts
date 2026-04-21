@@ -20,7 +20,7 @@ describe('EMERGENCY_REPAIRS + FOURTH_MOON', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Defender's dreadnoughts start damaged. Fourth Moon blocks their sustain,
     // but Emergency Repairs checks stats only.
     expect(t.defender.units.DREADNOUGHT!.every(u => u.isDamaged)).toBe(true)

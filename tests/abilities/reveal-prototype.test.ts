@@ -16,7 +16,7 @@ describe.forEachSide('REVEAL_PROTOTYPE', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -39,7 +39,7 @@ describe.forEachSide('REVEAL_PROTOTYPE', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -61,7 +61,7 @@ describe.forEachSide('REVEAL_PROTOTYPE', () => {
       defender: { faction: 'ARBOREC', units: { FIGHTER: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP')
     const pool = t.dicePool()
 
     // Destroyer AFB: base [9, 2] -> upgraded [6, 3]
@@ -88,7 +88,7 @@ describe.forEachSide('REVEAL_PROTOTYPE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Upgraded dreadnought sustains and is immune to Direct Hit
@@ -109,7 +109,7 @@ describe.forEachSide('REVEAL_PROTOTYPE', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('REVEAL_PROTOTYPE')).toHaveLength(0)
@@ -129,7 +129,7 @@ describe.forEachSide('REVEAL_PROTOTYPE', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('REVEAL_PROTOTYPE')).toHaveLength(0)
@@ -151,7 +151,7 @@ describe.forEachSide('REVEAL_PROTOTYPE', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 

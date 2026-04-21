@@ -18,7 +18,7 @@ describe.forEachSide('DIRECT_HIT + METALI_VOID_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 1 hit to defender: MVS sustains on cruiser → DH fires → destroys cruiser
     t.advanceRound({ defender: 1 })
 

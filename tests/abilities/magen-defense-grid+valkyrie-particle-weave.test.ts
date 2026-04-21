@@ -18,7 +18,7 @@ describe('MAGEN_DEFENSE_GRID + VALKYRIE_PARTICLE_WEAVE', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // 0 total hits from dice — no hits on Sardakk from dice roll
     t.advanceRound(0)
 

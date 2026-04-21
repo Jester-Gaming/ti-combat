@@ -17,7 +17,7 @@ describe.forEachSide('VALKYRIE_EXOSKELETON + VALKYRIE_PARTICLE_WEAVE', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // 1 hit to attacker: mech sustains -> VE produces 1 hit
     // Defender produced >= 1 hit -> VPW produces 1 additional hit
     t.advanceRound({ attacker: 1 })
@@ -45,7 +45,7 @@ describe.forEachSide('VALKYRIE_EXOSKELETON + VALKYRIE_PARTICLE_WEAVE', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // Defender produces >= 1 hit -> VPW fires
     t.advanceRound({ attacker: 1 })
 

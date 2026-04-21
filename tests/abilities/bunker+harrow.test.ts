@@ -18,7 +18,11 @@ describe('BUNKER + HARROW', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'END', { attacker: 0, defender: 0 })
+    t.advanceToTiming(
+      'END_OF_COMBAT_ROUND',
+      { attacker: 0, defender: 0 },
+      'GROUND_COMBAT',
+    )
     t.advanceRound({ attacker: 0, defender: 0 })
 
     // Last DICE_POOL is Harrow's resolveStep BOMBARDMENT.

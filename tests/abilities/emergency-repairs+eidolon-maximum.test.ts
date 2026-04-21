@@ -20,7 +20,7 @@ describe.forEachSide('EMERGENCY_REPAIRS + EIDOLON_MAXIMUM', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Round 1: mech sustains 1 hit → damaged at end-of-round → ER fires (sole sustain unit) → repaired
     t.advanceRound({ attacker: 1 })
     expect(t.abilityLog('EMERGENCY_REPAIRS')).not.toHaveLength(0)

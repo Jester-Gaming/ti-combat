@@ -7,7 +7,6 @@ import {
   CombatState,
   type CombatStateData,
   extractDefaults,
-  getInitialPhaseIdentifier,
   getOpponentSide,
   type SideStateData,
 } from '@/combat'
@@ -119,7 +118,6 @@ export class CombatSetup {
       },
       abilities: this._abilities,
       combatMode: 'SPACE',
-      currentPhase: getInitialPhaseIdentifier('SPACE'),
     }
 
     initializeAbilityDefaults(this._abilities, this._sideAbilities)
@@ -273,7 +271,6 @@ export class CombatSetup {
     this._stateData = {
       ...this._stateData,
       combatMode: mode,
-      currentPhase: getInitialPhaseIdentifier(mode),
     }
     reconcileAbilitiesConfig(
       this._abilities,
@@ -502,7 +499,6 @@ export class CombatSetup {
       ...this._stateData,
       abilities: this._abilities,
       combatMode: this._combatMode,
-      currentPhase: getInitialPhaseIdentifier(this._combatMode),
     }
 
     // Final reconcile and engine rebuild

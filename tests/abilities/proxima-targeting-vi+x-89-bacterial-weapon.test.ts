@@ -22,10 +22,16 @@ describe('PROXIMA_TARGETING_VI + X_89_BACTERIAL_WEAPON', () => {
         units: { INFANTRY: 6 },
       },
     })
+
     // Narrow verification: force R2 (self-target) to 1 raw hit. X-89 doubles
     // → 2 attacker infantry lost.
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL', { attacker: 1, defender: 0 })
+    t.advanceTo('GROUND_COMBAT')
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', { attacker: 0, defender: 1 })
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', { attacker: 1, defender: 0 })
+    t.advanceRound()
+
     expect(t.abilityLog('X_89_BACTERIAL_WEAPON')).not.toHaveLength(0)
+    expect(t.defender.units.INFANTRY).toHaveLength(4)
     expect(t.attacker.units.INFANTRY).toHaveLength(4)
   })
 
@@ -48,11 +54,14 @@ describe('PROXIMA_TARGETING_VI + X_89_BACTERIAL_WEAPON', () => {
         abilities: { X_89_BACTERIAL_WEAPON: true },
       },
     })
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL', { attacker: 1, defender: 0 })
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', { attacker: 0, defender: 1 })
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', { attacker: 1, defender: 0 })
+    t.advanceRound()
 
     // Defender's X-89 must not fire for attacker-owned Proxima rolls.
     expect(t.abilityLog('X_89_BACTERIAL_WEAPON')).toHaveLength(0)
     // No doubling: self-target produced 1 raw hit → 1 attacker infantry lost.
+    expect(t.defender.units.INFANTRY).toHaveLength(5)
     expect(t.attacker.units.INFANTRY).toHaveLength(5)
   })
 })

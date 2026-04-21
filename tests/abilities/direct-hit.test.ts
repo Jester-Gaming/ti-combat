@@ -17,7 +17,7 @@ describe.forEachSide('DIRECT_HIT', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Dreadnought sustained then was destroyed by Direct Hit
@@ -38,7 +38,7 @@ describe.forEachSide('DIRECT_HIT', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 2 })
 
     // Both dreadnoughts sustained and were destroyed
@@ -59,7 +59,7 @@ describe.forEachSide('DIRECT_HIT', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Fighter can't sustain — Direct Hit doesn't trigger, fighter destroyed
@@ -81,7 +81,7 @@ describe.forEachSide('DIRECT_HIT', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Upgraded L1Z1X Dreadnought sustains normally — immune to Direct Hit
@@ -104,7 +104,7 @@ describe.forEachSide('DIRECT_HIT', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Uses should remain at 1 — not consumed on immune unit
@@ -126,7 +126,7 @@ describe.forEachSide('DIRECT_HIT', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Upgraded Sardakk Dreadnought sustains normally — immune to Direct Hit
@@ -149,7 +149,7 @@ describe.forEachSide('DIRECT_HIT', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1, defender: 1 })
 
     // Both dreadnoughts sustained and were destroyed by opponent's Direct Hit

@@ -14,7 +14,7 @@ describe.forEachSide('Shields Holding', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 3 })
 
     // 3 hits - 2 cancelled = 1 effective → 2 cruisers survive
@@ -33,7 +33,7 @@ describe.forEachSide('Shields Holding', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     // 1 hit - cancelled = 0 effective → both cruisers survive
@@ -55,7 +55,7 @@ describe.forEachSide('Shields Holding', () => {
 
     // Advance past AFB entirely; pick 3-hit AFB outcome
     // Shields Holding cancels 2 → 1 effective hit → 2 fighters survive
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL', 3)
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP', 3)
 
     expect(t.abilityLog('SHIELDS_HOLDING')).not.toHaveLength(0)
     expect(t.attacker.units.FIGHTER).toHaveLength(2)
@@ -72,7 +72,7 @@ describe.forEachSide('Shields Holding', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 3 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     // Hits unchanged — Shields Holding only works in space combat

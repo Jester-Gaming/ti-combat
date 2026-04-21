@@ -20,11 +20,11 @@ describe.forEachSide('RETREAT + SKILLED_RETREAT', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound() // round 1
     t.advanceRound() // round 2 — Skilled Retreat fires at START, skips rest
 
-    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(t.isFinished()).toBe(true)
     // Skilled Retreat fires at START_OF_COMBAT_ROUND (before RETREAT timing)
     // → transitionTo('COMPLETE', 'DRAW') sets winnerOverride
     expect(t.state.winnerOverride).toBe('draw')

@@ -17,7 +17,7 @@ describe.forEachSide('FOURTH_MOON + METALI_VOID_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Fourth Moon blocks sustain → Void Shielding can't fire → Cruiser destroyed

@@ -87,8 +87,9 @@ export const sustainDamage: Ability<Params> = {
         ctx.api.own.modifyUnitState(ctx.getUnit(), { isDamaged: true })
         ctx.api.own.reduceHits(1)
         ctx.logger?.log(ctx.api.own.getUnitBaseType(ctx.getUnit()))
-        ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', ctx.getUnit())
+        // Triggered steps pop LIFO — push AFTER first so WHEN runs first.
         ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', ctx.getUnit())
+        ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', ctx.getUnit())
       },
     },
   ],

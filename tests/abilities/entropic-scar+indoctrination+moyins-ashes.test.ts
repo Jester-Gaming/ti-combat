@@ -22,7 +22,9 @@ describe('ENTROPIC_SCAR + INDOCTRINATION + MOYINS_ASHES', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('INDOCTRINATION')).not.toHaveLength(0)
     expect(t.abilityLog('MOYINS_ASHES')).toHaveLength(0)

@@ -15,7 +15,7 @@ describe.forEachSide('HEAVENS_EYE', () => {
     })
 
     // Round 1: flagship sustains 1 hit, Heaven's Eye repairs at END
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBe(false)

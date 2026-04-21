@@ -14,7 +14,7 @@ describe.forEachSide('Alarum', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     // Should add 2 infantry (min of 2 and 4 available)
@@ -38,7 +38,7 @@ describe.forEachSide('Alarum', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     // Should add only 1 infantry
@@ -56,7 +56,7 @@ describe.forEachSide('Alarum', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     expect(t.attacker.units.INFANTRY).toHaveLength(1)
@@ -73,7 +73,7 @@ describe.forEachSide('Alarum', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 4 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
 
     // First round: adds 2, leaves 1 available
     t.advanceRound()
@@ -99,7 +99,7 @@ describe.forEachSide('Alarum', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 6 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
 
     // 2 mechs each add 2 infantry, counter decreases by 4
     t.advanceRound()

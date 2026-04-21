@@ -13,7 +13,7 @@ describe.forEachSide('EIDOLON', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -31,7 +31,7 @@ describe.forEachSide('EIDOLON', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -54,7 +54,7 @@ describe.forEachSide('EIDOLON', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     expect(t.attacker.units.MECH).toBeUndefined()
@@ -76,7 +76,7 @@ describe.forEachSide('EIDOLON', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     // Mech should NOT sustain
@@ -99,7 +99,7 @@ describe.forEachSide('EIDOLON', () => {
     })
 
     // Eidolon has context: 'SPACE' so it doesn't fire in ground combat
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 1 })
     const pool = t.dicePool()
 

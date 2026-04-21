@@ -20,7 +20,7 @@ describe('ARTICLES_OF_WAR + DUNLAIN_REAPER', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     // DEPLOY is a unit ability on MECH, so Articles of War disables it

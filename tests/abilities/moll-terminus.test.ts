@@ -16,7 +16,7 @@ describe('MOLL_TERMINUS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Dreadnought can sustain (Moll Terminus only works in ground combat)
@@ -39,7 +39,7 @@ describe('MOLL_TERMINUS', () => {
     })
 
     // Advance past bombardment — defender receives 1 hit
-    t.advanceTo('SPACE_CANNON_DEFENSE', undefined, { defender: 1 })
+    t.advanceTo('SPACE_CANNON_DEFENSE', { defender: 1 })
 
     // Defender mech sustained bombardment hit (Moll Terminus allows it)
     expect(t.defender.units.MECH![0].isDamaged).toBe(true)
@@ -60,7 +60,7 @@ describe('MOLL_TERMINUS', () => {
     })
 
     // Advance past SCD — attacker receives 1 hit from PDS
-    t.advanceTo('GROUND_COMBAT', 'START', { attacker: 1 })
+    t.advanceTo('GROUND_COMBAT', { attacker: 1 })
 
     // Attacker mech can't sustain (Moll Terminus disabled it) — destroyed
     expect(t.attacker.units.MECH).toBeUndefined()
@@ -79,7 +79,7 @@ describe('MOLL_TERMINUS', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Defender mech can't sustain (Moll Terminus disabled it) — destroyed
@@ -99,7 +99,7 @@ describe('MOLL_TERMINUS', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
 
     // Round 1: first mech sustains
     t.advanceRound({ attacker: 1 })

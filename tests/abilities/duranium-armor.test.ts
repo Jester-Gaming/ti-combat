@@ -17,7 +17,7 @@ describe.forEachSide('DURANIUM_ARMOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Round 1: Dreadnought sustains 1 hit
     t.advanceRound({ attacker: 1 })
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
@@ -41,7 +41,7 @@ describe.forEachSide('DURANIUM_ARMOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Round 1: 1 hit, first Dreadnought sustains
     t.advanceRound({ attacker: 1 })
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
@@ -70,7 +70,7 @@ describe.forEachSide('DURANIUM_ARMOR', () => {
     })
 
     // SCO: 1 hit on attacker → Dreadnought sustains
-    t.advanceTo('SPACE_COMBAT', 'START', { attacker: 1 })
+    t.advanceTo('SPACE_COMBAT', { attacker: 1 })
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
 
     // Round 1: 0 hits — sustain was during SCO, not this round → Duranium repairs
@@ -92,7 +92,7 @@ describe.forEachSide('DURANIUM_ARMOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 0 })
 
     expect(t.abilityLog('DURANIUM_ARMOR')).toHaveLength(0)
@@ -112,7 +112,7 @@ describe.forEachSide('DURANIUM_ARMOR', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // Round 1: Mech sustains
     t.advanceRound({ attacker: 1 })
     expect(t.attacker.units.MECH![0].isDamaged).toBe(true)

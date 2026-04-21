@@ -16,15 +16,21 @@ import type {
 
 import type { CombatSideState } from '../../combat-side-state/combat-side-state'
 import { getOpponentSide } from '../../combat-side-state/combat-side-state'
-import { cloneStateForBranch } from '../../combat-state/combat-state'
+import {
+  buildDestroyGroup,
+  clonePendingSteps,
+  cloneStateForBranch,
+} from '../../combat-state/combat-state'
 import type {
   CombatMode,
   CombatStateData,
   HitPool,
-  HitSource,
   MetaPhase,
+  PendingStep,
+  PhaseTransitionTarget,
   UnitAbilityMeta,
 } from '../../combat-state/types'
+import { isDiceRollContext } from '../../combat-state/types'
 import { getDiceOutcomes } from '../../combat-state/utils'
 import type { Logger } from '../../logger'
 import type { AbilitiesEngine, InvokeCollections } from '../abilities-engine'
@@ -46,6 +52,12 @@ export interface AbilityBranch {
   invokes: InvokeCollections
   probability: number
   logger?: Logger
+  /** The `pendingSteps` continuation this branch should resume with. Carried
+   *  so branches that pushed script state (e.g. destroy-cascade groups from
+   *  `destroyUnits` inside a rollDice callback) don't lose that state when
+   *  they propagate up through `AbilityBranchInterrupt`. Optional for call
+   *  sites that have no script state to forward. */
+  pendingSteps?: PendingStep[]
 }
 
 /** Control-flow mechanism (not an Error — no stack trace overhead). */
@@ -117,7 +129,7 @@ export class SideApi {
   }
 
   getHitPoolValidTargets() {
-    return this._sideState.getHitPoolValidTargets()
+    return this._sideState.getHitPoolValidTargets(this._ctx.meta)
   }
 
   getActiveBaseTypes() {
@@ -157,7 +169,7 @@ export class SideApi {
    *  returns the UnitIds that would be destroyed, in sacrifice order.
    *  Non-destructive. */
   getAssignHitsTargets(hitPool: HitPool): UnitId[] {
-    return this._sideState.getAssignHitsTargets(hitPool)
+    return this._sideState.getAssignHitsTargets(hitPool, this._ctx.meta)
   }
 
   getUnitStats(unitTypeOrId: string | UnitId) {
@@ -285,7 +297,11 @@ export class SideApi {
   }
 
   addHits(hits: number, validTargets: UnitType[]) {
+    const data = this.state
+    const wasEmpty =
+      data.attacker.hitPools.length === 0 && data.defender.hitPools.length === 0
     this._sideState.addHits(hits, validTargets)
+    if (wasEmpty) this._ctx._assignHits()
   }
 
   setUnitAbilityLost(
@@ -389,11 +405,7 @@ export class SideApi {
   }
 
   modifyHitValue(amount: number, target?: unknown): void {
-    this._sideState.addHitValueModifier(
-      amount,
-      target,
-      this.state.currentPhase.meta,
-    )
+    this._sideState.addHitValueModifier(amount, target, this._ctx.meta)
   }
 
   /** True if this side's dice pool has no dice. Only meaningful during
@@ -515,6 +527,25 @@ export class AbilityContext {
     return this._draftState ?? this._abilitiesParams.combatState.data
   }
 
+  /** Innermost active meta-phase for the currently-running ability. Read
+   *  straight off the dispatching `PhaseStep` via `combatState.currentStep`.
+   *  Used by ability code and SideApi to scope phase-dependent effects (hit-
+   *  value modifiers, context filters). Throws when called outside an active
+   *  call context (e.g. PREPARE, which has no meta). */
+  get meta(): MetaPhase {
+    const phase = this.phaseStack
+    if (phase && phase.length > 0) return phase[phase.length - 1]
+    throw new Error(
+      'ctx.meta is not available outside a PhaseStep-dispatched ability call',
+    )
+  }
+
+  /** Active meta-phase stack (outer→inner) for the currently-running
+   *  ability. Exposed for `trigger` / `resolveStep` to propagate. */
+  get phaseStack(): MetaPhase[] | undefined {
+    return this._abilitiesParams.combatState.currentStep?.phase
+  }
+
   get side(): CombatSide {
     return this._side
   }
@@ -543,7 +574,8 @@ export class AbilityContext {
   }
 
   getDicePool(side: CombatSide): DicePool | undefined {
-    return this._abilitiesParams._currentDicePool?.[side]
+    const ctx = this._abilitiesParams.combatState.currentGroupData
+    return isDiceRollContext(ctx) ? ctx.dicePool?.[side] : undefined
   }
 
   upgradeForCall(draft: CombatStateData, ability: Ability, logger?: Logger) {
@@ -566,39 +598,33 @@ export class AbilityContext {
     this._api.opponent._abilitiesParams = undefined
   }
 
-  /** Run nested abilities preserving current call context */
-  private nested(fn: () => void): void {
-    const saved = {
-      unitSource: this.unitSource,
-      ownerFaction: this.ownerFaction,
-      logger: this.logger,
-      ability: this.ability,
-      ownAbilityKey: this._api.own._abilityKey,
-      ownAbilityEngine: this._api.own._abilitiesParams,
-      opponentAbilityKey: this._api.opponent._abilityKey,
-      opponentAbilityEngine: this._api.opponent._abilitiesParams,
-    }
-    fn()
-    this.unitSource = saved.unitSource
-    this.ownerFaction = saved.ownerFaction
-    this.logger = saved.logger
-    this.ability = saved.ability
-    this._api.own._abilityKey = saved.ownAbilityKey
-    this._api.own._abilitiesParams = saved.ownAbilityEngine
-    this._api.opponent._abilityKey = saved.opponentAbilityKey
-    this._api.opponent._abilitiesParams = saved.opponentAbilityEngine
-  }
-
+  /** Queue a timing to run as the next script step. The triggered step
+   *  inherits this ability's active phase stack (so `context`-scoped
+   *  invokes resolve correctly) and runs only after the current `call`
+   *  returns: the engine detects the script growth, parks the outer
+   *  pass on its dispatching step's `frame` slot, and lets `advance()`
+   *  dispatch the pushed step.
+   *
+   *  Trigger steps pop LIFO, so an ability that needs multiple triggers in
+   *  a specific order must push them in reverse of that order.
+   *
+   *  A provided `context` is stored directly on the step's `data` slot,
+   *  where `runAbilities` picks it up. Context-less triggers leave
+   *  `data` unset. */
   trigger<T extends AbilityTiming>(
     name: T,
     context?: TimingContextMap[T],
   ): void {
-    this.nested(() => {
-      this._abilitiesParams.runAbilities(name, context, {}, this.logger)
+    const combatState = this._abilitiesParams.combatState
+    combatState.pendingSteps.push({
+      kind: 'timing',
+      timing: name,
+      phase: this.phaseStack ?? [],
+      data: context,
     })
   }
 
-  transitionTo(target: MetaPhase, outcome?: 'DRAW' | 'LOST'): void {
+  transitionTo(target: PhaseTransitionTarget, outcome?: 'DRAW' | 'LOST'): void {
     if (this.state.transitionTarget) return
     this.state.transitionTarget = target
     if (outcome === 'DRAW') {
@@ -606,15 +632,33 @@ export class AbilityContext {
     } else if (outcome === 'LOST') {
       this.state.winnerOverride = getOpponentSide(this._side)
     }
+    // Drop the current meta's script. Trigger steps pushed after this call
+    // survive (they land on the empty stack); to keep any triggers, callers
+    // must invoke `transitionTo` before pushing them.
+    this._abilitiesParams.combatState.pendingSteps = []
   }
 
   runDestroyAbilities(destroyed: {
     attacker: Record<string, UnitId[]>
     defender: Record<string, UnitId[]>
   }): void {
-    this.nested(() => {
-      this._abilitiesParams.runDestroyAbilities(destroyed)
-    })
+    // Push a PhaseStepGroup carrying the destroyed-units map as shared
+    // context. The calling ability is inside a script-driven pass, so
+    // `tryResolveOne` parks the outer pass on return (it observes the
+    // new pending entry) and `advance()` dispatches the cascade before
+    // the outer pass resumes.
+    const combatState = this._abilitiesParams.combatState
+    combatState.pendingSteps.push(
+      buildDestroyGroup(destroyed, this.phaseStack ?? []),
+    )
+  }
+
+  /** Invoked by `SideApi.addHits` when an ability produces hits out-of-band
+   *  (no existing hit pool from the normal dice-roll flow). Delegates to
+   *  `combatState.assignHits`, which may throw `AbilityBranchInterrupt` if
+   *  the destroy cascade branches. */
+  _assignHits(): void {
+    this._abilitiesParams.combatState.assignHits(this.phaseStack ?? [])
   }
 
   getUnit(): UnitId {
@@ -658,6 +702,10 @@ export class AbilityContext {
     const baseInvokes = combatState._invokes
     const baseInvokesOwned = combatState._invokesOwned
     const baseLogger = this.logger
+    // Snapshot outer pending stack so each iteration starts from the same
+    // position — otherwise a callback that pushes script state (e.g. a
+    // destroy-cascade group via `destroyUnits`) would leak into siblings.
+    const basePendingSteps = combatState.pendingSteps
     // Captured when upgradeForCall wired the ctx: the calling ability.
     const ability = this.ability
 
@@ -668,9 +716,13 @@ export class AbilityContext {
       combatState._invokes = baseInvokes
       combatState._invokesOwned = false
 
-      // Clone state for this branch. Keep same phase — we're branching
-      // within the current phase, not transitioning.
-      const branchData = cloneStateForBranch(baseData, baseData.currentPhase)
+      // Fresh per-iteration pending stack. Deep-copies groups so inner
+      // steps-arrays aren't shared with the outer stack or other iterations.
+      combatState.pendingSteps = clonePendingSteps(basePendingSteps)
+
+      // Clone state for this branch. Phase is derived from the dispatching
+      // step on `combatState`, which is shared — branches see the same meta.
+      const branchData = cloneStateForBranch(baseData)
       combatState.data = branchData
 
       // Fork the logger so log entries from branches don't cross-contaminate.
@@ -685,16 +737,31 @@ export class AbilityContext {
       branchCtx.ownerFaction = this.ownerFaction
       if (ability) branchCtx.upgradeForCall(branchData, ability, branchLogger)
 
-      callback(branchCtx, outcome.hits)
-
-      branchCtx.resetAfterCall()
-
-      branches.push({
-        data: combatState.data,
-        invokes: combatState._invokes,
-        probability: outcome.probability,
-        logger: branchLogger,
-      })
+      try {
+        callback(branchCtx, outcome.hits)
+        branches.push({
+          data: combatState.data,
+          invokes: combatState._invokes,
+          probability: outcome.probability,
+          logger: branchLogger,
+          pendingSteps: combatState.pendingSteps,
+        })
+      } catch (e) {
+        if (!(e instanceof AbilityBranchInterrupt)) throw e
+        // Callback branched further (e.g. addHits → assignHits → destroy
+        // cascade rolled dice). Flatten nested branches into this loop.
+        for (const nested of e.branches) {
+          branches.push({
+            data: nested.data,
+            invokes: nested.invokes,
+            probability: outcome.probability * nested.probability,
+            logger: nested.logger,
+            pendingSteps: nested.pendingSteps ?? combatState.pendingSteps,
+          })
+        }
+      } finally {
+        branchCtx.resetAfterCall()
+      }
     }
 
     // Restore outer state. tryResolveOne will take over handling via the
@@ -702,6 +769,7 @@ export class AbilityContext {
     combatState._invokes = baseInvokes
     combatState._invokesOwned = baseInvokesOwned
     combatState.data = baseData
+    combatState.pendingSteps = basePendingSteps
     this.logger = baseLogger
 
     throw new AbilityBranchInterrupt(branches)
@@ -714,14 +782,14 @@ export class AbilityContext {
       dice?: DiceGroup[]
       target?: 'OWN' | 'OPPONENT'
     },
-    callback?: (branchCtx: AbilityContext) => void,
   ): void {
-    const combatState = this._abilitiesParams.combatState
-    const ability = this.ability
+    if (!this.phaseStack) {
+      throw new Error(
+        'ctx.resolveStep requires an active phase stack (ability must be dispatched from a PhaseStep)',
+      )
+    }
 
     const mySide = this._side
-    const firing: CombatSide[] = [mySide]
-    const hitSource = META_TO_HIT_SOURCE[meta]
 
     const customDice: SidedDiceData | undefined = overrides?.dice
       ? {
@@ -739,97 +807,14 @@ export class AbilityContext {
         ? { attacker: mySide, defender: mySide }
         : undefined
 
-    const baseInvokes = combatState._invokes
-    const baseInvokesOwned = combatState._invokesOwned
-    const baseData = combatState.data
-    const baseLogger = this.logger
-    const baseCombatLogger = combatState._logger
-
-    if (this.logger) combatState._logger = this.logger
-
-    const stepBranches = combatState.runUnitAbilityStepForAbility({
+    this._abilitiesParams.combatState.runUnitAbilityStepForAbility({
       meta,
-      firing,
-      hitSource,
+      firing: [mySide],
+      outerPhase: this.phaseStack,
       customDice,
       routing,
     })
-
-    if (stepBranches.length === 1 && stepBranches[0].probability === 1) {
-      combatState.data = stepBranches[0].state.data
-      combatState._invokes = stepBranches[0].state._invokes
-      combatState._invokesOwned = false
-      combatState._logger = stepBranches[0].state._logger
-      this.logger = stepBranches[0].state._logger
-      if (callback) callback(this)
-      return
-    }
-
-    combatState._logger = baseCombatLogger
-
-    const branches: AbilityBranch[] = []
-
-    try {
-      for (const { state: branchState, probability } of stepBranches) {
-        combatState._invokes = branchState._invokes
-        combatState._invokesOwned = false
-        combatState.data = branchState.data
-        const branchLogger = branchState._logger
-
-        if (!callback) {
-          branches.push({
-            data: branchState.data,
-            invokes: branchState._invokes,
-            probability,
-            logger: branchLogger,
-          })
-          continue
-        }
-
-        const branchCtx = new AbilityContext(this._side, this._abilitiesParams)
-        branchCtx.unitSource = this.unitSource
-        branchCtx.ownerFaction = this.ownerFaction
-        if (ability)
-          branchCtx.upgradeForCall(branchState.data, ability, branchLogger)
-
-        try {
-          callback(branchCtx)
-          branches.push({
-            data: combatState.data,
-            invokes: combatState._invokes,
-            probability,
-            logger: branchLogger,
-          })
-        } catch (e) {
-          if (!(e instanceof AbilityBranchInterrupt)) throw e
-          for (const nested of e.branches) {
-            branches.push({
-              data: nested.data,
-              invokes: nested.invokes,
-              probability: probability * nested.probability,
-              logger: nested.logger,
-            })
-          }
-        } finally {
-          branchCtx.resetAfterCall()
-        }
-      }
-    } finally {
-      combatState._invokes = baseInvokes
-      combatState._invokesOwned = baseInvokesOwned
-      combatState.data = baseData
-      this.logger = baseLogger
-    }
-
-    throw new AbilityBranchInterrupt(branches)
   }
-}
-
-const META_TO_HIT_SOURCE: Record<UnitAbilityMeta, HitSource> = {
-  BOMBARDMENT: 'BOMBARDMENT',
-  AFB: 'AFB',
-  SPACE_CANNON_OFFENSE: 'SPACE_CANNON',
-  SPACE_CANNON_DEFENSE: 'SPACE_CANNON',
 }
 
 const SENTINEL_UNIT_ID = -1 as UnitId

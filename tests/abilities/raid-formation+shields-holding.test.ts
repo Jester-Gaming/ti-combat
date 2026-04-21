@@ -19,7 +19,7 @@ describe('RAID_FORMATION + SHIELDS_HOLDING', () => {
     })
 
     // 3 AFB hits. RF fires first (AFTER_UNIT_ABILITY_ROLL), then SH (BEFORE_ASSIGN_HITS).
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL', { defender: 3 })
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP', { defender: 3 })
 
     expect(t.abilityLog('RAID_FORMATION')).not.toHaveLength(0)
     expect(t.abilityLog('SHIELDS_HOLDING')).not.toHaveLength(0)

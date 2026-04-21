@@ -24,7 +24,7 @@ describe('TECHNOLOGICAL_SINGULARITY + ASSAULT_CANNON + HEL_TITAN + THE_ALASTOR',
 
     // AC fires → destroys defender cruiser → TS enables Hel Titan →
     // Alastor adds ground forces (now including PDS) to ships
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 0 })
 
     expect(t.defender.units.CRUISER).toHaveLength(2) // 3 - 1 from AC
@@ -56,7 +56,7 @@ describe('TECHNOLOGICAL_SINGULARITY + ASSAULT_CANNON + HEL_TITAN + THE_ALASTOR',
 
     // Alastor fires first → PDS not yet a ground force →
     // AC fires → destroys cruiser → TS enables Hel Titan (but Alastor already ran)
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 0 })
 
     expect(t.defender.units.CRUISER).toHaveLength(2) // 3 - 1 from AC

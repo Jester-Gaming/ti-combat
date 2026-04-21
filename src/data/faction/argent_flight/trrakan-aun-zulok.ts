@@ -42,8 +42,7 @@ export const trrakanAunZulok: Ability<Params> = {
       context: UNIT_ABILITY_PHASES,
       isCallable: (params, ctx) => {
         if (ctx.api.own.isDicePoolEmpty()) return false
-        const currentPhase = ctx.state.currentPhase.meta
-        return params.phases.includes(currentPhase)
+        return params.phases.includes(ctx.meta)
       },
       call: ctx => {
         ctx.api.own.addDiceCount(1)

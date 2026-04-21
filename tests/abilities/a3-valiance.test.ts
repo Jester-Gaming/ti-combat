@@ -27,7 +27,7 @@ describe('A3_VALIANCE', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // 2 hits: sustain absorbs 1, assigned hit destroys the damaged mech.
     t.advanceRound({ attacker: 2 })
 
@@ -60,7 +60,7 @@ describe('A3_VALIANCE', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     expect(t.attacker.units.MECH).toBeUndefined()
@@ -95,7 +95,7 @@ describe('A3_VALIANCE', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     expect(t.attacker.units.MECH).toBeUndefined()
@@ -133,7 +133,7 @@ describe('A3_VALIANCE', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     expect(t.attacker.units.MECH).toBeUndefined()
@@ -168,7 +168,7 @@ describe('A3_VALIANCE', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // 4 hits: 2 sustains + 2 assigned hits destroy both damaged mechs.
     t.advanceRound({ attacker: 4 })
 
@@ -200,7 +200,7 @@ describe('A3_VALIANCE', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // 1 hit → mech sustains but survives.
     t.advanceRound({ attacker: 1 })
 
@@ -237,7 +237,7 @@ describe('A3_VALIANCE', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     expect(t.attacker.units.MECH).toBeUndefined()
@@ -274,7 +274,7 @@ describe('A3_VALIANCE', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     expect(t.attacker.units.MECH).toBeUndefined()

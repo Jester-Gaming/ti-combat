@@ -17,7 +17,7 @@ describe.forEachSide('ALARUM + ARTICLES_OF_WAR', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     // Articles of War removes all printed mech abilities except Sustain Damage

@@ -22,7 +22,7 @@ describe('ASSIMILATOR_Z + TECHNOLOGICAL_SINGULARITY + DYNAMO', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     // Round 1: flagship sustains → Dynamo(s) repair → Direct Hit kills flagship
     // NEKRO_FLAGSHIP_DYNAMO DESTROY fires → uses: 0

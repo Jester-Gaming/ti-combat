@@ -15,7 +15,7 @@ describe('MANEUVERING_JETS', () => {
     })
 
     // SCO: 2 PDS hits, Maneuvering Jets cancels 1 → 1 cruiser destroyed
-    t.advanceTo('SPACE_COMBAT', 'START', { attacker: 2 })
+    t.advanceTo('SPACE_COMBAT', { attacker: 2 })
 
     expect(t.abilityLog('MANEUVERING_JETS')).not.toHaveLength(0)
     expect(t.attacker.units.CRUISER).toHaveLength(1)
@@ -36,7 +36,7 @@ describe('MANEUVERING_JETS', () => {
     })
 
     // SCD: 2 PDS hits, attacker's Maneuvering Jets cancels 1 → 1 infantry destroyed
-    t.advanceTo('GROUND_COMBAT', 'START', { attacker: 2 })
+    t.advanceTo('GROUND_COMBAT', { attacker: 2 })
 
     expect(t.abilityLog('MANEUVERING_JETS')).not.toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(1)

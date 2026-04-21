@@ -20,11 +20,11 @@ describe.forEachSide('RAISE_THE_STANDARD', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
     t.advanceTo('COMPLETE')
 
-    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(t.isFinished()).toBe(true)
     expect(t.defender.units.CRUISER).toBeUndefined()
     expect(t.abilityLog('RAISE_THE_STANDARD')).not.toHaveLength(0)
     expect(
@@ -50,11 +50,11 @@ describe.forEachSide('RAISE_THE_STANDARD', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ defender: 1 })
     t.advanceTo('COMPLETE')
 
-    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(t.isFinished()).toBe(true)
     expect(t.defender.units.INFANTRY).toBeUndefined()
     expect(t.abilityLog('RAISE_THE_STANDARD')).not.toHaveLength(0)
     expect(
@@ -79,7 +79,7 @@ describe.forEachSide('RAISE_THE_STANDARD', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
     t.advanceTo('COMPLETE')
 
@@ -106,7 +106,7 @@ describe.forEachSide('RAISE_THE_STANDARD', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
     t.advanceTo('COMPLETE')
 
@@ -134,7 +134,7 @@ describe.forEachSide('RAISE_THE_STANDARD', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 2 })
     t.advanceTo('COMPLETE')
 
@@ -159,7 +159,7 @@ describe.forEachSide('RAISE_THE_STANDARD', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
     t.advanceTo('COMPLETE')
 

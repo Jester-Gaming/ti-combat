@@ -16,7 +16,7 @@ describe.forEachSide('FRAGILE + SHIELD_PALING', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -39,7 +39,7 @@ describe.forEachSide('FRAGILE + SHIELD_PALING', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // Mech sustains
     t.advanceRound({ attacker: 1 })
     // Infantry dies (sacrifice order), then damaged mech dies
@@ -65,7 +65,7 @@ describe.forEachSide('FRAGILE + SHIELD_PALING', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // Both mechs sustain
     t.advanceRound({ attacker: 2 })
     // One damaged mech dies

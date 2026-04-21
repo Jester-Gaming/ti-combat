@@ -20,7 +20,7 @@ describe.forEachSide('PRE_GALVANIZED + REVEAL_PROTOTYPE', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     const pool = t.dicePool()
@@ -47,7 +47,7 @@ describe.forEachSide('PRE_GALVANIZED + REVEAL_PROTOTYPE', () => {
     })
 
     // Stops after AFB dice are rolled
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP')
 
     const pool = t.dicePool()
     // Destroyer AFB upgraded: [9, 2] -> [6, 3]

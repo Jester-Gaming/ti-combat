@@ -20,10 +20,10 @@ describe.forEachSide('LAST_DISPATCH', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
-    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(t.isFinished()).toBe(true)
     expect(t.abilityLog('LAST_DISPATCH')).toHaveLength(1)
     // One opponent cruiser destroyed by Last Dispatch
     expect(t.defender.units.CRUISER).toHaveLength(2)
@@ -49,10 +49,10 @@ describe.forEachSide('LAST_DISPATCH', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
-    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(t.isFinished()).toBe(true)
     expect(t.abilityLog('LAST_DISPATCH')).toHaveLength(1)
     // Fighter is higher priority than destroyer
     expect(t.defender.units.FIGHTER ?? []).toHaveLength(0)
@@ -77,10 +77,10 @@ describe.forEachSide('LAST_DISPATCH', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
-    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(t.isFinished()).toBe(true)
     expect(t.abilityLog('LAST_DISPATCH')).toHaveLength(0)
   })
 
@@ -101,10 +101,10 @@ describe.forEachSide('LAST_DISPATCH', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
-    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(t.isFinished()).toBe(true)
     expect(t.abilityLog('LAST_DISPATCH')).toHaveLength(0)
   })
 })

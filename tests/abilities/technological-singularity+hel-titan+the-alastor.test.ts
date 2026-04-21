@@ -16,7 +16,7 @@ describe('TECHNOLOGICAL_SINGULARITY + HEL_TITAN + THE_ALASTOR', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 

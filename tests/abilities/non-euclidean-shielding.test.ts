@@ -14,7 +14,7 @@ describe('NON_EUCLIDEAN_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 2 })
 
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
@@ -33,7 +33,7 @@ describe('NON_EUCLIDEAN_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 4 })
 
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
@@ -54,7 +54,7 @@ describe('NON_EUCLIDEAN_SHIELDING', () => {
     })
 
     // 2 PDS Space Cannon 6 = 2 dice, pick 2 hits against attacker
-    t.advanceTo('AFB', undefined, { attacker: 2 })
+    t.advanceTo('AFB', { attacker: 2 })
 
     // Dreadnought sustains once, NES cancels extra hit (2 total)
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
@@ -73,7 +73,7 @@ describe('NON_EUCLIDEAN_SHIELDING', () => {
     })
 
     // 2 PDS Space Cannon 6 = 2 dice, pick 2 hits against attacker
-    t.advanceTo('GROUND_COMBAT', undefined, { attacker: 2 })
+    t.advanceTo('GROUND_COMBAT', { attacker: 2 })
 
     // Mech sustains once, NES cancels extra hit (2 total)
     expect(t.attacker.units.MECH![0].isDamaged).toBe(true)
@@ -91,7 +91,7 @@ describe('NON_EUCLIDEAN_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ defender: 2 })
 
     // Mech sustains once, cancelling 2 hits

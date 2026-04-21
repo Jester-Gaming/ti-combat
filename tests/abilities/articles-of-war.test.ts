@@ -22,7 +22,7 @@ describe.forEachSide('ARTICLES_OF_WAR', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     expect(t.attacker.units.MECH![0].isDamaged).toBe(true)

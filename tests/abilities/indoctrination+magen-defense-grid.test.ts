@@ -18,7 +18,9 @@ describe('INDOCTRINATION + MAGEN_DEFENSE_GRID', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('INDOCTRINATION')).not.toHaveLength(0)
     expect(t.abilityLog('MAGEN_DEFENSE_GRID')).toHaveLength(0)

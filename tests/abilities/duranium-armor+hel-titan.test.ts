@@ -17,7 +17,7 @@ describe.forEachSide('DURANIUM_ARMOR + HEL_TITAN', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ defender: 1 })
     expect(t.defender.units.PDS![0].isDamaged).toBeTruthy()
     t.advanceRound()

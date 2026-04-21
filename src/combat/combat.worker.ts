@@ -56,7 +56,6 @@ self.onmessage = (e: MessageEvent<SimulationInput>) => {
     buildSideState(defenderFaction, defenderSelections),
     combatMode,
     abilities,
-    undefined,
     {
       attacker: sideAbilities.attacker.abilities,
       defender: sideAbilities.defender.abilities,

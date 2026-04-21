@@ -32,7 +32,7 @@ describe('AMBUSH + CAVALRY', () => {
       defender: { faction: 'ARBOREC', units: { DESTROYER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceToTiming('START_OF_COMBAT')
     const branches = t.step()
 
     // Ambush rolls 1 die at 5+ → exactly 2 branches.
@@ -67,7 +67,7 @@ describe('AMBUSH + CAVALRY', () => {
       defender: { faction: 'ARBOREC', units: { DESTROYER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceToTiming('START_OF_COMBAT')
     const branches = t.step()
 
     expect(branches).toHaveLength(2)
@@ -103,7 +103,7 @@ describe('AMBUSH + CAVALRY', () => {
       defender: { faction: 'ARBOREC', units: { DESTROYER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceToTiming('START_OF_COMBAT')
     const branches = t.step()
 
     expect(branches).toHaveLength(2)
@@ -145,7 +145,7 @@ describe('AMBUSH + CAVALRY', () => {
       defender: { faction: 'ARBOREC', units: { DESTROYER: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceToTiming('START_OF_COMBAT')
     const branches = t.step()
 
     // 2 dice × 2 outcomes = 4 Cartesian branches

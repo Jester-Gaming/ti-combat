@@ -18,7 +18,7 @@ describe.forEachSide('DIRECT_HIT + MORDRED + THE_ALASTOR', () => {
     })
 
     // 2 hits: flagship sustains, mech sustains → Direct Hit triggers on mech
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     // Mech should be destroyed by Direct Hit after sustaining

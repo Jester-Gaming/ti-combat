@@ -17,7 +17,7 @@ describe.forEachSide('DEVOTION', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     // Destroyer sacrificed, opponent loses a cruiser
@@ -40,7 +40,7 @@ describe.forEachSide('DEVOTION', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     // One cruiser sacrificed
@@ -62,7 +62,7 @@ describe.forEachSide('DEVOTION', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     expect(t.attacker.units.DESTROYER).toBeUndefined()
@@ -83,7 +83,7 @@ describe.forEachSide('DEVOTION', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     expect(t.attacker.units.DESTROYER).toHaveLength(1)
@@ -105,7 +105,7 @@ describe.forEachSide('DEVOTION', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('DEVOTION')).toHaveLength(0)
@@ -125,7 +125,7 @@ describe.forEachSide('DEVOTION', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound() // round 1: sacrifice 1 destroyer
     t.advanceRound() // round 2: sacrifice 1 destroyer
 

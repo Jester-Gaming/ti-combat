@@ -27,7 +27,7 @@ describe('SSRUU + DAME_BRIAR', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 3 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     // One cruiser died
@@ -74,7 +74,7 @@ describe('SSRUU + DAME_BRIAR', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     // One cruiser died, one survives

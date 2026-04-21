@@ -25,10 +25,10 @@ describe.forEachSide('LAST_DISPATCH + WATCHFUL_OJZ', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
-    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(t.isFinished()).toBe(true)
     // Ojz retreats flagship at ANNOUNCE_RETREAT, triggering Last Dispatch
     expect(t.abilityLog('LAST_DISPATCH')).toHaveLength(1)
     expect(t.defender.units.CRUISER).toHaveLength(2)

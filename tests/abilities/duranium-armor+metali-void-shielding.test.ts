@@ -20,7 +20,7 @@ describe.forEachSide('DURANIUM_ARMOR + METALI_VOID_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Round 1: 1 hit — cruiser sustains via MVS
     t.advanceRound({ attacker: 1 })
 

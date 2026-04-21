@@ -17,7 +17,7 @@ describe.forEachSide('TECHNOLOGICAL_SINGULARITY + MORDRED', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // Round 1: defender loses 1 infantry
     t.advanceRound({ defender: 1 })
     // Round 2: bonus should now be active
@@ -46,11 +46,11 @@ describe.forEachSide('TECHNOLOGICAL_SINGULARITY + MORDRED', () => {
     })
 
     // SCO from attacker PDS destroys defender FIGHTER
-    t.advanceTo('AFB', undefined, { defender: 1 })
+    t.advanceTo('SPACE_COMBAT', { defender: 1 })
     expect(t.defender.units.FIGHTER).toBeUndefined()
 
     // Space combat round 1: Mordred +2 should NOT be active
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 

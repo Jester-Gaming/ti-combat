@@ -14,7 +14,7 @@ describe('EIDOLON_MAXIMUM', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -33,7 +33,7 @@ describe('EIDOLON_MAXIMUM', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -55,7 +55,7 @@ describe('EIDOLON_MAXIMUM', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     // Mech should sustain — unlike Z-Grav which loses Sustain Damage
@@ -77,7 +77,7 @@ describe('EIDOLON_MAXIMUM', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Round 1: mech sustains a hit
     t.advanceRound({ attacker: 1 })
     expect(t.attacker.units.MECH![0].isDamaged).toBe(true)
@@ -98,7 +98,7 @@ describe('EIDOLON_MAXIMUM', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -120,7 +120,7 @@ describe('EIDOLON_MAXIMUM', () => {
     })
 
     // Advance past SCO — attacker receives 3 hits
-    t.advanceTo('AFB', undefined, { attacker: 3 })
+    t.advanceTo('AFB', { attacker: 3 })
 
     // Mech should survive SCO — only Cruiser can be hit
     expect(t.attacker.units.MECH).toHaveLength(1)
@@ -142,7 +142,7 @@ describe('EIDOLON_MAXIMUM', () => {
     })
 
     // Advance past bombardment — defender receives 5 hit
-    t.advanceTo('SPACE_CANNON_DEFENSE', undefined, { defender: 5 })
+    t.advanceTo('SPACE_CANNON_DEFENSE', { defender: 5 })
 
     // Mech should survive bombardment — only infantry can be hit
     expect(t.defender.units.MECH).toHaveLength(1)
@@ -161,7 +161,7 @@ describe('EIDOLON_MAXIMUM', () => {
     })
 
     // Advance past SCD — attacker receives 5 hit
-    t.advanceTo('GROUND_COMBAT', undefined, { attacker: 3 })
+    t.advanceTo('GROUND_COMBAT', { attacker: 3 })
 
     // Mech should survive SCD — only infantry can be hit
     expect(t.attacker.units.MECH).toHaveLength(1)
@@ -179,7 +179,7 @@ describe('EIDOLON_MAXIMUM', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     // Mech takes 2 hits: 1 sustain + 1 kill

@@ -33,6 +33,17 @@ const emptySide = (
   hitPools: [],
 })
 
+/** Fire a timing at the engine and drain any script steps it queued
+ *  (e.g. destroy-cascade groups pushed by `destroyUnits`). Mirrors how
+ *  the real combat engine pumps `advance()` between runAbilities passes. */
+function runAndDrain(cs: CombatState, timing: 'START_OF_COMBAT_ROUND'): void {
+  cs.params.runAbilities(timing)
+  while (cs.pendingSteps.length > 0) {
+    const outcomes = cs.advance()
+    if (outcomes.length !== 1 || outcomes[0].probability !== 1) break
+  }
+}
+
 describe('collectUnitAbilities', () => {
   it('should collect abilities from units on the field', () => {
     const mockAbility: Ability = {
@@ -57,7 +68,6 @@ describe('collectUnitAbilities', () => {
       defender: emptySide(),
       abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
-      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
     const result = AbilitiesEngine.collectUnitAbilities(state, 'attacker')
@@ -83,7 +93,6 @@ describe('collectUnitAbilities', () => {
       defender: emptySide(),
       abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
-      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
     const result = AbilitiesEngine.collectUnitAbilities(state, 'attacker')
@@ -121,7 +130,6 @@ describe('collectUnitAbilities', () => {
       defender: emptySide(),
       abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
-      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
     const result = AbilitiesEngine.collectUnitAbilities(state, 'attacker')
@@ -164,12 +172,9 @@ describe('unit ability invocation', () => {
       defender: emptySide(),
       abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
-      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    CombatState.fromDataStandalone(state).params.runAbilities(
-      'START_OF_COMBAT_ROUND',
-    )
+    runAndDrain(CombatState.fromDataStandalone(state), 'START_OF_COMBAT_ROUND')
 
     expect(invokeCalls).toHaveLength(2)
   })
@@ -207,12 +212,9 @@ describe('unit ability invocation', () => {
       defender: emptySide(),
       abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
-      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    CombatState.fromDataStandalone(state).params.runAbilities(
-      'START_OF_COMBAT_ROUND',
-    )
+    runAndDrain(CombatState.fromDataStandalone(state), 'START_OF_COMBAT_ROUND')
 
     // Only first unit should invoke (second destroyed by first)
     expect(invokeCalls).toHaveLength(1)
@@ -286,12 +288,9 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
       }),
       abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
-      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    CombatState.fromDataStandalone(state).params.runAbilities(
-      'START_OF_COMBAT_ROUND',
-    )
+    runAndDrain(CombatState.fromDataStandalone(state), 'START_OF_COMBAT_ROUND')
 
     // Fighter should be destroyed
     expect(state.defender.units.FIGHTER).toBeUndefined()
@@ -350,12 +349,9 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
       }),
       abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
-      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    CombatState.fromDataStandalone(state).params.runAbilities(
-      'START_OF_COMBAT_ROUND',
-    )
+    runAndDrain(CombatState.fromDataStandalone(state), 'START_OF_COMBAT_ROUND')
 
     expect(afterDestroyCalls).toHaveLength(0)
   })
@@ -420,12 +416,9 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
       }),
       abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
-      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    CombatState.fromDataStandalone(state).params.runAbilities(
-      'START_OF_COMBAT_ROUND',
-    )
+    runAndDrain(CombatState.fromDataStandalone(state), 'START_OF_COMBAT_ROUND')
 
     // Both units should be destroyed
     expect(state.defender.units.FIGHTER).toBeUndefined()
@@ -483,7 +476,6 @@ describe('merged START_OF_COMBAT bucket', () => {
       defender: emptySide(),
       abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
-      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
     CombatState.fromDataStandalone(state).params.runAbilities('START_OF_COMBAT')
@@ -521,12 +513,9 @@ describe('merged START_OF_COMBAT bucket', () => {
       defender: emptySide(),
       abilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
-      currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    CombatState.fromDataStandalone(state).params.runAbilities(
-      'START_OF_COMBAT_ROUND',
-    )
+    runAndDrain(CombatState.fromDataStandalone(state), 'START_OF_COMBAT_ROUND')
 
     expect(calls).toHaveLength(1)
   })

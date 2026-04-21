@@ -19,7 +19,7 @@ describe.forEachSide('WAYLAY', () => {
 
     // 2 destroyers AFB [9, 2] each. Waylay expands targets to all ships.
     // 1 hit should destroy a cruiser (normally AFB can only target fighters).
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL', { attacker: 1 })
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP', { attacker: 1 })
 
     // Without Waylay, cruisers would be unaffected (no fighters to target)
     // With Waylay, 1 cruiser destroyed

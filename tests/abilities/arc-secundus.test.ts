@@ -13,7 +13,7 @@ describe('ARC_SECUNDUS', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Round 1: flagship sustains 1 hit
     t.advanceRound({ attacker: 1 })
     expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBe(true)

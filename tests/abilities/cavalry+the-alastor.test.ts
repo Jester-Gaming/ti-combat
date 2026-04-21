@@ -19,7 +19,9 @@ describe('CAVALRY + THE_ALASTOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('THE_ALASTOR')).not.toHaveLength(0)
     expect(t.abilityLog('CAVALRY')).not.toHaveLength(0)
@@ -51,7 +53,9 @@ describe('CAVALRY + THE_ALASTOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('THE_ALASTOR')).not.toHaveLength(0)
     expect(t.abilityLog('CAVALRY')).not.toHaveLength(0)

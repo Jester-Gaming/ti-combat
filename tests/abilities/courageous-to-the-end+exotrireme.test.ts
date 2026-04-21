@@ -27,7 +27,7 @@ describe.forEachSide('COURAGEOUS_TO_THE_END + EXOTRIREME', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'END')
+    t.advanceToTiming('END_OF_COMBAT_ROUND', 0, 'SPACE_COMBAT')
     const branches = t.step()
 
     // Courageous rolls 2d5 (Exotrireme II combat value) → 3 outcomes → 3 branches.

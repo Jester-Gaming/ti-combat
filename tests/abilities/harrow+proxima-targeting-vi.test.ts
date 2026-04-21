@@ -26,7 +26,11 @@ describe('HARROW + PROXIMA_TARGETING_VI', () => {
     // Walk through BOMBARDMENT → SCD → GROUND_COMBAT:START (Proxima fires its
     // two bombardments) → DICE_ROLL → ASSIGN_HITS and stop before END. Force
     // every roll up to now to 0 hits so the defender survives to the END step.
-    t.advanceTo('GROUND_COMBAT', 'END', { attacker: 0, defender: 0 })
+    t.advanceToTiming(
+      'END_OF_COMBAT_ROUND',
+      { attacker: 0, defender: 0 },
+      'GROUND_COMBAT',
+    )
     // END fires Harrow's bombardment; force 2 defender hits.
     t.advanceRound({ attacker: 0, defender: 2 })
 
@@ -58,7 +62,11 @@ describe('HARROW + PROXIMA_TARGETING_VI', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'END', { attacker: 0, defender: 0 })
+    t.advanceToTiming(
+      'END_OF_COMBAT_ROUND',
+      { attacker: 0, defender: 0 },
+      'GROUND_COMBAT',
+    )
     // Harrow bombards with 2 dreadnought dice; force 2 raw hits. Proxima's
     // BEFORE_ASSIGN_HITS invoke fires under the nested BOMBARDMENT meta and
     // cancels 2 hits (one per galvanized infantry) — nothing lands.
@@ -91,7 +99,11 @@ describe('HARROW + PROXIMA_TARGETING_VI', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'END', { attacker: 0, defender: 0 })
+    t.advanceToTiming(
+      'END_OF_COMBAT_ROUND',
+      { attacker: 0, defender: 0 },
+      'GROUND_COMBAT',
+    )
     // 2 raw Harrow hits − 1 cancelled = 1 hit lands on defender.
     t.advanceRound({ attacker: 0, defender: 2 })
 

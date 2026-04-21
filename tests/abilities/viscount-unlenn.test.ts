@@ -16,7 +16,7 @@ describe.forEachSide('VISCOUNT_UNLENN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('VISCOUNT_UNLENN')).not.toHaveLength(0)
@@ -44,7 +44,7 @@ describe.forEachSide('VISCOUNT_UNLENN', () => {
       },
     })
 
-    t.advanceTo('AFB', 'ASSIGN_HITS', 0)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 0, 'AFB')
     const pool = t.dicePool()
 
     // Destroyer AFB: [9, 2] — Viscount only affects combat dice, not AFB
@@ -65,7 +65,7 @@ describe.forEachSide('VISCOUNT_UNLENN', () => {
     })
 
     // Round 1: Viscount adds extra die
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool1 = t.dicePool()
     expect(pool1.attacker).toContainDice('DREADNOUGHT', [5, 2])

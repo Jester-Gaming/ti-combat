@@ -19,7 +19,7 @@ describe.forEachSide('EIDOLON_MAXIMUM + WAYLAY', () => {
     })
 
     // Advance past AFB where Waylay makes AFB target all ships
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL', { attacker: 3 })
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP', { attacker: 3 })
 
     // Fighter and Cruiser can be hit, but Mech should survive
     expect(t.attacker.units.MECH).toHaveLength(1)

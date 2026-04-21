@@ -33,7 +33,7 @@ describe('AMBUSH + COURAGEOUS_TO_THE_END', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceToTiming('START_OF_COMBAT')
     const branches = t.step()
 
     expect(branches).toHaveLength(4)
@@ -101,7 +101,7 @@ describe('AMBUSH + COURAGEOUS_TO_THE_END', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceToTiming('START_OF_COMBAT')
     const branches = t.step()
 
     expect(branches).toHaveLength(10)

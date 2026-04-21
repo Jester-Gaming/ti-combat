@@ -21,10 +21,10 @@ describe.forEachSide('WATCHFUL_OJZ', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
-    expect(t.state.currentPhase.meta).toBe('COMPLETE')
+    expect(t.isFinished()).toBe(true)
     // All 3 cruisers saved in RETREAT config (2 by Ojz + 1 by RETREAT)
     const saved = (
       t.state.abilities.attacker.RETREAT as Record<string, unknown>
@@ -49,7 +49,7 @@ describe.forEachSide('WATCHFUL_OJZ', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('WATCHFUL_OJZ')).toHaveLength(0)

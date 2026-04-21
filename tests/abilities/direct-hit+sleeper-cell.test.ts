@@ -20,7 +20,7 @@ describe.forEachSide('DIRECT_HIT + SLEEPER_CELL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 1 hit to defender → dreadnought sustains → Direct Hit destroys it
     t.advanceRound({ defender: 1 })
 
@@ -47,7 +47,7 @@ describe.forEachSide('DIRECT_HIT + SLEEPER_CELL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 1 hit → War Sun sustains → DH destroys War Sun
     t.advanceRound({ defender: 1 })
 
@@ -73,13 +73,15 @@ describe.forEachSide('DIRECT_HIT + SLEEPER_CELL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 2 hits to defender → first dreadnought sustains → DH destroys it → SC fires immediately
     // Second dreadnought sustains remaining hit
     t.advanceRound({ defender: 2 })
 
     expect(t.abilityLog('DIRECT_HIT')).not.toHaveLength(0)
+
     // SC should have copied 1 dreadnought (from DH kill)
+    expect(t.defender.units.DREADNOUGHT).toHaveLength(1)
     expect(t.attacker.units.DREADNOUGHT).toHaveLength(1)
   })
 })

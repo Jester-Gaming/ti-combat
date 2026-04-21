@@ -17,7 +17,7 @@ describe('SALVAGE_OPERATIONS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Defender takes 1 hit, attacker takes 0
     t.advanceRound({ defender: 1 })
 
@@ -43,7 +43,7 @@ describe('SALVAGE_OPERATIONS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Attacker takes 1 hit, defender takes 0 — attacker loses
     t.advanceRound({ attacker: 1 })
 
@@ -72,7 +72,7 @@ describe('SALVAGE_OPERATIONS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Attacker loses 1 cruiser (3→2), defender eliminated
     t.advanceRound({ attacker: 1, defender: 1 })
 
@@ -101,7 +101,7 @@ describe('SALVAGE_OPERATIONS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     expect(t.defender.units.CRUISER).toBeUndefined()

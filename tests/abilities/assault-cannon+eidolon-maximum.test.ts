@@ -18,7 +18,8 @@ describe('ASSAULT_CANNON + EIDOLON_MAXIMUM', () => {
     })
 
     // Advance past START_OF_COMBAT where Assault Cannon fires
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound()
 
     // Assault Cannon fired: 1 defender cruiser destroyed
     expect(t.abilityLog('ASSAULT_CANNON')).not.toHaveLength(0)
@@ -39,7 +40,9 @@ describe('ASSAULT_CANNON + EIDOLON_MAXIMUM', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // Assault Cannon fires at START_OF_COMBAT — 3 non-fighter ships
     // (2 cruisers + Eidolon Maximum mech). Eidolon Maximum only has
@@ -65,7 +68,9 @@ describe('ASSAULT_CANNON + EIDOLON_MAXIMUM', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // Assault Cannon targets MECH (Eidolon Maximum)
     expect(t.abilityLog('ASSAULT_CANNON')).not.toHaveLength(0)

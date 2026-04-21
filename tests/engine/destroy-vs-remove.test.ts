@@ -81,7 +81,9 @@ describe('engine: destroy vs remove', () => {
       customAbilities: [destroyOpponentCruiser, reactToDestroy],
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(whenDestroyFired).toBe(true)
     expect(t.abilityLog('TEST_REACT_DESTROY')).not.toHaveLength(0)
@@ -104,7 +106,9 @@ describe('engine: destroy vs remove', () => {
       customAbilities: [removeOpponentCruiser, reactToDestroy],
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(whenDestroyFired).toBe(false)
     expect(t.abilityLog('TEST_REACT_DESTROY')).toHaveLength(0)

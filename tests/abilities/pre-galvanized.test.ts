@@ -19,7 +19,7 @@ describe.forEachSide('PRE_GALVANIZED', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     const cruisers = t.attacker.units.CRUISER!
     expect(cruisers).toHaveLength(2)
@@ -43,7 +43,7 @@ describe.forEachSide('PRE_GALVANIZED', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     const pool = t.dicePool()
@@ -68,7 +68,7 @@ describe.forEachSide('PRE_GALVANIZED', () => {
     })
 
     // Stops after AFB dice are rolled (attacker AFB from destroyer)
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP')
 
     const pool = t.dicePool()
     // Destroyer AFB base [9, 2] -> galvanized [9, 3]
@@ -91,7 +91,7 @@ describe.forEachSide('PRE_GALVANIZED', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     const cruisers = t.attacker.units.CRUISER!
     expect(cruisers).toHaveLength(2)
@@ -115,7 +115,7 @@ describe.forEachSide('PRE_GALVANIZED', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     expect(t.attacker.units.CRUISER![0].subtypes).toContain('Galvanized')
     expect(t.attacker.units.DREADNOUGHT![0].subtypes).toBeUndefined()

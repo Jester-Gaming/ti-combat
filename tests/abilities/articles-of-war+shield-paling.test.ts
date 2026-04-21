@@ -17,7 +17,7 @@ describe.forEachSide('ARTICLES_OF_WAR + SHIELD_PALING', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 

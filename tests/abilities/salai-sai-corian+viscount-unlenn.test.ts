@@ -17,7 +17,7 @@ describe.forEachSide('SALAI_SAI_CORIAN + VISCOUNT_UNLENN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1, DREADNOUGHT: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('VISCOUNT_UNLENN')).not.toHaveLength(0)

@@ -26,7 +26,7 @@ describe.forEachSide(
         },
       })
 
-      t.advanceTo('SPACE_COMBAT', 'START')
+      t.advanceTo('SPACE_COMBAT')
       t.advanceRound({ defender: 1 })
 
       // War Sun lost sustain via PWS, Void Shielding grants it back

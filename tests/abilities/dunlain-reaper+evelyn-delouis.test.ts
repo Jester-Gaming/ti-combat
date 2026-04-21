@@ -20,7 +20,7 @@ describe('DUNLAIN_REAPER + EVELYN_DELOUIS', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('DUNLAIN_REAPER')).not.toHaveLength(0)

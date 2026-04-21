@@ -18,7 +18,7 @@ describe('X_89_BACTERIAL_WEAPON', () => {
     })
 
     // Bombardment: 1 natural hit, X-89 doubles to 2
-    t.advanceTo('SPACE_CANNON_DEFENSE', undefined, { defender: 1 })
+    t.advanceTo('SPACE_CANNON_DEFENSE', { defender: 1 })
 
     expect(t.abilityLog('X_89_BACTERIAL_WEAPON')).not.toHaveLength(0)
     expect(t.defender.units.INFANTRY).toHaveLength(2)
@@ -38,7 +38,7 @@ describe('X_89_BACTERIAL_WEAPON', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // Attacker produces 1 natural hit, X-89 doubles to 2
     t.advanceRound({ defender: 1 })
 
@@ -61,10 +61,10 @@ describe('X_89_BACTERIAL_WEAPON', () => {
     })
 
     // Bombardment: 1 natural hit, X-89 doubles to 2
-    t.advanceTo('SPACE_CANNON_DEFENSE', undefined, { defender: 1 })
+    t.advanceTo('SPACE_CANNON_DEFENSE', { defender: 1 })
     expect(t.defender.units.INFANTRY).toHaveLength(3)
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // Ground combat: 1 natural hit, X-89 doubles to 2
     t.advanceRound({ defender: 1 })
 

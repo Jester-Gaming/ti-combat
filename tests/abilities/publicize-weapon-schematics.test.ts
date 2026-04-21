@@ -25,7 +25,7 @@ describe.forEachSide('PUBLICIZE_WEAPON_SCHEMATICS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 1 hit to attacker: War Sun can't sustain (PWS removed it)
     t.advanceRound({ attacker: 1 })
 
@@ -55,7 +55,7 @@ describe.forEachSide('PUBLICIZE_WEAPON_SCHEMATICS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     // Dreadnought sustains normally

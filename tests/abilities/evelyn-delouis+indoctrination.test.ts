@@ -20,7 +20,7 @@ describe('EVELYN_DELOUIS + INDOCTRINATION', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('INDOCTRINATION')).not.toHaveLength(0)
@@ -51,7 +51,7 @@ describe('EVELYN_DELOUIS + INDOCTRINATION', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('INDOCTRINATION')).not.toHaveLength(0)

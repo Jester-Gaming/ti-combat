@@ -1,16 +1,63 @@
 import { describe, expect, it } from 'vitest'
 
-import { CombatEngine, CombatState, type CombatStateData } from '@/combat'
+import {
+  CombatEngine,
+  CombatState,
+  type CombatStateData,
+  getInitialMetaPhase,
+  type MetaPhase,
+} from '@/combat'
 import { buildCombatState } from '@/hooks/combat-setup/build-combat-state'
+
+import { transitionAndLoad } from '../utils/combat-test'
 
 function countMechs(data: CombatStateData): number {
   return data.attacker.units['MECH']?.length ?? 0
 }
 
-function advanceDeterministic(state: CombatState, round: number) {
-  const outcomes = state.advance(round)
+/** Drive one step, loading the next phase's script when the stack drains.
+ *  Returns the resulting `{ state, meta }`. Mirrors the engine's flow control
+ *  but without the cache/round logic — sufficient for tests that just need
+ *  deterministic progression. */
+function advanceDeterministic(
+  state: CombatState,
+  round: number,
+  meta: MetaPhase,
+) {
+  let currentMeta = meta
+  if (state.pendingSteps.length === 0) {
+    state.loadPhaseScript(currentMeta, round)
+  }
+  const outcomes = state.advance()
   expect(outcomes).toHaveLength(1)
-  return outcomes[0].state
+  const next = outcomes[0].state
+  if (next.pendingSteps.length === 0 && !next.isFinished()) {
+    const nextMeta = transitionAndLoad(next, currentMeta, round)
+    if (nextMeta) currentMeta = nextMeta
+  }
+  return { state: next, meta: currentMeta }
+}
+
+/** Drive step-atomic advance() past the combat round's START_OF_COMBAT*
+ *  timings and `_postStartOfCombatRound`, stopping before the combat dice
+ *  roll (`_doCombatDiceRoll`). */
+function advancePastStartOfCombat(
+  state: CombatState,
+  round: number,
+  meta: MetaPhase,
+) {
+  let s = state
+  if (s.pendingSteps.length === 0) s.loadPhaseScript(meta, round)
+  while (true) {
+    const top = s.peekStep()
+    if (top && top.kind === 'method' && top.fn.name === '_doCombatDiceRoll') {
+      break
+    }
+    const outcomes = s.advance()
+    if (outcomes.length !== 1 || outcomes[0].probability !== 1) break
+    s = outcomes[0].state
+  }
+  return s
 }
 
 describe('DEPLOY uses limit in simulation', () => {
@@ -82,13 +129,15 @@ describe('DEPLOY uses limit in simulation', () => {
 
     // Advance through BOMBARDMENT, SCD, COMMIT_UNITS to GROUND_COMBAT/START
     let state = initialState
-    while (state.data.currentPhase.meta !== 'GROUND_COMBAT') {
-      state = advanceDeterministic(state, 0)
+    let meta: MetaPhase = getInitialMetaPhase(state.combatMode)
+    while (meta !== 'GROUND_COMBAT') {
+      ;({ state, meta } = advanceDeterministic(state, 0, meta))
     }
-    expect(state.data.currentPhase.micro).toBe('START')
 
-    // GROUND_COMBAT/START — deploy fires here
-    state = advanceDeterministic(state, 0)
+    // GROUND_COMBAT start block — deploy fires in START_OF_COMBAT. Drive
+    // through START + START_OF_COMBAT + _postStartOfCombatRound so the
+    // deploy abilities resolve before we inspect state.
+    state = advancePastStartOfCombat(state, 0, meta)
     expect(countMechs(state.data)).toBe(1) // 1 mech deployed
     const usesAfterRound1 =
       state.data.abilities.attacker['DUNLAIN_REAPER']?.uses

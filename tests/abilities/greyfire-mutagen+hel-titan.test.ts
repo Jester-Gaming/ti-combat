@@ -18,7 +18,8 @@ describe.forEachSide('GREYFIRE_MUTAGEN + HEL_TITAN', () => {
     })
 
     // PDS counts as ground force via Hel-Titan → 2 ground forces → Greyfire fires
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+    t.advanceRound()
 
     expect(t.abilityLog('GREYFIRE_MUTAGEN')).not.toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(2)

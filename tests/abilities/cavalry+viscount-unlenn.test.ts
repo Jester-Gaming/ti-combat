@@ -17,7 +17,7 @@ describe.forEachSide('CAVALRY + VISCOUNT_UNLENN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     // Both abilities fired
@@ -50,7 +50,7 @@ describe.forEachSide('CAVALRY + VISCOUNT_UNLENN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     // Cavalry takes the only Cruiser, Viscount has no plain Cruiser left
@@ -75,7 +75,7 @@ describe.forEachSide('CAVALRY + VISCOUNT_UNLENN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     // Viscount takes the only Cruiser, Cavalry has no plain Cruiser left
@@ -100,7 +100,7 @@ describe.forEachSide('CAVALRY + VISCOUNT_UNLENN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('CAVALRY')).not.toHaveLength(0)
@@ -132,7 +132,7 @@ describe.forEachSide('CAVALRY + VISCOUNT_UNLENN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     // Both abilities fired on the same unit

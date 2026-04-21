@@ -20,7 +20,7 @@ describe.forEachSide(
         },
       })
 
-      t.advanceTo('GROUND_COMBAT', 'START')
+      t.advanceTo('GROUND_COMBAT')
       // Attacker dice produce 1 hit + VPW adds 1 = 2 total on defender
       // Defender dice produce 1 hit on attacker
       t.advanceRound({ attacker: 1, defender: 1 })

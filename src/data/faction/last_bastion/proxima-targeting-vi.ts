@@ -49,12 +49,9 @@ export const proximaTargetingVi: Ability<Params> = {
       context: 'GROUND_COMBAT',
       isCallable: params => params.resolveBombardment,
       call: ctx => {
-        ctx.resolveStep('BOMBARDMENT', { dice: [[8, 3]] }, branchCtx => {
-          branchCtx.resolveStep('BOMBARDMENT', {
-            dice: [[8, 3]],
-            target: 'OWN',
-          })
-        })
+        // LIFO: push self-target first so the opponent bombardment runs first.
+        ctx.resolveStep('BOMBARDMENT', { dice: [[8, 3]], target: 'OWN' })
+        ctx.resolveStep('BOMBARDMENT', { dice: [[8, 3]] })
       },
     },
   ],

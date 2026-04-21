@@ -22,7 +22,7 @@ describe('DIRECT_HIT + RAID_FORMATION', () => {
 
     // 3 destroyers AFB 9x2 = 6 dice; pick 3 hits: 3 - 1 fighter = 2 excess
     // RF damages the dreadnought directly (not via sustain)
-    t.advanceTo('AFB', 'ASSIGN_HITS', 3)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 3, 'AFB')
 
     expect(t.abilityLog('RAID_FORMATION')).not.toHaveLength(0)
     // DH should NOT have fired (RF damage is not sustain usage)

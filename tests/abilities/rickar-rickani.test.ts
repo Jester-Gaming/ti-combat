@@ -14,7 +14,7 @@ describe('RICKAR_RICKANI', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -35,7 +35,7 @@ describe('RICKAR_RICKANI', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -54,7 +54,7 @@ describe('RICKAR_RICKANI', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1, FIGHTER: 2 } },
     })
 
-    t.advanceTo('AFB', 'ASSIGN_HITS', 0)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 0, 'AFB')
     const pool = t.dicePool()
 
     // AFB: [9, 2] unmodified

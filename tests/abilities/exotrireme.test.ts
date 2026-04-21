@@ -18,7 +18,7 @@ describe.forEachSide('EXOTRIREME', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     expect(t.attacker.units.DREADNOUGHT).toBeUndefined()
@@ -41,7 +41,7 @@ describe.forEachSide('EXOTRIREME', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     expect(t.attacker.units.DREADNOUGHT).toBeUndefined()
@@ -65,7 +65,7 @@ describe.forEachSide('EXOTRIREME', () => {
     })
 
     // Defender cruiser dies in round 1 from combat hits → no targets at round end
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Defender is wiped; Exotrireme II cannot fire because nothing to target
@@ -89,7 +89,7 @@ describe.forEachSide('EXOTRIREME', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     // Both dreadnoughts sacrifice, each destroying 2 cruisers (4 total)
@@ -112,7 +112,7 @@ describe.forEachSide('EXOTRIREME', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound() // both dreads sacrifice → 4 opponent ships destroyed
 
     expect(t.attacker.units.DREADNOUGHT).toBeUndefined()
@@ -134,7 +134,7 @@ describe.forEachSide('EXOTRIREME', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('EXOTRIREME')).toHaveLength(0)
@@ -154,7 +154,7 @@ describe.forEachSide('EXOTRIREME', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     // Exotrireme I (base) has no ability attached

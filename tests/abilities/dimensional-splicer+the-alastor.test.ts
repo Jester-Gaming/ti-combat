@@ -24,7 +24,8 @@ describe('DIMENSIONAL_SPLICER + THE_ALASTOR', () => {
 
     // Alastor is attacker (resolves first in alternation),
     // DS is defender (resolves second)
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound()
 
     expect(t.abilityLog('THE_ALASTOR')).not.toHaveLength(0)
     expect(t.abilityLog('DIMENSIONAL_SPLICER')).not.toHaveLength(0)
@@ -55,7 +56,9 @@ describe('DIMENSIONAL_SPLICER + THE_ALASTOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // DS targets flagship -> sustains
     expect(t.abilityLog('DIMENSIONAL_SPLICER')).not.toHaveLength(0)

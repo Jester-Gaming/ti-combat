@@ -19,7 +19,7 @@ describe.forEachSide('THE_ALASTOR + WAYLAY', () => {
 
     // 2 AFB hits with Waylay -> target all ships including infantry (via Alastor)
     // Advance past AFB assignment
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL', { defender: 2 })
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP', { defender: 2 })
 
     // 2 hits: flagship sustains 1 (damaged), 1 infantry destroyed
     expect(t.defender.units.INFANTRY).toHaveLength(1)
@@ -43,7 +43,7 @@ describe.forEachSide('THE_ALASTOR + WAYLAY', () => {
 
     // 2 hits from AFB with Waylay -> both units sustain
     // Advance past AFB assignment
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL', { defender: 2 })
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP', { defender: 2 })
 
     expect(t.defender.units.FLAGSHIP![0].isDamaged).toBe(true)
     expect(t.defender.units.MECH![0].isDamaged).toBe(true)

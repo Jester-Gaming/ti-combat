@@ -19,7 +19,7 @@ describe.forEachSide('TRRAKAN_AUN_ZULOK', () => {
       },
     })
 
-    t.advanceTo('AFB', 'ASSIGN_HITS', 0)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 0, 'AFB')
     const pool = t.dicePool()
 
     // Destroyer AFB: [9, 2] + 1 from Trrakan = [9, 3]

@@ -13,7 +13,7 @@ describe('TECHNOLOGICAL_SINGULARITY', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Verify unit was actually destroyed

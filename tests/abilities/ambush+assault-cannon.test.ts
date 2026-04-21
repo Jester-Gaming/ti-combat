@@ -38,7 +38,7 @@ describe('AMBUSH + ASSAULT_CANNON', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 4 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceToTiming('START_OF_COMBAT')
     const branches = t.step()
 
     // 4 Cartesian Ambush branches (2 dice × 2 outcomes each).
@@ -89,7 +89,7 @@ describe('AMBUSH + ASSAULT_CANNON', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceToTiming('START_OF_COMBAT')
     const branches = t.step()
 
     // 2 branches from Ambush (1 die at 7+).
@@ -139,7 +139,7 @@ describe('AMBUSH + ASSAULT_CANNON', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 4 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceToTiming('START_OF_COMBAT')
     const branches = t.step()
 
     expect(branches).toHaveLength(4)

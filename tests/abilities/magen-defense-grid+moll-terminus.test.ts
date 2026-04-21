@@ -17,7 +17,9 @@ describe('MAGEN_DEFENSE_GRID + MOLL_TERMINUS', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     // MDG hit: attacker mech can't sustain (Moll blocks opponent ground forces)
     expect(t.abilityLog('MAGEN_DEFENSE_GRID')).not.toHaveLength(0)

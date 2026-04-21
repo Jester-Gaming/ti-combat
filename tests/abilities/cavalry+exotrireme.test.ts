@@ -26,7 +26,7 @@ describe.forEachSide('CAVALRY + EXOTRIREME', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     // Only the plain Dreadnought was sacrificed; the Cavalry variant survives.
@@ -62,7 +62,7 @@ describe.forEachSide('CAVALRY + EXOTRIREME', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     // Cavalry dreadnought sacrificed; plain dreadnought survives.
@@ -97,7 +97,7 @@ describe.forEachSide('CAVALRY + EXOTRIREME', () => {
 
     // Capture the Cavalry dreadnought's id after CAVALRY fires (START_OF_COMBAT)
     // so we can confirm it survives once combat wraps and the subtype is stripped.
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP')
     const cavalryId =
       t.state.attacker.units['DREADNOUGHT:Cavalry' as UnitType]![0]
 

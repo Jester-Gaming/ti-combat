@@ -22,7 +22,8 @@ describe.forEachSide('REFLECTIVE_SHIELDING + WAYLAY', () => {
     // Waylay makes all ships valid targets
     // 1 AFB hit → Dreadnought sustains → RS produces 2 hits against attacker
     // Advance past AFB to SPACE_COMBAT:DICE_ROLL
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL', 1)
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound(1)
 
     expect(t.abilityLog('REFLECTIVE_SHIELDING')).not.toHaveLength(0)
     // Dreadnought sustained (damaged but alive)

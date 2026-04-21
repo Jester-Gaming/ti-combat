@@ -20,7 +20,7 @@ describe.forEachSide('METALI_VOID_SHIELDING + REFLECTIVE_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Defender receives 1 dice hit, Void Shielding sustains →
     // triggers Reflective Shielding → attacker receives 2 extra hits
     t.advanceRound({ defender: 1 })

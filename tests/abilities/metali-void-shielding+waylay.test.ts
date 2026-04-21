@@ -22,7 +22,7 @@ describe.forEachSide('METALI_VOID_SHIELDING + WAYLAY', () => {
     // Waylay makes all ships valid targets
     // 1 AFB hit → MVS absorbs it on Cruiser (pseudo-sustain) → Cruiser damaged but alive
     // Advance past AFB to SPACE_COMBAT:DICE_ROLL
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL', 1)
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP', 1)
 
     expect(t.abilityLog('METALI_VOID_SHIELDING')).not.toHaveLength(0)
     // Both cruisers survive — one damaged by MVS pseudo-sustain
@@ -45,7 +45,7 @@ describe.forEachSide('METALI_VOID_SHIELDING + WAYLAY', () => {
 
     // Without Waylay, AFB only hits fighters — MVS only targets non-fighter ships
     // 2 AFB hits → 2 fighters destroyed
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL', 2)
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP', 2)
 
     // MVS should not fire (no hits pending against ships)
     expect(t.defender.units.CRUISER).toHaveLength(2)

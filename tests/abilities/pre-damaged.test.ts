@@ -16,7 +16,7 @@ describe.forEachSide('PRE_DAMAGED', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
     expect(t.attacker.units.DREADNOUGHT![1].isDamaged).toBeUndefined()
@@ -35,7 +35,7 @@ describe.forEachSide('PRE_DAMAGED', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
     expect(t.attacker.units.WAR_SUN![0].isDamaged).toBeUndefined()
@@ -54,7 +54,7 @@ describe.forEachSide('PRE_DAMAGED', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
     expect(t.attacker.units.DREADNOUGHT![1].isDamaged).toBe(true)

@@ -10,7 +10,7 @@ describe.forEachSide('SUSTAIN_DAMAGE', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
@@ -26,7 +26,7 @@ describe.forEachSide('SUSTAIN_DAMAGE', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 0 })
 
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
@@ -40,7 +40,7 @@ describe.forEachSide('SUSTAIN_DAMAGE', () => {
     })
 
     // First round: sustain 1 hit
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
@@ -58,7 +58,7 @@ describe.forEachSide('SUSTAIN_DAMAGE', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 2 })
 
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
@@ -78,7 +78,7 @@ describe.forEachSide('SUSTAIN_DAMAGE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Default priority: DREADNOUGHT comes before WAR_SUN
@@ -101,7 +101,7 @@ describe.forEachSide('SUSTAIN_DAMAGE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Custom priority: WAR_SUN before DREADNOUGHT
@@ -124,7 +124,7 @@ describe.forEachSide('SUSTAIN_DAMAGE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Dreadnought excluded from spacePriority — doesn't sustain, destroyed
@@ -138,7 +138,7 @@ describe.forEachSide('SUSTAIN_DAMAGE', () => {
       defender: { faction: 'ARBOREC', units: { MECH: 1 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ defender: 1 })
 
     expect(t.defender.units.MECH![0].isDamaged).toBe(true)
@@ -154,7 +154,7 @@ describe.forEachSide('SUSTAIN_DAMAGE', () => {
     })
 
     // Only 1 hit for 2 dreadnoughts
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Only one sustains
@@ -173,7 +173,7 @@ describe.forEachSide('SUSTAIN_DAMAGE', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1, defender: 1 })
 
     expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)

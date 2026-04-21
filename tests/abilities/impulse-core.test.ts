@@ -18,7 +18,8 @@ describe.forEachSide('IMPULSE_CORE', () => {
     })
 
     // START_OF_COMBAT fires before DICE_ROLL
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound()
 
     expect(t.attacker.units.DESTROYER).toBeUndefined()
     expect(t.defender.units.CRUISER).toHaveLength(1)
@@ -39,7 +40,9 @@ describe.forEachSide('IMPULSE_CORE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.DESTROYER).toBeUndefined()
     expect(t.defender.units.DREADNOUGHT).toHaveLength(1)
@@ -60,7 +63,9 @@ describe.forEachSide('IMPULSE_CORE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // No non-fighter ships to target — ability does not fire
     expect(t.attacker.units.DESTROYER).toHaveLength(1)
@@ -81,7 +86,9 @@ describe.forEachSide('IMPULSE_CORE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.DESTROYER).toHaveLength(1)
     expect(t.defender.units.CRUISER).toHaveLength(2)
@@ -102,7 +109,9 @@ describe.forEachSide('IMPULSE_CORE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('IMPULSE_CORE')).toHaveLength(0)
   })
@@ -121,7 +130,9 @@ describe.forEachSide('IMPULSE_CORE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.DESTROYER).toBeUndefined()
     // Non-fighter ship targeted, not fighter
@@ -143,7 +154,7 @@ describe.forEachSide('IMPULSE_CORE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     t.advanceRound()
 

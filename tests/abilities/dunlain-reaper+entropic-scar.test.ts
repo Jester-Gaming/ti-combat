@@ -21,7 +21,7 @@ describe('DUNLAIN_REAPER + ENTROPIC_SCAR', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound(0)
 
     // DEPLOY is a unit ability on MECH, so Entropic Scar disables it

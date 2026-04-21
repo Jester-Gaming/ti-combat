@@ -19,7 +19,7 @@ describe.forEachSide('RAID_FORMATION', () => {
 
     // 3 destroyers with AFB 9x2 each = 6 dice total
     // Pick branch with 3 hits: 3 hits - 1 fighter = 2 excess
-    t.advanceTo('AFB', 'ASSIGN_HITS', 3)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 3, 'AFB')
 
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
     expect(t.defender.units.DREADNOUGHT![1].isDamaged).toBe(true)
@@ -41,7 +41,7 @@ describe.forEachSide('RAID_FORMATION', () => {
 
     // 3 destroyers, no fighters on defender side
     // Pick branch with 3 hits: 3 excess but no sustain targets
-    t.advanceTo('AFB', 'ASSIGN_HITS', 3)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 3, 'AFB')
 
     expect(t.defender.units.CRUISER).toHaveLength(3)
     expect(t.defender.units.CRUISER![0].isDamaged).toBeFalsy()
@@ -66,7 +66,7 @@ describe.forEachSide('RAID_FORMATION', () => {
 
     // 3 destroyers, no fighters, 3 excess hits
     // War sun has lost sustain via Publicize Weapon Schematics
-    t.advanceTo('AFB', 'ASSIGN_HITS', 3)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 3, 'AFB')
 
     expect(t.defender.units.WAR_SUN![0].isDamaged).toBeFalsy()
   })

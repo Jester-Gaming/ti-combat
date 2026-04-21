@@ -17,7 +17,7 @@ describe('VALKYRIE_EXOSKELETON + X_89_BACTERIAL_WEAPON', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // 1 raw hit on each side
     // X-89 doubles defender hits at AFTER_DICE_ROLL: 1 → 2
     // Mech sustains attacker's hit → Exoskeleton adds 1 at AFTER_SUSTAIN_DAMAGE_USE

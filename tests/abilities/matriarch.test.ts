@@ -13,7 +13,7 @@ describe('MATRIARCH', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -31,7 +31,7 @@ describe('MATRIARCH', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     expect(t.attacker.units.FIGHTER).toBeUndefined()
@@ -48,7 +48,7 @@ describe('MATRIARCH', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 3 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 3 })
 
     expect(t.attacker.units.INFANTRY).toBeUndefined()
@@ -65,7 +65,7 @@ describe('MATRIARCH', () => {
       defender: { faction: 'ARBOREC', units: { PDS: 2, INFANTRY: 1 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START', { attacker: 2 })
+    t.advanceTo('GROUND_COMBAT', { attacker: 2 })
 
     // Both infantry and fighter destroyed by SCD hits
     expect(t.attacker.units.INFANTRY).toBeUndefined()

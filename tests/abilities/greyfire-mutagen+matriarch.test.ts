@@ -19,7 +19,9 @@ describe('GREYFIRE_MUTAGEN + MATRIARCH', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     // Greyfire should fire: opponent has 2 ground forces (infantry + fighter)
     expect(t.abilityLog('GREYFIRE_MUTAGEN')).not.toHaveLength(0)
@@ -44,7 +46,9 @@ describe('GREYFIRE_MUTAGEN + MATRIARCH', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     // Greyfire should not fire: opponent has no infantry to replace
     // (2 fighters count as ground forces for threshold, but no infantry target)

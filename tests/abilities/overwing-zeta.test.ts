@@ -22,7 +22,9 @@ describe.forEachSide('OVERWING_ZETA', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('OVERWING_ZETA')).not.toHaveLength(0)
     expect(t.attacker.units.FLAGSHIP).toHaveLength(1)
@@ -49,7 +51,9 @@ describe.forEachSide('OVERWING_ZETA', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.FLAGSHIP).toHaveLength(1)
     expect(t.attacker.units.DESTROYER).toHaveLength(2)
@@ -75,7 +79,9 @@ describe.forEachSide('OVERWING_ZETA', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // Cruisers processed first, cap at 2 total → 2 cruisers, 0 destroyers
     expect(t.attacker.units.CRUISER).toHaveLength(3) // 1 original + 2 placed
@@ -98,7 +104,9 @@ describe.forEachSide('OVERWING_ZETA', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('OVERWING_ZETA')).toHaveLength(0)
     expect(t.attacker.units.CRUISER).toHaveLength(2)
@@ -130,7 +138,9 @@ describe.forEachSide('OVERWING_ZETA', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.FLAGSHIP).toHaveLength(1) // kept (highest priority)
     expect(t.attacker.units.CRUISER).toHaveLength(2) // kept (high priority)
@@ -163,7 +173,7 @@ describe.forEachSide('OVERWING_ZETA', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     // R1: 3 non-fighter + 2 to place = 5 > 4 fleet pool → doesn't fire
     // Attacker receives 2 hits → 1 cruiser remains
@@ -202,7 +212,7 @@ describe.forEachSide('OVERWING_ZETA', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('OVERWING_ZETA')).toHaveLength(0)

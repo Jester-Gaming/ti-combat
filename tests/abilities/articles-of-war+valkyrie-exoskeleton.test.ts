@@ -22,7 +22,7 @@ describe.forEachSide('ARTICLES_OF_WAR + VALKYRIE_EXOSKELETON', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     // Mech sustains

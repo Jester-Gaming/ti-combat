@@ -17,7 +17,7 @@ describe.forEachSide('BROTHER_MILOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Attacker receives 1 hit — fighter destroyed, Brother Milor places 2 fighters
     t.advanceRound({ attacker: 1 })
 
@@ -39,7 +39,7 @@ describe.forEachSide('BROTHER_MILOR', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // Attacker receives 1 hit — 1 infantry destroyed, Brother Milor adds 2
     t.advanceRound({ attacker: 1 })
 
@@ -62,7 +62,7 @@ describe.forEachSide('BROTHER_MILOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Defender receives 1 hit — fighter destroyed, but it's opponent's unit
     t.advanceRound({ defender: 1 })
 

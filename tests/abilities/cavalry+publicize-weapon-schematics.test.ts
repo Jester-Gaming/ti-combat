@@ -24,11 +24,13 @@ describe.forEachSide('CAVALRY + PUBLICIZE_WEAPON_SCHEMATICS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
     expect(t.abilityLog('CAVALRY')).not.toHaveLength(0)
 
     // 1 hit on defender: Cavalry War Sun should sustain via subtype stats
-    t.advanceTo('SPACE_COMBAT', 'END', { defender: 1 })
+    t.advanceToTiming('END_OF_COMBAT_ROUND', { defender: 1 }, 'SPACE_COMBAT')
 
     expect(t.defender.units.WAR_SUN).toBeFalsy()
   })

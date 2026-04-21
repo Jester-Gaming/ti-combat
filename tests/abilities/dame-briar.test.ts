@@ -17,7 +17,7 @@ describe.forEachSide('DAME_BRIAR', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Two hits from dreadnoughts destroy a cruiser (after sustain on the other)
     t.advanceRound({ attacker: 1 })
 
@@ -46,7 +46,7 @@ describe.forEachSide('DAME_BRIAR', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     expect(t.attacker.units.INFANTRY).toHaveLength(1)
@@ -67,7 +67,7 @@ describe.forEachSide('DAME_BRIAR', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
     expect(t.attacker.units.CRUISER).toHaveLength(2)
@@ -87,7 +87,7 @@ describe.forEachSide('DAME_BRIAR', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     expect(t.defender.units.CRUISER).toBeUndefined()
@@ -108,7 +108,7 @@ describe.forEachSide('DAME_BRIAR', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     expect(t.attacker.units.CRUISER).toHaveLength(1)
@@ -130,7 +130,7 @@ describe.forEachSide('DAME_BRIAR', () => {
       defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     expect(t.abilityLog('DAME_BRIAR')).not.toHaveLength(0)

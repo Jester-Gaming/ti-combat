@@ -14,7 +14,9 @@ describe('ASSAULT_CANNON + EIDOLON', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // AC fires: 3 non-fighter ships
     expect(t.abilityLog('ASSAULT_CANNON')).not.toHaveLength(0)
@@ -34,7 +36,9 @@ describe('ASSAULT_CANNON + EIDOLON', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // Both fire at START_OF_COMBAT (unlike Eidolon Maximum which is
     // START_OF_COMBAT_ROUND)
@@ -59,7 +63,9 @@ describe('ASSAULT_CANNON + EIDOLON', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // Attacker resolves first: AC fires but Eidolon hasn't transformed
     // MECH on defender side → MECH is not a valid ship target
@@ -82,7 +88,9 @@ describe('ASSAULT_CANNON + EIDOLON', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     // Attacker resolves first: Eidolon fires → MECH becomes ship
     // Defender resolves second: AC fires → MECH is valid target → destroyed

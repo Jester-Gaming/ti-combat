@@ -20,7 +20,7 @@ describe('SLEEPER_CELL + VAN_HAUGE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     // Round 2: 1 more hit destroys flagship → Van Hauge triggers → all ships destroyed
     t.advanceRound({ defender: 3 })
@@ -51,7 +51,7 @@ describe('SLEEPER_CELL + VAN_HAUGE', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Damage flagship
     t.advanceRound({ defender: 1 })
 

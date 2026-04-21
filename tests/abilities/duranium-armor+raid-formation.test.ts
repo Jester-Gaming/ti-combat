@@ -20,7 +20,7 @@ describe.forEachSide('DURANIUM_ARMOR + RAID_FORMATION', () => {
 
     // 3 destroyers AFB 9x2 = 6 dice, 1 fighter
     // 2 hits: 2 - 1 fighter = 1 excess, damages dreadnought
-    t.advanceTo('AFB', 'ASSIGN_HITS', 2)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 2, 'AFB')
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
 
     // Duranium Armor repairs dreadnought since it didn't use sustain

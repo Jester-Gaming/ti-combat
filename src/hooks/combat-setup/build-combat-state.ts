@@ -132,7 +132,6 @@ export function buildCombatState(config: CombatStateConfig): CombatState {
     defenderSide,
     config.mode,
     abilitiesConfig,
-    undefined,
     {
       attacker: sideAbilities.attacker.abilities,
       defender: sideAbilities.defender.abilities,

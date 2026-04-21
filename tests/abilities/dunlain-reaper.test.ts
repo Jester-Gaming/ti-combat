@@ -17,7 +17,7 @@ describe.forEachSide('DUNLAIN_REAPER', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
@@ -39,7 +39,7 @@ describe.forEachSide('DUNLAIN_REAPER', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
     t.advanceRound()
 
@@ -62,7 +62,7 @@ describe.forEachSide('DUNLAIN_REAPER', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     expect(t.attacker.units.MECH).toHaveLength(1)
@@ -83,7 +83,7 @@ describe.forEachSide('DUNLAIN_REAPER', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     expect(t.attacker.units.MECH).toHaveLength(4)

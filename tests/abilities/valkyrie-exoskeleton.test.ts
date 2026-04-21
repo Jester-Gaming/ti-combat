@@ -16,7 +16,7 @@ describe.forEachSide('VALKYRIE_EXOSKELETON', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     // Mech sustains the hit, then Valkyrie Exoskeleton produces 1 hit
@@ -40,7 +40,7 @@ describe.forEachSide('VALKYRIE_EXOSKELETON', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     // Both mechs sustain, each produces 1 hit

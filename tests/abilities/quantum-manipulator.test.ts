@@ -16,7 +16,7 @@ describe.forEachSide('QUANTUM_MANIPULATOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Mech sustains instead of losing a ship
@@ -39,7 +39,7 @@ describe.forEachSide('QUANTUM_MANIPULATOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 2 })
 
     expect(t.defender.units.CRUISER).toHaveLength(1)
@@ -62,7 +62,7 @@ describe.forEachSide('QUANTUM_MANIPULATOR', () => {
     })
 
     // SCO: defender receives 2 hits, Quantum Manipulator should not fire
-    t.advanceTo('SPACE_COMBAT', 'START', { defender: 2 })
+    t.advanceTo('SPACE_COMBAT', { defender: 2 })
 
     expect(t.defender.units.CRUISER).toBeUndefined()
     expect(t.defender.units.MECH![0]?.isDamaged).toBeFalsy()
@@ -82,7 +82,7 @@ describe.forEachSide('QUANTUM_MANIPULATOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Round 1: mech absorbs 1 hit
     t.advanceRound({ defender: 1 })
     expect(t.defender.units.MECH![0].isDamaged).toBe(true)

@@ -18,7 +18,7 @@ describe('AMBUSH', () => {
       defender: { faction: 'ARBOREC', units: { DESTROYER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceToTiming('START_OF_COMBAT')
     const branches = t.step()
 
     // Ambush split: exactly 2 outcomes
@@ -51,7 +51,7 @@ describe('AMBUSH', () => {
       defender: { faction: 'ARBOREC', units: { DESTROYER: 2 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceToTiming('START_OF_COMBAT')
     const branches = t.step()
 
     // 2 dice × 2 outcomes each = 4 Cartesian branches
@@ -82,7 +82,7 @@ describe('AMBUSH', () => {
       defender: { faction: 'ARBOREC', units: { DESTROYER: 3 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceToTiming('START_OF_COMBAT')
     const branches = t.step()
 
     expect(branches).toHaveLength(4)
@@ -100,7 +100,7 @@ describe('AMBUSH', () => {
       defender: { faction: 'ARBOREC', units: { FIGHTER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceToTiming('START_OF_COMBAT')
     const branches = t.step()
 
     // No roll → no split
@@ -120,7 +120,7 @@ describe('AMBUSH', () => {
       defender: { faction: 'ARBOREC', units: { DESTROYER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceToTiming('START_OF_COMBAT')
     const branches = t.step()
 
     expect(branches).toHaveLength(2)

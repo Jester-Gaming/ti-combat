@@ -22,7 +22,9 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('FRAGMENT_REALITY')).not.toHaveLength(0)
     // 1 original + 2 placed = 3
@@ -48,7 +50,9 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.CRUISER).toHaveLength(1)
     expect(t.attacker.units.DESTROYER).toHaveLength(2)
@@ -71,7 +75,9 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('FRAGMENT_REALITY')).toHaveLength(0)
     expect(t.attacker.units.CRUISER).toHaveLength(2)
@@ -104,7 +110,9 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.CRUISER).toHaveLength(2) // kept (highest priority)
     expect(t.attacker.units.DESTROYER).toHaveLength(1) // 2 placed, 1 removed
@@ -136,7 +144,9 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.CRUISER).toHaveLength(2) // 1 + 1
     expect(t.attacker.units.FIGHTER).toHaveLength(5) // all kept
@@ -168,7 +178,9 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.CRUISER).toHaveLength(1) // kept (listed)
     // Carrier is unlisted and removed; Destroyer fills the remaining fleet slot

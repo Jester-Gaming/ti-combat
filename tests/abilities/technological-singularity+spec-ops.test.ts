@@ -20,7 +20,7 @@ describe('TECHNOLOGICAL_SINGULARITY + SPEC_OPS', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 3 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
 
     // Round 1: Spec Ops II active → infantry at [6, 1]
     t.advanceRound({ defender: 1 })

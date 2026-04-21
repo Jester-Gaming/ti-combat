@@ -17,7 +17,9 @@ describe('INDOCTRINATION + MATRIARCH', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     // Indoctrination should not fire: opponent has no infantry
     expect(t.abilityLog('INDOCTRINATION')).toHaveLength(0)
@@ -38,7 +40,9 @@ describe('INDOCTRINATION + MATRIARCH', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     // Indoctrination fires: replaces attacker's infantry
     expect(t.abilityLog('INDOCTRINATION')).not.toHaveLength(0)

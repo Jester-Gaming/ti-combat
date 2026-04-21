@@ -1,16 +1,3 @@
-import type { CombatState } from './combat-state/combat-state'
-import type { LogEntry } from './logger'
-
-/** A node in the probability tree */
-export interface ProbabilityNode {
-  id: number
-  state: CombatState
-  probability: number
-  round: number
-  children: ProbabilityNode[]
-  log?: LogEntry[]
-}
-
 /** State of a single surviving unit */
 interface SurvivorUnit {
   isDamaged?: boolean

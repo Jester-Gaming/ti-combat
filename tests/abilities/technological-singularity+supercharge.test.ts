@@ -18,7 +18,7 @@ describe('TECHNOLOGICAL_SINGULARITY + SUPERCHARGE', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     // Round 1: Supercharge not yet active
     t.advanceRound({ defender: 1 })

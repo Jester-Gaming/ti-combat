@@ -20,7 +20,7 @@ describe('EIDOLON_MAXIMUM + SLEEPER_CELL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 2 hits to defender: mech sustains 1 + 1 more destroys it
     t.advanceRound({ defender: 3 })
 

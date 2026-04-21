@@ -28,7 +28,7 @@ describe('A3_VALIANCE + APOLLO', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 4 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // Attacker takes enough hits to kill the galvanized MECH (2 hits — sustain
     // then destroy).
     t.advanceRound({ attacker: 2 })

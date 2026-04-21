@@ -28,7 +28,9 @@ describe.forEachSide('CAPACITY + FLEET_POOL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.CARRIER).toHaveLength(1)
     expect(t.attacker.units.FIGHTER).toHaveLength(8)
@@ -58,7 +60,9 @@ describe.forEachSide('CAPACITY + FLEET_POOL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.CRUISER).toHaveLength(1)
     expect(t.attacker.units.FIGHTER).toHaveLength(4)
@@ -90,7 +94,7 @@ describe.forEachSide('CAPACITY + FLEET_POOL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     expect(t.attacker.units.FIGHTER).toHaveLength(4)
 
     // Carrier destroyed during round — fighters exceed capacity
@@ -124,7 +128,9 @@ describe.forEachSide('CAPACITY + FLEET_POOL', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.attacker.units.CARRIER).toHaveLength(1)
     expect(t.attacker.units.FIGHTER).toHaveLength(6)

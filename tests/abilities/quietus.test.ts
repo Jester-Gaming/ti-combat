@@ -19,7 +19,7 @@ describe.forEachSide('QUIETUS', () => {
         },
       })
 
-      t.advanceTo('SPACE_COMBAT', 'START')
+      t.advanceTo('SPACE_COMBAT')
       t.advanceRound({ attacker: 1, defender: 1 })
 
       // Neither dreadnought sustained — both destroyed
@@ -66,7 +66,7 @@ describe.forEachSide('QUIETUS', () => {
         },
       })
 
-      t.advanceTo('SPACE_COMBAT', 'START')
+      t.advanceTo('SPACE_COMBAT')
       t.advanceRound({ attacker: 1, defender: 1 })
 
       // Crimson dreadnought sustained
@@ -92,7 +92,7 @@ describe.forEachSide('QUIETUS', () => {
         },
       })
 
-      t.advanceTo('SPACE_COMBAT', 'START')
+      t.advanceTo('SPACE_COMBAT')
       t.advanceRound({ attacker: 1, defender: 1 })
 
       // Attacker dreadnought could not sustain — destroyed
@@ -120,7 +120,7 @@ describe.forEachSide('QUIETUS', () => {
         },
       })
 
-      t.advanceTo('SPACE_COMBAT', 'START')
+      t.advanceTo('SPACE_COMBAT')
 
       // Round 1: 3 hits to attacker — flagship sustains 1, war_sun sustains 1,
       // remaining hit destroys flagship (cost 8, cheaper than war_sun 12)
@@ -151,7 +151,7 @@ describe.forEachSide('QUIETUS', () => {
         },
       })
 
-      t.advanceTo('SPACE_COMBAT', 'START')
+      t.advanceTo('SPACE_COMBAT')
       t.advanceRound({ attacker: 1, defender: 1 })
 
       // Both dreadnoughts destroyed (no sustain, no flagship to restore)

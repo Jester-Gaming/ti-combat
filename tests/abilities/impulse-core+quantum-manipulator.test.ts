@@ -20,7 +20,8 @@ describe.forEachSide('IMPULSE_CORE + QUANTUM_MANIPULATOR', () => {
     })
 
     // Advance past START_OF_COMBAT where Impulse Core fires
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound()
 
     // QM should absorb the IC hit — cruiser survives
     expect(t.defender.units.CRUISER).toHaveLength(1)

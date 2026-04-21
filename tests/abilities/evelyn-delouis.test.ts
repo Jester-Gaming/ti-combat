@@ -19,7 +19,7 @@ describe.forEachSide('EVELYN_DELOUIS', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('EVELYN_DELOUIS')).not.toHaveLength(0)
@@ -45,7 +45,7 @@ describe.forEachSide('EVELYN_DELOUIS', () => {
     })
 
     // Round 1: Evelyn adds extra die
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
     const pool1 = t.dicePool()
     expect(pool1.attacker).toContainDice('INFANTRY', [8, 2])

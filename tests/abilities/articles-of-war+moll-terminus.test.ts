@@ -18,7 +18,7 @@ describe.forEachSide('ARTICLES_OF_WAR + MOLL_TERMINUS', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // 1 hit to defender: with AoW, Moll Terminus is gone,
     // so defender mech should be able to sustain
     t.advanceRound({ defender: 1 })

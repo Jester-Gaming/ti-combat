@@ -17,7 +17,9 @@ describe('HEL_TITAN + INDOCTRINATION', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     // Indoctrination replaces 1 infantry → PDS should be unaffected
     expect(t.defender.units.PDS).toHaveLength(1)

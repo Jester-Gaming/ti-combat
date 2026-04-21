@@ -20,7 +20,7 @@ describe.forEachSide('METALI_VOID_SHIELDING + QUIETUS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 1 hit to attacker — cruiser can't use MVS sustain (Quietus blocks)
     t.advanceRound({ attacker: 1 })
 

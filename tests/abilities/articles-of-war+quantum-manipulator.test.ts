@@ -18,7 +18,7 @@ describe.forEachSide('ARTICLES_OF_WAR + QUANTUM_MANIPULATOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 1 hit to defender: QM ability stripped by AoW, mech can't absorb for ships
     t.advanceRound({ defender: 1 })
 
@@ -47,7 +47,7 @@ describe.forEachSide('ARTICLES_OF_WAR + QUANTUM_MANIPULATOR', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ defender: 1 })
 
     expect(t.defender.units.MECH).toHaveLength(1)

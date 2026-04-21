@@ -17,7 +17,9 @@ describe('MAGEN_DEFENSE_GRID', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('MAGEN_DEFENSE_GRID')).not.toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
@@ -37,7 +39,9 @@ describe('MAGEN_DEFENSE_GRID', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('MAGEN_DEFENSE_GRID')).not.toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
@@ -57,7 +61,9 @@ describe('MAGEN_DEFENSE_GRID', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('MAGEN_DEFENSE_GRID')).toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(3)
@@ -77,7 +83,9 @@ describe('MAGEN_DEFENSE_GRID', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('MAGEN_DEFENSE_GRID')).not.toHaveLength(0)
     // Mech sustains the hit
@@ -99,7 +107,9 @@ describe('MAGEN_DEFENSE_GRID', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('MAGEN_DEFENSE_GRID')).toHaveLength(0)
     expect(t.defender.units.INFANTRY).toHaveLength(3)

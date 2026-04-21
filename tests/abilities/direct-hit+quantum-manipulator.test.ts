@@ -17,7 +17,7 @@ describe.forEachSide('DIRECT_HIT + QUANTUM_MANIPULATOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     // Mech sustains but Direct Hit cannot target it (not a ship)

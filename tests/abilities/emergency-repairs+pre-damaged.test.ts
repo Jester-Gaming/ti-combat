@@ -20,7 +20,7 @@ describe.forEachSide('EMERGENCY_REPAIRS + PRE_DAMAGED', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Both dreads pre-damaged, cruiser not (cruiser has no SUSTAIN_DAMAGE anyway)
     expect(t.attacker.units.DREADNOUGHT!.every(u => u.isDamaged)).toBe(true)
 
@@ -47,7 +47,7 @@ describe.forEachSide('EMERGENCY_REPAIRS + PRE_DAMAGED', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 1 dread damaged, 1 undamaged
     expect(t.attacker.units.DREADNOUGHT!.filter(u => u.isDamaged)).toHaveLength(
       1,

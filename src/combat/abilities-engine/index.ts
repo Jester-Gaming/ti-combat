@@ -1,9 +1,13 @@
 export {
   AbilitiesEngine,
+  type AbilityPassFrame,
   cloneInvokes,
+  cloneTracker,
+  type InvocationTracker,
   type InvokeCollections,
   type RunAbilitiesOptions,
 } from './abilities-engine'
+export { type AbilityBranch, AbilityBranchInterrupt } from './api/ability-api'
 export { declareParam } from './declare-param'
 export type {
   Ability,

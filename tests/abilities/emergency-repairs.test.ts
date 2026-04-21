@@ -17,7 +17,7 @@ describe.forEachSide('EMERGENCY_REPAIRS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Round 1: both dreadnoughts sustain — condition met at END_OF_COMBAT_ROUND → fires → repaired
     t.advanceRound({ attacker: 2 })
     expect(t.abilityLog('EMERGENCY_REPAIRS')).not.toHaveLength(0)
@@ -40,7 +40,7 @@ describe.forEachSide('EMERGENCY_REPAIRS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Only one dreadnought sustains — condition (all sustain units damaged) not met
     t.advanceRound({ attacker: 1 })
     expect(t.attacker.units.DREADNOUGHT!.filter(u => u.isDamaged)).toHaveLength(
@@ -63,7 +63,7 @@ describe.forEachSide('EMERGENCY_REPAIRS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 0 })
 
     expect(t.abilityLog('EMERGENCY_REPAIRS')).toHaveLength(0)
@@ -83,7 +83,7 @@ describe.forEachSide('EMERGENCY_REPAIRS', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Round 1: dreadnought sustains → condition met at end-of-round → repaired
     t.advanceRound({ attacker: 1 })
     expect(t.abilityLog('EMERGENCY_REPAIRS')).not.toHaveLength(0)
@@ -108,7 +108,7 @@ describe.forEachSide('EMERGENCY_REPAIRS', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // Round 1: mech sustains 1 hit → sole sustain unit damaged → ER fires at end-of-round → repaired
     t.advanceRound({ attacker: 1 })
     expect(t.abilityLog('EMERGENCY_REPAIRS')).not.toHaveLength(0)

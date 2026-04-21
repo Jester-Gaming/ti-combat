@@ -16,7 +16,7 @@ describe.forEachSide('HEL_TITAN + MOLL_TERMINUS', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // 1 hit to defender: Hel-Titan can't sustain (Moll blocks ground forces)
     t.advanceRound({ defender: 1 })
 
@@ -38,7 +38,7 @@ describe.forEachSide('HEL_TITAN + MOLL_TERMINUS', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // 1 hit to defender: Hel-Titan can't sustain, gets destroyed
     t.advanceRound({ defender: 1 })
 

@@ -17,7 +17,7 @@ describe.forEachSide('EMERGENCY_REPAIRS + MORDRED', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     // Mordred mech sustains 1 hit → sole sustain-in-stats unit damaged → ER repairs at end-of-round
     t.advanceRound({ attacker: 1 })
     expect(t.abilityLog('EMERGENCY_REPAIRS')).not.toHaveLength(0)

@@ -17,7 +17,7 @@ describe.forEachSide('VOS_HOLLOW', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Attacker receives 1 hit → Cruiser destroyed → Vos Hollow → opponent Cruiser destroyed
     t.advanceRound({ attacker: 1 })
 
@@ -40,7 +40,7 @@ describe.forEachSide('VOS_HOLLOW', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Defender receives 1 hit — opponent's ship destroyed, not ours
     t.advanceRound({ defender: 1 })
 
@@ -61,7 +61,7 @@ describe.forEachSide('VOS_HOLLOW', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Attacker Cruiser destroyed, but defender has no Cruisers
     t.advanceRound({ attacker: 1 })
 
@@ -83,7 +83,7 @@ describe.forEachSide('VOS_HOLLOW', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     expect(t.abilityLog('VOS_HOLLOW')).toHaveLength(0)
@@ -103,7 +103,7 @@ describe.forEachSide('VOS_HOLLOW', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     expect(t.attacker.units.CRUISER).toHaveLength(2)
@@ -132,7 +132,7 @@ describe.forEachSide('VOS_HOLLOW', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // Attacker receives 2 hits → Dreadnought sustains, Destroyer destroyed
     // Vos Hollow triggers on Destroyer → opponent Destroyer destroyed
     t.advanceRound({ attacker: 2 })

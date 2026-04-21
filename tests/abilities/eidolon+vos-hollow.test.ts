@@ -17,7 +17,7 @@ describe('EIDOLON + VOS_HOLLOW', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 2 })
 
     expect(t.attacker.units.MECH).toBeUndefined()

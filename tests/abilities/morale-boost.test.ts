@@ -19,7 +19,7 @@ describe.forEachSide('MORALE_BOOST', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -45,7 +45,7 @@ describe.forEachSide('MORALE_BOOST', () => {
 
     // Morale boost fires at START_OF_COMBAT_ROUND (meta=SPACE_COMBAT)
     // AFB dice should NOT be affected (meta=AFB)
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP')
     const pool = t.dicePool()
 
     // Destroyer AFB: base value 9, dice 2 — NOT modified by morale boost
@@ -68,7 +68,7 @@ describe.forEachSide('MORALE_BOOST', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 

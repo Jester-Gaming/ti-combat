@@ -25,7 +25,11 @@ describe('COURAGEOUS_TO_THE_END', () => {
     // Advance to the ASSIGN_HITS phase, picking the branch where attacker
     // received 1 hit (defender's dice hit). Courageous fires during
     // assignHits → runDestroyAbilities → AFTER_DESTROY.
-    t.advanceTo('SPACE_COMBAT', 'ASSIGN_HITS', { attacker: 1, defender: 0 })
+    t.advanceToTiming(
+      'BEFORE_ASSIGN_HITS',
+      { attacker: 1, defender: 0 },
+      'SPACE_COMBAT',
+    )
     const branches = t.step()
 
     // Courageous rolls a single DiceGroup [7, 2] → getDiceOutcomes returns
@@ -57,7 +61,11 @@ describe('COURAGEOUS_TO_THE_END', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'ASSIGN_HITS', { attacker: 0, defender: 0 })
+    t.advanceToTiming(
+      'BEFORE_ASSIGN_HITS',
+      { attacker: 0, defender: 0 },
+      'SPACE_COMBAT',
+    )
     const branches = t.step()
 
     expect(branches).toHaveLength(1)
@@ -80,7 +88,11 @@ describe('COURAGEOUS_TO_THE_END', () => {
       defender: { faction: 'ARBOREC', units: { DESTROYER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'ASSIGN_HITS', { attacker: 1, defender: 0 })
+    t.advanceToTiming(
+      'BEFORE_ASSIGN_HITS',
+      { attacker: 1, defender: 0 },
+      'SPACE_COMBAT',
+    )
     const branches = t.step()
 
     // 2d9 → single DiceGroup with 3 outcomes (0/1/2 hits) → 3 branches
@@ -115,7 +127,11 @@ describe('COURAGEOUS_TO_THE_END', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'ASSIGN_HITS', { attacker: 1, defender: 0 })
+    t.advanceToTiming(
+      'BEFORE_ASSIGN_HITS',
+      { attacker: 1, defender: 0 },
+      'SPACE_COMBAT',
+    )
     const branches = t.step()
 
     // No Courageous split. Only 1 branch continues past ASSIGN_HITS.
@@ -149,7 +165,11 @@ describe('COURAGEOUS_TO_THE_END', () => {
       defender: { faction: 'ARBOREC', units: { DESTROYER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'ASSIGN_HITS', { attacker: 1, defender: 0 })
+    t.advanceToTiming(
+      'BEFORE_ASSIGN_HITS',
+      { attacker: 1, defender: 0 },
+      'SPACE_COMBAT',
+    )
     const branches = t.step()
 
     // No Courageous split.
@@ -188,7 +208,7 @@ describe('COURAGEOUS_TO_THE_END', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     // R1: attacker cruiser dies, Courageous does NOT fire.
     t.advanceRound({ attacker: 1, defender: 0 })
@@ -198,7 +218,11 @@ describe('COURAGEOUS_TO_THE_END', () => {
     expect(t.state.abilities.attacker.COURAGEOUS_TO_THE_END.uses).toBe(1)
 
     // R2: carrier dies, Courageous fires with 2d9.
-    t.advanceTo('SPACE_COMBAT', 'ASSIGN_HITS', { attacker: 1, defender: 0 })
+    t.advanceToTiming(
+      'BEFORE_ASSIGN_HITS',
+      { attacker: 1, defender: 0 },
+      'SPACE_COMBAT',
+    )
     const branches = t.step()
 
     // Courageous single DiceGroup [9, 2] → 3 outcomes (0/1/2 hits).
@@ -253,7 +277,7 @@ describe('COURAGEOUS_TO_THE_END', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     // R1: attacker loses 1 cruiser, defender untouched, Courageous NOT fired.
     t.advanceRound({ attacker: 1, defender: 0 })
@@ -265,7 +289,11 @@ describe('COURAGEOUS_TO_THE_END', () => {
     // R2: both sides lose 1 ship. Defender's cruiser dies first (cheapest)
     // → defender's top-priority target becomes CARRIER (checked) →
     // Courageous fires.
-    t.advanceTo('SPACE_COMBAT', 'ASSIGN_HITS', { attacker: 1, defender: 1 })
+    t.advanceToTiming(
+      'BEFORE_ASSIGN_HITS',
+      { attacker: 1, defender: 1 },
+      'SPACE_COMBAT',
+    )
     const branches = t.step()
 
     // 3 branches from Courageous 2d7.

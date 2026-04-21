@@ -20,7 +20,7 @@ describe('TECHNOLOGICAL_SINGULARITY + LETANI_WARRIOR + SPEC_OPS', () => {
       defender: { faction: 'ARBOREC', units: { INFANTRY: 3 } },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
 
     // Round 1: Letani II active → infantry at [7, 1]
     t.advanceRound({ defender: 1 })

@@ -18,7 +18,7 @@ describe('DUNLAIN_REAPER + INDOCTRINATION', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     // Dunlain (attacker) fires first: converts infantry → 1 mech
@@ -44,7 +44,7 @@ describe('DUNLAIN_REAPER + INDOCTRINATION', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     // Dunlain (attacker) fires first: 3 → 2 infantry + 1 mech

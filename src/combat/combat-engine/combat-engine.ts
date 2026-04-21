@@ -1,6 +1,15 @@
 import { CombatState } from '../combat-state/combat-state'
-import type { CombatStateData } from '../combat-state/types'
-import type { CombatOutcome, ProbabilityNode } from '../types'
+import {
+  getInitialMetaPhase,
+  getNextPhaseInFlow,
+  isCombatMeta,
+} from '../combat-state/phase-utils'
+import type {
+  CombatMode,
+  MetaPhase,
+  PhaseTransitionTarget,
+} from '../combat-state/types'
+import type { CombatOutcome } from '../types'
 import { determineWinner } from './utils/determine-winner'
 import {
   extractSurvivors,
@@ -11,46 +20,72 @@ import type { OutcomeRecord } from './utils/types'
 
 interface EngineOptions {
   maxRounds?: number
-  debug?: boolean
 }
 
 const DEFAULT_MAX_ROUNDS = 1000
 
-function getNextRound(currentRound: number, data: CombatStateData): number {
-  return data.currentPhase.micro === 'START' ? currentRound + 1 : currentRound
-}
-
 export class CombatEngine {
   private maxRounds: number
-  private debug: boolean
-
-  /** Available after simulate() when debug=true */
-  lastTree: ProbabilityNode | null = null
 
   constructor(options: EngineOptions = {}) {
     this.maxRounds = options.maxRounds ?? DEFAULT_MAX_ROUNDS
-    this.debug = options.debug ?? false
   }
 
   simulate(initialState: CombatState): CombatOutcome[] {
-    this.lastTree = null
-
     const subtreeCache = new Map<string, OutcomeRecord>()
     const inProgress = new Set<string>()
 
-    const debug = this.debug
-    let nextNodeId = 0
-    // Tree cache: maps START-phase cache key → children array.
-    // Set at branch points BEFORE recursing, so cycle nodes can
-    // point back to the same children array (preserving the DAG).
-    const treeCache = debug ? new Map<string, ProbabilityNode[]>() : null
+    const mode = initialState.combatMode
+
+    // Engine owns the active meta — derived from the combat mode's initial
+    // phase. Flow decisions read/write the local `currentMeta` inside
+    // expandNode.
+    const initialMeta: MetaPhase = getInitialMetaPhase(mode)
 
     const expandNode = (
       state: CombatState,
       round: number,
-      node: ProbabilityNode | null,
+      incomingMeta: MetaPhase,
     ): OutcomeRecord | null => {
+      let currentMeta = incomingMeta
       let cacheKey: string | null = null
+
+      // Try to enter a combat-meta round: bump round, check the cache, and
+      // either short-circuit on hit/cycle or register this as in-progress.
+      // Returns `'enter'` when the caller should proceed with loading the
+      // script, a cached outcome to return directly, or `null` for a cycle.
+      const enterCombatRound = (): OutcomeRecord | null | 'enter' => {
+        round++
+        const roundFlag = round <= 1 ? '1' : 'N'
+        const key = `${roundFlag}|${state.getHash()}`
+
+        const cached = subtreeCache.get(key)
+        if (cached) {
+          if (cacheKey) inProgress.delete(cacheKey)
+          return cached
+        }
+
+        if (inProgress.has(key)) {
+          if (cacheKey) inProgress.delete(cacheKey)
+          return null
+        }
+
+        if (cacheKey) inProgress.delete(cacheKey)
+        cacheKey = key
+        inProgress.add(key)
+        return 'enter'
+      }
+
+      // Initial prime — if pendingSteps is empty on entry, the current
+      // phase's script has not been loaded yet. Load it, doing the round/
+      // cache bookkeeping if it's a combat meta.
+      if (!state.isFinished() && state.pendingSteps.length === 0) {
+        if (isCombatMeta(currentMeta)) {
+          const res = enterCombatRound()
+          if (res !== 'enter') return res
+        }
+        state.loadPhaseScript(currentMeta, round)
+      }
 
       while (true) {
         if (round > this.maxRounds) {
@@ -65,80 +100,42 @@ export class CombatEngine {
           return leaf
         }
 
-        // Cache check at START of combat rounds
-        if (state.currentPhase.micro === 'START') {
-          const roundFlag = round <= 1 ? '1' : 'N'
-          const key = `${roundFlag}|${state.getHash()}`
-
-          const cached = subtreeCache.get(key)
-          if (cached) {
-            if (cacheKey) inProgress.delete(cacheKey)
-            if (node && treeCache) {
-              node.children = treeCache.get(key) ?? []
+        // Script just drained — transition to the next phase and reload.
+        if (state.pendingSteps.length === 0) {
+          const nextPhase = resolveNextPhase(state, currentMeta, mode)
+          // Transitioning to COMPLETE still runs END_OF_COMBAT / CLEANUP_ROUND
+          // / CLEANUP before flipping the phase — ability CLEANUP invokes
+          // (e.g., CAVALRY removing its subtype) need to fire.
+          if (nextPhase === 'COMPLETE') {
+            state.loadCompletionSteps(currentMeta)
+          } else {
+            currentMeta = nextPhase
+            if (state.isFinished()) continue
+            if (isCombatMeta(nextPhase)) {
+              const res = enterCombatRound()
+              if (res !== 'enter') return res
             }
-            return cached
+            state.loadPhaseScript(nextPhase, round)
           }
-
-          if (inProgress.has(key)) {
-            if (cacheKey) inProgress.delete(cacheKey)
-            if (node && treeCache) {
-              node.children = treeCache.get(key) ?? []
-            }
-            return null // cycle
-          }
-
-          if (cacheKey) inProgress.delete(cacheKey)
-          cacheKey = key
-          inProgress.add(key)
+          // Empty script (unreachable after the branches above) — loop.
+          if (state.pendingSteps.length === 0) continue
         }
 
-        const outcomes = state.advance(round, debug)
+        const outcomes = state.advance()
 
-        // Deterministic advance — inline into loop
-        if (outcomes.length === 1 && outcomes[0].probability === 1) {
-          const outcome = outcomes[0]
-          state = outcome.state
-          round = getNextRound(round, outcome.state.data)
-          if (node && state.log) {
-            node.state = state
-            node.round = round
-            node.log = [...(node.log ?? []), ...state.log]
-          }
+        // Deterministic advance — same state reference, same pendingSteps.
+        // Advance ran internally until branching, drain, or completion.
+        if (outcomes.length === 1 && outcomes[0].state === state) {
           continue
         }
 
-        // Branching — create tree children if debug, then recurse
-        const children = node
-          ? outcomes.map(o => ({
-              id: nextNodeId++,
-              state: o.state,
-              probability: o.probability,
-              round: getNextRound(round, o.state.data),
-              children: [] as ProbabilityNode[],
-              log: o.state.log ?? [],
-            }))
-          : null
-
-        if (node && children) {
-          node.children = children
-          if (cacheKey && treeCache) {
-            treeCache.set(cacheKey, children)
-          }
-        }
-
         // Group children by identical cached record (by reference) to avoid
-        // redundant iteration. When multiple dice branches resolve to the same
-        // cached state, we iterate the record once with summed probability
-        // instead of N times.
+        // redundant iteration.
         const recordGroups = new Map<OutcomeRecord, number>()
         let cycleProb = 0
 
-        for (let i = 0; i < outcomes.length; i++) {
-          const child = outcomes[i]
-          const childRound = getNextRound(round, child.state.data)
-          const childNode = children ? children[i] : null
-
-          const childOutcomes = expandNode(child.state, childRound, childNode)
+        for (const child of outcomes) {
+          const childOutcomes = expandNode(child.state, round, currentMeta)
 
           if (childOutcomes === null) {
             cycleProb += child.probability
@@ -222,29 +219,32 @@ export class CombatEngine {
       }
     }
 
-    // Create root node for debug mode
-    const root: ProbabilityNode | null = debug
-      ? {
-          id: nextNodeId++,
-          state: initialState,
-          probability: 1,
-          round: 0,
-          children: [],
-          log: [],
-        }
-      : null
+    const outcomes = initialState.isFinished()
+      ? makeLeafOutcome(initialState)
+      : expandNode(initialState, 0, initialMeta)
 
-    let outcomes: OutcomeRecord | null
-    if (initialState.isFinished()) {
-      outcomes = makeLeafOutcome(initialState)
-    } else {
-      outcomes = expandNode(initialState, 0, root)
-    }
-
-    if (root) this.lastTree = root
     if (!outcomes) return []
     return outcomeRecordToArray(outcomes)
   }
+}
+
+/** Decide the next meta-phase when the current script drains. Combat metas
+ *  loop back to themselves as long as no transition was forced; otherwise
+ *  the flow advances. An ability-set `transitionTarget` overrides the flow. */
+function resolveNextPhase(
+  state: CombatState,
+  currentMeta: MetaPhase,
+  mode: CombatMode,
+): PhaseTransitionTarget {
+  const override = state.data.transitionTarget
+  if (override) {
+    delete state.data.transitionTarget
+    return override
+  }
+  if (isCombatMeta(currentMeta)) {
+    return currentMeta
+  }
+  return getNextPhaseInFlow(currentMeta, mode)
 }
 
 function makeLeafOutcome(state: CombatState): OutcomeRecord {

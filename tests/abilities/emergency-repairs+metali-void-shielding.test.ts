@@ -20,7 +20,7 @@ describe.forEachSide('EMERGENCY_REPAIRS + METALI_VOID_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 2 hits on defender: dread sustains 1 naturally, MVS absorbs 1 on a cruiser
     t.advanceRound({ defender: 2 })
 

@@ -17,7 +17,7 @@ describe.forEachSide('EIDOLON_MAXIMUM + FOURTH_MOON', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 1 hit to defender: mech can't sustain (FM blocks ships, Eidolon Maximum adds mech to ships)
     t.advanceRound({ defender: 1 })
 

@@ -17,7 +17,9 @@ describe.forEachSide('INDOCTRINATION', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('INDOCTRINATION')).not.toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(3)
@@ -38,7 +40,9 @@ describe.forEachSide('INDOCTRINATION', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceTo('SPACE_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('INDOCTRINATION')).toHaveLength(0)
   })
@@ -57,7 +61,9 @@ describe.forEachSide('INDOCTRINATION', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     expect(t.abilityLog('INDOCTRINATION')).toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(2)

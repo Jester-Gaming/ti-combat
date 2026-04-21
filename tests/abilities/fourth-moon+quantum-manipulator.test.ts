@@ -16,7 +16,7 @@ describe.forEachSide('FOURTH_MOON + QUANTUM_MANIPULATOR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     // 1 hit to defender: mech can't sustain for ships (FM blocks sustain)
     t.advanceRound({ defender: 1 })
 

@@ -17,7 +17,7 @@ describe.forEachSide('METALI_VOID_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
 
     expect(t.defender.units.CRUISER).toHaveLength(1)
@@ -39,7 +39,7 @@ describe.forEachSide('METALI_VOID_SHIELDING', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 2 })
 
     // Dreadnought uses native sustain, Cruiser uses Void Shielding

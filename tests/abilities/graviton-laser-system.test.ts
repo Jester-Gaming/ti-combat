@@ -17,7 +17,7 @@ describe('GRAVITON_LASER_SYSTEM', () => {
       },
     })
 
-    t.advanceTo('AFB', undefined, { attacker: 1 })
+    t.advanceTo('AFB', { attacker: 1 })
 
     expect(t.attacker.units.CRUISER).toBeUndefined()
     expect(t.attacker.units.FIGHTER).toHaveLength(2)
@@ -38,7 +38,7 @@ describe('GRAVITON_LASER_SYSTEM', () => {
     })
 
     // Only fighters present — GLS should fall back to targeting a fighter
-    t.advanceTo('AFB', undefined, { attacker: 1 })
+    t.advanceTo('AFB', { attacker: 1 })
 
     expect(t.attacker.units.FIGHTER).toHaveLength(1)
   })
@@ -58,7 +58,7 @@ describe('GRAVITON_LASER_SYSTEM', () => {
     })
 
     // SCD hits attacker; GLS only affects SCO, not SCD
-    t.advanceTo('GROUND_COMBAT', undefined, { attacker: 1 })
+    t.advanceTo('GROUND_COMBAT', { attacker: 1 })
 
     // Infantry can be targeted by SCD (GLS doesn't restrict SCD)
     expect(t.attacker.units.INFANTRY).toHaveLength(1)

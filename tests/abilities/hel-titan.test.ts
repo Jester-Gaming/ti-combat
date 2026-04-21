@@ -16,7 +16,7 @@ describe.forEachSide('HEL_TITAN', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -38,7 +38,7 @@ describe.forEachSide('HEL_TITAN', () => {
     })
 
     // 2 hits: 1 absorbed by Sustain Damage, 1 destroys PDS
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound({ defender: 2 })
 
     expect(t.defender.units.PDS).toBeUndefined()

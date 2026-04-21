@@ -11,7 +11,11 @@ import {
   resolveUnitStats,
 } from '../combat-side-state/combat-side-state'
 import { CombatState } from '../combat-state/combat-state'
-import type { CombatStateData, SideStateData } from '../combat-state/types'
+import type {
+  CombatStateData,
+  MetaPhase,
+  SideStateData,
+} from '../combat-state/types'
 import { Logger } from '../logger'
 import { parseVariantId } from '../utils/unit-variant'
 import {
@@ -27,7 +31,6 @@ import type {
   InternalTimingContextMap,
   OwnOpponentContext,
   SidedContext,
-  SidedDiceData,
 } from './types'
 
 export const TIMING_GROUPS: {
@@ -76,10 +79,6 @@ const PRE_SORTED_BUCKETS: AbilityTiming[] = [
   'BEFORE_ASSIGN_HITS',
 ]
 
-const EMPTY_DESTROYED_IDS: { attacker: Set<UnitId>; defender: Set<UnitId> } = {
-  attacker: new Set(),
-  defender: new Set(),
-}
 const EMPTY_PENDING: {
   side: CombatSide
   variantKey: string
@@ -230,18 +229,24 @@ function decrementUses(
 // ── Tracker types ────────────────────────────────────────────────────────
 
 /** Invocation tracker for a single side's abilities */
-interface SideInvocationTracker {
+export interface SideInvocationTracker {
   configAbilities: Set<AbilityInvoke>
   unitAbilities: Map<string, Set<UnitId>> // "timing:unitType:abilityKey" -> Set<UnitId>
 }
 
 /** Invocation tracker per side */
-type InvocationTracker = Record<CombatSide, SideInvocationTracker>
+export type InvocationTracker = Record<CombatSide, SideInvocationTracker>
 
-interface AbilityResult {
-  /** Present when the ability branched (via rollDice) or when branching
-   *  was triggered by an inline assignHits / nested runAbilities call. */
-  branches?: AbilityBranch[]
+/** Snapshot of an in-flight `runAbilities` pass. Stored on the timing
+ *  `PhaseStep.frame` slot so the pass resumes from the exact step that
+ *  parked it; cloning `pendingSteps` for a branch carries the frame
+ *  through automatically. Static fields (timing, options, phase, owner
+ *  identity) live on the step itself; this frame holds only the
+ *  alternation state. */
+export interface AbilityPassFrame {
+  tracker: InvocationTracker
+  currentSide: CombatSide
+  consecutiveSkips: number
 }
 
 export interface RunAbilitiesOptions {
@@ -271,7 +276,7 @@ export function cloneInvokes(invokes: InvokeCollections): InvokeCollections {
 }
 
 /** Clone an invocation tracker for independent continuation in a branch. */
-function cloneTracker(tracker: InvocationTracker): InvocationTracker {
+export function cloneTracker(tracker: InvocationTracker): InvocationTracker {
   return {
     attacker: {
       configAbilities: new Set(tracker.attacker.configAbilities),
@@ -311,12 +316,6 @@ export class AbilitiesEngine {
   private _attackerCtx!: AbilityContext
   private _defenderCtx!: AbilityContext
 
-  /** UnitIds destroyed during current produce / set by runDestroyAbilities for timing checks */
-  _destroyedIds: {
-    attacker: Set<UnitId>
-    defender: Set<UnitId>
-  } = EMPTY_DESTROYED_IDS
-
   /** Deferred invoke registrations — flushed after ability call completes */
   _pendingUnitInvokes: {
     side: CombatSide
@@ -325,17 +324,6 @@ export class AbilitiesEngine {
   }[] = EMPTY_PENDING
 
   _logger?: Logger
-
-  /** Dice pool active during BEFORE_DICE_ROLL / BEFORE_UNIT_ABILITY_ROLL.
-   *  Set by the caller (CombatState) before invoking those timings and read
-   *  back after; SideApi dice methods mutate it directly. Undefined outside
-   *  those timings. */
-  _currentDicePool?: SidedDiceData
-
-  /** Branches produced during the most recent runAbilities call.
-   *  null when no branching occurred. Set by _runAbilityLoop and
-   *  consumed by callers via consumeBranches(). */
-  _abilityBranches: AbilityBranch[] | null = null
 
   private get state(): CombatStateData {
     return this._combatState.data
@@ -348,18 +336,7 @@ export class AbilitiesEngine {
   setCombatState(cs: CombatState, logger?: Logger): void {
     this._combatState = cs
     this._logger = logger
-    this._destroyedIds = EMPTY_DESTROYED_IDS
     this._pendingUnitInvokes = EMPTY_PENDING
-  }
-
-  hasBranches(): boolean {
-    return this._abilityBranches !== null
-  }
-
-  consumeBranches(): AbilityBranch[] {
-    const branches = this._abilityBranches!
-    this._abilityBranches = null
-    return branches
   }
 
   /** Capture current engine/combatState state so it can be restored after
@@ -477,9 +454,7 @@ export class AbilitiesEngine {
   ): AbilitiesEngine {
     const instance = Object.create(AbilitiesEngine.prototype) as AbilitiesEngine
     instance._combatState = combatState
-    instance._destroyedIds = EMPTY_DESTROYED_IDS
     instance._pendingUnitInvokes = EMPTY_PENDING
-    instance._abilityBranches = null
     instance._abilities = abilities
     instance._unitAbilityKeys = unitAbilityKeys
     instance._factionOwnedKeys = factionOwnedKeys
@@ -502,9 +477,7 @@ export class AbilitiesEngine {
   ): AbilitiesEngine {
     const instance = Object.create(AbilitiesEngine.prototype) as AbilitiesEngine
     instance._combatState = combatState
-    instance._destroyedIds = EMPTY_DESTROYED_IDS
     instance._pendingUnitInvokes = EMPTY_PENDING
-    instance._abilityBranches = null
     instance._abilities = abilities
     instance._unitAbilityKeys = unitAbilityKeys
     instance._factionOwnedKeys = factionOwnedKeys
@@ -582,11 +555,22 @@ export class AbilitiesEngine {
     options?: RunAbilitiesOptions,
     logger?: Logger,
   ): void {
-    if (!this.hasCallableInvoke(timing)) return
+    // The dispatching timing step (and its phase stack) comes from the
+    // combat state. When omitted (e.g. PREPARE pass, test-driven call),
+    // `currentStep` is undefined — context-filtered invokes are skipped
+    // and there's no frame to park into.
+    const step = this._combatState.currentStep
+
+    // Resume from the step's frame if one was parked. Consume it here —
+    // if the pass parks again or branches, a new frame will be written.
+    const resume = step?.frame
+    if (step && resume) step.frame = undefined
+
+    if (!resume && !this.hasCallableInvoke(timing)) return
 
     const activeLogger = logger ?? this._logger
 
-    const tracker: InvocationTracker = {
+    const tracker: InvocationTracker = resume?.tracker ?? {
       attacker: {
         configAbilities: new Set(),
         unitAbilities: new Map(),
@@ -600,7 +584,8 @@ export class AbilitiesEngine {
     this._runAbilityLoop(
       timing,
       tracker,
-      'attacker',
+      resume?.currentSide ?? 'attacker',
+      resume?.consecutiveSkips ?? 0,
       context,
       options,
       activeLogger,
@@ -609,23 +594,24 @@ export class AbilitiesEngine {
 
   /**
    * Core alternation loop for runAbilities. Alternates sides resolving one
-   * ability at a time until both sides skip consecutively. Handles branching
-   * from two sources:
-   *   - direct: tryResolveOne returned { branches } (ability called rollDice)
-   *   - nested: tryResolveOne's inline assignHits / trigger set _abilityBranches
-   * On branching, recurses for each branch independently (with a cloned
-   * tracker), flattens nested branches (multiplying probabilities), and
-   * stores the final leaf set on _abilityBranches.
+   * ability at a time until both sides skip consecutively. tryResolveOne
+   * pre-stamps the dispatching step's `.frame` before calling the ability
+   * so any branches produced inside the call (via `ctx.rollDice`) inherit
+   * the correct resume frame through `clonePendingSteps`. On a normal
+   * 'ran' tryResolveOne clears the frame; on 'parked' it leaves the frame
+   * set, and on branch (AbilityBranchInterrupt) the outer step is
+   * abandoned along with its state. The loop itself only has to re-throw
+   * the interrupt.
    */
   private _runAbilityLoop<T extends AbilityTiming>(
     timing: T,
     tracker: InvocationTracker,
     startSide: CombatSide,
+    consecutiveSkips: number,
     context: TimingContextMap[T] | undefined,
     options?: RunAbilitiesOptions,
     logger?: Logger,
   ): void {
-    let consecutiveSkips = 0
     let currentSide: CombatSide = startSide
 
     while (consecutiveSkips < 2) {
@@ -644,70 +630,10 @@ export class AbilitiesEngine {
         options?.opponentSideByInvokerSide,
       )
 
-      // Collect branches from either direct or nested source.
-      let branches: AbilityBranch[] | null = null
-      if (result?.branches) {
-        branches = result.branches
-      } else if (this._abilityBranches) {
-        branches = this._abilityBranches
-        this._abilityBranches = null
-      }
+      if (result === 'parked') return
 
-      if (branches) {
-        const nextSide = getOpponentSide(currentSide)
-        const allBranches: AbilityBranch[] = []
-
-        for (const branch of branches) {
-          const saved = this._saveBranchState()
-          this._setBranchState(branch)
-
-          const branchTracker = cloneTracker(tracker)
-
-          this._runAbilityLoop(
-            timing,
-            branchTracker,
-            nextSide,
-            context,
-            options,
-            branch.logger,
-          )
-
-          // Recursive call may itself have branched further.
-          if (this._abilityBranches) {
-            const nested = this._abilityBranches
-            this._abilityBranches = null
-            for (const n of nested) {
-              allBranches.push({
-                data: n.data,
-                invokes: n.invokes,
-                probability: n.probability * branch.probability,
-                logger: n.logger,
-              })
-            }
-          } else {
-            allBranches.push({
-              data: this._combatState.data,
-              invokes: this._combatState._invokes,
-              probability: branch.probability,
-              logger: this._logger,
-            })
-          }
-
-          this._restoreBranchState(saved)
-        }
-
-        this._abilityBranches = allBranches
-        return
-      }
-
-      if (result) {
+      if (result === 'ran') {
         consecutiveSkips = 0
-
-        // Stop resolving if an ability requested a phase transition (retreat,
-        // or a side wiped via removeUnits → transitionTarget set to COMPLETE).
-        if (this._combatState.data.transitionTarget) {
-          break
-        }
       } else {
         consecutiveSkips += 1
       }
@@ -716,82 +642,19 @@ export class AbilitiesEngine {
     }
   }
 
-  runDestroyAbilities(destroyed: {
-    attacker: Record<string, UnitId[]>
-    defender: Record<string, UnitId[]>
-  }): void {
-    const savedDestroyedIds = this._destroyedIds
-    this._destroyedIds = {
-      attacker: new Set(Object.values(destroyed.attacker).flat()),
-      defender: new Set(Object.values(destroyed.defender).flat()),
-    }
-
-    this._runSequential(['DESTROY', 'WHEN_DESTROY', 'AFTER_DESTROY'], destroyed)
-
-    this._destroyedIds = savedDestroyedIds
-  }
-
-  /**
-   * Run a sequence of ability timings, forking remaining timings per branch
-   * if any earlier timing branched. Used by runDestroyAbilities so that
-   * branching at DESTROY/WHEN_DESTROY doesn't short-circuit subsequent
-   * timings — they run per branch independently.
-   */
-  private _runSequential<T extends AbilityTiming>(
-    timings: T[],
-    context: TimingContextMap[T],
-  ): void {
-    for (let i = 0; i < timings.length; i++) {
-      this.runAbilities(timings[i], context)
-
-      if (!this._abilityBranches) continue
-
-      const branches = this._abilityBranches
-      this._abilityBranches = null
-      const remaining = timings.slice(i + 1)
-
-      if (remaining.length === 0) {
-        this._abilityBranches = branches
-        return
-      }
-
-      const finalBranches: AbilityBranch[] = []
-      for (const branch of branches) {
-        const saved = this._saveBranchState()
-        this._setBranchState(branch)
-
-        this._runSequential(remaining, context)
-
-        if (this._abilityBranches) {
-          const nested: AbilityBranch[] = this._abilityBranches
-          this._abilityBranches = null
-          for (const n of nested) {
-            finalBranches.push({
-              data: n.data,
-              invokes: n.invokes,
-              probability: n.probability * branch.probability,
-              logger: n.logger,
-            })
-          }
-        } else {
-          finalBranches.push({
-            data: this._combatState.data,
-            invokes: this._combatState._invokes,
-            probability: branch.probability,
-            logger: this._logger,
-          })
-        }
-
-        this._restoreBranchState(saved)
-      }
-
-      this._abilityBranches = finalBranches
-      return
-    }
-  }
-
   // ── Private execution engine methods ──────────────────────────────
 
+  /**
+   * Try to resolve the next applicable ability for `side`.
+   * @returns `'ran'` if an ability was called, `'skipped'` if none applied,
+   *   `'parked'` if the call pushed a new timing step via `ctx.trigger`
+   *   (caller yields control to the script; the dispatching step's
+   *   `.frame` has been populated).
+   * @throws AbilityBranchInterrupt if the call produced branches. Before
+   *   calling, `step.frame` is pre-stamped with the post-invoke tracker
+   *   and resume side so per-branch clones of `pendingSteps` inherit the
+   *   correct frame via `clonePendingSteps`.
+   */
   private tryResolveOne<T extends AbilityTiming>(
     timing: T,
     side: CombatSide,
@@ -802,11 +665,27 @@ export class AbilitiesEngine {
       attacker: CombatSide
       defender: CombatSide
     },
-  ): AbilityResult | null {
+  ): 'ran' | 'skipped' | 'parked' {
     const state = this._combatState.data
-    const invokes = this.getInvokesForTiming(timing, side)
+    const step = this._combatState.currentStep
+    const phase = step?.phase
+    const invokes = this.getInvokesForTiming(timing, side, phase)
 
     const sideTracker = tracker[side]
+
+    const isDestroyTiming =
+      timing === 'DESTROY' ||
+      timing === 'WHEN_DESTROY' ||
+      timing === 'AFTER_DESTROY'
+
+    let destroyedForSide: Set<UnitId> | undefined
+    if (isDestroyTiming && context) {
+      const sided = context as SidedContext<Record<UnitType, UnitId[]>>
+      destroyedForSide = new Set()
+      for (const ids of Object.values(sided[side])) {
+        for (const id of ids) destroyedForSide.add(id)
+      }
+    }
 
     for (const { ability, invoke, params, source, ownerFaction } of invokes) {
       // Check if already invoked
@@ -832,16 +711,18 @@ export class AbilitiesEngine {
           }
         }
 
-        const isDestroyTiming =
-          invoke.timing === 'DESTROY' ||
-          invoke.timing === 'WHEN_DESTROY' ||
-          invoke.timing === 'AFTER_DESTROY'
+        // Self-targeted unit trigger: the timing's context is the invoke's
+        // own unit id. This is the unit reacting to its own event (retreat,
+        // sustain, etc.) — allow it to fire even if the unit has since been
+        // removed from the field (e.g. WHEN_RETREAT after the unit is pulled).
+        const isSelfUnitTrigger =
+          typeof context === 'number' && (context as UnitId) === source.unitId
 
         if (isDestroyTiming) {
           if (unitAlive) continue
-          if (!this._destroyedIds[side].has(source.unitId)) continue
-        } else {
-          if (!unitAlive) continue
+          if (!destroyedForSide?.has(source.unitId)) continue
+        } else if (!unitAlive && !isSelfUnitTrigger) {
+          continue
         }
 
         const key = `${invoke.timing}:${source.unitType}:${ability.key}`
@@ -903,41 +784,57 @@ export class AbilitiesEngine {
         if (canCall) {
           const childLogger = logger?.child(invoke.timing).child(ability.key)
 
-          const markInvoked = () => {
+          const markTracker = (t: InvocationTracker) => {
+            const st = t[side]
             if (source.type === 'config' || source.type === 'deploy') {
-              sideTracker.configAbilities.add(invoke)
+              st.configAbilities.add(invoke)
             } else {
               const key = `${invoke.timing}:${source.unitType}:${ability.key}`
-              const invokedIds =
-                sideTracker.unitAbilities.get(key) ?? new Set<UnitId>()
+              const invokedIds = st.unitAbilities.get(key) ?? new Set<UnitId>()
               invokedIds.add(source.unitId)
-              sideTracker.unitAbilities.set(key, invokedIds)
+              st.unitAbilities.set(key, invokedIds)
             }
           }
 
           const shouldDecrementUses = !invoke.system
           ctx.upgradeForCall(state, ability, childLogger?.forSide(side))
+
+          // Pre-stamp the dispatching step's frame with the post-invoke
+          // resume state. If the call branches, `clonePendingSteps` deep-
+          // clones this frame per branch (with its own `cloneTracker`) so
+          // every branch resumes from the correct point. If the call
+          // completes normally, we clear the frame below.
+          //
+          // Parking requires `preScriptLen > 0`: at the top level (initial
+          // PREPARE or a test-driven `runAbilities`) there's no outer step
+          // to come back to. We still pre-stamp for branch propagation;
+          // the final step.frame is cleared on non-parked completion.
+          const frameTracker = step ? cloneTracker(tracker) : undefined
+          if (step && frameTracker) {
+            markTracker(frameTracker)
+            step.frame = {
+              tracker: frameTracker,
+              currentSide: getOpponentSide(side),
+              consecutiveSkips: 0,
+            }
+          }
+          // Also mark the outer loop's tracker so the current pass
+          // alternation (if we continue without branching/parking) treats
+          // this ability as invoked.
+          markTracker(tracker)
+
           try {
             inv.call(ctx, freshParams, internalContext)
             if (shouldDecrementUses)
               decrementUses(state, side, ability.key, freshParams, this)
             ctx.resetAfterCall()
           } catch (e) {
-            if (!(e instanceof AbilityBranchInterrupt)) throw e
+            if (!(e instanceof AbilityBranchInterrupt)) {
+              if (step) step.frame = undefined
+              throw e
+            }
 
             ctx.resetAfterCall()
-            markInvoked()
-
-            // Per-branch post-processing: mirror the normal-flow post-call
-            // steps for each branch. The branch's state is swapped in
-            // temporarily so shared engine helpers (assignHits,
-            // runDestroyAbilities) operate on the branch data.
-            const inAssignHitsPhase =
-              state.currentPhase.micro === 'DICE_ROLL' ||
-              state.currentPhase.micro === 'ASSIGN_HITS'
-            const inBeforeAssignHits = timing === 'BEFORE_ASSIGN_HITS'
-
-            const finalBranches: AbilityBranch[] = []
 
             for (const branch of e.branches) {
               const saved = this._saveBranchState()
@@ -948,68 +845,26 @@ export class AbilitiesEngine {
               this.flushPendingUnitInvokes()
               branch.logger?.forSide(side).log()
 
-              const hitsPresent =
-                branch.data.attacker.hitPools.length > 0 ||
-                branch.data.defender.hitPools.length > 0
-
-              if (hitsPresent && !inAssignHitsPhase && !inBeforeAssignHits) {
-                this._combatState.assignHits()
-                // assignHits → runDestroyAbilities may have triggered more
-                // branching (e.g. AFTER_DESTROY rolled dice).
-                if (this._abilityBranches) {
-                  const nested = this._abilityBranches
-                  this._abilityBranches = null
-                  for (const n of nested) {
-                    finalBranches.push({
-                      data: n.data,
-                      invokes: n.invokes,
-                      probability: n.probability * branch.probability,
-                      logger: n.logger,
-                    })
-                  }
-                  this._restoreBranchState(saved)
-                  continue
-                }
-              }
-
-              finalBranches.push({
-                data: this._combatState.data,
-                invokes: this._combatState._invokes,
-                probability: branch.probability,
-                logger: this._logger,
-              })
               this._restoreBranchState(saved)
             }
 
-            return { branches: finalBranches }
+            throw new AbilityBranchInterrupt(e.branches)
           }
 
           this.flushPendingUnitInvokes()
 
           childLogger?.forSide(side).log()
 
-          markInvoked()
+          // Parked when the dispatching step is no longer on top — either a
+          // trigger was pushed above it (ctx.trigger, destroy cascade) or the
+          // script was dropped out from under us (ctx.transitionTo). Top-level
+          // passes (step === undefined) can't park: pushed steps sit on
+          // `pendingSteps` and run on the next `advance()`.
+          const parked =
+            step !== undefined && this._combatState.currentStep !== step
 
-          if (
-            timing !== 'BEFORE_ASSIGN_HITS' &&
-            state.currentPhase.micro !== 'DICE_ROLL' &&
-            state.currentPhase.micro !== 'ASSIGN_HITS' &&
-            (state.attacker.hitPools.length > 0 ||
-              state.defender.hitPools.length > 0)
-          ) {
-            this._combatState.assignHits()
-
-            // assignHits → runDestroyAbilities may have produced branches
-            // (e.g. a destroyed ship triggered an AFTER_DESTROY ability that
-            // called rollDice). Surface them as branches of this resolution.
-            if (this._abilityBranches) {
-              const nested = this._abilityBranches
-              this._abilityBranches = null
-              return { branches: nested }
-            }
-          }
-
-          return {}
+          if (!parked && step) step.frame = undefined
+          return parked ? 'parked' : 'ran'
         }
       } finally {
         if (priorOpponentSide !== undefined) {
@@ -1018,7 +873,7 @@ export class AbilitiesEngine {
       }
     }
 
-    return null
+    return 'skipped'
   }
 
   private buildInvokes(): void {
@@ -1405,23 +1260,23 @@ export class AbilitiesEngine {
   private getInvokesForTiming<T extends AbilityTiming>(
     timing: T,
     side: CombatSide,
+    phase?: MetaPhase[],
   ): TimingInvokeEntry[] {
     const entries = this._combatState._invokes[side].get(timing)
     if (!entries) return []
 
-    const { meta } = this._combatState.data.currentPhase
+    const activePhase = phase ?? []
     const results: TimingInvokeEntry[] = []
     for (const entry of entries) {
       if (entry.invoke.context) {
         const allowed = Array.isArray(entry.invoke.context)
           ? entry.invoke.context
           : [entry.invoke.context]
-        // AFB is part of SPACE_COMBAT, so SPACE_COMBAT context includes AFB
-        if (
-          !allowed.includes(meta) &&
-          !(meta === 'AFB' && allowed.includes('SPACE_COMBAT'))
-        )
-          continue
+        // Match if any active phase (outer→inner stack) is in the invoke's
+        // allowed contexts. E.g. AFB nested inside SPACE_COMBAT has active
+        // phase ['SPACE_COMBAT', 'AFB'], so abilities scoped to either meta
+        // fire.
+        if (!activePhase.some(p => allowed.includes(p))) continue
       }
       results.push(entry)
     }

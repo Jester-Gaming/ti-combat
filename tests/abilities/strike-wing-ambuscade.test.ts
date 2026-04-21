@@ -20,7 +20,7 @@ describe('STRIKE_WING_AMBUSCADE', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1, FIGHTER: 1 } },
     })
 
-    t.advanceTo('AFB', 'ASSIGN_HITS', 0)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 0, 'AFB')
     const pool = t.dicePool()
 
     // Destroyer AFB: [9, 2] + 1 from SWA = [9, 3]
@@ -139,7 +139,7 @@ describe('STRIKE_WING_AMBUSCADE', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1, FIGHTER: 1 } },
     })
 
-    t.advanceTo('AFB', 'ASSIGN_HITS', 0)
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 0, 'AFB')
     const pool = t.dicePool()
 
     // Destroyer AFB: [9, 2] (no extra die — phases only includes BOMBARDMENT)

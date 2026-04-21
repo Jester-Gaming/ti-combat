@@ -17,7 +17,7 @@ describe.forEachSide('ENTROPIC_SCAR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    t.advanceToTiming('ANNOUNCE_RETREAT_STEP')
     const pool = t.dicePool()
 
     // AFB dice should not be present (Entropic Scar disabled AFB)
@@ -59,7 +59,7 @@ describe.forEachSide('ENTROPIC_SCAR', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
     // Dreadnought can't sustain (Entropic Scar disabled it)

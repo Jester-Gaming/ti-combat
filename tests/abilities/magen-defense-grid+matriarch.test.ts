@@ -22,7 +22,9 @@ describe('MAGEN_DEFENSE_GRID + MATRIARCH', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     // MDG fires and targets the committed fighter
     expect(t.abilityLog('MAGEN_DEFENSE_GRID')).not.toHaveLength(0)
@@ -48,7 +50,9 @@ describe('MAGEN_DEFENSE_GRID + MATRIARCH', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'DICE_ROLL')
+    t.advanceTo('GROUND_COMBAT')
+
+    t.advanceRound()
 
     // MDG fires and targets infantry first (higher priority)
     expect(t.abilityLog('MAGEN_DEFENSE_GRID')).not.toHaveLength(0)

@@ -17,10 +17,10 @@ describe('HARROW', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'END', { attacker: 0, defender: 0 })
+    t.advanceToTiming('END_OF_COMBAT_ROUND', { attacker: 0, defender: 0 })
     expect(t.defender.units.INFANTRY).toHaveLength(3)
 
-    t.advanceTo('GROUND_COMBAT', 'START', { attacker: 0, defender: 2 })
+    t.advanceToTiming('AFTER_COMBAT_ROUND', { attacker: 0, defender: 2 })
     expect(t.dicePool().hitSource).toBe('BOMBARDMENT')
     expect(t.abilityLog('HARROW')).not.toHaveLength(0)
     expect(t.defender.units.INFANTRY).toHaveLength(1)
@@ -40,7 +40,7 @@ describe('HARROW', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('HARROW')).toHaveLength(0)

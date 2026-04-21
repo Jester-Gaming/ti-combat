@@ -19,7 +19,7 @@ describe.forEachSide('GRAVLEASH_MANEUVERS', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -45,7 +45,7 @@ describe.forEachSide('GRAVLEASH_MANEUVERS', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 
@@ -74,7 +74,7 @@ describe.forEachSide('GRAVLEASH_MANEUVERS', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
 
     // R1: 3 types, +3 on Fighter (base 9 - 3 = 6), 1 hit kills Fighter (cheapest)
     t.advanceRound({ attacker: 1 })
@@ -105,7 +105,7 @@ describe.forEachSide('GRAVLEASH_MANEUVERS', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
     const pool = t.dicePool()
 

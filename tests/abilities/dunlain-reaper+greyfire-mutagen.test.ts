@@ -18,7 +18,7 @@ describe('DUNLAIN_REAPER + GREYFIRE_MUTAGEN', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     expect(t.abilityLog('DUNLAIN_REAPER')).not.toHaveLength(0)
@@ -44,7 +44,7 @@ describe('DUNLAIN_REAPER + GREYFIRE_MUTAGEN', () => {
       },
     })
 
-    t.advanceTo('GROUND_COMBAT', 'START')
+    t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
     // Dunlain (attacker) fires first: converts last infantry → 2 mechs
