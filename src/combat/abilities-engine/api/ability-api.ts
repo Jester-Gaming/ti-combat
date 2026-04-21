@@ -594,12 +594,7 @@ export class AbilityContext {
     context?: TimingContextMap[T],
   ): void {
     this.nested(() => {
-      this._abilitiesParams.runAbilities(
-        name,
-        context,
-        { triggerSide: this._side },
-        this.logger,
-      )
+      this._abilitiesParams.runAbilities(name, context, {}, this.logger)
     })
   }
 

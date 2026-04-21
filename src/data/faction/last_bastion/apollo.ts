@@ -50,7 +50,6 @@ export const apollo: Ability<Params> = {
     {
       timing: 'WHEN_GALVANIZE',
       system: true,
-      side: 'OWN',
       isCallable: (params, ctx, unitId) => {
         if (!params.heroUnit) return false
         // Hero is designated at most once per combat, even if the first Hero

@@ -15,7 +15,6 @@ export const moyinsAshes: Ability = {
   invoke: [
     {
       timing: 'WHEN_INDOCTRINATION',
-      side: 'OWN',
       isCallable: (_params, ctx) => {
         return ctx.api.own.countUnits('MECH') < UNIT_LIMITS.MECH
       },

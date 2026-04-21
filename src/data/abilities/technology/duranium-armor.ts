@@ -39,7 +39,6 @@ export const duraniumArmor: Ability<Params> = {
     {
       timing: 'WHEN_SUSTAIN_DAMAGE_USE',
       context: ['SPACE_COMBAT', 'GROUND_COMBAT'],
-      side: 'OWN',
       call: (ctx, _params, unit) => {
         ctx.api.own.modifyUnitState(unit, { usedSustainThisRound: true })
       },

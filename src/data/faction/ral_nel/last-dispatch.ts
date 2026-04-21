@@ -27,7 +27,6 @@ export const lastDispatch: Ability<Params> = {
   invoke: [
     {
       timing: 'WHEN_RETREAT',
-      side: 'OWN',
       isCallable: (_params, ctx, unitId) => {
         if (unitId !== ctx.getUnit()) return false
 

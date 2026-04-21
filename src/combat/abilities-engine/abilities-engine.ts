@@ -165,7 +165,6 @@ interface AbilityResult {
 }
 
 export interface RunAbilitiesOptions {
-  triggerSide?: CombatSide
   skipSides?: CombatSide[]
   /** Remap `ctx.api.opponent` per invoker side. Used by unit-ability phases
    *  (BOMBARDMENT, AFB, SPACE_CANNON_*) so abilities see "opponent" as their
@@ -573,7 +572,6 @@ export class AbilitiesEngine {
         currentSide,
         context,
         tracker,
-        options?.triggerSide,
         logger,
         options?.opponentSideByInvokerSide,
       )
@@ -731,7 +729,6 @@ export class AbilitiesEngine {
     side: CombatSide,
     context: TimingContextMap[T] | undefined,
     tracker: InvocationTracker,
-    triggerSide?: CombatSide,
     logger?: Logger,
     opponentSideByInvokerSide?: {
       attacker: CombatSide
@@ -739,7 +736,7 @@ export class AbilitiesEngine {
     },
   ): AbilityResult | null {
     const state = this._combatState.data
-    const invokes = this.getInvokesForTiming(timing, side, triggerSide)
+    const invokes = this.getInvokesForTiming(timing, side)
 
     const sideTracker = tracker[side]
 
@@ -1359,7 +1356,6 @@ export class AbilitiesEngine {
   private getInvokesForTiming<T extends AbilityTiming>(
     timing: T | T[],
     side: CombatSide,
-    triggerSide?: CombatSide,
   ): TimingInvokeEntry[] {
     const timings = Array.isArray(timing) ? timing : [timing]
     const { meta } = this._combatState.data.currentPhase
@@ -1380,10 +1376,6 @@ export class AbilitiesEngine {
             !(meta === 'AFB' && allowed.includes('SPACE_COMBAT'))
           )
             continue
-        }
-        if (triggerSide && entry.invoke.side) {
-          if (entry.invoke.side === 'OWN' && side !== triggerSide) continue
-          if (entry.invoke.side === 'OPPONENT' && side === triggerSide) continue
         }
         results.push(entry)
       }

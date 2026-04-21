@@ -15,7 +15,6 @@ export const directHit: Ability = {
   invoke: [
     {
       timing: 'AFTER_SUSTAIN_DAMAGE_USE',
-      side: 'OPPONENT',
       isCallable: (_params, ctx, unitId) => {
         if (!ctx.api.opponent.hasUnit(unitId)) return false
         const { ships } = ctx.api.opponent.getAbilityConfig('SETTINGS')

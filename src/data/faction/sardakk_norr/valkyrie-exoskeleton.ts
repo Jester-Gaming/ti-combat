@@ -17,7 +17,6 @@ export const valkyrieExoskeleton: Ability = {
   invoke: [
     {
       timing: 'AFTER_SUSTAIN_DAMAGE_USE',
-      side: 'OWN',
       isCallable: (_params, ctx, unitId) => {
         return unitId === ctx.getUnit()
       },

@@ -73,7 +73,6 @@ const chainRollDiceAbility: Ability = {
   invoke: [
     {
       timing: 'AFTER_DESTROY',
-      side: 'OWN',
       isCallable: (_params, _ctx, context) =>
         Object.keys(context.own).length > 0,
       call: ctx => {

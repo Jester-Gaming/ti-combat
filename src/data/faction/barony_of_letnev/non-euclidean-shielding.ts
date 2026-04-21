@@ -15,7 +15,7 @@ export const nonEuclideanShielding: Ability = {
   invoke: [
     {
       timing: 'WHEN_SUSTAIN_DAMAGE_USE',
-      side: 'OWN',
+      isCallable: (_, ctx, unitId) => ctx.api.own.hasUnit(unitId),
       call: ctx => {
         ctx.api.own.reduceHits(1)
       },

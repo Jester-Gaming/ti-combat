@@ -15,7 +15,6 @@ export const reflectiveShielding: Ability = {
   invoke: [
     {
       timing: 'WHEN_SUSTAIN_DAMAGE_USE',
-      side: 'OWN',
       context: 'SPACE_COMBAT',
       isCallable: (_params, ctx, unitId) => {
         // Only trigger for ships — not mechs or ground forces

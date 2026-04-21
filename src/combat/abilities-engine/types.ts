@@ -233,8 +233,6 @@ type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
   timing: T
   /** Restrict this invoke to specific meta-phase(s). When set, the invoke only fires if the current meta-phase matches. SPACE_COMBAT also matches AFB (since AFB is part of space combat). */
   context?: MetaPhase | MetaPhase[]
-  /** Filter invoke by trigger side. 'OWN' = only fires for the side that caused the trigger. 'OPPONENT' = only fires for the other side. Omit for no filtering. */
-  side?: 'OWN' | 'OPPONENT'
   /** System invokes bypass the `uses` accounting — they don't decrement `uses`
    *  and aren't gated by `uses > 0`. Use for paired teardown invokes
    *  (e.g. CLEANUP_ROUND after START_OF_COMBAT_ROUND setup) so the pair counts
