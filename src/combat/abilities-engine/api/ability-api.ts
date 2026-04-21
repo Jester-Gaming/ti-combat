@@ -590,7 +590,7 @@ export class AbilityContext {
   }
 
   trigger<T extends AbilityTiming>(
-    name: T | T[],
+    name: T,
     context?: TimingContextMap[T],
   ): void {
     this.nested(() => {

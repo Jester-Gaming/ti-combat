@@ -220,7 +220,7 @@ export class CombatState {
   }
 
   private runAbilities<T extends AbilityTiming>(
-    timing: T | T[],
+    timing: T,
     context?: TimingContextMap[T],
     options?: RunAbilitiesOptions,
   ): void {
@@ -779,11 +779,7 @@ export class CombatState {
       return this.completeTransition()
     }
 
-    const timings =
-      round === 1
-        ? (['START_OF_COMBAT_ROUND', 'START_OF_COMBAT'] as const)
-        : (['START_OF_COMBAT_ROUND'] as const)
-    this.runAbilities([...timings])
+    this.runAbilities(round === 1 ? 'START_OF_COMBAT' : 'START_OF_COMBAT_ROUND')
 
     return this.handleBranchesOrContinue(() => {
       // Re-check after abilities (e.g. Assault Cannon may destroy last ship)

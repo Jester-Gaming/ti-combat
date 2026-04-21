@@ -435,8 +435,8 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
   })
 })
 
-describe('multi-timing runAbilities', () => {
-  it('should resolve abilities from multiple timings in a shared window', () => {
+describe('merged START_OF_COMBAT bucket', () => {
+  it('fires both START_OF_COMBAT and START_OF_COMBAT_ROUND abilities from a single call', () => {
     const calls: string[] = []
 
     const startOfCombatAbility: Ability = {
@@ -486,10 +486,7 @@ describe('multi-timing runAbilities', () => {
       currentPhase: { meta: 'SPACE_COMBAT', micro: 'START' },
     }
 
-    CombatState.fromDataStandalone(state).params.runAbilities([
-      'START_OF_COMBAT_ROUND',
-      'START_OF_COMBAT',
-    ])
+    CombatState.fromDataStandalone(state).params.runAbilities('START_OF_COMBAT')
 
     expect(calls).toContain('START_OF_COMBAT')
     expect(calls).toContain('START_OF_COMBAT_ROUND')

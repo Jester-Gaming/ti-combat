@@ -52,6 +52,30 @@ export const TIMING_GROUPS: {
   },
 ]
 
+/** Maps each timing to the ABILITY_ORDER param key that governs its ordering.
+ *  Timings not in any group resolve in insertion order. */
+const SORT_KEY_BY_TIMING = new Map<AbilityTiming, string>()
+for (const group of TIMING_GROUPS) {
+  for (const t of group.timings) SORT_KEY_BY_TIMING.set(t, group.paramKey)
+}
+
+/** Timings whose entries are collected in a "parent" bucket so a single call
+ *  (e.g. `runAbilities('START_OF_COMBAT')` in round 1) fires both the parent
+ *  abilities and the child round-scoped ones. */
+const MERGED_PARENT_BY_TIMING: Partial<Record<AbilityTiming, AbilityTiming>> = {
+  START_OF_COMBAT_ROUND: 'START_OF_COMBAT',
+}
+
+/** Buckets that are pre-sorted (by ABILITY_ORDER) at build-time and after any
+ *  dynamic entry change. */
+const PRE_SORTED_BUCKETS: AbilityTiming[] = [
+  'START_OF_COMBAT',
+  'START_OF_COMBAT_ROUND',
+  'END_OF_COMBAT',
+  'END_OF_COMBAT_ROUND',
+  'BEFORE_ASSIGN_HITS',
+]
+
 const EMPTY_DESTROYED_IDS: { attacker: Set<UnitId>; defender: Set<UnitId> } = {
   attacker: new Set(),
   defender: new Set(),
@@ -103,6 +127,62 @@ interface TimingInvokeEntry {
   params: Record<string, unknown>
   source: AbilitySource
   ownerFaction?: FactionKey
+}
+
+/** Push an entry into the timing bucket. Duplicates round-scoped entries into
+ *  their parent bucket (see `MERGED_PARENT_BY_TIMING`) so
+ *  `runAbilities(parent)` fires both sets. */
+function pushInvokeEntry(
+  sideMap: Map<AbilityTiming, TimingInvokeEntry[]>,
+  timing: AbilityTiming,
+  entry: TimingInvokeEntry,
+): void {
+  const list = sideMap.get(timing)
+  if (list) list.push(entry)
+  else sideMap.set(timing, [entry])
+
+  const parent = MERGED_PARENT_BY_TIMING[timing]
+  if (parent !== undefined) {
+    const parentList = sideMap.get(parent)
+    if (parentList) parentList.push(entry)
+    else sideMap.set(parent, [entry])
+  }
+}
+
+/** Sort a bucket in place by the ABILITY_ORDER array for its sort group.
+ *  Entries not listed in the order keep their insertion order relative to each
+ *  other, after any listed entries. */
+function sortBucket(
+  entries: TimingInvokeEntry[],
+  sideConfig: Record<string, Record<string, unknown>>,
+  timing: AbilityTiming,
+): void {
+  const paramKey = SORT_KEY_BY_TIMING.get(timing)
+  if (!paramKey) return
+  const orderConfig = sideConfig['ABILITY_ORDER']
+  if (!orderConfig) return
+  const order = orderConfig[paramKey] as string[] | undefined
+  if (!order || order.length === 0) return
+
+  const orderIndex = new Map(order.map((key, i) => [key, i]))
+  let nextSlot = order.length
+  const sortKey = new Map<TimingInvokeEntry, number>()
+  for (const entry of entries) {
+    const oi = orderIndex.get(entry.ability.key)
+    sortKey.set(entry, oi !== undefined ? oi : nextSlot++)
+  }
+  entries.sort((a, b) => sortKey.get(a)! - sortKey.get(b)!)
+}
+
+/** Re-sort every pre-sorted bucket for a side. Cheap when buckets are small. */
+function sortPreSortedBuckets(
+  sideMap: Map<AbilityTiming, TimingInvokeEntry[]>,
+  sideConfig: Record<string, Record<string, unknown>>,
+): void {
+  for (const timing of PRE_SORTED_BUCKETS) {
+    const entries = sideMap.get(timing)
+    if (entries && entries.length > 1) sortBucket(entries, sideConfig, timing)
+  }
 }
 
 /** Copy-on-write: shallow-copy the abilities path so in-place mutations
@@ -497,24 +577,12 @@ export class AbilitiesEngine {
   // ── Ability execution engine ──────────────────────────────────────
 
   runAbilities<T extends AbilityTiming>(
-    timing: T | T[],
+    timing: T,
     context?: TimingContextMap[T],
     options?: RunAbilitiesOptions,
     logger?: Logger,
   ): void {
-    let hasAnyInvokes = false
-    if (Array.isArray(timing)) {
-      for (const t of timing) {
-        if (this.hasCallableInvoke(t as AbilityTiming)) {
-          hasAnyInvokes = true
-          break
-        }
-      }
-    } else {
-      hasAnyInvokes = this.hasCallableInvoke(timing as AbilityTiming)
-    }
-
-    if (!hasAnyInvokes) return
+    if (!this.hasCallableInvoke(timing)) return
 
     const activeLogger = logger ?? this._logger
 
@@ -550,7 +618,7 @@ export class AbilitiesEngine {
    * stores the final leaf set on _abilityBranches.
    */
   private _runAbilityLoop<T extends AbilityTiming>(
-    timing: T | T[],
+    timing: T,
     tracker: InvocationTracker,
     startSide: CombatSide,
     context: TimingContextMap[T] | undefined,
@@ -725,7 +793,7 @@ export class AbilitiesEngine {
   // ── Private execution engine methods ──────────────────────────────
 
   private tryResolveOne<T extends AbilityTiming>(
-    timing: T | T[],
+    timing: T,
     side: CombatSide,
     context: TimingContextMap[T] | undefined,
     tracker: InvocationTracker,
@@ -833,8 +901,6 @@ export class AbilitiesEngine {
         }
 
         if (canCall) {
-          const timingArray = Array.isArray(timing) ? timing : [timing]
-
           const childLogger = logger?.child(invoke.timing).child(ability.key)
 
           const markInvoked = () => {
@@ -869,9 +935,7 @@ export class AbilitiesEngine {
             const inAssignHitsPhase =
               state.currentPhase.micro === 'DICE_ROLL' ||
               state.currentPhase.micro === 'ASSIGN_HITS'
-            const inBeforeAssignHits = timingArray.some(
-              t => t === 'BEFORE_ASSIGN_HITS',
-            )
+            const inBeforeAssignHits = timing === 'BEFORE_ASSIGN_HITS'
 
             const finalBranches: AbilityBranch[] = []
 
@@ -927,7 +991,7 @@ export class AbilitiesEngine {
           markInvoked()
 
           if (
-            !timingArray.some(t => t === 'BEFORE_ASSIGN_HITS') &&
+            timing !== 'BEFORE_ASSIGN_HITS' &&
             state.currentPhase.micro !== 'DICE_ROLL' &&
             state.currentPhase.micro !== 'ASSIGN_HITS' &&
             (state.attacker.hitPools.length > 0 ||
@@ -996,8 +1060,7 @@ export class AbilitiesEngine {
               invoke.timing === 'AFTER_DESTROY')
           )
             continue
-          const list = sideMap.get(invoke.timing)
-          const entry: TimingInvokeEntry = {
+          pushInvokeEntry(sideMap, invoke.timing, {
             ability,
             invoke,
             params: mergedParams,
@@ -1005,9 +1068,7 @@ export class AbilitiesEngine {
             ownerFaction: this._factionOwnedKeys[side].has(ability.key)
               ? state[side].faction
               : undefined,
-          }
-          if (list) list.push(entry)
-          else sideMap.set(invoke.timing, [entry])
+          })
         }
       }
 
@@ -1022,16 +1083,13 @@ export class AbilitiesEngine {
           : extractDefaults(ability)
 
         for (const invoke of ability.invoke) {
-          const list = sideMap.get(invoke.timing)
-          const entry: TimingInvokeEntry = {
+          pushInvokeEntry(sideMap, invoke.timing, {
             ability,
             invoke,
             params: mergedParams,
             source: { type: 'unit', unitType, unitId },
             ownerFaction: state[side].faction,
-          }
-          if (list) list.push(entry)
-          else sideMap.set(invoke.timing, [entry])
+          })
         }
       }
 
@@ -1064,16 +1122,13 @@ export class AbilitiesEngine {
             mergedParams.uses <= 0
           )
             continue
-          const list = sideMap.get(invoke.timing)
-          const entry: TimingInvokeEntry = {
+          pushInvokeEntry(sideMap, invoke.timing, {
             ability,
             invoke,
             params: mergedParams,
             source: { type: 'config' },
             ownerFaction: state[side].faction,
-          }
-          if (list) list.push(entry)
-          else sideMap.set(invoke.timing, [entry])
+          })
         }
       }
 
@@ -1098,18 +1153,17 @@ export class AbilitiesEngine {
             mergedParams.uses <= 0
           )
             continue
-          const list = sideMap.get(invoke.timing)
-          const entry: TimingInvokeEntry = {
+          pushInvokeEntry(sideMap, invoke.timing, {
             ability,
             invoke,
             params: mergedParams,
             source: { type: 'deploy', unitType },
             ownerFaction: state[side].faction,
-          }
-          if (list) list.push(entry)
-          else sideMap.set(invoke.timing, [entry])
+          })
         }
       }
+
+      sortPreSortedBuckets(sideMap, sideConfig)
     }
 
     this._combatState._invokes = collections
@@ -1184,7 +1238,7 @@ export class AbilitiesEngine {
 
       for (const invoke of ability.invoke) {
         for (const unitId of unitIds) {
-          const entry: TimingInvokeEntry = {
+          pushInvokeEntry(sideMap, invoke.timing, {
             ability,
             invoke,
             params: mergedParams,
@@ -1194,13 +1248,12 @@ export class AbilitiesEngine {
               unitId,
             },
             ownerFaction: sideState.faction,
-          }
-          const list = sideMap.get(invoke.timing)
-          if (list) list.push(entry)
-          else sideMap.set(invoke.timing, [entry])
+          })
         }
       }
     }
+
+    sortPreSortedBuckets(sideMap, sideConfig)
   }
 
   private removeConfigInvokeEntries(
@@ -1243,7 +1296,7 @@ export class AbilitiesEngine {
         mergedParams.uses <= 0
       )
         continue
-      const entry: TimingInvokeEntry = {
+      pushInvokeEntry(sideMap, invoke.timing, {
         ability,
         invoke,
         params: mergedParams,
@@ -1251,11 +1304,9 @@ export class AbilitiesEngine {
         ownerFaction: this._factionOwnedKeys[side].has(ability.key)
           ? state[side].faction
           : undefined,
-      }
-      const list = sideMap.get(invoke.timing)
-      if (list) list.push(entry)
-      else sideMap.set(invoke.timing, [entry])
+      })
     }
+    sortPreSortedBuckets(sideMap, state.abilities[side])
   }
 
   private addDeployAbilityInvokes(
@@ -1276,17 +1327,15 @@ export class AbilitiesEngine {
         mergedParams.uses <= 0
       )
         continue
-      const entry: TimingInvokeEntry = {
+      pushInvokeEntry(sideMap, invoke.timing, {
         ability,
         invoke,
         params: mergedParams,
         source: { type: 'deploy', unitType },
         ownerFaction: state[side].faction,
-      }
-      const list = sideMap.get(invoke.timing)
-      if (list) list.push(entry)
-      else sideMap.set(invoke.timing, [entry])
+      })
     }
+    sortPreSortedBuckets(sideMap, state.abilities[side])
   }
 
   syncInvokesForKey(
@@ -1354,55 +1403,28 @@ export class AbilitiesEngine {
   }
 
   private getInvokesForTiming<T extends AbilityTiming>(
-    timing: T | T[],
+    timing: T,
     side: CombatSide,
   ): TimingInvokeEntry[] {
-    const timings = Array.isArray(timing) ? timing : [timing]
+    const entries = this._combatState._invokes[side].get(timing)
+    if (!entries) return []
+
     const { meta } = this._combatState.data.currentPhase
     const results: TimingInvokeEntry[] = []
-
-    const sideMap = this._combatState._invokes[side]
-    for (const t of timings) {
-      const entries = sideMap.get(t as AbilityTiming)
-      if (!entries) continue
-      for (const entry of entries) {
-        if (entry.invoke.context) {
-          const allowed = Array.isArray(entry.invoke.context)
-            ? entry.invoke.context
-            : [entry.invoke.context]
-          // AFB is part of SPACE_COMBAT, so SPACE_COMBAT context includes AFB
-          if (
-            !allowed.includes(meta) &&
-            !(meta === 'AFB' && allowed.includes('SPACE_COMBAT'))
-          )
-            continue
-        }
-        results.push(entry)
+    for (const entry of entries) {
+      if (entry.invoke.context) {
+        const allowed = Array.isArray(entry.invoke.context)
+          ? entry.invoke.context
+          : [entry.invoke.context]
+        // AFB is part of SPACE_COMBAT, so SPACE_COMBAT context includes AFB
+        if (
+          !allowed.includes(meta) &&
+          !(meta === 'AFB' && allowed.includes('SPACE_COMBAT'))
+        )
+          continue
       }
+      results.push(entry)
     }
-
-    if (results.length > 1) {
-      const timingSet = new Set(timings)
-      const sideConfig = this._combatState.data.abilities[side]
-      for (const group of TIMING_GROUPS) {
-        if (!group.timings.some(t => timingSet.has(t as T))) continue
-        const orderConfig = sideConfig['ABILITY_ORDER']
-        if (!orderConfig) break
-        const order = orderConfig[group.paramKey] as string[] | undefined
-        if (!order || order.length === 0) break
-
-        const orderIndex = new Map(order.map((key, i) => [key, i]))
-        let nextSlot = order.length
-        const sortKey = new Map<TimingInvokeEntry, number>()
-        for (const entry of results) {
-          const oi = orderIndex.get(entry.ability.key)
-          sortKey.set(entry, oi !== undefined ? oi : nextSlot++)
-        }
-        results.sort((a, b) => sortKey.get(a)! - sortKey.get(b)!)
-        break
-      }
-    }
-
     return results
   }
 }
