@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import type { UnitType } from '@/types'
+
 import { combatTest } from '../utils/combat-test'
 
 describe.forEachSide('CAVALRY + EXOTRIREME', () => {
@@ -93,14 +95,19 @@ describe.forEachSide('CAVALRY + EXOTRIREME', () => {
       },
     })
 
-    t.advanceTo('SPACE_COMBAT', 'START')
+    // Capture the Cavalry dreadnought's id after CAVALRY fires (START_OF_COMBAT)
+    // so we can confirm it survives once combat wraps and the subtype is stripped.
+    t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+    const cavalryId =
+      t.state.attacker.units['DREADNOUGHT:Cavalry' as UnitType]![0]
+
     t.advanceRound()
 
-    // Plain dreadnought sacrificed; Cavalry variant survives.
+    // Combat completes (defender wiped by Exotrireme). CAVALRY's CLEANUP then
+    // strips the subtype, so the surviving dreadnought reads as plain — but
+    // its UnitId still matches the Cavalry one.
     expect(t.attacker.units.DREADNOUGHT).toHaveLength(1)
-    expect(t.attacker.units.DREADNOUGHT![0].subtypes?.includes('Cavalry')).toBe(
-      true,
-    )
+    expect(t.state.attacker.units.DREADNOUGHT).toContain(cavalryId)
 
     expect(t.defender.units.CRUISER).toBeUndefined()
     expect(t.abilityLog('EXOTRIREME')).not.toHaveLength(0)

@@ -257,7 +257,7 @@ type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
         ctx: AbilityCallContext,
         params: TParams,
         context: InternalTimingContextMap[T],
-      ) => InternalTimingContextMap[T] | void
+      ) => void
     })
 
 // Union of all timing invoke types (auto-generated)

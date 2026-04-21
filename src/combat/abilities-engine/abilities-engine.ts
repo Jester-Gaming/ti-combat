@@ -91,23 +91,6 @@ function toOwnOpponent<T>(
   }
 }
 
-// Transform own/opponent back to sided
-function toSided<T>(
-  ownOpponent: OwnOpponentContext<T>,
-  side: CombatSide,
-): SidedContext<T> {
-  if (side === 'attacker') {
-    return {
-      attacker: ownOpponent.own,
-      defender: ownOpponent.opponent,
-    }
-  }
-  return {
-    attacker: ownOpponent.opponent,
-    defender: ownOpponent.own,
-  }
-}
-
 interface UnitAbilityEntry {
   ability: Ability
   unitType: UnitBaseType
@@ -120,13 +103,6 @@ interface TimingInvokeEntry {
   params: Record<string, unknown>
   source: AbilitySource
   ownerFaction?: FactionKey
-}
-
-/** Count total units across all variant keys */
-function countAllUnits(units: Record<string, unknown[]>): number {
-  let n = 0
-  for (const key in units) n += units[key].length
-  return n
 }
 
 /** Copy-on-write: shallow-copy the abilities path so in-place mutations
@@ -183,9 +159,6 @@ interface SideInvocationTracker {
 type InvocationTracker = Record<CombatSide, SideInvocationTracker>
 
 interface AbilityResult {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  context?: any
-  unitsChanged?: boolean
   /** Present when the ability branched (via rollDice) or when branching
    *  was triggered by an inline assignHits / nested runAbilities call. */
   branches?: AbilityBranch[]
@@ -529,7 +502,7 @@ export class AbilitiesEngine {
     context?: TimingContextMap[T],
     options?: RunAbilitiesOptions,
     logger?: Logger,
-  ): TimingContextMap[T] {
+  ): void {
     let hasAnyInvokes = false
     if (Array.isArray(timing)) {
       for (const t of timing) {
@@ -542,9 +515,7 @@ export class AbilitiesEngine {
       hasAnyInvokes = this.hasCallableInvoke(timing as AbilityTiming)
     }
 
-    if (!hasAnyInvokes) {
-      return context as TimingContextMap[T]
-    }
+    if (!hasAnyInvokes) return
 
     const activeLogger = logger ?? this._logger
 
@@ -559,20 +530,14 @@ export class AbilitiesEngine {
       },
     }
 
-    const initialUnits = {
-      attacker: this._combatState.attacker.countUnits(),
-      defender: this._combatState.defender.countUnits(),
-    }
-
-    return this._runAbilityLoop(
+    this._runAbilityLoop(
       timing,
       tracker,
       'attacker',
       context,
-      initialUnits,
       options,
       activeLogger,
-    ) as TimingContextMap[T]
+    )
   }
 
   /**
@@ -589,13 +554,10 @@ export class AbilitiesEngine {
     timing: T | T[],
     tracker: InvocationTracker,
     startSide: CombatSide,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    workingContext: any,
-    initialUnits: { attacker: number; defender: number },
+    context: TimingContextMap[T] | undefined,
     options?: RunAbilitiesOptions,
     logger?: Logger,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ): any {
+  ): void {
     let consecutiveSkips = 0
     let currentSide: CombatSide = startSide
 
@@ -609,7 +571,7 @@ export class AbilitiesEngine {
       const result = this.tryResolveOne(
         timing,
         currentSide,
-        workingContext,
+        context,
         tracker,
         options?.triggerSide,
         logger,
@@ -626,13 +588,6 @@ export class AbilitiesEngine {
       }
 
       if (branches) {
-        // Thread the pre-branch context update (non-branching tryResolveOne
-        // path that then produced nested branches) before forking.
-        const preBranchContext =
-          result && !result.branches && result.context !== undefined
-            ? result.context
-            : workingContext
-
         const nextSide = getOpponentSide(currentSide)
         const allBranches: AbilityBranch[] = []
 
@@ -646,8 +601,7 @@ export class AbilitiesEngine {
             timing,
             branchTracker,
             nextSide,
-            preBranchContext,
-            initialUnits,
+            context,
             options,
             branch.logger,
           )
@@ -677,26 +631,14 @@ export class AbilitiesEngine {
         }
 
         this._abilityBranches = allBranches
-        return workingContext
+        return
       }
 
       if (result) {
-        if (result.context !== undefined) {
-          workingContext = result.context
-        }
         consecutiveSkips = 0
 
-        if (
-          result.unitsChanged &&
-          ((initialUnits.attacker > 0 &&
-            this._combatState.attacker.countUnits() === 0) ||
-            (initialUnits.defender > 0 &&
-              this._combatState.defender.countUnits() === 0))
-        ) {
-          break
-        }
-
-        // Stop resolving if an ability requested a phase transition (e.g. retreat)
+        // Stop resolving if an ability requested a phase transition (retreat,
+        // or a side wiped via removeUnits → transitionTarget set to COMPLETE).
         if (this._combatState.data.transitionTarget) {
           break
         }
@@ -706,8 +648,6 @@ export class AbilitiesEngine {
 
       currentSide = getOpponentSide(currentSide)
     }
-
-    return workingContext
   }
 
   runDestroyAbilities(destroyed: {
@@ -815,7 +755,7 @@ export class AbilitiesEngine {
         if (sideState.isRestricted('lost', 'DEPLOY', source.unitType)) continue
         if (sideState.isRestricted('cannotBeUsed', 'DEPLOY', source.unitType))
           continue
-      } else {
+      } else if (source.type === 'unit') {
         const sideUnits = state[side].units
         let unitAlive = false
         for (const key of Object.keys(sideUnits)) {
@@ -890,23 +830,13 @@ export class AbilitiesEngine {
       try {
         let canCall: boolean
         if (inv.isCallable) {
-          if (inv.isCallable.length <= 1) {
-            canCall = inv.isCallable(freshParams)
-          } else {
-            canCall = inv.isCallable(freshParams, ctx, internalContext)
-          }
+          canCall = inv.isCallable(freshParams, ctx, internalContext)
         } else {
           canCall = true
         }
 
         if (canCall) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          let resultContext: any
-
           const timingArray = Array.isArray(timing) ? timing : [timing]
-
-          const prevAttackerUnitCount = countAllUnits(state.attacker.units)
-          const prevDefenderUnitCount = countAllUnits(state.defender.units)
 
           const childLogger = logger?.child(invoke.timing).child(ability.key)
 
@@ -925,8 +855,7 @@ export class AbilitiesEngine {
           const shouldDecrementUses = !invoke.system
           ctx.upgradeForCall(state, ability, childLogger?.forSide(side))
           try {
-            const result = inv.call(ctx, freshParams, internalContext)
-            if (result !== undefined) resultContext = result
+            inv.call(ctx, freshParams, internalContext)
             if (shouldDecrementUses)
               decrementUses(state, side, ability.key, freshParams, this)
             ctx.resetAfterCall()
@@ -991,7 +920,7 @@ export class AbilitiesEngine {
               this._restoreBranchState(saved)
             }
 
-            return { branches: finalBranches, unitsChanged: true }
+            return { branches: finalBranches }
           }
 
           this.flushPendingUnitInvokes()
@@ -1015,29 +944,11 @@ export class AbilitiesEngine {
             if (this._abilityBranches) {
               const nested = this._abilityBranches
               this._abilityBranches = null
-              return { branches: nested, unitsChanged: true }
+              return { branches: nested }
             }
           }
 
-          const unitsChanged =
-            countAllUnits(state.attacker.units) !== prevAttackerUnitCount ||
-            countAllUnits(state.defender.units) !== prevDefenderUnitCount
-
-          if (
-            context !== undefined &&
-            resultContext !== undefined &&
-            isSidedContext(context)
-          ) {
-            resultContext = toSided(
-              resultContext as OwnOpponentContext<unknown>,
-              side,
-            )
-          }
-
-          return {
-            context: resultContext,
-            unitsChanged,
-          }
+          return {}
         }
       } finally {
         if (priorOpponentSide !== undefined) {

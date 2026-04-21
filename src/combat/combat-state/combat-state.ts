@@ -223,9 +223,9 @@ export class CombatState {
     timing: T | T[],
     context?: TimingContextMap[T],
     options?: RunAbilitiesOptions,
-  ): TimingContextMap[T] {
+  ): void {
     this._params.setCombatState(this, this._logger)
-    return this._params.runAbilities(
+    this._params.runAbilities(
       timing,
       context,
       options,
