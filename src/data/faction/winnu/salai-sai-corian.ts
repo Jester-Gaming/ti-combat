@@ -17,16 +17,14 @@ export const salaiSaiCorian: Ability = {
     {
       timing: 'BEFORE_DICE_ROLL',
       context: 'SPACE_COMBAT',
-      call: (ctx, _params, dice) => {
-        // Count opponent's non-fighter ships
+      call: ctx => {
         let nonFighterCount = 0
         for (const type of ctx.api.opponent.getParticipatingUnitTypes()) {
           if (type === 'FIGHTER') continue
           nonFighterCount += ctx.api.opponent.countUnits(type)
         }
 
-        // Set dice count to number of non-fighter ships
-        dice.own.setDiceCount(nonFighterCount, ctx.getUnit())
+        ctx.api.own.setDiceCount(nonFighterCount, ctx.getUnit())
       },
     },
   ],

@@ -621,11 +621,13 @@ export class CombatState {
       timing: 'before',
     })
     if (blockedSides.length > 0) beforeOptions.skipSides = blockedSides
-    const modifiedDice = this.runAbilities(
-      'BEFORE_UNIT_ABILITY_ROLL',
-      { attacker: attackerDice, defender: defenderDice },
-      beforeOptions,
-    )
+    this._params._currentDicePool = {
+      attacker: attackerDice,
+      defender: defenderDice,
+    }
+    this.runAbilities('BEFORE_UNIT_ABILITY_ROLL', undefined, beforeOptions)
+    const modifiedDice: SidedDiceData = this._params._currentDicePool
+    this._params._currentDicePool = undefined
 
     const meta = this.data.currentPhase.meta
     if (this.data.attacker.hitValueModifiers?.length) {
@@ -822,12 +824,13 @@ export class CombatState {
     const attackerDice = this.side('attacker').collectDice('COMBAT')
     const defenderDice = this.side('defender').collectDice('COMBAT')
 
-    const sidedDiceData: SidedDiceData = {
+    this._params._currentDicePool = {
       attacker: attackerDice,
       defender: defenderDice,
     }
-
-    const modifiedDice = this.runAbilities('BEFORE_DICE_ROLL', sidedDiceData)
+    this.runAbilities('BEFORE_DICE_ROLL')
+    const modifiedDice: SidedDiceData = this._params._currentDicePool
+    this._params._currentDicePool = undefined
 
     // Apply stored hit-value modifiers (from ctx.api.own.modifyHitValue)
     const meta = this.data.currentPhase.meta

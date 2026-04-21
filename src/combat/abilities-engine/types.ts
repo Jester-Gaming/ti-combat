@@ -78,32 +78,6 @@ export type DicePool = Partial<Record<string, SourcedDiceGroup[]>>
 // Sided version for external API
 export type SidedDiceData = SidedContext<DicePool>
 
-// ============================================================================
-// DICE API — read-only (for isCallable) and read-write (for call)
-// ============================================================================
-
-/** Read-only API for querying dice */
-export interface DiceReadApi {
-  getAll(): DicePool
-  get(source: string): readonly SourcedDiceGroup[] | undefined
-  isEmpty(): boolean
-}
-
-/** Full read-write API for mutating dice */
-export interface DiceApi extends DiceReadApi {
-  addDiceCount(count: number): void
-  addDiceCount(count: number, strategy: 'BEST' | 'WORST'): void
-  addDiceCount(count: number, source: UnitBaseType): void
-  addDiceCount(count: number, unit: UnitId): void
-
-  setDiceCount(count: number, unit: UnitId): void
-
-  addDiceGroup(source: string, unit: UnitId, diceGroup: DiceGroup): void
-}
-
-export type DiceReadContext = OwnOpponentContext<DiceReadApi>
-export type DiceContext = OwnOpponentContext<DiceApi>
-
 // Single source of truth — map timing to context type (external API uses sided format).
 // void = no context, other type = required context.
 // Declared globally so ability files can add their own timings via interface
@@ -114,7 +88,7 @@ declare global {
     START_OF_COMBAT: void
     START_OF_COMBAT_ROUND: void
     ANNOUNCE_RETREAT_STEP: void
-    BEFORE_DICE_ROLL: SidedDiceData
+    BEFORE_DICE_ROLL: void
     AFTER_DICE_ROLL: void
     BEFORE_ASSIGN_HITS: void
     AFTER_ASSIGN_HITS_STEP: void
@@ -125,7 +99,7 @@ declare global {
     CLEANUP_ROUND: void
     CLEANUP: void
 
-    BEFORE_UNIT_ABILITY_ROLL: SidedDiceData
+    BEFORE_UNIT_ABILITY_ROLL: void
     AFTER_UNIT_ABILITY_ROLL: void
 
     DESTROY: SidedContext<Record<UnitType, UnitId[]>>
@@ -268,37 +242,23 @@ type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
   system?: boolean
 } & (InternalTimingContextMap[T] extends void
   ? {
-      // Void timings (PREPARE, START_OF_COMBAT, etc.)
+      // Void timings (PREPARE, START_OF_COMBAT, BEFORE_DICE_ROLL, etc.)
       isCallable?: (params: TParams, ctx: AbilityReadContext) => boolean
       call: (ctx: AbilityCallContext, params: TParams) => void
     }
-  : InternalTimingContextMap[T] extends OwnOpponentContext<DicePool>
-    ? {
-        // Dice timings (BEFORE_DICE_ROLL, BEFORE_UNIT_ABILITY_ROLL)
-        isCallable?: (
-          params: TParams,
-          ctx: AbilityReadContext,
-          dice: DiceReadContext,
-        ) => boolean
-        call: (
-          ctx: AbilityCallContext,
-          params: TParams,
-          dice: DiceContext,
-        ) => void
-      }
-    : {
-        // Other context timings (AFTER_DESTROY)
-        isCallable?: (
-          params: TParams,
-          ctx: AbilityReadContext,
-          context: InternalTimingContextMap[T],
-        ) => boolean
-        call: (
-          ctx: AbilityCallContext,
-          params: TParams,
-          context: InternalTimingContextMap[T],
-        ) => InternalTimingContextMap[T] | void
-      })
+  : {
+      // Other context timings (AFTER_DESTROY)
+      isCallable?: (
+        params: TParams,
+        ctx: AbilityReadContext,
+        context: InternalTimingContextMap[T],
+      ) => boolean
+      call: (
+        ctx: AbilityCallContext,
+        params: TParams,
+        context: InternalTimingContextMap[T],
+      ) => InternalTimingContextMap[T] | void
+    })
 
 // Union of all timing invoke types (auto-generated)
 export type AbilityInvoke<TParams = Record<string, unknown>> = {

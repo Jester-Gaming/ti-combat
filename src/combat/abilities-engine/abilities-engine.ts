@@ -19,18 +19,15 @@ import {
   AbilityBranchInterrupt,
   AbilityContext,
 } from './api/ability-api'
-import { buildDiceApi, buildDiceReadApi } from './api/dice-api'
 import { extractDefaults } from './declare-param'
 import type {
   Ability,
   AbilityInvoke,
   AbilityTiming,
-  DiceContext,
-  DicePool,
-  DiceReadContext,
   InternalTimingContextMap,
   OwnOpponentContext,
   SidedContext,
+  SidedDiceData,
 } from './types'
 
 export const TIMING_GROUPS: {
@@ -174,13 +171,6 @@ function decrementUses(
   }
 }
 
-function isDiceTiming(timing: AbilityTiming | AbilityTiming[]): boolean {
-  const timings = Array.isArray(timing) ? timing : [timing]
-  return timings.some(
-    t => t === 'BEFORE_DICE_ROLL' || t === 'BEFORE_UNIT_ABILITY_ROLL',
-  )
-}
-
 // ── Tracker types ────────────────────────────────────────────────────────
 
 /** Invocation tracker for a single side's abilities */
@@ -283,6 +273,12 @@ export class AbilitiesEngine {
   }[] = EMPTY_PENDING
 
   _logger?: Logger
+
+  /** Dice pool active during BEFORE_DICE_ROLL / BEFORE_UNIT_ABILITY_ROLL.
+   *  Set by the caller (CombatState) before invoking those timings and read
+   *  back after; SideApi dice methods mutate it directly. Undefined outside
+   *  those timings. */
+  _currentDicePool?: SidedDiceData
 
   /** Branches produced during the most recent runAbilities call.
    *  null when no branching occurred. Set by _runAbilityLoop and
@@ -865,7 +861,6 @@ export class AbilitiesEngine {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const inv = invoke as any
-      const diceTiming = isDiceTiming(timing)
 
       const unitSource = source.type === 'unit' ? source.unitId : undefined
 
@@ -897,13 +892,6 @@ export class AbilitiesEngine {
         if (inv.isCallable) {
           if (inv.isCallable.length <= 1) {
             canCall = inv.isCallable(freshParams)
-          } else if (diceTiming && internalContext) {
-            const rawDice = internalContext as OwnOpponentContext<DicePool>
-            const diceReadCtx: DiceReadContext = {
-              own: buildDiceReadApi(rawDice.own),
-              opponent: buildDiceReadApi(rawDice.opponent),
-            }
-            canCall = inv.isCallable(freshParams, ctx, diceReadCtx)
           } else {
             canCall = inv.isCallable(freshParams, ctx, internalContext)
           }
@@ -935,98 +923,75 @@ export class AbilitiesEngine {
           }
 
           const shouldDecrementUses = !invoke.system
-          if (diceTiming && internalContext) {
-            const rawDice = internalContext as OwnOpponentContext<DicePool>
-            const diceCallCtx: DiceContext = {
-              own: buildDiceApi(rawDice.own),
-              opponent: buildDiceApi(rawDice.opponent),
-            }
-            ctx.upgradeForCall(state, ability, childLogger?.forSide(side))
-            inv.call(ctx, freshParams, diceCallCtx)
+          ctx.upgradeForCall(state, ability, childLogger?.forSide(side))
+          try {
+            const result = inv.call(ctx, freshParams, internalContext)
+            if (result !== undefined) resultContext = result
             if (shouldDecrementUses)
               decrementUses(state, side, ability.key, freshParams, this)
             ctx.resetAfterCall()
-            resultContext = {
-              own: diceCallCtx.own.getAll(),
-              opponent: diceCallCtx.opponent.getAll(),
-            }
-          } else {
-            ctx.upgradeForCall(state, ability, childLogger?.forSide(side))
-            try {
-              const result = inv.call(ctx, freshParams, internalContext)
-              if (result !== undefined) resultContext = result
+          } catch (e) {
+            if (!(e instanceof AbilityBranchInterrupt)) throw e
+
+            ctx.resetAfterCall()
+            markInvoked()
+
+            // Per-branch post-processing: mirror the normal-flow post-call
+            // steps for each branch. The branch's state is swapped in
+            // temporarily so shared engine helpers (assignHits,
+            // runDestroyAbilities) operate on the branch data.
+            const inAssignHitsPhase =
+              state.currentPhase.micro === 'DICE_ROLL' ||
+              state.currentPhase.micro === 'ASSIGN_HITS'
+            const inBeforeAssignHits = timingArray.some(
+              t => t === 'BEFORE_ASSIGN_HITS',
+            )
+
+            const finalBranches: AbilityBranch[] = []
+
+            for (const branch of e.branches) {
+              const saved = this._saveBranchState()
+              this._setBranchState(branch)
+
               if (shouldDecrementUses)
-                decrementUses(state, side, ability.key, freshParams, this)
-              ctx.resetAfterCall()
-            } catch (e) {
-              if (!(e instanceof AbilityBranchInterrupt)) throw e
+                decrementUses(branch.data, side, ability.key, freshParams, this)
+              this.flushPendingUnitInvokes()
+              branch.logger?.forSide(side).log()
 
-              ctx.resetAfterCall()
-              markInvoked()
+              const hitsPresent =
+                branch.data.attacker.hitPools.length > 0 ||
+                branch.data.defender.hitPools.length > 0
 
-              // Per-branch post-processing: mirror the normal-flow post-call
-              // steps for each branch. The branch's state is swapped in
-              // temporarily so shared engine helpers (assignHits,
-              // runDestroyAbilities) operate on the branch data.
-              const inAssignHitsPhase =
-                state.currentPhase.micro === 'DICE_ROLL' ||
-                state.currentPhase.micro === 'ASSIGN_HITS'
-              const inBeforeAssignHits = timingArray.some(
-                t => t === 'BEFORE_ASSIGN_HITS',
-              )
-
-              const finalBranches: AbilityBranch[] = []
-
-              for (const branch of e.branches) {
-                const saved = this._saveBranchState()
-                this._setBranchState(branch)
-
-                if (shouldDecrementUses)
-                  decrementUses(
-                    branch.data,
-                    side,
-                    ability.key,
-                    freshParams,
-                    this,
-                  )
-                this.flushPendingUnitInvokes()
-                branch.logger?.forSide(side).log()
-
-                const hitsPresent =
-                  branch.data.attacker.hitPools.length > 0 ||
-                  branch.data.defender.hitPools.length > 0
-
-                if (hitsPresent && !inAssignHitsPhase && !inBeforeAssignHits) {
-                  this._combatState.assignHits()
-                  // assignHits → runDestroyAbilities may have triggered more
-                  // branching (e.g. AFTER_DESTROY rolled dice).
-                  if (this._abilityBranches) {
-                    const nested = this._abilityBranches
-                    this._abilityBranches = null
-                    for (const n of nested) {
-                      finalBranches.push({
-                        data: n.data,
-                        invokes: n.invokes,
-                        probability: n.probability * branch.probability,
-                        logger: n.logger,
-                      })
-                    }
-                    this._restoreBranchState(saved)
-                    continue
+              if (hitsPresent && !inAssignHitsPhase && !inBeforeAssignHits) {
+                this._combatState.assignHits()
+                // assignHits → runDestroyAbilities may have triggered more
+                // branching (e.g. AFTER_DESTROY rolled dice).
+                if (this._abilityBranches) {
+                  const nested = this._abilityBranches
+                  this._abilityBranches = null
+                  for (const n of nested) {
+                    finalBranches.push({
+                      data: n.data,
+                      invokes: n.invokes,
+                      probability: n.probability * branch.probability,
+                      logger: n.logger,
+                    })
                   }
+                  this._restoreBranchState(saved)
+                  continue
                 }
-
-                finalBranches.push({
-                  data: this._combatState.data,
-                  invokes: this._combatState._invokes,
-                  probability: branch.probability,
-                  logger: this._logger,
-                })
-                this._restoreBranchState(saved)
               }
 
-              return { branches: finalBranches, unitsChanged: true }
+              finalBranches.push({
+                data: this._combatState.data,
+                invokes: this._combatState._invokes,
+                probability: branch.probability,
+                logger: this._logger,
+              })
+              this._restoreBranchState(saved)
             }
+
+            return { branches: finalBranches, unitsChanged: true }
           }
 
           this.flushPendingUnitInvokes()

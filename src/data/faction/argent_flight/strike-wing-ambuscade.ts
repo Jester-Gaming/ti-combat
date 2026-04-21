@@ -47,13 +47,13 @@ export const strikeWingAmbuscade: Ability<Params> = {
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: UNIT_ABILITY_PHASES,
-      isCallable: (params, ctx, dice) => {
-        if (dice.own.isEmpty()) return false
+      isCallable: (params, ctx) => {
+        if (ctx.api.own.isDicePoolEmpty()) return false
         const currentPhase = ctx.state.currentPhase.meta
         return params.phases.includes(currentPhase)
       },
-      call: (_ctx, _params, dice) => {
-        dice.own.addDiceCount(1)
+      call: ctx => {
+        ctx.api.own.addDiceCount(1)
       },
     },
   ],

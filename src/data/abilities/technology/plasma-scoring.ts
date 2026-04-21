@@ -25,11 +25,11 @@ export const plasmaScoring: Ability<Params> = {
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: ['BOMBARDMENT', 'SPACE_CANNON_OFFENSE', 'SPACE_CANNON_DEFENSE'],
-      isCallable: (_params, _ctx, dice) => {
-        return !dice.own.isEmpty()
+      isCallable: (_params, ctx) => {
+        return !ctx.api.own.isDicePoolEmpty()
       },
-      call: (_ctx, params, dice) => {
-        dice.own.addDiceCount(1, params.strategy)
+      call: (ctx, params) => {
+        ctx.api.own.addDiceCount(1, params.strategy)
       },
     },
   ],

@@ -52,9 +52,9 @@ const addDiceCountA: Ability = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (_params, _ctx, dice) => !dice.own.isEmpty(),
-      call: (_ctx, _params, dice) => {
-        dice.own.addDiceCount(1, 'BEST')
+      isCallable: (_params, ctx) => !ctx.api.own.isDicePoolEmpty(),
+      call: ctx => {
+        ctx.api.own.addDiceCount(1, 'BEST')
       },
     },
   ],
@@ -68,9 +68,9 @@ const addDiceCountB: Ability = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      isCallable: (_params, _ctx, dice) => !dice.own.isEmpty(),
-      call: (_ctx, _params, dice) => {
-        dice.own.addDiceCount(1, 'BEST')
+      isCallable: (_params, ctx) => !ctx.api.own.isDicePoolEmpty(),
+      call: ctx => {
+        ctx.api.own.addDiceCount(1, 'BEST')
       },
     },
   ],

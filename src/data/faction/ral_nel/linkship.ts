@@ -42,11 +42,11 @@ export const linkshipI: Ability<Params> = {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: 'SPACE_CANNON_OFFENSE',
       isCallable: params => hasStructures(params),
-      call: (ctx, params, dice) => {
+      call: (ctx, params) => {
         const best = findBestSpaceCannon(params, ctx.api.own)
         if (!best) return
 
-        dice.own.addDiceGroup('DESTROYER', ctx.getUnit(), best.sc)
+        ctx.api.own.addDiceGroup('DESTROYER', ctx.getUnit(), best.sc)
         ctx.api.own.updateAbilityConfig({
           structures: (prev: Record<string, number>) => ({
             ...prev,
@@ -91,11 +91,11 @@ export const linkshipII: Ability<Params> = {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: 'SPACE_CANNON_OFFENSE',
       isCallable: params => hasStructures(params),
-      call: (ctx, params, dice) => {
+      call: (ctx, params) => {
         const best = findBestSpaceCannon(params, ctx.api.own)
         if (!best) return
 
-        dice.own.addDiceGroup('DESTROYER', ctx.getUnit(), best.sc)
+        ctx.api.own.addDiceGroup('DESTROYER', ctx.getUnit(), best.sc)
       },
     },
   ],

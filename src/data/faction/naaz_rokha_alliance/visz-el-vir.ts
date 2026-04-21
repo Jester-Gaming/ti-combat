@@ -15,11 +15,11 @@ export const viszElVir: Ability = {
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',
-      call: (ctx, _params, dice) => {
+      call: ctx => {
         for (const id of ctx.api.own.getUnits('MECH', {
           includeVariants: true,
         })) {
-          dice.own.addDiceCount(1, id)
+          ctx.api.own.addDiceCount(1, id)
         }
       },
     },

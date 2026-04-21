@@ -395,6 +395,96 @@ export class SideApi {
       this.state.currentPhase.meta,
     )
   }
+
+  /** True if this side's dice pool has no dice. Only meaningful during
+   *  BEFORE_DICE_ROLL / BEFORE_UNIT_ABILITY_ROLL; returns true otherwise. */
+  isDicePoolEmpty(): boolean {
+    const pool = this._ctx.getDicePool(this._side)
+    if (!pool) return true
+    for (const dice of Object.values(pool)) {
+      if (dice && dice.length > 0) return false
+    }
+    return true
+  }
+
+  /** Add `count` to an existing dice group's bonus. Without a target, or with
+   *  `'BEST'` / `'WORST'`, modifies the die with the best / worst hit value.
+   *  With a `UnitId`, modifies that unit's die. Only valid during
+   *  BEFORE_DICE_ROLL / BEFORE_UNIT_ABILITY_ROLL. */
+  addDiceCount(count: number, target?: 'BEST' | 'WORST' | UnitId): void {
+    const pool = this._ctx.getDicePool(this._side)
+    if (!pool) return
+    if (typeof target === 'number') {
+      for (const dice of Object.values(pool)) {
+        if (!dice) continue
+        for (let i = 0; i < dice.length; i++) {
+          if (dice[i][3] === target) {
+            dice[i] = [dice[i][0], dice[i][1], dice[i][2] + count, dice[i][3]]
+            return
+          }
+        }
+      }
+      return
+    }
+
+    const isBest = target === undefined || target === 'BEST'
+    let bestType: UnitBaseType | undefined
+    let bestIndex = -1
+    let bestHitValue = isBest ? Infinity : -Infinity
+
+    for (const [type, dice] of Object.entries(pool)) {
+      if (!dice) continue
+      for (let i = 0; i < dice.length; i++) {
+        const hitValue = dice[i][0]
+        const better = isBest
+          ? hitValue < bestHitValue
+          : hitValue > bestHitValue
+        if (better) {
+          bestHitValue = hitValue
+          bestType = type as UnitBaseType
+          bestIndex = i
+        }
+      }
+    }
+
+    if (bestType !== undefined && bestIndex >= 0) {
+      const dice = pool[bestType]!
+      dice[bestIndex] = [
+        dice[bestIndex][0],
+        dice[bestIndex][1],
+        dice[bestIndex][2] + count,
+        dice[bestIndex][3],
+      ]
+    }
+  }
+
+  /** Overwrite the dice count for the group belonging to `unit`. Only valid
+   *  during BEFORE_DICE_ROLL / BEFORE_UNIT_ABILITY_ROLL. */
+  setDiceCount(count: number, unit: UnitId): void {
+    const pool = this._ctx.getDicePool(this._side)
+    if (!pool) return
+    for (const dice of Object.values(pool)) {
+      if (!dice) continue
+      for (let i = 0; i < dice.length; i++) {
+        if (dice[i][3] === unit) {
+          dice[i] = [dice[i][0], count, dice[i][2], dice[i][3]]
+          return
+        }
+      }
+    }
+  }
+
+  /** Append a new dice group under `source`. Only valid during
+   *  BEFORE_DICE_ROLL / BEFORE_UNIT_ABILITY_ROLL. */
+  addDiceGroup(source: string, unit: UnitId, diceGroup: DiceGroup): void {
+    const pool = this._ctx.getDicePool(this._side)
+    if (!pool) return
+    const existing = pool[source] ?? []
+    pool[source] = [
+      ...existing,
+      [diceGroup[0], diceGroup[1], diceGroup[2] ?? 0, unit],
+    ]
+  }
 }
 
 // ============================================================================
@@ -450,6 +540,10 @@ export class AbilityContext {
       own: this._abilitiesParams.getAbilities(this._side),
       opponent: this._abilitiesParams.getAbilities(opponent),
     }
+  }
+
+  getDicePool(side: CombatSide): DicePool | undefined {
+    return this._abilitiesParams._currentDicePool?.[side]
   }
 
   upgradeForCall(draft: CombatStateData, ability: Ability, logger?: Logger) {
