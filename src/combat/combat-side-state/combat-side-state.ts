@@ -87,12 +87,6 @@ function totalCountForType(
   return total
 }
 
-function hasAnyUnits(units: Record<string, UnitId[]>): boolean {
-  for (const key in units) {
-    if (units[key].length > 0) return true
-  }
-  return false
-}
 import { getSettingsValidTargets as getSettingsValidTargetsUtil } from './utils/get-settings-valid-targets'
 
 /** Get the opposite side */
@@ -1023,13 +1017,6 @@ export class CombatSideState {
     }
 
     delete data.unitState[unitId]
-
-    // If this side is now wiped, request combat completion. The side without
-    // units naturally loses via determineWinner's unit-count check.
-    const stateData = this.stateData
-    if (!stateData.transitionTarget && !hasAnyUnits(data.units)) {
-      stateData.transitionTarget = 'COMPLETE'
-    }
   }
 
   /** Modify per-unit mutable state */

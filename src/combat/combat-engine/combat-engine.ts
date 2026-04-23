@@ -4,18 +4,9 @@ import {
   getNextPhaseInFlow,
   isCombatMeta,
 } from '../combat-state/phase-utils'
-import type {
-  CombatMode,
-  MetaPhase,
-  PhaseTransitionTarget,
-} from '../combat-state/types'
+import type { CombatMode, MetaPhase } from '../combat-state/types'
 import type { CombatOutcome } from '../types'
-import { determineWinner } from './utils/determine-winner'
-import {
-  extractSurvivors,
-  mergeRetreatSurvivors,
-} from './utils/extract-survivors'
-import { generateCompactOutcomeKey } from './utils/generate-compact-outcome-key'
+import { extractSurvivors } from './utils/extract-survivors'
 import type { OutcomeRecord } from './utils/types'
 
 interface EngineOptions {
@@ -102,21 +93,17 @@ export class CombatEngine {
 
         // Script just drained — transition to the next phase and reload.
         if (state.pendingSteps.length === 0) {
-          const nextPhase = resolveNextPhase(state, currentMeta, mode)
+          const nextPhase = resolveNextPhase(currentMeta, mode)
           // Transitioning to COMPLETE still runs END_OF_COMBAT / CLEANUP_ROUND
           // / CLEANUP before flipping the phase — ability CLEANUP invokes
           // (e.g., CAVALRY removing its subtype) need to fire.
-          if (nextPhase === 'COMPLETE') {
-            state.loadCompletionSteps(currentMeta)
-          } else {
-            currentMeta = nextPhase
-            if (state.isFinished()) continue
-            if (isCombatMeta(nextPhase)) {
-              const res = enterCombatRound()
-              if (res !== 'enter') return res
-            }
-            state.loadPhaseScript(nextPhase, round)
+          currentMeta = nextPhase
+          if (state.isFinished()) continue
+          if (isCombatMeta(nextPhase)) {
+            const res = enterCombatRound()
+            if (res !== 'enter') return res
           }
+          state.loadPhaseScript(nextPhase, round)
           // Empty script (unreachable after the branches above) — loop.
           if (state.pendingSteps.length === 0) continue
         }
@@ -161,11 +148,9 @@ export class CombatEngine {
               merged.set(key, {
                 attackerData: outcome.attackerData,
                 defenderData: outcome.defenderData,
-                attackerParticipating: outcome.attackerParticipating,
-                defenderParticipating: outcome.defenderParticipating,
                 abilities: outcome.abilities,
                 probability: outcome.probability * totalProb,
-                winnerOverride: outcome.winnerOverride,
+                winnerSide: outcome.winnerSide,
               })
             }
           }
@@ -192,11 +177,9 @@ export class CombatEngine {
               merged.set(key, {
                 attackerData: outcome.attackerData,
                 defenderData: outcome.defenderData,
-                attackerParticipating: outcome.attackerParticipating,
-                defenderParticipating: outcome.defenderParticipating,
                 abilities: outcome.abilities,
                 probability: adjustedProb,
-                winnerOverride: outcome.winnerOverride,
+                winnerSide: outcome.winnerSide,
               })
             }
           }
@@ -229,44 +212,32 @@ export class CombatEngine {
 }
 
 /** Decide the next meta-phase when the current script drains. Combat metas
- *  loop back to themselves as long as no transition was forced; otherwise
- *  the flow advances. An ability-set `transitionTarget` overrides the flow. */
-function resolveNextPhase(
-  state: CombatState,
-  currentMeta: MetaPhase,
-  mode: CombatMode,
-): PhaseTransitionTarget {
-  const override = state.data.transitionTarget
-  if (override) {
-    delete state.data.transitionTarget
-    return override
-  }
+ *  loop back to themselves; non-combat metas advance through the flow.
+ *  Completion is owned entirely by combat-state — when it pushes the
+ *  END_OF_COMBAT sequence, the outer loop sees `isFinished` flip on the
+ *  next iteration. */
+function resolveNextPhase(currentMeta: MetaPhase, mode: CombatMode): MetaPhase {
   if (isCombatMeta(currentMeta)) {
     return currentMeta
   }
-  return getNextPhaseInFlow(currentMeta, mode)
+
+  return getNextPhaseInFlow(currentMeta, mode) as MetaPhase
 }
 
+/** Build the leaf outcome for a finished (or maxRounds-aborted) state.
+ *  `winnerSide` is normally set by `_triggerCompletion` before `_setComplete`
+ *  flips `isFinished`. The maxRounds escape hatch is the one path that
+ *  reaches here without a completion script having run, so fall back */
 function makeLeafOutcome(state: CombatState): OutcomeRecord {
-  const attackerParticipating = state.side('attacker').getParticipatingUnits()
-  const defenderParticipating = state.side('defender').getParticipatingUnits()
-  const winnerOverride = state.data.winnerOverride
-  let key = generateCompactOutcomeKey(
-    state.data.attacker,
-    state.data.defender,
-    attackerParticipating,
-    defenderParticipating,
-  )
-  if (winnerOverride) key += `#${winnerOverride}`
+  const winnerSide = state.data.winnerSide ?? 'draw'
+  const key = state.getUnitsHash()
   const record: OutcomeRecord = new Map()
   record.set(key, {
     attackerData: state.data.attacker,
     defenderData: state.data.defender,
-    attackerParticipating,
-    defenderParticipating,
     abilities: state.data.abilities,
     probability: 1,
-    winnerOverride,
+    winnerSide,
   })
   return record
 }
@@ -274,16 +245,15 @@ function makeLeafOutcome(state: CombatState): OutcomeRecord {
 function outcomeRecordToArray(record: OutcomeRecord): CombatOutcome[] {
   const results: CombatOutcome[] = []
   for (const [, o] of record) {
-    // Determine winner BEFORE merging retreat-saved units
-    const winner = determineWinner(o)
-    const attacker = extractSurvivors(o.attackerData, o.attackerParticipating)
-    const defender = extractSurvivors(o.defenderData, o.defenderParticipating)
+    const attacker = extractSurvivors(o.attackerData)
+    const defender = extractSurvivors(o.defenderData)
 
-    // Merge retreat-saved units into survivors (display only, doesn't affect winner)
-    mergeRetreatSurvivors(attacker, o.abilities, 'attacker')
-    mergeRetreatSurvivors(defender, o.abilities, 'defender')
-
-    results.push({ attacker, defender, winner, probability: o.probability })
+    results.push({
+      attacker,
+      defender,
+      winner: o.winnerSide,
+      probability: o.probability,
+    })
   }
   return results
 }

@@ -797,7 +797,7 @@ export class AbilitiesEngine {
           }
 
           const shouldDecrementUses = !invoke.system
-          ctx.upgradeForCall(state, ability, childLogger?.forSide(side))
+          ctx.upgradeForCall(ability, childLogger?.forSide(side))
 
           // Pre-stamp the dispatching step's frame with the post-invoke
           // resume state. If the call branches, `clonePendingSteps` deep-

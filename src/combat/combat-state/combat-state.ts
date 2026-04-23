@@ -283,8 +283,12 @@ export class CombatState {
     ]
   }
 
+  getUnitsHash(): string {
+    return `${getSideHash(this.data.attacker)}|${getSideHash(this.data.defender)}`
+  }
+
   getHash(): string {
-    return `${getSideHash(this.data.attacker)}|${getSideHash(this.data.defender)}|${getAbilitiesHash(this.abilities)}`
+    return `${this.getUnitsHash()}|${getAbilitiesHash(this.abilities)}`
   }
 
   /**
@@ -422,15 +426,25 @@ export class CombatState {
           buildCombatDiceRollGroup(phase),
           ...this.getAssignHitsScript(phase),
           { kind: 'timing', timing: 'AFTER_ASSIGN_HITS_STEP', phase },
-          { kind: 'timing', timing: 'RETREAT_STEP', phase },
           {
             kind: 'method',
             fn: CombatState.prototype._postAssignHits,
             phase,
           },
+          { kind: 'timing', timing: 'RETREAT_STEP', phase },
           { kind: 'timing', timing: 'END_OF_COMBAT_ROUND', phase },
           { kind: 'timing', timing: 'AFTER_COMBAT_ROUND', phase },
           { kind: 'timing', timing: 'CLEANUP_ROUND', phase },
+          // Second wipe-check: catches abilities that destroy units after the
+          // first `_postAssignHits` (e.g. EXOTRIREME wiping the opponent in
+          // AFTER_COMBAT_ROUND). Without this the round drains, the engine
+          // loops to round N+1, and ability CLEANUPs (e.g. CAVALRY) don't
+          // fire until that next round's `_postAssignHits`.
+          {
+            kind: 'method',
+            fn: CombatState.prototype._postAssignHits,
+            phase,
+          },
         ]
       }
 
@@ -483,19 +497,32 @@ export class CombatState {
     const defenderOut = isCombatRound
       ? !this.side('defender').hasParticipatingUnits()
       : !hasAnyUnits(this.data.defender.units)
-    if (attackerOut || defenderOut) {
-      this._triggerCompletion(phase)
-    }
+
+    let winner: CombatSide | 'draw' | undefined
+    if (attackerOut && defenderOut) winner = 'draw'
+    else if (attackerOut) winner = 'defender'
+    else if (defenderOut) winner = 'attacker'
+
+    if (winner !== undefined) this._triggerCompletion(phase, winner)
   }
 
   private _setComplete(): void {
     this.data.isFinished = true
   }
 
-  /** Replace any in-flight pending steps with the completion sequence.
-   *  Stored reversed (pop yields END_OF_COMBAT first). */
-  private _triggerCompletion(phase: MetaPhase[]): void {
-    delete this.data.transitionTarget
+  /** Replace any in-flight pending steps with the completion sequence and
+   *  set `winnerSide` if not already set. The first caller (e.g. an
+   *  ability's `transitionTo` pinning a 'draw') wins — later wipe-checks
+   *  won't overwrite an explicit decision. After this, combat-state owns
+   *  the path to `_setComplete`; the engine and test harness only observe
+   *  via `isFinished`. Stored reversed (pop yields END_OF_COMBAT first). */
+  public _triggerCompletion(
+    phase: MetaPhase[],
+    winner: CombatSide | 'draw',
+  ): void {
+    if (this.data.winnerSide === undefined) {
+      this.data.winnerSide = winner
+    }
     this.pendingSteps = []
     this.pushScript([
       { kind: 'timing', timing: 'END_OF_COMBAT', phase },
@@ -507,15 +534,6 @@ export class CombatState {
         phase,
       },
     ])
-  }
-
-  /** Public entry point mirroring `_triggerCompletion`, used by the engine
-   *  and test harness when an explicit phase transition target is
-   *  `'COMPLETE'` — we still need to run the END_OF_COMBAT / CLEANUP_ROUND /
-   *  CLEANUP sequence before finishing. The caller provides its tracked
-   *  current meta (engine / test harness own the flow variable). */
-  public loadCompletionSteps(currentMeta: MetaPhase): void {
-    this._triggerCompletion([currentMeta])
   }
 
   private pushScript(entity: PendingStep[]) {

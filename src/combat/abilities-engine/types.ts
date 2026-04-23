@@ -12,7 +12,6 @@ import type {
   CombatMode,
   CombatStateData,
   MetaPhase,
-  PhaseTransitionTarget,
   UnitAbilityMeta,
 } from '../combat-state/types'
 import type { Logger } from '../logger'
@@ -195,7 +194,7 @@ export interface AbilityCallContext {
    *  closing transition step runs. Pass `'COMPLETE'` to run end-of-combat
    *  cleanup and finish the battle.
    *  @param outcome - 'DRAW' forces a draw, 'LOST' means the calling side loses. */
-  transitionTo(target: PhaseTransitionTarget, outcome?: 'DRAW' | 'LOST'): void
+  transitionTo(target: 'COMPLETE', outcome?: 'DRAW' | 'LOST'): void
   /** Roll dice mid-ability, creating probability branches.
    *  Computes all per-group outcomes and calls the callback once per outcome,
    *  passing a branch-scoped context that operates on that branch's state.

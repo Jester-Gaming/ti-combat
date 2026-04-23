@@ -26,8 +26,8 @@ describe.forEachSide('RETREAT + SKILLED_RETREAT', () => {
 
     expect(t.isFinished()).toBe(true)
     // Skilled Retreat fires at START_OF_COMBAT_ROUND (before RETREAT timing)
-    // → transitionTo('COMPLETE', 'DRAW') sets winnerOverride
-    expect(t.state.winnerOverride).toBe('draw')
+    // → transitionTo('COMPLETE', 'DRAW') sets winnerSide
+    expect(t.state.winnerSide).toBe('draw')
     // Units stay in combat (not retreated via retreatUnits)
     expect(t.attacker.units.CRUISER).toHaveLength(3)
   })

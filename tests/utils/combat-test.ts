@@ -323,29 +323,21 @@ export class CombatTest {
   }
 
   /** If the script for the current phase has not been loaded yet, load it.
-   *  If the script has drained, transition to the next phase (looping back
-   *  into the same combat meta when applicable, honoring
-   *  `transitionTarget`) and load that phase's script. Returns false when
-   *  combat has completed — the caller should stop. */
+   *  If the script has drained, transition to the next phase (combat metas
+   *  loop back to themselves) and load that phase's script. Returns false
+   *  when combat has completed — combat-state owns the path to `_setComplete`,
+   *  so the harness only observes via `isFinished`. */
   private _ensureScriptLoaded(): boolean {
     if (this._cs.isFinished()) return false
     if (this._cs.pendingSteps.length > 0) return true
 
     if (this._loadedForPhase === this._currentMeta) {
-      // Script just drained — transition.
-      const override = this._state.transitionTarget
-      const next = override
-        ? override
-        : isCombatMeta(this._currentMeta)
-          ? this._currentMeta
-          : getNextPhaseInFlow(this._currentMeta, this._state.combatMode)
-      if (override) delete this._state.transitionTarget
-      if (next === 'COMPLETE') {
-        // Run END_OF_COMBAT / CLEANUP_ROUND / CLEANUP before finishing.
-        this._cs.loadCompletionSteps(this._currentMeta)
-        this._loadedForPhase = this._currentMeta
-        return this._cs.pendingSteps.length > 0
-      }
+      const next: MetaPhase = isCombatMeta(this._currentMeta)
+        ? this._currentMeta
+        : (getNextPhaseInFlow(
+            this._currentMeta,
+            this._state.combatMode,
+          ) as MetaPhase)
       this._currentMeta = next
       if (this._cs.isFinished()) return false
     }
@@ -541,27 +533,19 @@ export function hasParkedPass(state: CombatState): boolean {
   return false
 }
 
-/** Transition from the given meta to the next one (honoring
- *  `transitionTarget` or flow order, with combat metas self-looping) and
- *  load its script. Returns the new meta when a script was loaded, or
- *  `null` when combat is finished / a completion sequence was staged. */
+/** Transition from the given meta to the next one (combat metas self-loop)
+ *  and load its script. Returns the new meta when a script was loaded, or
+ *  `null` when combat is finished — combat-state owns completion, so we
+ *  only check `isFinished` here. */
 export function transitionAndLoad(
   state: CombatState,
   currentMeta: MetaPhase,
   round: number,
 ): MetaPhase | null {
   if (state.isFinished()) return null
-  const override = state.data.transitionTarget
-  const next = override
-    ? override
-    : isCombatMeta(currentMeta)
-      ? currentMeta
-      : getNextPhaseInFlow(currentMeta, state.combatMode)
-  if (override) delete state.data.transitionTarget
-  if (next === 'COMPLETE') {
-    state.loadCompletionSteps(currentMeta)
-    return null
-  }
+  const next: MetaPhase = isCombatMeta(currentMeta)
+    ? currentMeta
+    : (getNextPhaseInFlow(currentMeta, state.combatMode) as MetaPhase)
   state.loadPhaseScript(next, round)
   return next
 }

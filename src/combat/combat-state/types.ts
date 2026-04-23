@@ -222,12 +222,12 @@ export interface CombatStateData {
   defender: SideStateData
   abilities: AbilitiesConfig
   combatMode: CombatMode
-  /** When set, the next meta-phase transition goes to this target instead of
-   *  the normal next phase. `'COMPLETE'` is a sentinel that runs the
-   *  end-of-combat cleanup and flips `isFinished`. */
-  transitionTarget?: PhaseTransitionTarget
-  /** Override the winner determination. Set by abilities via transitionTo. */
-  winnerOverride?: CombatSide | 'draw'
+  /** The side that won, or 'draw'. Set whenever a side is wiped (via
+   *  `_removeOne` or `_postAssignHits`) or via an ability's `transitionTo`.
+   *  Guaranteed to be defined whenever `isFinished` is true — combat
+   *  cannot complete without it (the completion script is only pushed by
+   *  `_triggerCompletion`, which sets this if it isn't already set). */
+  winnerSide?: CombatSide | 'draw'
   /** True once combat has completed — set by `_setComplete` after the
    *  END_OF_COMBAT / CLEANUP_ROUND / CLEANUP timings run. Engine/test
    *  harness check this instead of reading the (now-removed) `currentPhase`. */

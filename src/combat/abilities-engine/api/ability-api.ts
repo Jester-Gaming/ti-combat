@@ -27,7 +27,6 @@ import type {
   HitPool,
   MetaPhase,
   PendingStep,
-  PhaseTransitionTarget,
   UnitAbilityMeta,
 } from '../../combat-state/types'
 import { isDiceRollContext } from '../../combat-state/types'
@@ -511,7 +510,6 @@ export class AbilityContext {
 
   private _abilitiesParams: AbilitiesEngine
   private _side: CombatSide
-  private _draftState?: CombatStateData
   private _api: { own: SideApi; opponent: SideApi }
 
   constructor(side: CombatSide, abilitiesParams: AbilitiesEngine) {
@@ -524,7 +522,7 @@ export class AbilityContext {
   }
 
   get state(): CombatStateData {
-    return this._draftState ?? this._abilitiesParams.combatState.data
+    return this._abilitiesParams.combatState.data
   }
 
   /** Innermost active meta-phase for the currently-running ability. Read
@@ -578,8 +576,7 @@ export class AbilityContext {
     return isDiceRollContext(ctx) ? ctx.dicePool?.[side] : undefined
   }
 
-  upgradeForCall(draft: CombatStateData, ability: Ability, logger?: Logger) {
-    this._draftState = draft
+  upgradeForCall(ability: Ability, logger?: Logger) {
     this.logger = logger
     this.ability = ability
     this._api.own._abilityKey = ability.key
@@ -589,7 +586,6 @@ export class AbilityContext {
   }
 
   resetAfterCall() {
-    this._draftState = undefined
     this.logger = undefined
     this.ability = undefined
     this._api.own._abilityKey = undefined
@@ -624,18 +620,22 @@ export class AbilityContext {
     })
   }
 
-  transitionTo(target: PhaseTransitionTarget, outcome?: 'DRAW' | 'LOST'): void {
-    if (this.state.transitionTarget) return
-    this.state.transitionTarget = target
-    if (outcome === 'DRAW') {
-      this.state.winnerOverride = 'draw'
-    } else if (outcome === 'LOST') {
-      this.state.winnerOverride = getOpponentSide(this._side)
+  transitionTo(target: 'COMPLETE', outcome?: 'DRAW' | 'LOST'): void {
+    if (target !== 'COMPLETE') {
+      throw new Error(`Impossible transition to ${target}`)
+    }
+
+    let winner: CombatSide | 'draw' = 'draw' as const
+    if (outcome === 'LOST') {
+      winner = getOpponentSide(this._side)
     }
     // Drop the current meta's script. Trigger steps pushed after this call
     // survive (they land on the empty stack); to keep any triggers, callers
     // must invoke `transitionTo` before pushing them.
-    this._abilitiesParams.combatState.pendingSteps = []
+    this._abilitiesParams.combatState._triggerCompletion(
+      this.phaseStack!,
+      winner,
+    )
   }
 
   runDestroyAbilities(destroyed: {
@@ -735,7 +735,7 @@ export class AbilityContext {
       const branchCtx = new AbilityContext(this._side, this._abilitiesParams)
       branchCtx.unitSource = this.unitSource
       branchCtx.ownerFaction = this.ownerFaction
-      if (ability) branchCtx.upgradeForCall(branchData, ability, branchLogger)
+      if (ability) branchCtx.upgradeForCall(ability, branchLogger)
 
       try {
         callback(branchCtx, outcome.hits)
