@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { combatTest } from '../utils/combat-test'
+import { combatTest, unitsByBaseType } from '../utils/combat-test'
 
 describe('COURAGEOUS_TO_THE_END', () => {
   it('splits when own ship dies — rolls 2 dice at combat value', () => {
@@ -41,7 +41,7 @@ describe('COURAGEOUS_TO_THE_END', () => {
     // only 1 cruiser to destroy).
     const byRemaining: Record<number, number> = {}
     for (const b of branches) {
-      const count = b.state.data.defender.units.CRUISER?.length ?? 0
+      const count = unitsByBaseType(b.state.data.defender).CRUISER?.length ?? 0
       byRemaining[count] = (byRemaining[count] ?? 0) + b.probability
     }
     expect(byRemaining[1]).toBeCloseTo(0.36) // 0 Courageous hits
@@ -100,7 +100,8 @@ describe('COURAGEOUS_TO_THE_END', () => {
 
     const byRemaining: Record<number, number> = {}
     for (const b of branches) {
-      const count = b.state.data.defender.units.DESTROYER?.length ?? 0
+      const count =
+        unitsByBaseType(b.state.data.defender).DESTROYER?.length ?? 0
       byRemaining[count] = (byRemaining[count] ?? 0) + b.probability
     }
     expect(byRemaining[1]).toBeCloseTo(0.64) // 0 Courageous hits
@@ -140,8 +141,12 @@ describe('COURAGEOUS_TO_THE_END', () => {
 
     // Attacker's cruiser was destroyed, defender's cruiser untouched —
     // confirming Courageous didn't fire.
-    expect(branches[0].state.data.attacker.units.CRUISER ?? []).toHaveLength(0)
-    expect(branches[0].state.data.defender.units.CRUISER).toHaveLength(1)
+    expect(
+      unitsByBaseType(branches[0].state.data.attacker).CRUISER ?? [],
+    ).toHaveLength(0)
+    expect(
+      unitsByBaseType(branches[0].state.data.defender).CRUISER,
+    ).toHaveLength(1)
   })
 
   it('does not fire when the top-priority target is not in targetPriority', () => {
@@ -177,8 +182,12 @@ describe('COURAGEOUS_TO_THE_END', () => {
     expect(branches[0].probability).toBe(1)
 
     // Defender's destroyer still alive — Courageous never rolled.
-    expect(branches[0].state.data.attacker.units.CRUISER ?? []).toHaveLength(0)
-    expect(branches[0].state.data.defender.units.DESTROYER).toHaveLength(1)
+    expect(
+      unitsByBaseType(branches[0].state.data.attacker).CRUISER ?? [],
+    ).toHaveLength(0)
+    expect(
+      unitsByBaseType(branches[0].state.data.defender).DESTROYER,
+    ).toHaveLength(1)
   })
 
   it('re-evaluates ownPriority per round — skipped R1, fires R2 after state changes', () => {
@@ -228,7 +237,9 @@ describe('COURAGEOUS_TO_THE_END', () => {
     // Courageous single DiceGroup [9, 2] → 3 outcomes (0/1/2 hits).
     expect(branches).toHaveLength(3)
     for (const b of branches) {
-      expect(b.state.data.attacker.units.CARRIER ?? []).toHaveLength(0)
+      expect(unitsByBaseType(b.state.data.attacker).CARRIER ?? []).toHaveLength(
+        0,
+      )
       expect(
         b.state.data.liveAbilities.attacker['COURAGEOUS_TO_THE_END']?.uses ??
           b.state.data.abilities.attacker['COURAGEOUS_TO_THE_END']?.uses,
@@ -239,7 +250,7 @@ describe('COURAGEOUS_TO_THE_END', () => {
     //   0 hits (P=0.64): 3 cruisers,  1 hit (P=0.32): 2,  2 hits (P=0.04): 1.
     const byDefender: Record<number, number> = {}
     for (const b of branches) {
-      const count = b.state.data.defender.units.CRUISER?.length ?? 0
+      const count = unitsByBaseType(b.state.data.defender).CRUISER?.length ?? 0
       byDefender[count] = (byDefender[count] ?? 0) + b.probability
     }
     expect(byDefender[3]).toBeCloseTo(0.64)
@@ -302,8 +313,12 @@ describe('COURAGEOUS_TO_THE_END', () => {
     // 3 branches from Courageous 2d7.
     expect(branches).toHaveLength(3)
     for (const b of branches) {
-      expect(b.state.data.attacker.units.CRUISER ?? []).toHaveLength(0)
-      expect(b.state.data.defender.units.CRUISER ?? []).toHaveLength(0)
+      expect(unitsByBaseType(b.state.data.attacker).CRUISER ?? []).toHaveLength(
+        0,
+      )
+      expect(unitsByBaseType(b.state.data.defender).CRUISER ?? []).toHaveLength(
+        0,
+      )
       expect(
         b.state.data.liveAbilities.attacker['COURAGEOUS_TO_THE_END']?.uses ??
           b.state.data.abilities.attacker['COURAGEOUS_TO_THE_END']?.uses,
@@ -315,7 +330,7 @@ describe('COURAGEOUS_TO_THE_END', () => {
     //   0 hits (P=0.36): carrier alive.  1+ hit (P=0.64): carrier dead.
     const byCarrier: Record<number, number> = {}
     for (const b of branches) {
-      const count = b.state.data.defender.units.CARRIER?.length ?? 0
+      const count = unitsByBaseType(b.state.data.defender).CARRIER?.length ?? 0
       byCarrier[count] = (byCarrier[count] ?? 0) + b.probability
     }
     expect(byCarrier[1]).toBeCloseTo(0.36)

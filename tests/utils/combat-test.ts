@@ -21,7 +21,7 @@ import {
   type CombatStateConfig,
   type SideConfig,
 } from '@/hooks/combat-setup/build-combat-state'
-import type { CombatSide, UnitBaseType, UnitState } from '@/types'
+import type { CombatSide, UnitBaseType, UnitId, UnitState } from '@/types'
 
 import { shuffleInPlace } from './shuffle'
 
@@ -85,29 +85,63 @@ export type HitsSpec = number | { attacker?: number; defender?: number }
 
 type TestUnit = UnitState & { subtypes?: string[] }
 
-type SideView = Omit<SideStateData, 'units' | 'unitState' | 'unitStats'> & {
+type SideView = Omit<
+  SideStateData,
+  | 'participatingUnits'
+  | 'nonParticipatingUnits'
+  | 'unitType'
+  | 'unitState'
+  | 'unitStats'
+> & {
   units: Partial<Record<UnitBaseType, TestUnit[]>>
 }
 
 function buildSideView(data: SideStateData): SideView {
-  const { unitState, unitStats, units, ...rest } = data
+  const {
+    unitState,
+    unitStats,
+    participatingUnits,
+    nonParticipatingUnits,
+    unitType,
+    ...rest
+  } = data
   void unitStats
   const result: Partial<Record<UnitBaseType, TestUnit[]>> = {}
 
-  for (const key of Object.keys(units)) {
-    const ids = units[key]
-    if (ids.length <= 0) continue
-    const { type, subtypes } = parseVariantId(key)
-    const arr = result[type] ?? (result[type] = [])
-    for (const id of ids) {
+  const collect = (pool: UnitId[]) => {
+    for (const id of pool) {
+      const key = unitType[id]
+      if (!key) continue
+      const { type, subtypes } = parseVariantId(key)
+      const arr = result[type] ?? (result[type] = [])
       const state = unitState[id]
       const unit: TestUnit = { ...state }
       if (subtypes.length > 0) unit.subtypes = subtypes
       arr.push(unit)
     }
   }
+  collect(participatingUnits)
+  collect(nonParticipatingUnits)
 
   return { ...rest, units: result }
+}
+
+export function unitsByBaseType(
+  sideData: SideStateData,
+): Partial<Record<UnitBaseType, UnitId[]>> {
+  const result: Partial<Record<UnitBaseType, UnitId[]>> = {}
+  const collect = (pool: UnitId[]) => {
+    for (const id of pool) {
+      const key = sideData.unitType[id]
+      if (!key) continue
+      const { type } = parseVariantId(key)
+      const arr = result[type] ?? (result[type] = [])
+      arr.push(id)
+    }
+  }
+  collect(sideData.participatingUnits)
+  collect(sideData.nonParticipatingUnits)
+  return result
 }
 
 // ============================================================================

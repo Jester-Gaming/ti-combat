@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { combatTest } from '../utils/combat-test'
+import { combatTest, unitsByBaseType } from '../utils/combat-test'
 
 /**
  * Engine test: verify that ability mutations during ASSIGN_HITS in one
@@ -55,12 +55,14 @@ describe('engine: branch isolation', () => {
       const hits = getDiceHits(b.state.log)
       return hits !== undefined && hits.defender === 0
     })!
-    const defenderUnits = noHitBranch.state.data.defender.units
-
     expect(noHitBranch).toBeDefined()
 
-    expect(defenderUnits['DREADNOUGHT']).toBeDefined()
-    expect(defenderUnits['DREADNOUGHT'].length).toBe(1)
+    expect(
+      unitsByBaseType(noHitBranch.state.data.defender).DREADNOUGHT,
+    ).toBeDefined()
+    expect(
+      unitsByBaseType(noHitBranch.state.data.defender).DREADNOUGHT!.length,
+    ).toBe(1)
 
     // Process the hit branch through ASSIGN_HITS first.
     // This triggers: sustain damage → Direct Hit → destroyUnits → removeUnits
@@ -89,7 +91,11 @@ describe('engine: branch isolation', () => {
     // BUG: removeUnits mutated the shared units object via splice,
     // so the dreadnought is gone from ALL branches.
     expect(directHitUses(noHitBranch.state)).toBe(1)
-    expect(defenderUnits['DREADNOUGHT']).toBeDefined()
-    expect(defenderUnits['DREADNOUGHT'].length).toBe(1)
+    expect(
+      unitsByBaseType(noHitBranch.state.data.defender).DREADNOUGHT,
+    ).toBeDefined()
+    expect(
+      unitsByBaseType(noHitBranch.state.data.defender).DREADNOUGHT!.length,
+    ).toBe(1)
   })
 })

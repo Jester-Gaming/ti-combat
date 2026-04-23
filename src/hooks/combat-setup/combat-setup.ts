@@ -8,7 +8,6 @@ import {
   type CombatStateData,
   extractDefaults,
   getOpponentSide,
-  type SideStateData,
 } from '@/combat'
 import { UNIT_LIMITS, UNIT_TYPES } from '@/constants/units'
 import factions from '@/data/faction'
@@ -104,14 +103,18 @@ export class CombatSetup {
     this._stateData = {
       attacker: {
         faction: defaultFaction,
-        units: {} as SideStateData['units'],
+        participatingUnits: [],
+        nonParticipatingUnits: [],
+        unitType: {},
         unitState: {},
         unitStats: defaultUnitStats,
         hitPools: [],
       },
       defender: {
         faction: defaultFaction,
-        units: {} as SideStateData['units'],
+        participatingUnits: [],
+        nonParticipatingUnits: [],
+        unitType: {},
         unitState: {},
         unitStats: defaultUnitStats,
         hitPools: [],
@@ -581,7 +584,7 @@ export class CombatSetup {
         t => selections[t].upgraded,
       ),
     )
-    const { units, unitState, unitStats } = getSimulationUnits(
+    const { units, unitType, unitState, unitStats } = getSimulationUnits(
       faction,
       selections,
     )
@@ -591,6 +594,7 @@ export class CombatSetup {
         ...this._stateData[side],
         faction,
         units,
+        unitType,
         unitState,
         unitStats: {
           ...buildUnitStatsMap(faction, upgradedSet),

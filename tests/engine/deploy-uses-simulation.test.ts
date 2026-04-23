@@ -9,10 +9,10 @@ import {
 } from '@/combat'
 import { buildCombatState } from '@/hooks/combat-setup/build-combat-state'
 
-import { transitionAndLoad } from '../utils/combat-test'
+import { transitionAndLoad, unitsByBaseType } from '../utils/combat-test'
 
 function countMechs(data: CombatStateData): number {
-  return data.attacker.units['MECH']?.length ?? 0
+  return unitsByBaseType(data.attacker).MECH?.length ?? 0
 }
 
 /** Drive one step, loading the next phase's script when the stack drains.

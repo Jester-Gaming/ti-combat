@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import { combatTest } from '../utils/combat-test'
+import type { UnitId } from '@/types'
+
+import { combatTest, unitsByBaseType } from '../utils/combat-test'
 
 describe('APOLLO', () => {
   it.fails(
@@ -100,7 +102,8 @@ describe('APOLLO', () => {
 
       const byRemaining: Record<number, number> = {}
       for (const b of branches) {
-        const count = b.state.data.defender.units.CRUISER?.length ?? 0
+        const count =
+          unitsByBaseType(b.state.data.defender).CRUISER?.length ?? 0
         byRemaining[count] = (byRemaining[count] ?? 0) + b.probability
       }
       expect(byRemaining[1]).toBeCloseTo(0.6) // no hit
@@ -153,12 +156,20 @@ describe('APOLLO', () => {
       // Verify: across all branches, the variant-split holds — hit on Cavalry
       // group destroys the Cavalry DN, hit on base group destroys base DN.
       // Check the branch where both groups hit (cavalry destroyed + base destroyed).
+      const countByVariant = (
+        data: (typeof branches)[number]['state']['data']['defender'],
+        key: string,
+      ) => {
+        const match = (id: UnitId) => data.unitType[id] === key
+        return (
+          data.participatingUnits.filter(match).length +
+          data.nonParticipatingUnits.filter(match).length
+        )
+      }
       const bothDead = branches.find(
         b =>
-          (b.state.data.defender.units.DREADNOUGHT?.length ?? 0) === 0 &&
-          ((b.state.data.defender.units as Record<string, unknown[]>)[
-            'DREADNOUGHT:Cavalry'
-          ]?.length ?? 0) === 0,
+          countByVariant(b.state.data.defender, 'DREADNOUGHT') === 0 &&
+          countByVariant(b.state.data.defender, 'DREADNOUGHT:Cavalry') === 0,
       )
       expect(bothDead).toBeDefined()
       expect(bothDead!.probability).toBeCloseTo(0.4 * 0.4) // both hit
@@ -166,10 +177,8 @@ describe('APOLLO', () => {
       // Branch where base hit but cavalry survived
       const baseDeadCavalryAlive = branches.find(
         b =>
-          (b.state.data.defender.units.DREADNOUGHT?.length ?? 0) === 0 &&
-          ((b.state.data.defender.units as Record<string, unknown[]>)[
-            'DREADNOUGHT:Cavalry'
-          ]?.length ?? 0) === 1,
+          countByVariant(b.state.data.defender, 'DREADNOUGHT') === 0 &&
+          countByVariant(b.state.data.defender, 'DREADNOUGHT:Cavalry') === 1,
       )
       expect(baseDeadCavalryAlive).toBeDefined()
       expect(baseDeadCavalryAlive!.probability).toBeCloseTo(0.4 * 0.6)

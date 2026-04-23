@@ -115,8 +115,19 @@ export type UnitStatsEntry = UnitStats | ((parentStats: UnitStats) => UnitStats)
 /** State data for one side of combat */
 export interface SideStateData {
   faction: FactionKey
-  /** Variant key → array of UnitIds */
-  units: Record<UnitType, UnitId[]>
+  /** Participating UnitIds, pre-sorted by combat-mode priority.
+   *  Highest priority first, lowest last. `slice(0, -N)` keeps the N
+   *  highest-priority units (the lowest-priority ones die first under
+   *  tail-slice assign-hits). */
+  participatingUnits: UnitId[]
+  /** Non-participating UnitIds for the current combat mode (e.g. ships
+   *  during ground combat). They can still fire unit abilities
+   *  (bombardment, SCO/SCD) but are never targeted by normal combat
+   *  hits. Unsorted. */
+  nonParticipatingUnits: UnitId[]
+  /** UnitId → variant key. Populated at setup. Stale entries for
+   *  destroyed units are NEVER cleaned — do not use as an "alive" set. */
+  unitType: Record<UnitId, UnitType>
   /** UnitId → per-unit mutable state (flat map, sparse — only entries with non-default state) */
   unitState: Record<UnitId, UnitState>
   /** Variant key → shared stats template (may be a factory for subtypes) */

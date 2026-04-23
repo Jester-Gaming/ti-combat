@@ -82,15 +82,25 @@ export function restoreRetreatedUnits(
 ): void {
   const sideState = state[side]
 
-  const newUnits = { ...sideState.units }
+  // Collect restored ids and their variant keys from saved buckets.
+  const restoredIds: UnitId[] = []
+  const restoredTypes: Record<UnitId, UnitType> = {}
   for (const [key, ids] of Object.entries(saved.savedUnits)) {
     const typedKey = key as UnitType
-    const restoredIds = ids as unknown as UnitId[]
-    newUnits[typedKey] = newUnits[typedKey]
-      ? [...newUnits[typedKey], ...restoredIds]
-      : [...restoredIds]
+    const castIds = ids as unknown as UnitId[]
+    for (const id of castIds) {
+      restoredIds.push(id)
+      restoredTypes[id] = typedKey
+    }
   }
-  sideState.units = newUnits
+
+  // CoW: append restored ids back onto participating units (they were
+  // participating when retreat saved them) and merge type lookups.
+  sideState.participatingUnits = [
+    ...sideState.participatingUnits,
+    ...restoredIds,
+  ]
+  sideState.unitType = { ...sideState.unitType, ...restoredTypes }
 
   sideState.unitState = { ...sideState.unitState }
   for (const [id, us] of Object.entries(saved.savedUnitState)) {

@@ -21,10 +21,10 @@ import {
 import {
   assignHitsForSide,
   CombatSideState,
-  getAssignHitsParams,
   getOpponentSide,
 } from '../combat-side-state/combat-side-state'
 import { type LogEntry, Logger } from '../logger'
+import { sortUnitsByPriority } from '../utils/sort-units-by-priority'
 import type {
   AbilitiesConfig,
   CombatMode,
@@ -53,6 +53,61 @@ export interface StateWithProbability {
  *  most deeply nested meta (e.g. 'AFB' when the stack is ['SPACE_COMBAT', 'AFB']). */
 function innerMeta(phase: MetaPhase[]): MetaPhase {
   return phase[phase.length - 1]
+}
+
+function sortUnitsAtSetup(data: CombatStateData): void {
+  const mode = data.combatMode
+  for (const side of ['attacker', 'defender'] as const) {
+    // Merge base + live SETTINGS and UNIT_PRIORITY — PREPARE may have
+    // written derived fields (Hel Titan → groundCombatParticipating
+    // includes PDS) into liveAbilities.
+    const baseSide = data.abilities[side]
+    const liveSide = data.liveAbilities[side]
+
+    const baseUP = baseSide['UNIT_PRIORITY']
+    const liveUP = liveSide['UNIT_PRIORITY']
+    const unitPriority = (
+      liveUP === undefined
+        ? baseUP
+        : baseUP === undefined
+          ? liveUP
+          : { ...baseUP, ...liveUP }
+    ) as
+      | { spaceUnitPriority?: UnitType[]; groundUnitPriority?: UnitType[] }
+      | undefined
+
+    const list =
+      mode === 'GROUND'
+        ? unitPriority?.groundUnitPriority
+        : unitPriority?.spaceUnitPriority
+    if (!list) continue
+
+    // Membership comes from SETTINGS.{space,ground}CombatParticipating
+    // — the authoritative runtime field. UNIT_PRIORITY only dictates
+    // order; it's synced from an extended "source" view and may list
+    // variants/types that aren't currently participating.
+    const baseSettings = baseSide['SETTINGS']
+    const liveSettings = liveSide['SETTINGS']
+    const settings = (
+      liveSettings === undefined
+        ? baseSettings
+        : baseSettings === undefined
+          ? liveSettings
+          : { ...baseSettings, ...liveSettings }
+    ) as
+      | {
+          spaceCombatParticipating?: UnitBaseType[]
+          groundCombatParticipating?: UnitBaseType[]
+        }
+      | undefined
+    const partList =
+      mode === 'GROUND'
+        ? settings?.groundCombatParticipating
+        : settings?.spaceCombatParticipating
+    const participatingTypes = partList ? new Set(partList) : undefined
+
+    sortUnitsByPriority(data[side], list, participatingTypes)
+  }
 }
 
 interface UnitAbilityPhaseConfig {
@@ -214,6 +269,10 @@ export class CombatState {
 
     // PREPARE abilities mutate baseData in-place
     instance._params.runAbilities('PREPARE')
+
+    // One-time sort: filter `units[]` to participating-only and order by
+    // combat-mode priority rank. Never re-sorted during combat in iteration 1.
+    sortUnitsAtSetup(baseData)
 
     return instance
   }
@@ -494,10 +553,10 @@ export class CombatState {
     const isCombatRound = meta === 'SPACE_COMBAT' || meta === 'GROUND_COMBAT'
     const attackerOut = isCombatRound
       ? !this.side('attacker').hasParticipatingUnits()
-      : !hasAnyUnits(this.data.attacker.units)
+      : !hasAnyUnits(this.data.attacker)
     const defenderOut = isCombatRound
       ? !this.side('defender').hasParticipatingUnits()
-      : !hasAnyUnits(this.data.defender.units)
+      : !hasAnyUnits(this.data.defender)
 
     let winner: CombatSide | 'draw' | undefined
     if (attackerOut && defenderOut) winner = 'draw'
@@ -509,6 +568,52 @@ export class CombatState {
 
   private _setComplete(): void {
     this.data.isFinished = true
+  }
+
+  /** Re-split participating vs non-participating units for one side.
+   *  SETTINGS.{space,ground}CombatParticipating is the authoritative
+   *  "is this base type in combat?" source — UNIT_PRIORITY is used for
+   *  ordering only (it can lag behind SETTINGS mid-combat because
+   *  `declareParam` source sync runs only at reconcile). Called by
+   *  `updateAbilityConfig` when a participation-affecting ability param
+   *  changes. */
+  public resyncParticipating(side: CombatSide): void {
+    const data = this.data
+    const liveSide = data.liveAbilities[side]
+    const baseSide = data.abilities[side]
+
+    const liveSettings = liveSide['SETTINGS']
+    const baseSettings = baseSide['SETTINGS']
+    const settings =
+      liveSettings === undefined
+        ? baseSettings
+        : baseSettings === undefined
+          ? liveSettings
+          : { ...baseSettings, ...liveSettings }
+    if (!settings) return
+    const partList =
+      data.combatMode === 'GROUND'
+        ? (settings.groundCombatParticipating as UnitBaseType[] | undefined)
+        : (settings.spaceCombatParticipating as UnitBaseType[] | undefined)
+    if (!partList) return
+    const participatingTypes = new Set<UnitBaseType>(partList)
+
+    const liveUP = liveSide['UNIT_PRIORITY']
+    const baseUP = baseSide['UNIT_PRIORITY']
+    const unitPriority =
+      liveUP === undefined
+        ? baseUP
+        : baseUP === undefined
+          ? liveUP
+          : { ...baseUP, ...liveUP }
+    const orderList =
+      (unitPriority &&
+        ((data.combatMode === 'GROUND'
+          ? unitPriority.groundUnitPriority
+          : unitPriority.spaceUnitPriority) as UnitType[] | undefined)) ??
+      (partList as unknown as UnitType[])
+
+    sortUnitsByPriority(data[side], orderList, participatingTypes)
   }
 
   /** Replace any in-flight pending steps with the completion sequence and
@@ -555,18 +660,17 @@ export class CombatState {
       !!this._logger || this._params.hasDestroyAbilities(this._invokes)
 
     const meta = innerMeta(phase)
-    const attackerParams = getAssignHitsParams(this.data, 'attacker', meta)
-    const defenderParams = getAssignHitsParams(this.data, 'defender', meta)
-
+    const attackerPriority = getPhasePriorityList(this.data, 'attacker', meta)
+    const defenderPriority = getPhasePriorityList(this.data, 'defender', meta)
     const attackerDestroyed = assignHitsForSide(
       this.data.attacker,
-      attackerParams,
       trackDestroyed,
+      attackerPriority,
     )
     const defenderDestroyed = assignHitsForSide(
       this.data.defender,
-      defenderParams,
       trackDestroyed,
+      defenderPriority,
     )
 
     if (!trackDestroyed) return
@@ -655,10 +759,15 @@ export class CombatState {
     // Compute validTargets here (after BEFORE_UNIT_ABILITY_ROLL) so that
     // abilities which modify SETTINGS (e.g. WAYLAY, EIDOLON_MAXIMUM) are
     // reflected in target resolution before we branch by outcome.
-    const validTargets = {
-      attacker: this.side('attacker').getValidTargetsForPhase(meta),
-      defender: this.side('defender').getValidTargetsForPhase(meta),
-    }
+    // Only unit-ability rolls need target restrictions; regular combat rolls
+    // (SPACE_COMBAT / GROUND_COMBAT) leave validTargets empty so hit
+    // assignment uses the fast tail-slice path.
+    const validTargets = ctx.isUnitAbility
+      ? {
+          attacker: this.side('attacker').getValidTargetsForPhase(meta),
+          defender: this.side('defender').getValidTargetsForPhase(meta),
+        }
+      : { attacker: [], defender: [] }
 
     const attackerModifiers = ctx.hitValueModifiers?.attacker
     if (attackerModifiers?.length) {
@@ -852,7 +961,6 @@ export class CombatState {
         routing,
       }),
       ...this.getAssignHitsScript(phase),
-      { kind: 'timing', timing: 'AFTER_ASSIGN_HITS_STEP', phase },
       { kind: 'method', fn: CombatState.prototype._postAssignHits, phase },
     ])
   }
@@ -1097,17 +1205,10 @@ function cloneUnitState(
 }
 
 /** Branch clone — copies hitPools, unitState, and abilities per side.
- *  units arrays stay shared with base — all mutation paths (assignHits,
- *  removeUnits) build new arrays instead of mutating originals.
- *  unitState must be cloned because abilities like SUSTAIN_DAMAGE
- *  mutate entries (isDamaged) at BEFORE_ASSIGN_HITS — branches are
- *  processed sequentially, so earlier branches would corrupt later ones.
- *  abilities must be cloned because abilities like DIRECT_HIT decrement
- *  `uses` — shared config would leak decrements across branches.
- *
- *  Parked ability-pass frames live on the timing steps themselves (in
- *  `PhaseStep.frame`), so they ride along with `pendingSteps` cloning
- *  via `clonePendingSteps` and don't need separate handling here. */
+ *  `units: UnitId[]` and `unitType: Record<UnitId, UnitType>` stay shared
+ *  with base; every mutation path (assignHits, removeUnits, placeUnits,
+ *  addSubtype, removeSubtype) writes fresh arrays/records. unitState is
+ *  deep-cloned because SUSTAIN_DAMAGE mutates entries (`isDamaged`). */
 export function cloneStateForBranch(base: CombatStateData): CombatStateData {
   return {
     ...base,
@@ -1150,12 +1251,42 @@ function addHitsToData(
   }
 }
 
-/** Check if units record has any units at all (no type filtering) */
-function hasAnyUnits(units: Record<string, unknown[]>): boolean {
-  for (const key in units) {
-    if (units[key].length > 0) return true
-  }
-  return false
+/** Check if a side has any alive units (participating or not). */
+function hasAnyUnits(side: SideStateData): boolean {
+  return (
+    side.participatingUnits.length > 0 || side.nonParticipatingUnits.length > 0
+  )
+}
+
+/** Pick the sacrifice-priority list for `side` during `meta`:
+ *  - SCO → `scoUnitPriority` (may be reordered by e.g. Graviton)
+ *  - GROUND metas → `groundUnitPriority`
+ *  - SPACE / AFB / BOMBARDMENT / SCD → `spaceUnitPriority` (they all
+ *    target ships or use the same space priority ordering). */
+function getPhasePriorityList(
+  data: CombatStateData,
+  side: CombatSide,
+  meta: MetaPhase,
+): UnitType[] | undefined {
+  const baseSide = data.abilities[side]
+  const liveSide = data.liveAbilities[side]
+  const baseUP = baseSide['UNIT_PRIORITY']
+  const liveUP = liveSide['UNIT_PRIORITY']
+  if (baseUP === undefined && liveUP === undefined) return undefined
+  const unitPriority =
+    liveUP === undefined
+      ? baseUP
+      : baseUP === undefined
+        ? liveUP
+        : { ...baseUP, ...liveUP }
+  if (!unitPriority) return undefined
+  const key =
+    meta === 'SPACE_CANNON_OFFENSE'
+      ? 'scoUnitPriority'
+      : data.combatMode === 'GROUND'
+        ? 'groundUnitPriority'
+        : 'spaceUnitPriority'
+  return unitPriority[key] as UnitType[] | undefined
 }
 
 const liveAbilitiesSideHashCache = new WeakMap<
@@ -1185,34 +1316,11 @@ function getAbilitiesHash(liveAbilities: AbilitiesConfig): string {
 }
 
 function getSideHash(side: SideStateData): string {
-  // Build hash via string concatenation — avoids intermediate arrays
-  let result = ''
-  const keys = Object.keys(side.units)
-  if (keys.length > 1) keys.sort()
-
-  for (const key of keys) {
-    const ids = side.units[key]
-    const count = ids.length
-
-    if (result) result += ','
-
-    // Count damaged units by looking up each UnitId's state
-    let damaged = 0
-    if (key !== 'FIGHTER') {
-      for (const id of ids) {
-        if (side.unitState[id]?.isDamaged) damaged++
-      }
-    }
-    const undamaged = count - damaged
-    if (damaged === 0) {
-      result += key + ':' + count
-    } else if (undamaged === 0) {
-      result += key + ':' + damaged + 'd'
-    } else {
-      // '' sorts before 'd', so undamaged first
-      result += key + ':' + undamaged + ',' + damaged + 'd'
-    }
-  }
-
-  return result
+  return (
+    side.participatingUnits.join(',') +
+    '!' +
+    side.nonParticipatingUnits.join(',') +
+    '|' +
+    JSON.stringify(side.unitState)
+  )
 }

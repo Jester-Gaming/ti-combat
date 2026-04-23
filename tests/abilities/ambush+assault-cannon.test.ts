@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { combatTest } from '../utils/combat-test'
+import { combatTest, unitsByBaseType } from '../utils/combat-test'
 
 describe('AMBUSH + ASSAULT_CANNON', () => {
   it('AC fires independently in each Ambush branch', () => {
@@ -48,7 +48,7 @@ describe('AMBUSH + ASSAULT_CANNON', () => {
     // in every branch (otherwise some would still have 4 cruisers).
     const byRemaining: Record<number, number> = {}
     for (const b of branches) {
-      const count = b.state.data.defender.units.CRUISER?.length ?? 0
+      const count = unitsByBaseType(b.state.data.defender).CRUISER?.length ?? 0
       byRemaining[count] = (byRemaining[count] ?? 0) + b.probability
     }
     expect(byRemaining[3]).toBeCloseTo(0.64) // [0,0]
@@ -100,14 +100,22 @@ describe('AMBUSH + ASSAULT_CANNON', () => {
 
     // Miss branch: AC fired and destroyed the attacker's cruiser.
     expect(missBranch.probability).toBeCloseTo(0.6)
-    expect(missBranch.state.data.attacker.units.CRUISER ?? []).toHaveLength(0)
-    expect(missBranch.state.data.defender.units.DESTROYER).toHaveLength(3)
+    expect(
+      unitsByBaseType(missBranch.state.data.attacker).CRUISER ?? [],
+    ).toHaveLength(0)
+    expect(
+      unitsByBaseType(missBranch.state.data.defender).DESTROYER,
+    ).toHaveLength(3)
 
     // Hit branch: Ambush killed a defender destroyer, AC threshold fails,
     // attacker's cruiser survives.
     expect(hitBranch.probability).toBeCloseTo(0.4)
-    expect(hitBranch.state.data.attacker.units.CRUISER).toHaveLength(1)
-    expect(hitBranch.state.data.defender.units.DESTROYER).toHaveLength(2)
+    expect(unitsByBaseType(hitBranch.state.data.attacker).CRUISER).toHaveLength(
+      1,
+    )
+    expect(
+      unitsByBaseType(hitBranch.state.data.defender).DESTROYER,
+    ).toHaveLength(2)
   })
 
   it('ABILITY_ORDER reversed: AC fires first, destroys 1 cruiser, then Ambush branches', () => {
@@ -145,7 +153,7 @@ describe('AMBUSH + ASSAULT_CANNON', () => {
     expect(branches).toHaveLength(4)
     const byRemaining: Record<number, number> = {}
     for (const b of branches) {
-      const count = b.state.data.defender.units.CRUISER?.length ?? 0
+      const count = unitsByBaseType(b.state.data.defender).CRUISER?.length ?? 0
       byRemaining[count] = (byRemaining[count] ?? 0) + b.probability
     }
     expect(byRemaining[3]).toBeCloseTo(0.64)

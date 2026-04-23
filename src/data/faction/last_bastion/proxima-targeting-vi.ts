@@ -2,7 +2,6 @@ import { z } from 'zod/mini'
 
 import { type Ability, type AbilityReadContext, parseVariantId } from '@/combat'
 import { GALVANIZED } from '@/data/abilities/general/pre-galvanized'
-import type { UnitType } from '@/types'
 
 type Params = {
   resolveBombardment: boolean
@@ -58,12 +57,17 @@ export const proximaTargetingVi: Ability<Params> = {
 }
 
 function countGalvanizedUnits(ctx: AbilityReadContext): number {
-  const units = ctx.state[ctx.side].units
+  const sideState = ctx.state[ctx.side]
   let count = 0
-  for (const key of Object.keys(units)) {
-    const { subtypes } = parseVariantId(key as UnitType)
-    if (!subtypes.includes(GALVANIZED)) continue
-    count += units[key as UnitType].length
+  const walk = (pool: readonly import('@/types').UnitId[]) => {
+    for (const id of pool) {
+      const key = sideState.unitType[id]
+      if (!key) continue
+      const { subtypes } = parseVariantId(key)
+      if (subtypes.includes(GALVANIZED)) count++
+    }
   }
+  walk(sideState.participatingUnits)
+  walk(sideState.nonParticipatingUnits)
   return count
 }

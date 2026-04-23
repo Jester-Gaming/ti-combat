@@ -18,13 +18,15 @@ function buildSideState(
   for (const [k, v] of Object.entries(selections)) {
     if (v.upgraded) upgradedSet.add(k as UnitBaseType)
   }
-  const { units, unitState, unitStats } = getSimulationUnits(
+  const { units, unitType, unitState, unitStats } = getSimulationUnits(
     faction,
     selections,
   )
   return {
     faction,
-    units,
+    participatingUnits: units,
+    nonParticipatingUnits: [],
+    unitType,
     unitState,
     unitStats: {
       ...buildUnitStatsMap(faction, upgradedSet),

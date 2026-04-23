@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { combatTest } from '../utils/combat-test'
+import { combatTest, unitsByBaseType } from '../utils/combat-test'
 
 describe('AMBUSH + COURAGEOUS_TO_THE_END', () => {
   it('Ambush hit chains into Courageous — nested split at START_OF_COMBAT', () => {
@@ -41,8 +41,8 @@ describe('AMBUSH + COURAGEOUS_TO_THE_END', () => {
     // The miss branch: defender destroyer still alive, attacker destroyer alive.
     const missBranch = branches.find(
       b =>
-        (b.state.data.defender.units.DESTROYER?.length ?? 0) === 1 &&
-        (b.state.data.attacker.units.DESTROYER?.length ?? 0) === 1,
+        (unitsByBaseType(b.state.data.defender).DESTROYER?.length ?? 0) === 1 &&
+        (unitsByBaseType(b.state.data.attacker).DESTROYER?.length ?? 0) === 1,
     )
     expect(missBranch).toBeDefined()
     expect(missBranch!.probability).toBeCloseTo(0.8)
@@ -50,7 +50,8 @@ describe('AMBUSH + COURAGEOUS_TO_THE_END', () => {
     // Chain branches: defender destroyer destroyed. Group by attacker
     // destroyer remaining (0 or 1 depending on Courageous hits).
     const chainBranches = branches.filter(
-      b => (b.state.data.defender.units.DESTROYER?.length ?? 0) === 0,
+      b =>
+        (unitsByBaseType(b.state.data.defender).DESTROYER?.length ?? 0) === 0,
     )
     expect(chainBranches).toHaveLength(3)
     const chainTotal = chainBranches.reduce((a, b) => a + b.probability, 0)
@@ -64,7 +65,8 @@ describe('AMBUSH + COURAGEOUS_TO_THE_END', () => {
     //      since Courageous's callback breaks early after first destroy.)
     const byAttackerRemaining: Record<number, number> = {}
     for (const b of chainBranches) {
-      const count = b.state.data.attacker.units.DESTROYER?.length ?? 0
+      const count =
+        unitsByBaseType(b.state.data.attacker).DESTROYER?.length ?? 0
       byAttackerRemaining[count] =
         (byAttackerRemaining[count] ?? 0) + b.probability
     }
@@ -116,7 +118,7 @@ describe('AMBUSH + COURAGEOUS_TO_THE_END', () => {
     //   3 → [1,1]: 0.16
     const byDefender: Record<number, number> = {}
     for (const b of branches) {
-      const count = b.state.data.defender.units.CRUISER?.length ?? 0
+      const count = unitsByBaseType(b.state.data.defender).CRUISER?.length ?? 0
       byDefender[count] = (byDefender[count] ?? 0) + b.probability
     }
     expect(byDefender[5]).toBeCloseTo(0.36)
@@ -132,7 +134,7 @@ describe('AMBUSH + COURAGEOUS_TO_THE_END', () => {
     //     = (0.24+0.24+0.16) * 0.16 = 0.1024
     const byAttacker: Record<number, number> = {}
     for (const b of branches) {
-      const count = b.state.data.attacker.units.CRUISER?.length ?? 0
+      const count = unitsByBaseType(b.state.data.attacker).CRUISER?.length ?? 0
       byAttacker[count] = (byAttacker[count] ?? 0) + b.probability
     }
     expect(byAttacker[5]).toBeCloseTo(0.5904)
@@ -144,7 +146,8 @@ describe('AMBUSH + COURAGEOUS_TO_THE_END', () => {
     const firedByDefenderCount = [4, 3].map(
       n =>
         branches.filter(
-          b => (b.state.data.defender.units.CRUISER?.length ?? 0) === n,
+          b =>
+            (unitsByBaseType(b.state.data.defender).CRUISER?.length ?? 0) === n,
         ).length,
     )
     // defender=4 came from two Ambush outcomes ([0,1] + [1,0]), each with

@@ -512,14 +512,14 @@ export class AbilitiesEngine {
 
     const entries: UnitAbilityEntry[] = []
 
-    for (const key of Object.keys(sideState.units)) {
-      const ids = sideState.units[key]
-      if (!ids || ids.length <= 0) continue
-      const stats = resolveUnitStats(sideState.unitStats, key as UnitType)
-      if (!stats?.ABILITIES) continue
-      const { type: unitType } = parseVariantId(key as UnitType)
+    const collect = (pool: UnitId[]) => {
+      for (const id of pool) {
+        const key = sideState.unitType[id]
+        if (!key) continue
+        const stats = resolveUnitStats(sideState.unitStats, key)
+        if (!stats?.ABILITIES) continue
+        const { type: unitType } = parseVariantId(key)
 
-      for (const id of ids) {
         for (const ability of stats.ABILITIES) {
           entries.push({
             ability,
@@ -529,6 +529,8 @@ export class AbilitiesEngine {
         }
       }
     }
+    collect(sideState.participatingUnits)
+    collect(sideState.nonParticipatingUnits)
     return entries
   }
 
@@ -706,16 +708,13 @@ export class AbilitiesEngine {
         if (sideState.isRestricted('cannotBeUsed', 'DEPLOY', source.unitType))
           continue
       } else if (source.type === 'unit') {
-        const sideUnits = state[side].units
-        let unitAlive = false
-        for (const key of Object.keys(sideUnits)) {
-          const { type } = parseVariantId(key)
-          if (type !== source.unitType) continue
-          if (sideUnits[key]?.includes(source.unitId)) {
-            unitAlive = true
-            break
-          }
-        }
+        const sideStateData = state[side]
+        const unitKey = sideStateData.unitType[source.unitId]
+        const unitAlive =
+          !!unitKey &&
+          parseVariantId(unitKey).type === source.unitType &&
+          (sideStateData.participatingUnits.includes(source.unitId) ||
+            sideStateData.nonParticipatingUnits.includes(source.unitId))
 
         // Self-targeted unit trigger: the timing's context is the invoke's
         // own unit id. This is the unit reacting to its own event (retreat,

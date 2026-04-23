@@ -7,6 +7,7 @@ import type {
   UnitSelection,
   UnitState,
   UnitStats,
+  UnitType,
 } from '@/types'
 
 import { getFactionUnitConfig } from './get-faction-unit-config'
@@ -19,20 +20,22 @@ export function getSimulationUnits(
   faction: FactionKey,
   selections: Record<UnitBaseType, UnitSelection>,
 ): {
-  units: Record<string, UnitId[]>
+  units: UnitId[]
+  unitType: Record<UnitId, UnitType>
   unitState: Record<number, UnitState>
   unitStats: Record<string, UnitStats>
 } {
   const factionConfig = getFactionUnitConfig(faction)
-  const units: Record<string, UnitId[]> = {}
+  const units: UnitId[] = []
+  const unitType: Record<UnitId, UnitType> = {}
   const unitState: Record<number, UnitState> = {}
   const unitStats: Record<string, UnitStats> = {}
 
-  for (const unitType of UNIT_TYPES) {
-    const sel = selections[unitType]
+  for (const baseType of UNIT_TYPES) {
+    const sel = selections[baseType]
     if (sel.count === 0) continue
 
-    const unitDef = factionConfig[unitType]
+    const unitDef = factionConfig[baseType]
     const baseStats = unitDef.BASE
     const upgradedStats = unitDef.UPGRADED
 
@@ -45,11 +48,18 @@ export function getSimulationUnits(
     )
     if (!effectiveStats) continue
 
-    units[unitType] = nextUnitIds(sel.count)
-    unitStats[unitType] = effectiveStats
+    const ids = nextUnitIds(sel.count)
+    for (const id of ids) {
+      units.push(id)
+      unitType[id] = baseType as UnitType
+    }
+    unitStats[baseType] = effectiveStats
   }
 
-  return { units, unitState, unitStats }
+  // Returns a flat id list — the caller places them into
+  // `participatingUnits` and lets `sortUnitsAtSetup` split out the
+  // non-participating tail.
+  return { units, unitType, unitState, unitStats }
 }
 
 /**

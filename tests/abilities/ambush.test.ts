@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { combatTest } from '../utils/combat-test'
+import { combatTest, unitsByBaseType } from '../utils/combat-test'
 
 describe('AMBUSH', () => {
   it('rolls 1 die for a single cruiser — 2 branches at 40%/60%', () => {
@@ -31,10 +31,14 @@ describe('AMBUSH', () => {
     // The hit-branch should have destroyed the defender's destroyer via
     // the inline assignHits cascade after Ambush.
     const hitBranch = branches.find(b => b.probability < 0.5)!
-    expect(hitBranch.state.data.defender.units.DESTROYER ?? []).toHaveLength(0)
+    expect(
+      unitsByBaseType(hitBranch.state.data.defender).DESTROYER ?? [],
+    ).toHaveLength(0)
 
     const missBranch = branches.find(b => b.probability > 0.5)!
-    expect(missBranch.state.data.defender.units.DESTROYER).toHaveLength(1)
+    expect(
+      unitsByBaseType(missBranch.state.data.defender).DESTROYER,
+    ).toHaveLength(1)
   })
 
   it('rolls up to 2 dice — 2 cruisers produce 4 Cartesian branches', () => {
@@ -61,7 +65,8 @@ describe('AMBUSH', () => {
     // any produced hits). 0 hits → 2 destroyers; 1 hit → 1; 2 hits → 0.
     const byRemaining: Record<number, number> = {}
     for (const b of branches) {
-      const count = b.state.data.defender.units.DESTROYER?.length ?? 0
+      const count =
+        unitsByBaseType(b.state.data.defender).DESTROYER?.length ?? 0
       byRemaining[count] = (byRemaining[count] ?? 0) + b.probability
     }
     expect(byRemaining[2]).toBeCloseTo(0.36) // 0 hits

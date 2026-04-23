@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { combatTest } from '../utils/combat-test'
+import { combatTest, unitsByBaseType } from '../utils/combat-test'
 
 describe('AMBUSH + CAVALRY', () => {
   it('Cavalry resolved before Ambush → Ambush rolls at Memoria II combat value 5+', () => {
@@ -155,7 +155,8 @@ describe('AMBUSH + CAVALRY', () => {
     // destroyers, 1 hit → 1 destroyer, 2 hits → 0 destroyers.
     const byRemaining: Record<number, number> = {}
     for (const b of branches) {
-      const count = b.state.data.defender.units.DESTROYER?.length ?? 0
+      const count =
+        unitsByBaseType(b.state.data.defender).DESTROYER?.length ?? 0
       byRemaining[count] = (byRemaining[count] ?? 0) + b.probability
     }
     // P(0 hits) = 0.4 * 0.8 = 0.32

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { combatTest } from '../utils/combat-test'
+import { combatTest, unitsByBaseType } from '../utils/combat-test'
 
 describe.forEachSide('COURAGEOUS_TO_THE_END + EXOTRIREME', () => {
   it('Exotrireme II self-sacrifice triggers Courageous roll', () => {
@@ -49,8 +49,10 @@ describe.forEachSide('COURAGEOUS_TO_THE_END + EXOTRIREME', () => {
         attackerSide.faction === 'SARDAKK_NORR' ? attackerSide : defenderSide
       const opponent =
         attackerSide.faction === 'SARDAKK_NORR' ? defenderSide : attackerSide
-      expect(sardakk.units.DREADNOUGHT).toBeUndefined()
-      expect((opponent.units.CRUISER ?? []).length).toBeLessThanOrEqual(1)
+      expect(unitsByBaseType(sardakk).DREADNOUGHT).toBeUndefined()
+      expect(
+        (unitsByBaseType(opponent).CRUISER ?? []).length,
+      ).toBeLessThanOrEqual(1)
     }
   })
 })

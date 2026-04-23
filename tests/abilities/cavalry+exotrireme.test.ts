@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
-import type { UnitType } from '@/types'
+import type { UnitId, UnitType } from '@/types'
 
-import { combatTest } from '../utils/combat-test'
+import { combatTest, unitsByBaseType } from '../utils/combat-test'
 
 describe.forEachSide('CAVALRY + EXOTRIREME', () => {
   it('does not sacrifice Dreadnought:Cavalry when excluded from sacrificePriority', () => {
@@ -98,8 +98,12 @@ describe.forEachSide('CAVALRY + EXOTRIREME', () => {
     // Capture the Cavalry dreadnought's id after CAVALRY fires (START_OF_COMBAT)
     // so we can confirm it survives once combat wraps and the subtype is stripped.
     t.advanceToTiming('ANNOUNCE_RETREAT_STEP')
+    const atk = t.state.attacker
+    const findCavalry = (pool: readonly UnitId[]) =>
+      pool.find(id => atk.unitType[id] === ('DREADNOUGHT:Cavalry' as UnitType))
     const cavalryId =
-      t.state.attacker.units['DREADNOUGHT:Cavalry' as UnitType]![0]
+      findCavalry(atk.participatingUnits) ??
+      findCavalry(atk.nonParticipatingUnits)!
 
     t.advanceRound()
 
@@ -107,7 +111,7 @@ describe.forEachSide('CAVALRY + EXOTRIREME', () => {
     // strips the subtype, so the surviving dreadnought reads as plain — but
     // its UnitId still matches the Cavalry one.
     expect(t.attacker.units.DREADNOUGHT).toHaveLength(1)
-    expect(t.state.attacker.units.DREADNOUGHT).toContain(cavalryId)
+    expect(unitsByBaseType(t.state.attacker).DREADNOUGHT).toContain(cavalryId)
 
     expect(t.defender.units.CRUISER).toBeUndefined()
     expect(t.abilityLog('EXOTRIREME')).not.toHaveLength(0)

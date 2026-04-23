@@ -1,10 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import type { UnitId, UnitStats } from '@/types'
+import type { UnitBaseType, UnitId, UnitStats } from '@/types'
 
 import { CombatState } from '../combat-state/combat-state'
 import type { CombatStateData, SideStateData } from '../combat-state/types'
 import { nextUnitIds } from '../utils/unit-id'
+import { parseVariantId } from '../utils/unit-variant'
 import { AbilitiesEngine } from './abilities-engine'
 import type { Ability, AbilityCallContext, OwnOpponentContext } from './types'
 
@@ -13,25 +14,58 @@ function buildSide(
   faction: SideStateData['faction'],
   unitSpecs: Record<string, { count: number; stats: UnitStats }>,
 ): SideStateData {
-  const units = {} as SideStateData['units']
+  const participatingUnits: UnitId[] = []
+  const unitType: SideStateData['unitType'] = {}
   const unitStats = {} as SideStateData['unitStats']
   for (const [key, spec] of Object.entries(unitSpecs)) {
     const k = key as import('@/types').UnitType
-    units[k] = nextUnitIds(spec.count)
+    const ids = nextUnitIds(spec.count)
+    for (const id of ids) {
+      participatingUnits.push(id)
+      unitType[id] = k
+    }
     unitStats[k] = spec.stats
   }
-  return { faction, units, unitState: {}, unitStats, hitPools: [] }
+  return {
+    faction,
+    participatingUnits,
+    nonParticipatingUnits: [],
+    unitType,
+    unitState: {},
+    unitStats,
+    hitPools: [],
+  }
 }
 
 const emptySide = (
   faction: SideStateData['faction'] = 'FEDERATION_OF_SOL',
 ): SideStateData => ({
   faction,
-  units: {} as SideStateData['units'],
+  participatingUnits: [],
+  nonParticipatingUnits: [],
+  unitType: {},
   unitState: {},
   unitStats: {} as SideStateData['unitStats'],
   hitPools: [],
 })
+
+function unitsByBaseType(
+  sideData: SideStateData,
+): Partial<Record<UnitBaseType, UnitId[]>> {
+  const result: Partial<Record<UnitBaseType, UnitId[]>> = {}
+  const collect = (pool: UnitId[]) => {
+    for (const id of pool) {
+      const key = sideData.unitType[id]
+      if (!key) continue
+      const { type } = parseVariantId(key)
+      const arr = result[type] ?? (result[type] = [])
+      arr.push(id)
+    }
+  }
+  collect(sideData.participatingUnits)
+  collect(sideData.nonParticipatingUnits)
+  return result
+}
 
 /** Fire a timing at the engine and drain any script steps it queued
  *  (e.g. destroy-cascade groups pushed by `destroyUnits`). Mirrors how
@@ -195,8 +229,9 @@ describe('unit ability invocation', () => {
           timing: 'START_OF_COMBAT_ROUND',
           call: ctx => {
             invokeCalls.push(1)
-            // Destroy all units via Immer draft
-            ctx.state.attacker.units = {} as SideStateData['units']
+            // Destroy all units via direct mutation (flat array shape).
+            ctx.state.attacker.participatingUnits = []
+            ctx.state.attacker.nonParticipatingUnits = []
           },
         },
       ],
@@ -299,7 +334,7 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
     runAndDrain(CombatState.fromDataStandalone(state), 'START_OF_COMBAT_ROUND')
 
     // Fighter should be destroyed
-    expect(state.defender.units.FIGHTER).toBeUndefined()
+    expect(unitsByBaseType(state.defender).FIGHTER).toBeUndefined()
     // AFTER_DESTROY should have been called (from the destroyed fighter's ability)
     expect(afterDestroyCalls).toHaveLength(1)
     // Fighter was destroyed (from fighter's perspective: own side lost it)
@@ -429,8 +464,8 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
     runAndDrain(CombatState.fromDataStandalone(state), 'START_OF_COMBAT_ROUND')
 
     // Both units should be destroyed
-    expect(state.defender.units.FIGHTER).toBeUndefined()
-    expect(state.defender.units.CRUISER).toBeUndefined()
+    expect(unitsByBaseType(state.defender).FIGHTER).toBeUndefined()
+    expect(unitsByBaseType(state.defender).CRUISER).toBeUndefined()
     // AFTER_DESTROY handler should only be called once (no recursion)
     expect(afterDestroyCalls).toHaveLength(1)
   })

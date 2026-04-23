@@ -74,19 +74,6 @@ export function resolveUnitStats(
   return entry
 }
 
-/** Total count across all variants of a base type */
-function totalCountForType(
-  units: Record<string, UnitId[]>,
-  baseType: UnitBaseType,
-): number {
-  let total = 0
-  for (const key of Object.keys(units)) {
-    const { type } = parseVariantId(key as UnitType)
-    if (type === baseType) total += units[key].length
-  }
-  return total
-}
-
 import { getSettingsValidTargets as getSettingsValidTargetsUtil } from './utils/get-settings-valid-targets'
 
 /** Get the opposite side */
@@ -112,215 +99,160 @@ function findPendingDiceRollGroup(
   return undefined
 }
 
-// Cache for getParticipatingUnits: source array → Set
-const participatingUnitsCache = new WeakMap<
-  UnitBaseType[],
-  ReadonlySet<UnitBaseType>
->()
-
-function getParticipatingUnitsSet(
-  units: UnitBaseType[],
-): ReadonlySet<UnitBaseType> {
-  let cached = participatingUnitsCache.get(units)
-  if (!cached) {
-    cached = new Set(units)
-    participatingUnitsCache.set(units, cached)
-  }
-  return cached
-}
-
 /** Shared empty destroyed record to avoid per-call {} allocation */
 const EMPTY_DESTROYED: Record<string, UnitId[]> = {}
 
-// Cache for filtered sacrifice order: unitPriority array → (participatingSet → filtered order)
-const sacrificeOrderCache = new WeakMap<
-  string[],
-  Map<ReadonlySet<UnitBaseType>, string[]>
->()
-
-function getFilteredSacrificeOrder(
-  unitPriority: string[],
-  participatingUnits: ReadonlySet<UnitBaseType>,
-): string[] {
-  let map = sacrificeOrderCache.get(unitPriority)
-  if (map) {
-    const cached = map.get(participatingUnits)
-    if (cached) return cached
-  }
-
-  const result = unitPriority.filter(id => {
-    const { type } = parseVariantId(id as UnitType)
-    return participatingUnits.has(type)
-  })
-
-  if (!map) {
-    map = new Map()
-    sacrificeOrderCache.set(unitPriority, map)
-  }
-  map.set(participatingUnits, result)
-  return result
+/** True when `validTargets` restricts which variants a HitPool can kill.
+ *  An empty or missing list means "no restriction" (the fast path). */
+function hasValidTargets(hitPool: HitPool): boolean {
+  return hitPool.validTargets !== undefined && hitPool.validTargets.length > 0
 }
 
-/** Pre-computed parameters for hit assignment */
-export interface AssignHitsParams {
-  participatingUnits: ReadonlySet<UnitBaseType>
-  sacrificeOrder: string[]
+/** Whether `unitType[id]` satisfies the pool's `validTargets`. Matches both
+ *  exact variant keys (e.g. `'CRUISER:Cavalry'`) and the bare base type
+ *  (`'CRUISER'`) — mirroring how dice-pool eligibility works elsewhere. */
+function matchesValidTargets(
+  sideData: SideStateData,
+  id: UnitId,
+  validTargets: readonly UnitType[],
+): boolean {
+  const key = sideData.unitType[id]
+  if (!key) return false
+  if (validTargets.includes(key)) return true
+  const baseType = parseVariantId(key).type as UnitType
+  return validTargets.includes(baseType)
 }
 
-/** Compute hit assignment params for a side. Takes `stateData` + `side`
- *  directly (not a `CombatSideState`) because this is called millions of
- *  times per simulation — avoiding the method-call overhead on hot path. */
-export function getAssignHitsParams(
-  stateData: CombatStateData,
-  side: CombatSide,
-  meta: MetaPhase,
-): AssignHitsParams {
-  const baseSide = stateData.abilities[side]
-  const liveSide = stateData.liveAbilities[side]
-
-  const liveSettings = liveSide['SETTINGS']
-  const baseSettings = baseSide['SETTINGS']
-  const settings =
-    liveSettings === undefined
-      ? baseSettings
-      : baseSettings === undefined
-        ? liveSettings
-        : { ...baseSettings, ...liveSettings }
-  if (!settings) throw new Error('No SETTINGS in getAssignHitsParams')
-
-  const combatMode = stateData.combatMode
-  const units =
-    combatMode === 'GROUND'
-      ? (settings.groundCombatParticipating as UnitBaseType[])
-      : (settings.spaceCombatParticipating as UnitBaseType[])
-
-  const participatingUnits = getParticipatingUnitsSet(units)
-
-  const liveUP = liveSide['UNIT_PRIORITY']
-  const baseUP = baseSide['UNIT_PRIORITY']
-  const unitPriority =
-    liveUP === undefined
-      ? baseUP
-      : baseUP === undefined
-        ? liveUP
-        : { ...baseUP, ...liveUP }
-  if (!unitPriority) throw new Error('No UNIT_PRIORITY in getAssignHitsParams')
-
-  const key =
-    combatMode === 'GROUND'
-      ? 'groundUnitPriority'
-      : meta === 'SPACE_CANNON_OFFENSE'
-        ? 'scoUnitPriority'
-        : 'spaceUnitPriority'
-  const sacrificeOrder = getFilteredSacrificeOrder(
-    unitPriority[key] as string[],
-    participatingUnits,
-  )
-
-  return { participatingUnits, sacrificeOrder }
-}
-
-/** One variant's contribution to a hit-pool resolution plan. */
-interface AssignHitsPlanEntry {
-  variantId: UnitType
-  ids: UnitId[]
-}
-
-/** Walk the sacrifice order once and compute which UnitIds would be destroyed
- *  by a single HitPool against the given units map. Used by both
- *  `assignHitsForSide` (needs variant grouping for removal) and
- *  `getAssignHitsTargets` (flattens to UnitId[]). */
-function planAssignHits(
-  units: SideStateData['units'],
-  sacrificeOrder: string[],
+/** Pick destruction targets from `pool` for a single HitPool.
+ *
+ *  Fast path (no `validTargets`): tail slice of `pool`.
+ *  Slow path (`validTargets` set, used by unit abilities): walk
+ *  `priorityList` in order (first entry = first to die). For each
+ *  variant that is in `validTargets`, pick matching ids from `pool`'s
+ *  tail. Fall back to tail-walk when no priority list is supplied.
+ *
+ *  Returns the chosen ids in destruction order (earliest-to-die first). */
+function pickTargetsForPool(
+  sideData: SideStateData,
+  pool: readonly UnitId[],
   hitPool: HitPool,
-): AssignHitsPlanEntry[] {
-  const plan: AssignHitsPlanEntry[] = []
-  let remaining = hitPool.hits[0] + hitPool.hits[1]
-  if (remaining <= 0) return plan
+  priorityList?: readonly UnitType[],
+): UnitId[] {
+  const total = hitPool.hits[0] + hitPool.hits[1]
+  if (total <= 0 || pool.length === 0) return []
 
-  const { validTargets } = hitPool
-
-  for (const variantId of sacrificeOrder) {
-    if (remaining <= 0) break
-    const vid = variantId as UnitType
-    if (
-      validTargets &&
-      validTargets.length > 0 &&
-      !validTargets.includes(vid) &&
-      !validTargets.includes(parseVariantId(vid).type)
-    )
-      continue
-
-    const ids = units[vid]
-    if (!ids || ids.length <= 0) continue
-
-    const toDestroy = Math.min(ids.length, remaining)
-    const picked: UnitId[] = []
-    for (let i = ids.length - toDestroy; i < ids.length; i++) {
-      picked.push(ids[i])
-    }
-    plan.push({ variantId: vid, ids: picked })
-    remaining -= toDestroy
+  if (!hasValidTargets(hitPool)) {
+    const take = Math.min(total, pool.length)
+    return pool.slice(pool.length - take)
   }
 
-  return plan
+  const targets = hitPool.validTargets!
+  const result: UnitId[] = []
+
+  if (priorityList && priorityList.length > 0) {
+    // Use priorityList order: first entry is first to die.
+    // `validTargets` acts as a filter on top.
+    const targetSet = new Set<UnitType>(targets)
+    for (const variantKey of priorityList) {
+      if (result.length >= total) break
+      if (!targetSet.has(variantKey)) {
+        const baseType = parseVariantId(variantKey).type as UnitType
+        if (!targetSet.has(baseType)) continue
+      }
+      // Walk `pool` from tail and pick ids whose variant matches.
+      for (let i = pool.length - 1; i >= 0 && result.length < total; i--) {
+        const id = pool[i]
+        if (sideData.unitType[id] !== variantKey) continue
+        if (result.includes(id)) continue
+        result.push(id)
+      }
+    }
+    if (result.length >= total) return result
+  }
+
+  // Fallback (no priority list, or priority didn't fill the quota):
+  // tail-walk by the array's existing sort.
+  for (let i = pool.length - 1; i >= 0 && result.length < total; i--) {
+    const id = pool[i]
+    if (result.includes(id)) continue
+    if (matchesValidTargets(sideData, id, targets)) result.push(id)
+  }
+  return result
 }
 
 /** Returns the UnitIds that would be destroyed if the given HitPool were
- *  resolved now against this side's current units. Non-destructive. */
+ *  resolved now against this side's participating units. Non-destructive. */
 export function getAssignHitsTargets(
   sideData: SideStateData,
-  params: AssignHitsParams,
   hitPool: HitPool,
+  priorityList?: readonly UnitType[],
 ): UnitId[] {
-  const plan = planAssignHits(sideData.units, params.sacrificeOrder, hitPool)
-  const result: UnitId[] = []
-  for (const { ids } of plan) {
-    for (const id of ids) result.push(id)
-  }
-  return result
+  return pickTargetsForPool(
+    sideData,
+    sideData.participatingUnits,
+    hitPool,
+    priorityList,
+  )
 }
 
-/** Standalone hit assignment — takes pre-computed params to avoid repeated lookups */
+/** Standalone hit assignment — fast tail-slice when no `validTargets`,
+ *  full traversal when they are set. Mutates only `participatingUnits`.
+ *  CoW-safe: replaces `sideData.participatingUnits` with a fresh array;
+ *  the old reference (shared with sibling branches) is untouched. */
 export function assignHitsForSide(
   sideData: SideStateData,
-  params: AssignHitsParams,
   trackDestroyed?: boolean,
+  priorityList?: readonly UnitType[],
 ): Record<string, UnitId[]> {
   if (sideData.hitPools.length === 0) return EMPTY_DESTROYED
 
-  let destroyed: Record<string, UnitId[]> | undefined
-  let units = sideData.units
-
+  const allFast = sideData.hitPools.every(p => !hasValidTargets(p))
+  let total = 0
   for (const pool of sideData.hitPools) {
-    if (pool.hits[0] + pool.hits[1] <= 0) continue
-
-    const plan = planAssignHits(units, params.sacrificeOrder, pool)
-
-    for (const { variantId, ids: toRemove } of plan) {
-      if (trackDestroyed) {
-        if (!destroyed) destroyed = {}
-        if (!destroyed[variantId]) destroyed[variantId] = []
-        for (const id of toRemove) destroyed[variantId].push(id)
-      }
-
-      const existing = units[variantId]
-      const kept = existing.length - toRemove.length
-      if (kept <= 0) {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { [variantId]: _removed, ...rest } = units
-        units = rest as SideStateData['units']
-      } else {
-        units = { ...units, [variantId]: existing.slice(0, kept) }
-      }
-    }
+    total += pool.hits[0] + pool.hits[1]
+  }
+  if (total === 0) {
+    sideData.hitPools = []
+    return EMPTY_DESTROYED
   }
 
-  sideData.units = units
+  const oldUnits = sideData.participatingUnits
+  const destroyedIds: UnitId[] = []
+
+  if (allFast) {
+    const take = Math.min(total, oldUnits.length)
+    const kept = oldUnits.length - take
+    sideData.participatingUnits = oldUnits.slice(0, kept)
+    if (trackDestroyed) {
+      for (let i = kept; i < oldUnits.length; i++)
+        destroyedIds.push(oldUnits[i])
+    }
+  } else {
+    // Resolve each pool with slow-path targeting (respects validTargets
+    // and per-phase priority). Splice picks out of a shared working copy.
+    const working = oldUnits.slice()
+    for (const pool of sideData.hitPools) {
+      const picks = pickTargetsForPool(sideData, working, pool, priorityList)
+      for (const id of picks) {
+        const idx = working.indexOf(id)
+        if (idx === -1) continue
+        working.splice(idx, 1)
+        if (trackDestroyed) destroyedIds.push(id)
+      }
+    }
+    sideData.participatingUnits = working
+  }
+
   sideData.hitPools = []
 
-  return destroyed ?? EMPTY_DESTROYED
+  if (!trackDestroyed) return EMPTY_DESTROYED
+
+  const destroyed: Record<string, UnitId[]> = {}
+  for (const id of destroyedIds) {
+    const key = sideData.unitType[id]
+    ;(destroyed[key] ??= []).push(id)
+  }
+  return destroyed
 }
 
 /** Build a restriction entry */
@@ -402,8 +334,18 @@ export class CombatSideState {
     return this.stateData[this._side]
   }
 
+  /** Participating units (pre-sorted, hot path). Use `allUnits` when the
+   *  caller also needs to see non-participating units. */
   get units() {
-    return this.data.units
+    return this.data.participatingUnits
+  }
+
+  get participatingUnits() {
+    return this.data.participatingUnits
+  }
+
+  get nonParticipatingUnits() {
+    return this.data.nonParticipatingUnits
   }
 
   get hitPools() {
@@ -441,28 +383,32 @@ export class CombatSideState {
   // QUERY METHODS
   // ==========================================================================
 
-  /** Find variant key containing a UnitId (scans all keys) */
+  /** Find variant key for a UnitId (empty string if not tracked). */
   findVariantKey(unitId: UnitId): UnitType | '' {
-    for (const key of Object.keys(this.data.units) as UnitType[]) {
-      if (this.data.units[key].includes(unitId)) return key
-    }
-    return ''
+    return this.data.unitType[unitId] ?? ''
   }
 
-  /** Find the first UnitId for a base type */
+  /** Find the first (highest-priority) alive UnitId for a base type.
+   *  Participating units are scanned first (they're priority-sorted);
+   *  non-participating are the fallback. */
   findFirstUnitId(
     baseType: UnitBaseType,
   ): { unitId: UnitId; key: UnitType } | undefined {
-    for (const key of Object.keys(this.data.units) as UnitType[]) {
-      const { type } = parseVariantId(key)
-      if (type !== baseType) continue
-      const ids = this.data.units[key]
-      if (ids.length > 0) return { unitId: ids[0], key }
+    const { participatingUnits, nonParticipatingUnits, unitType } = this.data
+    for (const id of participatingUnits) {
+      const key = unitType[id]
+      if (parseVariantId(key).type === baseType) return { unitId: id, key }
+    }
+    for (const id of nonParticipatingUnits) {
+      const key = unitType[id]
+      if (parseVariantId(key).type === baseType) return { unitId: id, key }
     }
     return undefined
   }
 
-  /** Find first unit matching a priority list */
+  /** Find first unit matching a caller-supplied priority list.
+   *  Walks `priority` in order; for each variant, scans `units[]` for matching
+   *  alive ids. Caller's priority overrides the array's sort order. */
   findUnitByPriority(
     priority: UnitType[],
     participatingTypes?: ReadonlySet<UnitBaseType>,
@@ -478,65 +424,59 @@ export class CombatSideState {
     participatingTypes?: ReadonlySet<UnitBaseType>,
     amount?: number,
   ): UnitId | UnitId[] | undefined {
-    if (amount !== undefined) {
-      const result: UnitId[] = []
-      const seen = new Set<UnitId>()
-      for (const variantId of priority) {
-        const { type } = parseVariantId(variantId)
-        if (participatingTypes && !participatingTypes.has(type)) continue
-        const ids = this.data.units[variantId]
-        if (!ids) continue
-        for (const id of ids) {
-          if (seen.has(id)) continue
-          seen.add(id)
-          result.push(id)
-          if (result.length >= amount) return result
-        }
-      }
-      return result
-    }
+    const { participatingUnits, nonParticipatingUnits, unitType } = this.data
+    const collect = amount !== undefined
+    const result: UnitId[] = []
+
     for (const variantId of priority) {
       const { type } = parseVariantId(variantId)
       if (participatingTypes && !participatingTypes.has(type)) continue
-      const ids = this.data.units[variantId]
-      if (!ids || ids.length <= 0) continue
-      return ids[0]
+      for (const id of participatingUnits) {
+        if (unitType[id] !== variantId) continue
+        if (!collect) return id
+        result.push(id)
+        if (result.length >= amount) return result
+      }
+      for (const id of nonParticipatingUnits) {
+        if (unitType[id] !== variantId) continue
+        if (!collect) return id
+        result.push(id)
+        if (result.length >= amount) return result
+      }
     }
-    return undefined
+    return collect ? result : undefined
   }
 
-  /** Count units with optional filter and variant support */
+  /** Count units with optional filter and variant support.
+   *  Counts across both participating and non-participating pools. */
   countUnits(
     filter?: UnitType | UnitType[],
     includeVariants?: boolean,
   ): number {
-    const data = this.data
-    if (!filter) {
-      let total = 0
-      for (const key of Object.keys(data.units)) {
-        total += data.units[key as UnitType].length
-      }
-      return total
-    }
+    const { participatingUnits, nonParticipatingUnits, unitType } = this.data
+    if (!filter) return participatingUnits.length + nonParticipatingUnits.length
 
     const filters = typeof filter === 'string' ? [filter] : filter
 
     if (includeVariants) {
       const baseTypes = new Set(filters.map(f => parseVariantId(f).type))
       let total = 0
-      for (const key of Object.keys(data.units) as UnitType[]) {
-        const ids = data.units[key]
-        if (ids.length <= 0) continue
-        if (baseTypes.has(parseVariantId(key).type)) {
-          total += ids.length
-        }
+      for (const id of participatingUnits) {
+        if (baseTypes.has(parseVariantId(unitType[id]).type)) total++
+      }
+      for (const id of nonParticipatingUnits) {
+        if (baseTypes.has(parseVariantId(unitType[id]).type)) total++
       }
       return total
     }
 
+    const keys = new Set(filters)
     let total = 0
-    for (const f of filters) {
-      total += data.units[f]?.length ?? 0
+    for (const id of participatingUnits) {
+      if (keys.has(unitType[id])) total++
+    }
+    for (const id of nonParticipatingUnits) {
+      if (keys.has(unitType[id])) total++
     }
     return total
   }
@@ -632,45 +572,77 @@ export class CombatSideState {
     return false
   }
 
-  /** Get all UnitIds for a type, optionally including variants */
+  /** Get all UnitIds for a type, optionally including variants.
+   *  Participating ids are returned first (in priority-sort order). */
   getUnits(unitType: UnitType, includeVariants?: boolean): UnitId[] {
-    const data = this.data
+    const {
+      participatingUnits,
+      nonParticipatingUnits,
+      unitType: typeMap,
+    } = this.data
+    const result: UnitId[] = []
     if (includeVariants) {
-      const result: UnitId[] = []
-      for (const key of Object.keys(data.units) as UnitType[]) {
-        const { type } = parseVariantId(key)
-        if (type === unitType) {
-          result.push(...data.units[key])
-        }
+      const baseType = parseVariantId(unitType).type
+      for (const id of participatingUnits) {
+        if (parseVariantId(typeMap[id]).type === baseType) result.push(id)
+      }
+      for (const id of nonParticipatingUnits) {
+        if (parseVariantId(typeMap[id]).type === baseType) result.push(id)
       }
       return result
     }
-    return data.units[unitType] ?? []
-  }
-
-  /** Check if a specific UnitId exists */
-  hasUnit(unitId: UnitId): boolean {
-    return this.findVariantKey(unitId) !== ''
-  }
-
-  /** Check if a unit type has any units */
-  hasUnitType(unitType: UnitType, includeVariants?: boolean): boolean {
-    if (includeVariants) {
-      return (
-        totalCountForType(this.data.units, parseVariantId(unitType).type) > 0
-      )
+    for (const id of participatingUnits) {
+      if (typeMap[id] === unitType) result.push(id)
     }
-    const ids = this.data.units[unitType]
-    return !!ids && ids.length > 0
+    for (const id of nonParticipatingUnits) {
+      if (typeMap[id] === unitType) result.push(id)
+    }
+    return result
   }
 
-  /** Get all active base types (types with at least one unit) */
+  /** Check if a specific UnitId is alive on this side. */
+  hasUnit(unitId: UnitId): boolean {
+    return (
+      this.data.participatingUnits.includes(unitId) ||
+      this.data.nonParticipatingUnits.includes(unitId)
+    )
+  }
+
+  /** Check if a unit type has any alive units. */
+  hasUnitType(unitType: UnitType, includeVariants?: boolean): boolean {
+    const {
+      participatingUnits,
+      nonParticipatingUnits,
+      unitType: typeMap,
+    } = this.data
+    if (includeVariants) {
+      const baseType = parseVariantId(unitType).type
+      for (const id of participatingUnits) {
+        if (parseVariantId(typeMap[id]).type === baseType) return true
+      }
+      for (const id of nonParticipatingUnits) {
+        if (parseVariantId(typeMap[id]).type === baseType) return true
+      }
+      return false
+    }
+    for (const id of participatingUnits) {
+      if (typeMap[id] === unitType) return true
+    }
+    for (const id of nonParticipatingUnits) {
+      if (typeMap[id] === unitType) return true
+    }
+    return false
+  }
+
+  /** Get all active base types (types with at least one alive unit). */
   getActiveBaseTypes(): UnitBaseType[] {
+    const { participatingUnits, nonParticipatingUnits, unitType } = this.data
     const types = new Set<UnitBaseType>()
-    for (const key of Object.keys(this.data.units) as UnitType[]) {
-      if (this.data.units[key].length <= 0) continue
-      const { type } = parseVariantId(key)
-      types.add(type)
+    for (const id of participatingUnits) {
+      types.add(parseVariantId(unitType[id]).type as UnitBaseType)
+    }
+    for (const id of nonParticipatingUnits) {
+      types.add(parseVariantId(unitType[id]).type as UnitBaseType)
     }
     return [...types]
   }
@@ -697,37 +669,35 @@ export class CombatSideState {
     return resolveUnitStats(data.unitStats, key)
   }
 
-  /** Get UnitState for a UnitId */
+  /** Get UnitState for a UnitId. */
   getUnitState(unitId: UnitId): UnitState | undefined {
-    const key = this.findVariantKey(unitId)
-    if (!key) return undefined
+    if (!this.hasUnit(unitId)) return undefined
     return this.data.unitState[unitId] ?? {}
   }
 
-  /** Get base type for a UnitId */
+  /** Get base type for a UnitId. */
   getUnitBaseType(unitId: UnitId): UnitBaseType | undefined {
-    const key = this.findVariantKey(unitId)
+    const key = this.data.unitType[unitId]
     if (!key) return undefined
     return parseVariantId(key).type as UnitBaseType
   }
 
-  /** Get variant key for a UnitId (undefined if not found) */
+  /** Get variant key for a UnitId (undefined if not tracked). */
   getUnitVariant(unitId: UnitId): UnitType | undefined {
-    return this.findVariantKey(unitId) || undefined
+    return this.data.unitType[unitId]
   }
 
-  /** Get participating unit types from SETTINGS */
+  /** Get participating unit types from SETTINGS. */
   getParticipatingUnitTypes(combatModeOverride?: CombatMode): UnitBaseType[] {
     const state = this.stateData
     const settings = this.getLiveParams('SETTINGS')
     const mode = combatModeOverride ?? state.combatMode
     if (!settings) {
-      const sideState = this.data
+      // Fallback: derive from alive participating units.
+      const { participatingUnits, unitType } = this.data
       const types = new Set<UnitBaseType>()
-      for (const key of Object.keys(sideState.units) as UnitType[]) {
-        if (sideState.units[key].length <= 0) continue
-        const { type } = parseVariantId(key)
-        types.add(type)
+      for (const id of participatingUnits) {
+        types.add(parseVariantId(unitType[id]).type as UnitBaseType)
       }
       return [...types]
     }
@@ -907,20 +877,12 @@ export class CombatSideState {
         ? (settings.groundCombatParticipating as UnitBaseType[])
         : (settings.spaceCombatParticipating as UnitBaseType[])
 
-    return getParticipatingUnitsSet(units)
+    return new Set(units)
   }
 
-  /** True if the side still holds any unit whose base type participates in the
-   *  current combat mode. Non-participants (e.g., PDS in ground combat,
-   *  infantry in space combat) don't count. */
+  /** True if the side still holds any participating unit. */
   hasParticipatingUnits(): boolean {
-    const participating = this.getParticipatingUnits()
-    const { units } = this.data
-    for (const key of Object.keys(units)) {
-      if (units[key as UnitType].length <= 0) continue
-      if (participating.has(parseVariantId(key as UnitType).type)) return true
-    }
-    return false
+    return this.data.participatingUnits.length > 0
   }
 
   /** Get valid targets from SETTINGS for the given meta. */
@@ -938,77 +900,100 @@ export class CombatSideState {
     source: HitSource,
     allowedUnitTypes?: ReadonlySet<UnitBaseType>,
   ): DicePool {
-    const participatingUnits = this.getParticipatingUnits()
+    const participatingTypes = this.getParticipatingUnits()
     const result: DicePool = {}
     const data = this.data
-    const { units } = data
 
-    const skipParticipatingFilter =
+    // SPACE_CANNON / BOMBARDMENT can be contributed by non-participating
+    // units too (e.g. ships bombarding during ground combat, PDS firing
+    // from structures in space combat). Other sources are participating-only.
+    const scanNonParticipating =
       source === 'SPACE_CANNON' || source === 'BOMBARDMENT'
 
-    // Track which base types had restrictions checked
+    // Cache per-variant stats lookup + per-base-type restriction check across
+    // the single walk.
+    const variantStatsCache = new Map<
+      UnitType,
+      readonly [number, number, number] | null
+    >()
     const restrictionChecked = new Map<UnitBaseType, boolean>()
 
-    for (const key of Object.keys(units)) {
-      const ids = units[key]
-      if (ids.length <= 0) continue
+    const walk = (pool: UnitId[], skipParticipatingCheck: boolean) => {
+      for (const id of pool) {
+        const key = data.unitType[id]
+        const { type } = parseVariantId(key)
 
-      const { type } = parseVariantId(key)
-      if (allowedUnitTypes && !allowedUnitTypes.has(type)) continue
-      if (!skipParticipatingFilter && !participatingUnits.has(type)) continue
+        if (allowedUnitTypes && !allowedUnitTypes.has(type)) continue
+        if (!skipParticipatingCheck && !participatingTypes.has(type)) continue
 
-      // Check restrictions once per base type
-      if (source !== 'COMBAT') {
-        let allowed = restrictionChecked.get(type)
-        if (allowed === undefined) {
-          allowed = !(
-            this.isRestricted('lost', source, type) ||
-            this.isRestricted('cannotBeUsed', source, type)
-          )
-          restrictionChecked.set(type, allowed)
+        if (source !== 'COMBAT') {
+          let allowed = restrictionChecked.get(type)
+          if (allowed === undefined) {
+            allowed = !(
+              this.isRestricted('lost', source, type) ||
+              this.isRestricted('cannotBeUsed', source, type)
+            )
+            restrictionChecked.set(type, allowed)
+          }
+          if (!allowed) continue
         }
-        if (!allowed) continue
-      }
 
-      // Read dice values directly from shared stats
-      const stats = resolveUnitStats(data.unitStats, key)
-      if (!stats) continue
-      const dieData =
-        source === 'COMBAT' ? stats.COMBAT : stats.UNIT_ABILITIES?.[source]
-      if (!dieData) continue
-      const [hitValue, dicePerUnit, bonusDice = 0] = dieData
-      if (dicePerUnit + bonusDice <= 0) continue
+        let die = variantStatsCache.get(key)
+        if (die === undefined) {
+          const stats = resolveUnitStats(data.unitStats, key)
+          const dieData =
+            source === 'COMBAT'
+              ? stats?.COMBAT
+              : stats?.UNIT_ABILITIES?.[source]
+          if (!dieData) {
+            variantStatsCache.set(key, null)
+            continue
+          }
+          const [hitValue, dicePerUnit, bonusDice = 0] = dieData
+          if (dicePerUnit + bonusDice <= 0) {
+            variantStatsCache.set(key, null)
+            continue
+          }
+          die = [hitValue, dicePerUnit, bonusDice]
+          variantStatsCache.set(key, die)
+        }
+        if (die === null) continue
 
-      // Store UnitId directly per unit
-      const arr = result[type] ?? []
-      for (const id of ids) {
+        const [hitValue, dicePerUnit, bonusDice] = die
+        const arr = result[type] ?? (result[type] = [])
         arr.push([hitValue, dicePerUnit, bonusDice, id])
       }
-      result[type] = arr
+    }
+
+    // Participating pool is the hot path; its membership check is
+    // already satisfied by the array.
+    walk(data.participatingUnits, true)
+    if (scanNonParticipating) {
+      // Non-participating pool — let the participatingTypes check run,
+      // since these ids are by definition not in the participating set
+      // but may still be valid sources (bombardment ships, PDS).
+      walk(data.nonParticipatingUnits, true)
     }
 
     return result
   }
 
-  /** Assign hits to this side. Replaces sideData.units with a new record
-   *  (does NOT mutate the original arrays — safe for shared branch data).
-   *  Returns destroyed UnitIds record.
-   *  When trackDestroyed is false, skips building the destroyed record. */
+  /** Assign hits to this side. Replaces sideData.units with a new array
+   *  (does NOT mutate the original — safe for shared branch data).
+   *  Returns destroyed UnitIds grouped by variant key. */
   assignHits(
-    stateData: CombatStateData,
-    meta: MetaPhase,
+    _stateData: CombatStateData,
+    _meta: MetaPhase,
     trackDestroyed?: boolean,
   ): Record<string, UnitId[]> {
-    const params = getAssignHitsParams(stateData, this._side, meta)
-    return assignHitsForSide(stateData[this._side], params, trackDestroyed)
+    return assignHitsForSide(this.data, trackDestroyed)
   }
 
   /** Simulate resolving a single HitPool against this side's current units.
-   *  Returns the UnitIds that would be destroyed, in sacrifice order.
-   *  Non-destructive — does not mutate state. */
-  getAssignHitsTargets(hitPool: HitPool, meta: MetaPhase): UnitId[] {
-    const params = getAssignHitsParams(this.stateData, this._side, meta)
-    return getAssignHitsTargets(this.data, params, hitPool)
+   *  Returns the UnitIds that would be destroyed, in sacrifice order (tail first). */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getAssignHitsTargets(hitPool: HitPool, _meta: MetaPhase): UnitId[] {
+    return getAssignHitsTargets(this.data, hitPool)
   }
 
   // ==========================================================================
@@ -1027,39 +1012,34 @@ export class CombatSideState {
   }
 
   private _removeOne(unitTypeOrUnit: UnitBaseType | UnitId): void {
-    let unitId: UnitId
-    let key: UnitType
     const data = this.data
+    let unitId: UnitId
 
     if (typeof unitTypeOrUnit === 'string') {
+      // Find first (highest-priority) alive unit of that base type.
       const found = this.findFirstUnitId(unitTypeOrUnit)
       if (!found) return
       unitId = found.unitId
-      key = found.key
     } else {
       unitId = unitTypeOrUnit
-      const found = this.findVariantKey(unitId)
-      if (!found) return
-      key = found
     }
 
-    const ids = data.units[key]
-    const idx = ids.indexOf(unitId)
-    if (idx === -1) return
-
-    // Build a new array instead of splicing in-place so that branches
-    // sharing the same units reference are not affected.
-    if (ids.length <= 1) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { [key]: _removed, ...rest } = data.units
-      data.units = rest as SideStateData['units']
+    // CoW: rebuild whichever array holds the id.
+    const pIdx = data.participatingUnits.indexOf(unitId)
+    if (pIdx !== -1) {
+      const copy = data.participatingUnits.slice()
+      copy.splice(pIdx, 1)
+      data.participatingUnits = copy
     } else {
-      const copy = ids.slice()
-      copy.splice(idx, 1)
-      data.units = { ...data.units, [key]: copy }
+      const nIdx = data.nonParticipatingUnits.indexOf(unitId)
+      if (nIdx === -1) return
+      const copy = data.nonParticipatingUnits.slice()
+      copy.splice(nIdx, 1)
+      data.nonParticipatingUnits = copy
     }
 
     delete data.unitState[unitId]
+    // unitType[unitId] is intentionally left in place.
   }
 
   /** Modify per-unit mutable state */
@@ -1091,7 +1071,10 @@ export class CombatSideState {
     this.data.hitPools.push({ hits: [0, hits], validTargets })
   }
 
-  /** Move a unit to a new variant with an added subtype */
+  /** Move one unit to a new variant with an added subtype.
+   *  Iteration 1: updates unitType[id] only. Array position is unchanged,
+   *  so the unit keeps its current sort rank even if the new variant has a
+   *  different priority. (Deferred — see spec "Out of scope".) */
   addSubtype(
     variantId: UnitType,
     subtype: UnitVariantId,
@@ -1100,17 +1083,34 @@ export class CombatSideState {
     const data = this.data
     const { type, subtypes: currentSubtypes } = parseVariantId(variantId)
 
-    let sourceKey: UnitType = variantId
-    if (!data.units[sourceKey] || data.units[sourceKey].length <= 0) {
-      sourceKey = type
+    // Prefer a unit whose current variant matches `variantId` exactly.
+    // Fall back to any unit with the same base type.
+    const pickFrom = (
+      pool: UnitId[],
+      matchExact: boolean,
+    ): UnitId | undefined => {
+      for (let i = pool.length - 1; i >= 0; i--) {
+        const id = pool[i]
+        const key = data.unitType[id]
+        if (matchExact ? key === variantId : parseVariantId(key).type === type)
+          return id
+      }
+      return undefined
     }
-    if (!data.units[sourceKey] || data.units[sourceKey].length <= 0) return
+    const pickedId =
+      pickFrom(data.participatingUnits, true) ??
+      pickFrom(data.nonParticipatingUnits, true) ??
+      pickFrom(data.participatingUnits, false) ??
+      pickFrom(data.nonParticipatingUnits, false)
+    if (pickedId === undefined) return
 
+    const sourceKey = data.unitType[pickedId]
     const newSubtypes = [...currentSubtypes, subtype].sort()
     const newKey = makeVariantId(type, newSubtypes as UnitVariantId[])
     if (newKey === sourceKey) return
 
-    this._moveUnitVariant(sourceKey, newKey)
+    // CoW unitType: fresh record with the updated entry.
+    data.unitType = { ...data.unitType, [pickedId]: newKey }
 
     if (!data.unitStats[newKey]) {
       let value: UnitStats | ((parentStats: UnitStats) => UnitStats) | undefined
@@ -1128,52 +1128,36 @@ export class CombatSideState {
     }
   }
 
-  /** Move a unit to a variant with a subtype removed */
+  /** Move one unit to a variant with a subtype removed.
+   *  Iteration 1: updates unitType[id] only; array position unchanged. */
   removeSubtype(variantId: UnitType, subtype: UnitVariantId): void {
     const data = this.data
     const { type, subtypes: requiredSubtypes } = parseVariantId(variantId)
 
-    let sourceKey: UnitType | undefined
-    for (const key of Object.keys(data.units) as UnitType[]) {
-      if (data.units[key].length <= 0) continue
-      const { type: kType, subtypes: kSubs } = parseVariantId(key)
-      if (kType !== type) continue
-      if (!kSubs.includes(subtype as UnitVariantId)) continue
-      if (requiredSubtypes.every(s => kSubs.includes(s))) {
-        sourceKey = key
-        break
+    const findIn = (pool: UnitId[]): UnitId | undefined => {
+      for (let i = pool.length - 1; i >= 0; i--) {
+        const id = pool[i]
+        const key = data.unitType[id]
+        const { type: kType, subtypes: kSubs } = parseVariantId(key)
+        if (kType !== type) continue
+        if (!kSubs.includes(subtype as UnitVariantId)) continue
+        if (requiredSubtypes.every(s => kSubs.includes(s))) return id
       }
+      return undefined
     }
-    if (!sourceKey) return
+    const pickedId =
+      findIn(data.participatingUnits) ?? findIn(data.nonParticipatingUnits)
+    if (pickedId === undefined) return
 
+    const sourceKey = data.unitType[pickedId]
     const { subtypes: sourceSubs } = parseVariantId(sourceKey)
     const newSubtypes = sourceSubs.filter(s => s !== subtype)
     const newKey: UnitType =
       newSubtypes.length > 0 ? makeVariantId(type, newSubtypes) : type
 
-    this._moveUnitVariant(sourceKey, newKey)
-  }
+    if (newKey === sourceKey) return
 
-  /** COW-safe move of one unit from sourceKey to newKey.
-   *  Rebuilds `data.units` and affected arrays without mutating shared refs —
-   *  safe to call inside branches that share arrays with the base state. */
-  private _moveUnitVariant(sourceKey: UnitType, newKey: UnitType): void {
-    const data = this.data
-    const source = data.units[sourceKey]
-    const movedId = source[source.length - 1]
-    const units = { ...data.units }
-
-    const newSource = source.slice(0, -1)
-    if (newSource.length === 0) {
-      delete units[sourceKey]
-    } else {
-      units[sourceKey] = newSource
-    }
-
-    const existing = units[newKey]
-    units[newKey] = existing ? [...existing, movedId] : [movedId]
-
-    data.units = units
+    data.unitType = { ...data.unitType, [pickedId]: newKey }
   }
 
   /**
@@ -1187,7 +1171,6 @@ export class CombatSideState {
     const data = this.data
     const { type } = parseVariantId(key)
     const isVariantKey = key.includes(':')
-    const keysWithAbilitiesChange: { key: UnitType; ids: UnitId[] }[] = []
     const hasAbilitiesUpdate = 'ABILITIES' in updates
 
     if (isVariantKey) {
@@ -1197,75 +1180,103 @@ export class CombatSideState {
         }
         Object.assign(data.unitStats[key], updates)
       }
-      const ids = data.units[key]
-      if (hasAbilitiesUpdate && ids?.length > 0) {
-        keysWithAbilitiesChange.push({ key, ids })
-      }
     } else {
-      for (const vKey of Object.keys(data.units) as UnitType[]) {
+      for (const vKey of Object.keys(data.unitStats) as UnitType[]) {
         const { type: vType } = parseVariantId(vKey)
         if (vType !== type) continue
-        if (data.unitStats[vKey]) {
-          if (typeof data.unitStats[vKey] === 'function') {
-            // Skip factory-based variants — they resolve against parent stats,
-            // so updating the base type is sufficient.
-            continue
-          }
-          Object.assign(data.unitStats[vKey], updates)
+        if (!data.unitStats[vKey]) continue
+        if (typeof data.unitStats[vKey] === 'function') {
+          // Skip factory variants — they resolve against parent stats.
+          continue
         }
-        const ids = data.units[vKey]
-        if (hasAbilitiesUpdate && ids?.length > 0) {
-          keysWithAbilitiesChange.push({ key: vKey, ids })
-        }
-      }
-      if (data.unitStats[type]) {
-        if (typeof data.unitStats[type] === 'function') {
-          data.unitStats[type] = resolveUnitStats(data.unitStats, type)!
-        }
-        Object.assign(data.unitStats[type], updates)
+        Object.assign(data.unitStats[vKey], updates)
       }
     }
 
+    if (!hasAbilitiesUpdate) return { keysWithAbilitiesChange: [] }
+
+    // Bucket alive units by variant key, filtered to the updated key(s).
+    const buckets = new Map<UnitType, UnitId[]>()
+    const bucketize = (pool: UnitId[]) => {
+      for (const id of pool) {
+        const vKey = data.unitType[id]
+        if (isVariantKey) {
+          if (vKey !== key) continue
+        } else {
+          if (parseVariantId(vKey).type !== type) continue
+        }
+        let bucket = buckets.get(vKey)
+        if (!bucket) buckets.set(vKey, (bucket = []))
+        bucket.push(id)
+      }
+    }
+    bucketize(data.participatingUnits)
+    bucketize(data.nonParticipatingUnits)
+
+    const keysWithAbilitiesChange: { key: UnitType; ids: UnitId[] }[] = []
+    for (const [k, ids] of buckets)
+      keysWithAbilitiesChange.push({ key: k, ids })
     return { keysWithAbilitiesChange }
   }
 
-  /**
-   * Place new units (pure state mutation).
-   * Returns new UnitIds per type (for engine to queue invokes).
-   */
+  /** Place new units (pure state mutation).
+   *  Iteration 1: new UnitIds are appended to the end of whichever pool
+   *  matches the base type's participating status. They land at the
+   *  lowest-priority end regardless of actual priority rank. Deferred. */
   placeUnits(
     unitsToAdd: Partial<Record<UnitBaseType, number>>,
   ): Record<UnitType, UnitId[]> {
     const data = this.data
     const placed: Record<UnitType, UnitId[]> = {} as Record<UnitType, UnitId[]>
+    const participatingTypes = new Set(this.getParticipatingUnitTypes())
+
+    let nextPart = data.participatingUnits
+    let nextNon = data.nonParticipatingUnits
+    let nextUnitType = data.unitType
 
     for (const [type, count] of Object.entries(unitsToAdd)) {
-      const unitType = type as UnitBaseType
+      const unitType_ = type as UnitBaseType
       if (!count || count <= 0) continue
-      const existing = totalCountForType(data.units, unitType)
-      const limit = UNIT_LIMITS[unitType]
+
+      // Count existing alive units of this base type across both pools.
+      let existing = 0
+      for (const id of data.participatingUnits) {
+        if (parseVariantId(data.unitType[id]).type === unitType_) existing++
+      }
+      for (const id of data.nonParticipatingUnits) {
+        if (parseVariantId(data.unitType[id]).type === unitType_) existing++
+      }
+
+      const limit = UNIT_LIMITS[unitType_]
       if (existing + count > limit) {
         console.warn(
-          `Unit limit exceeded: ${unitType} has a maximum of ${limit}`,
+          `Unit limit exceeded: ${unitType_} has a maximum of ${limit}`,
         )
       }
       const allowed = Math.min(count, limit - existing)
       if (allowed <= 0) continue
 
       const newIds = nextUnitIds(allowed)
-      // Build a new array instead of pushing in-place so that branches
-      // sharing the same units reference are not affected.
-      const existing_ids = data.units[unitType]
-      data.units = {
-        ...data.units,
-        [unitType]: existing_ids ? [...existing_ids, ...newIds] : [...newIds],
+      // CoW: fresh arrays/records every append.
+      if (participatingTypes.has(unitType_)) {
+        nextPart = [...nextPart, ...newIds]
+      } else {
+        nextNon = [...nextNon, ...newIds]
       }
-      if (!data.unitStats[unitType]) {
-        data.unitStats[unitType] = {}
+      const typeMapAdditions: Record<UnitId, UnitType> = {}
+      for (const id of newIds) typeMapAdditions[id] = unitType_
+      nextUnitType = { ...nextUnitType, ...typeMapAdditions }
+
+      if (!data.unitStats[unitType_]) {
+        data.unitStats[unitType_] = {}
       }
 
-      placed[unitType] = newIds
+      placed[unitType_] = newIds
     }
+
+    data.participatingUnits = nextPart
+    data.nonParticipatingUnits = nextNon
+    data.unitType = nextUnitType
 
     return placed
   }

@@ -68,6 +68,39 @@ export class AbilityBranchInterrupt {
 }
 
 // ============================================================================
+// PARTICIPATION RESYNC
+// ============================================================================
+
+/** Keys whose changes alter which base types participate in the
+ *  current combat mode. Only `updateAbilityConfig` writes that touch
+ *  these trigger a participating/non-participating re-split. */
+const SETTINGS_PARTICIPATION_KEYS = new Set([
+  'ships',
+  'groundForces',
+  'spaceCombatParticipating',
+  'groundCombatParticipating',
+])
+const UNIT_PRIORITY_PARTICIPATION_KEYS = new Set([
+  'spaceUnitPriority',
+  'groundUnitPriority',
+])
+
+function affectsParticipating(
+  abilityKey: string,
+  updatedKeys: readonly string[],
+): boolean {
+  const set =
+    abilityKey === 'SETTINGS'
+      ? SETTINGS_PARTICIPATION_KEYS
+      : abilityKey === 'UNIT_PRIORITY'
+        ? UNIT_PRIORITY_PARTICIPATION_KEYS
+        : undefined
+  if (!set) return false
+  for (const k of updatedKeys) if (set.has(k)) return true
+  return false
+}
+
+// ============================================================================
 // SIDE API
 // ============================================================================
 
@@ -410,6 +443,16 @@ export class SideApi {
         Object.keys(updates),
         state,
       )
+    }
+
+    // Re-split participating/non-participating only when the update
+    // touches a participation-affecting field. Keeps the hot path cheap
+    // while catching Alastor / Eidolon / custom priority edits.
+    if (
+      abilitiesParams &&
+      affectsParticipating(targetKey, Object.keys(updates))
+    ) {
+      abilitiesParams.combatState.resyncParticipating(side)
     }
   }
 

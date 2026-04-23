@@ -4,6 +4,7 @@ import type {
   UnitId,
   UnitState,
   UnitStats,
+  UnitType,
 } from '@/types'
 import { getFactionUnitConfig } from '@/utils/get-faction-unit-config'
 import { buildUnitStatsMap } from '@/utils/get-simulation-units'
@@ -42,20 +43,21 @@ export interface CombatStateConfig {
 
 function buildSideState(config: SideConfig): SideStateData {
   const upgradedSet = new Set(config.upgrades ?? [])
-  const units: Record<string, UnitId[]> = {}
+  const participatingUnits: UnitId[] = []
+  const unitType: Record<UnitId, UnitType> = {}
   const unitState: Record<number, UnitState> = {}
   const unitStats: Record<string, UnitStats> = {}
 
   const factionConfig = getFactionUnitConfig(config.faction)
 
   for (const [type, count] of Object.entries(config.units)) {
-    const unitType = type as UnitBaseType
+    const unitType_ = type as UnitBaseType
     if (!count || count <= 0) continue
 
-    const def = factionConfig[unitType]
+    const def = factionConfig[unitType_]
     if (!def?.BASE) continue
 
-    const upgraded = upgradedSet.has(unitType)
+    const upgraded = upgradedSet.has(unitType_)
     let stats: UnitStats = { ...def.BASE }
     if (upgraded && def.UPGRADED) {
       stats = {
@@ -68,13 +70,19 @@ function buildSideState(config: SideConfig): SideStateData {
       }
     }
 
-    units[unitType] = nextUnitIds(count)
-    unitStats[unitType] = stats
+    const ids = nextUnitIds(count)
+    for (const id of ids) {
+      participatingUnits.push(id)
+      unitType[id] = unitType_ as import('@/types').UnitType
+    }
+    unitStats[unitType_] = stats
   }
 
   return {
     faction: config.faction,
-    units,
+    participatingUnits,
+    nonParticipatingUnits: [],
+    unitType,
     unitState,
     unitStats: {
       ...buildUnitStatsMap(config.faction, upgradedSet),
