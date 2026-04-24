@@ -151,6 +151,14 @@ export interface SideStateData {
    *  abilities whose config changed during the run. Hashed into the state
    *  identity; reads must merge base+live (see `CombatSideState.getLiveParams`). */
   liveAbilities: SideAbilitiesConfig
+  /** CoW marker — when true, `unitState` reference is potentially shared
+   *  with another SideStateData (from a branch clone); mutations must
+   *  clone first via `ensureUnitStateOwned`. */
+  _unitStateShared?: boolean
+  /** CoW marker — when true, `hitPools` reference is potentially shared
+   *  with another SideStateData; mutations must clone first via
+   *  `ensureHitPoolsOwned`. */
+  _hitPoolsShared?: boolean
 }
 
 /** A single step in the phase-handler script. `advance()` pops one step

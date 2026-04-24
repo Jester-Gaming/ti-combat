@@ -1196,44 +1196,21 @@ function applyStoredHitValueModifiers(
   }
 }
 
-/** Shallow-clone unitState record + each entry so ability mutations
- *  (e.g. SUSTAIN_DAMAGE setting isDamaged) don't leak across branches. */
-function cloneUnitState(
-  us: SideStateData['unitState'],
-): SideStateData['unitState'] {
-  // Fast path: empty unitState (e.g. fighters-only scenarios)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  for (const _ in us) {
-    // Has at least one key — need to clone
-    const clone: SideStateData['unitState'] = {}
-    for (const k in us) {
-      const id = k as unknown as import('@/types').UnitId
-      clone[id] = { ...us[id] }
-    }
-    return clone
-  }
-  return {}
-}
-
-/** Branch clone — copies hitPools, unitState, and abilities per side.
- *  `units: UnitId[]` and `unitType: Record<UnitId, UnitType>` stay shared
- *  with base; every mutation path (assignHits, removeUnits, placeUnits,
- *  addSubtype, removeSubtype) writes fresh arrays/records. unitState is
- *  deep-cloned because SUSTAIN_DAMAGE mutates entries (`isDamaged`).
- *  `abilities` (initial config) is shared by reference; `liveAbilities`
- *  is shallow-copied so per-entry COW mutations stay branch-local. */
+/** Branch clone — CoW for `hitPools` and `unitState`: the new side shares
+ *  refs with base and both are flagged as shared. The first side to mutate
+ *  either resource clones it via `ensureHitPoolsOwned` / `ensureUnitStateOwned`
+ *  in combat-side-state.ts. Branches that never write pay nothing.
+ *  `units`/`unitType`/`unitStats` stay shared (all mutation paths write
+ *  fresh refs). `abilities` (initial config) is shared; `liveAbilities`
+ *  is shallow-copied for per-entry COW. */
 export function cloneStateForBranch(base: CombatStateData): CombatStateData {
+  base.attacker._hitPoolsShared = true
+  base.attacker._unitStateShared = true
+  base.defender._hitPoolsShared = true
+  base.defender._unitStateShared = true
   return {
     ...base,
-    attacker: {
-      ...base.attacker,
-      hitPools: [...base.attacker.hitPools],
-      unitState: cloneUnitState(base.attacker.unitState),
-    },
-    defender: {
-      ...base.defender,
-      hitPools: [...base.defender.hitPools],
-      unitState: cloneUnitState(base.defender.unitState),
-    },
+    attacker: { ...base.attacker },
+    defender: { ...base.defender },
   }
 }

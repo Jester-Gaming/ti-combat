@@ -47,6 +47,27 @@ const CATEGORY_TO_SETTINGS_KEY: Record<UnitCategory, string> = {
 /** Shared empty destroyed record to avoid per-call {} allocation */
 const EMPTY_DESTROYED: Record<string, UnitId[]> = {}
 
+/** CoW — clone `unitState` if its ref may be shared with another side.
+ *  Also clones the touched entry refs lazily via replace-semantics at
+ *  the mutation site (see `modifyUnitState`). */
+function ensureUnitStateOwned(s: SideStateData): void {
+  if (s._unitStateShared) {
+    s.unitState = { ...s.unitState }
+    s._unitStateShared = false
+  }
+}
+
+/** CoW — clone `hitPools` if its ref may be shared with another side.
+ *  Pool objects inside are not deep-cloned: the branch flow guarantees
+ *  that newly-added pools are branch-local, and pre-existing pools are
+ *  replaced (not in-place mutated) in `reduceHits`. */
+function ensureHitPoolsOwned(s: SideStateData): void {
+  if (s._hitPoolsShared) {
+    s.hitPools = s.hitPools.slice()
+    s._hitPoolsShared = false
+  }
+}
+
 const liveAbilitiesSideHashCache = new WeakMap<SideAbilitiesConfig, string>()
 
 function computeLiveAbilitiesHash(side: SideAbilitiesConfig): string {
@@ -200,7 +221,10 @@ function _removeOne(
       s.nonParticipatingUnits.slice(nIdx + 1)) as UnitList
   }
 
-  delete s.unitState[unitId]
+  if (s.unitState[unitId] !== undefined) {
+    ensureUnitStateOwned(s)
+    delete s.unitState[unitId]
+  }
 }
 
 function addRestrictionEntry(
@@ -987,6 +1011,7 @@ export class CombatSideState {
     }
     if (total === 0) {
       s.hitPools = []
+      s._hitPoolsShared = false
       return EMPTY_DESTROYED
     }
 
@@ -1016,6 +1041,7 @@ export class CombatSideState {
     }
 
     s.hitPools = []
+    s._hitPoolsShared = false
 
     if (!trackDestroyed) return EMPTY_DESTROYED
 
@@ -1047,6 +1073,7 @@ export class CombatSideState {
     validTargets: UnitType[],
   ): void {
     if (hits === 0) return
+    ensureHitPoolsOwned(s)
     s.hitPools.push({ hits: [0, hits], validTargets })
   }
 
@@ -1057,19 +1084,27 @@ export class CombatSideState {
     validTargets: UnitType[],
   ): void {
     if (hits <= 0) return
+    ensureHitPoolsOwned(s)
     s.hitPools.push({ hits: [hits, 0], validTargets })
   }
 
-  /** Reduce pending hits from hit pools (reduces bonus first, then base) */
+  /** Reduce pending hits from hit pools (reduces bonus first, then base).
+   *  Replaces mutated pool entries with new objects so pool refs shared
+   *  with other branches (via CoW hitPools sharing) stay untouched. */
   static reduceHits(s: SideStateData, amount: number): void {
     if (s.hitPools.length === 0 || amount <= 0) return
+    ensureHitPoolsOwned(s)
     let remaining = amount
-    for (const pool of s.hitPools) {
+    for (let i = 0; i < s.hitPools.length; i++) {
+      const pool = s.hitPools[i]
       const total = pool.hits[0] + pool.hits[1]
       const reduce = Math.min(remaining, total)
       const bonusReduce = Math.min(reduce, pool.hits[1])
       const baseReduce = reduce - bonusReduce
-      pool.hits = [pool.hits[0] - baseReduce, pool.hits[1] - bonusReduce]
+      s.hitPools[i] = {
+        ...pool,
+        hits: [pool.hits[0] - baseReduce, pool.hits[1] - bonusReduce],
+      }
       remaining -= reduce
       if (remaining <= 0) break
     }
@@ -1091,14 +1126,20 @@ export class CombatSideState {
     _removeOne(s, target)
   }
 
-  /** Modify per-unit mutable state */
+  /** Modify per-unit mutable state. Replaces the entry (rather than
+   *  mutating in place) because entry refs may be shared across branches
+   *  under CoW — the outer record clone from `ensureUnitStateOwned`
+   *  is shallow. */
   static modifyUnitState(
     s: SideStateData,
     unitId: UnitId,
     updates: Partial<UnitState>,
   ): void {
-    s.unitState[unitId] ??= {}
-    Object.assign(s.unitState[unitId], updates)
+    ensureUnitStateOwned(s)
+    const existing = s.unitState[unitId]
+    s.unitState[unitId] = existing
+      ? { ...existing, ...updates }
+      : { ...updates }
   }
 
   /** Move one unit to a new variant with an added subtype. */
