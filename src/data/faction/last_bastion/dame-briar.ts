@@ -64,10 +64,8 @@ export const dameBriar: Ability<Params> = {
   invoke: [
     {
       timing: 'WHEN_DESTROY',
-      isCallable: (params, ctx, units) => {
-        const anyOwnDestroyed = Object.values(units.own).some(
-          ids => (ids?.length ?? 0) > 0,
-        )
+      isCallable: (params, ctx, ids) => {
+        const anyOwnDestroyed = ids.some(id => !!ctx.api.own.getVariantKey(id))
         if (!anyOwnDestroyed) return false
         const target =
           ctx.state.combatMode === 'GROUND'

@@ -64,10 +64,10 @@ export const apollo: Ability<Params> = {
     },
     {
       timing: 'WHEN_DESTROY',
-      isCallable: (params, _ctx, units) => {
+      isCallable: (params, ctx, ids) => {
         if (!params.heroUnit) return false
         const heroVariant = makeVariantId(params.heroUnit, [HERO])
-        return (units.own[heroVariant]?.length ?? 0) > 0
+        return ids.some(id => ctx.api.own.getVariantKey(id) === heroVariant)
       },
       call: (ctx, params) => {
         const heroVariant = makeVariantId(params.heroUnit!, [HERO])

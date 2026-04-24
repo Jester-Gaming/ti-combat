@@ -99,9 +99,13 @@ describe('DEPLOY uses limit in simulation', () => {
       },
     })
 
-    // Check invokes for START_OF_COMBAT_ROUND
+    // Check invokes for START_OF_COMBAT_ROUND. DUNLAIN_REAPER is a GROUND-mode
+    // ability with no `invoke.context`, replicated into every phase bucket —
+    // read from GROUND_COMBAT which is the active phase for ground setups.
     const attackerInvokes =
-      combatState._invokes.attacker.get('START_OF_COMBAT_ROUND') ?? []
+      combatState._invokes.attacker
+        .get('GROUND_COMBAT')
+        ?.get('START_OF_COMBAT_ROUND') ?? []
     const reaperInvokes = attackerInvokes.filter(
       e => e.ability.key === 'DUNLAIN_REAPER',
     )

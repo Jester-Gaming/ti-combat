@@ -4,6 +4,7 @@ import type {
   DiceGroup,
   UnitAbility,
   UnitBaseType,
+  UnitId,
   UnitType,
 } from '@/types'
 
@@ -11,6 +12,7 @@ import {
   AbilitiesEngine,
   type AbilityBranch,
   AbilityBranchInterrupt,
+  type AbilityCandidate,
   cloneInvokes,
   cloneTracker,
   type DicePool,
@@ -156,6 +158,8 @@ export class CombatState {
   private _params!: AbilitiesEngine
   public _invokes!: InvokeCollections
   public _invokesOwned = true
+  public _allInvokes!: Record<CombatSide, AbilityCandidate[]>
+  public _allInvokesOwned = true
   /** LIFO stack of steps for the current meta's phase script. `advance()`
    *  pops one step per call. Stored in reverse execution order so `.pop()`
    *  yields the next-to-execute step. Instance-level (not on `data`) because
@@ -192,6 +196,16 @@ export class CombatState {
     if (!this._invokesOwned) {
       this._invokes = cloneInvokes(this._invokes)
       this._invokesOwned = true
+    }
+  }
+
+  ensureOwnAllInvokes(): void {
+    if (!this._allInvokesOwned) {
+      this._allInvokes = {
+        attacker: [...this._allInvokes.attacker],
+        defender: [...this._allInvokes.defender],
+      }
+      this._allInvokesOwned = true
     }
   }
 
@@ -262,6 +276,9 @@ export class CombatState {
     instance._invokes = source._invokes
     instance._invokesOwned = false
     source._invokesOwned = false
+    instance._allInvokes = source._allInvokes
+    instance._allInvokesOwned = false
+    source._allInvokesOwned = false
     return instance
   }
 
@@ -661,19 +678,19 @@ export class CombatState {
 
     if (!trackDestroyed) return
 
-    const destroyedContext = {
+    const destroyedIds: UnitId[] = []
+    for (const ids of Object.values(attackerDestroyed))
+      for (const id of ids) destroyedIds.push(id)
+    for (const ids of Object.values(defenderDestroyed))
+      for (const id of ids) destroyedIds.push(id)
+
+    this._logger?.child(meta).child('ASSIGN_HITS').log({
       attacker: attackerDestroyed,
       defender: defenderDestroyed,
-    }
+    })
 
-    this._logger?.child(meta).child('ASSIGN_HITS').log(destroyedContext)
-
-    const hasDestroyed =
-      Object.keys(destroyedContext.attacker).length > 0 ||
-      Object.keys(destroyedContext.defender).length > 0
-
-    if (hasDestroyed) {
-      this.pendingSteps.push(buildDestroyGroup(destroyedContext, phase))
+    if (destroyedIds.length > 0) {
+      this.pendingSteps.push(buildDestroyGroup(destroyedIds, phase))
     }
   }
 
@@ -822,6 +839,8 @@ export class CombatState {
       state._logger = b.logger
       state._invokes = b.invokes
       state._invokesOwned = false
+      state._allInvokes = b.allInvokes
+      state._allInvokesOwned = false
       state.pendingSteps = clonePendingSteps(b.pendingSteps ?? remainder)
       return { state, probability: b.probability }
     })
@@ -848,6 +867,7 @@ export class CombatState {
     const metaPhase = innerMeta(phase)
     const results: StateWithProbability[] = []
     const baseInvokes = this._invokes
+    const baseAllInvokes = this._allInvokes
     const baseData = this.data
     const basePendingSteps = this.pendingSteps
 
@@ -861,6 +881,8 @@ export class CombatState {
 
         this._invokes = baseInvokes
         this._invokesOwned = false
+        this._allInvokes = baseAllInvokes
+        this._allInvokesOwned = false
 
         const branchData = cloneStateForBranch(baseData)
         CombatSideState.addBaseHits(
@@ -901,6 +923,8 @@ export class CombatState {
     this.pendingSteps = basePendingSteps
     this._invokes = baseInvokes
     this._invokesOwned = true
+    this._allInvokes = baseAllInvokes
+    this._allInvokesOwned = true
 
     return results
   }
@@ -981,21 +1005,41 @@ export class CombatState {
   // ===========================================================================
 }
 
+/** Method step that runs AFTER the DESTROY cascade completes — prunes
+ *  unit-source candidates for destroyed units from `_allInvokes` and refreshes
+ *  emitted invokes so dead units' entries don't accumulate across rounds.
+ *  The payload is a flat `UnitId[]` spanning both sides; `removeUnitInvokes`
+ *  filters by `source.unitId`, so passing all ids to each side is safe. */
+function cleanupDestroyedUnitInvokes(
+  this: CombatState,
+  _phase: MetaPhase[],
+  payload: unknown,
+): void {
+  const ids = payload as import('@/types').UnitId[]
+  if (ids.length === 0) return
+  this.params.removeUnitInvokes('attacker', ids)
+  this.params.removeUnitInvokes('defender', ids)
+}
+
 /** Build a PhaseStepGroup that fires the DESTROY → WHEN_DESTROY →
- *  AFTER_DESTROY cascade once, sharing the destroyed-units map as the
+ *  AFTER_DESTROY cascade once, sharing the destroyed-units flat list as the
  *  group's `data`. Steps are stored in reverse execution order so the
- *  group pops DESTROY first. */
+ *  group pops DESTROY first. A cleanup method step runs last (stored at
+ *  index 0) to prune destroyed units' invoke entries. */
 export function buildDestroyGroup(
-  destroyedContext: {
-    attacker: Record<string, import('@/types').UnitId[]>
-    defender: Record<string, import('@/types').UnitId[]>
-  },
+  destroyedIds: import('@/types').UnitId[],
   phase: MetaPhase[],
 ): PhaseStepGroup {
   return {
     kind: 'group',
-    data: destroyedContext,
+    data: destroyedIds,
     steps: [
+      {
+        kind: 'method',
+        fn: cleanupDestroyedUnitInvokes,
+        phase,
+        payload: destroyedIds,
+      },
       { kind: 'timing', timing: 'AFTER_DESTROY', phase },
       { kind: 'timing', timing: 'WHEN_DESTROY', phase },
       { kind: 'timing', timing: 'DESTROY', phase },

@@ -1,6 +1,5 @@
 import yinBrotherhoodIcon from '@/assets/faction/yin_brotherhood.svg?raw'
 import type { Ability } from '@/combat'
-import type { UnitType } from '@/types'
 
 export const brotherMilor: Ability = {
   key: 'BROTHER_MILOR',
@@ -18,12 +17,8 @@ export const brotherMilor: Ability = {
     {
       timing: 'AFTER_DESTROY',
       context: ['SPACE_COMBAT', 'GROUND_COMBAT'],
-      isCallable: (_params, _ctx, units) => {
-        for (const key in units.own) {
-          if (units.own[key as UnitType]?.length > 0) return true
-        }
-        return false
-      },
+      isCallable: (_params, ctx, ids) =>
+        ids.some(id => !!ctx.api.own.getVariantKey(id)),
       call: ctx => {
         if (ctx.state.combatMode === 'SPACE') {
           ctx.api.own.placeUnits({ FIGHTER: 2 })

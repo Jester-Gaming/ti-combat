@@ -51,8 +51,7 @@ const reactToDestroy: Ability = {
   invoke: [
     {
       timing: 'WHEN_DESTROY',
-      isCallable: (_params, _ctx, context) =>
-        Object.keys(context.own).length > 0,
+      isCallable: (_params, _ctx, ids) => ids.length > 0,
       call: () => {
         whenDestroyFired = true
       },

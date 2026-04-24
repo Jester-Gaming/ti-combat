@@ -5,7 +5,6 @@ import type {
   SelectGroup,
   SelectItem,
 } from '../../../combat/abilities-engine/types'
-import type { UnitType } from '../../../types'
 
 type SingularityAbilityEntry = {
   key: string
@@ -109,12 +108,9 @@ export function createTechnologicalSingularity(
       {
         timing: 'AFTER_DESTROY',
         context: ['SPACE_COMBAT', 'GROUND_COMBAT'],
-        isCallable: (params, _ctx, units) => {
+        isCallable: (params, ctx, ids) => {
           if (params.opponentDestroyed) return false
-          for (const key in units.opponent) {
-            if (units.opponent[key as UnitType]?.length > 0) return true
-          }
-          return false
+          return ids.some(id => !!ctx.api.opponent.getVariantKey(id))
         },
         call: (ctx, params) => {
           ctx.api.own.updateAbilityConfig({ opponentDestroyed: true })

@@ -5,7 +5,6 @@ import {
   GALVANIZED,
   galvanizeUnit,
 } from '@/data/abilities/general/pre-galvanized'
-import type { UnitType } from '@/types'
 
 export const a3Valiance: Ability = {
   key: 'A3_VALIANCE',
@@ -26,20 +25,18 @@ export const a3Valiance: Ability = {
   invoke: [
     {
       timing: 'WHEN_DESTROY',
-      isCallable: (_params, ctx, units) => {
+      isCallable: (_params, ctx, ids) => {
         const myId = ctx.getUnit()
-        for (const key in units.own) {
-          const { type, subtypes } = parseVariantId(key as UnitType)
-          if (type !== 'MECH' || !subtypes.includes(GALVANIZED)) continue
-          if (units.own[key as UnitType]?.includes(myId)) {
-            if (!ctx.api.own.hasUnitType('INFANTRY')) return false
-            const tokens =
-              ctx.api.own.getAbilityConfig('PRE_GALVANIZED')
-                ?.reinforcementTokens ?? 0
-            return tokens > 0
-          }
-        }
-        return false
+        if (!ids.includes(myId)) return false
+        const variantKey = ctx.api.own.getVariantKey(myId)
+        if (!variantKey) return false
+        const { type, subtypes } = parseVariantId(variantKey)
+        if (type !== 'MECH' || !subtypes.includes(GALVANIZED)) return false
+        if (!ctx.api.own.hasUnitType('INFANTRY')) return false
+        const tokens =
+          ctx.api.own.getAbilityConfig('PRE_GALVANIZED')?.reinforcementTokens ??
+          0
+        return tokens > 0
       },
       call: ctx => {
         for (let i = 0; i < 3; i++) {

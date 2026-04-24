@@ -73,8 +73,7 @@ const chainRollDiceAbility: Ability = {
   invoke: [
     {
       timing: 'AFTER_DESTROY',
-      isCallable: (_params, _ctx, context) =>
-        Object.keys(context.own).length > 0,
+      isCallable: (_params, _ctx, ids) => ids.length > 0,
       call: ctx => {
         ctx.rollDice([[5, 1]], (branchCtx, hits) => {
           if (hits[0] > 0 && branchCtx.api.opponent.hasUnitType('CRUISER')) {

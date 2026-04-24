@@ -2,7 +2,7 @@ import { z } from 'zod/mini'
 
 import { type Ability, parseVariantId } from '@/combat'
 import { UNIT_LIMITS } from '@/constants/units'
-import type { UnitBaseType, UnitId, UnitType } from '@/types'
+import type { UnitBaseType } from '@/types'
 
 type Params = {
   isActive: boolean
@@ -34,23 +34,29 @@ export const sleeperCell: Ability<Params> = {
     },
     {
       timing: 'DESTROY',
-      isCallable: (params, ctx, units) => {
+      isCallable: (params, ctx, ids) => {
         if (!params.isActive) return false
         const { ships } = ctx.api.own.getAbilityConfig('SETTINGS')
         const shipsSet = new Set<UnitBaseType>(ships)
-        for (const k in units.opponent) {
-          const key = k as UnitType
-          if (units.opponent[key]?.length > 0) {
-            const { type } = parseVariantId(key)
-            if (shipsSet.has(type)) return true
-          }
+        for (const id of ids) {
+          const variantKey = ctx.api.opponent.getVariantKey(id)
+          if (!variantKey) continue
+          const { type } = parseVariantId(variantKey)
+          if (shipsSet.has(type)) return true
         }
         return false
       },
-      call: (ctx, _params, units) => {
+      call: (ctx, _params, ids) => {
         const { ships } = ctx.api.own.getAbilityConfig('SETTINGS')
         const shipsSet = new Set<UnitBaseType>(ships)
-        const destroyed = collectDestroyedShips(units.opponent, shipsSet)
+        const destroyed: Partial<Record<UnitBaseType, number>> = {}
+        for (const id of ids) {
+          const variantKey = ctx.api.opponent.getVariantKey(id)
+          if (!variantKey) continue
+          const { type } = parseVariantId(variantKey)
+          if (!shipsSet.has(type)) continue
+          destroyed[type] = (destroyed[type] ?? 0) + 1
+        }
 
         // Cap placement at unit limits
         const toPlace: Partial<Record<UnitBaseType, number>> = {}
@@ -64,19 +70,4 @@ export const sleeperCell: Ability<Params> = {
       },
     },
   ],
-}
-
-function collectDestroyedShips(
-  destroyed: Record<string, UnitId[]>,
-  ships: Set<UnitBaseType>,
-): Partial<Record<UnitBaseType, number>> {
-  const counts: Partial<Record<UnitBaseType, number>> = {}
-  for (const k in destroyed) {
-    const key = k as UnitType
-    const { type } = parseVariantId(key)
-    if (ships.has(type)) {
-      counts[type] = (counts[type] ?? 0) + destroyed[key].length
-    }
-  }
-  return counts
 }

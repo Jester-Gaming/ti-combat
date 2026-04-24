@@ -37,15 +37,15 @@ export const courageousToTheEnd: Ability<Params> = {
   invoke: [
     {
       timing: 'AFTER_DESTROY',
-      isCallable: (params, ctx, context) => {
-        let ownMatched = false
-        for (const variantKey of params.ownPriority) {
-          const ids = context.own[variantKey]
-          if (ids && ids.length > 0) {
-            ownMatched = true
-            break
-          }
+      isCallable: (params, ctx, ids) => {
+        const ownDestroyedVariants = new Set<string>()
+        for (const id of ids) {
+          const key = ctx.api.own.getVariantKey(id)
+          if (key) ownDestroyedVariants.add(key)
         }
+        const ownMatched = params.ownPriority.some(v =>
+          ownDestroyedVariants.has(v),
+        )
         if (!ownMatched) return false
 
         const targets = ctx.api.opponent.getAssignHitsTargets({
@@ -56,13 +56,17 @@ export const courageousToTheEnd: Ability<Params> = {
           return params.targetPriority.includes(topVariant)
         })
       },
-      call: (ctx, params, context) => {
+      call: (ctx, params, ids) => {
         // Anchor the dice roll on the best (lowest combat value → easiest to
         // hit) destroyed own ship among those matching ownPriority.
+        const ownDestroyedVariants = new Set<string>()
+        for (const id of ids) {
+          const key = ctx.api.own.getVariantKey(id)
+          if (key) ownDestroyedVariants.add(key)
+        }
         let combatValue: number | undefined
         for (const variantKey of params.ownPriority) {
-          const ids = context.own[variantKey]
-          if (!ids || ids.length === 0) continue
+          if (!ownDestroyedVariants.has(variantKey)) continue
           const stats = ctx.api.own.getUnitStats(variantKey)
           if (!stats?.COMBAT) continue
           const v = stats.COMBAT[0]

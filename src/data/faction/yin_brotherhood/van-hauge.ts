@@ -17,6 +17,7 @@ export const vanHauge: Ability = {
   invoke: [
     {
       timing: 'WHEN_DESTROY',
+      isCallable: (_params, ctx, ids) => ids.includes(ctx.getUnit()),
       call: ctx => {
         for (const type of SHIPS) {
           while (ctx.api.own.hasUnitType(type)) ctx.api.own.destroyUnits(type)

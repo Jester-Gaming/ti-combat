@@ -7,7 +7,7 @@ import type { CombatStateData, SideStateData } from '../combat-state/types'
 import { nextUnitIds } from '../utils/unit-id'
 import { parseVariantId } from '../utils/unit-variant'
 import { AbilitiesEngine } from './abilities-engine'
-import type { Ability, AbilityCallContext, OwnOpponentContext } from './types'
+import type { Ability, AbilityCallContext } from './types'
 
 /** Helper to build compact SideStateData from unit specs */
 function buildSide(
@@ -212,55 +212,11 @@ describe('unit ability invocation', () => {
 
     expect(invokeCalls).toHaveLength(2)
   })
-
-  it('should not invoke unit ability if unit destroyed', () => {
-    const invokeCalls: number[] = []
-    const mockAbility: Ability = {
-      key: 'TEST_UNIT_ABILITY',
-      name: 'Test',
-      category: 'FACTION',
-      params: { isEnabled: true, uses: Infinity },
-      invoke: [
-        {
-          timing: 'START_OF_COMBAT_ROUND',
-          call: ctx => {
-            invokeCalls.push(1)
-            // Destroy all units via direct mutation (packed string).
-            ctx.state.attacker.participatingUnits = '' as UnitList
-            ctx.state.attacker.nonParticipatingUnits = '' as UnitList
-          },
-        },
-      ],
-    }
-
-    const state: CombatStateData = {
-      attacker: buildSide('SARDAKK_NORR', {
-        FLAGSHIP: {
-          count: 2,
-          stats: {
-            COMBAT: [6, 2],
-            UNIT_ABILITIES: {},
-            ABILITIES: [mockAbility],
-          },
-        },
-      }),
-      defender: emptySide(),
-      combatMode: 'SPACE',
-    }
-
-    runAndDrain(CombatState.fromDataStandalone(state), 'START_OF_COMBAT_ROUND')
-
-    // Only first unit should invoke (second destroyed by first)
-    expect(invokeCalls).toHaveLength(1)
-  })
 })
 
 describe('AFTER_DESTROY triggered by destroyUnits', () => {
   it('should trigger AFTER_DESTROY when an ability destroys units', () => {
-    const afterDestroyCalls: {
-      own: Record<string, UnitId[]>
-      opponent: Record<string, UnitId[]>
-    }[] = []
+    const afterDestroyCalls: UnitId[][] = []
 
     const destroyAbility: Ability = {
       key: 'DESTROY_ABILITY',
@@ -288,12 +244,9 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
           call: (
             _ctx: AbilityCallContext,
             _params: Record<string, never>,
-            context: OwnOpponentContext<Record<string, UnitId[]>>,
+            ids: UnitId[],
           ) => {
-            afterDestroyCalls.push({
-              own: context.own,
-              opponent: context.opponent,
-            })
+            afterDestroyCalls.push(ids)
           },
         },
       ],
@@ -329,8 +282,8 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
     expect(unitsByBaseType(state.defender).FIGHTER).toBeUndefined()
     // AFTER_DESTROY should have been called (from the destroyed fighter's ability)
     expect(afterDestroyCalls).toHaveLength(1)
-    // Fighter was destroyed (from fighter's perspective: own side lost it)
-    expect(afterDestroyCalls[0].own.FIGHTER).toHaveLength(1)
+    // Exactly one destroyed unit id was reported
+    expect(afterDestroyCalls[0]).toHaveLength(1)
   })
 
   it('should NOT trigger AFTER_DESTROY when no units are destroyed', () => {
@@ -415,6 +368,7 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
       invoke: [
         {
           timing: 'AFTER_DESTROY',
+          isCallable: (_params, ctx, ids) => ids.includes(ctx.getUnit()),
           call: (ctx: AbilityCallContext) => {
             afterDestroyCalls.push('called')
             // From defender's FIGHTER perspective, own = defender side

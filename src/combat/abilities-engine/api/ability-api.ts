@@ -35,7 +35,11 @@ import type {
 import { isDiceRollContext } from '../../combat-state/types'
 import { getDiceOutcomes } from '../../combat-state/utils'
 import type { Logger } from '../../logger'
-import type { AbilitiesEngine, InvokeCollections } from '../abilities-engine'
+import type {
+  AbilitiesEngine,
+  AbilityCandidate,
+  InvokeCollections,
+} from '../abilities-engine'
 import type {
   Ability,
   AbilityBaseParams,
@@ -52,6 +56,7 @@ import type {
 export interface AbilityBranch {
   data: CombatStateData
   invokes: InvokeCollections
+  allInvokes: Record<CombatSide, AbilityCandidate[]>
   probability: number
   logger?: Logger
   /** The `pendingSteps` continuation this branch should resume with. Carried
@@ -294,49 +299,32 @@ export class SideApi {
    *  exactly once for the combined set (simultaneous destruction). */
   destroyUnits(target: UnitBaseType | UnitId | UnitId[]): void {
     const s = this._sideData
-    const destroyed: Record<string, UnitId[]> = {}
-
-    const stage = (unitId: UnitId, key: UnitType) => {
-      const bucket = destroyed[key]
-      if (bucket) bucket.push(unitId)
-      else destroyed[key] = [unitId]
-    }
+    const destroyed: UnitId[] = []
 
     if (target === undefined) {
       return
     } else if (Array.isArray(target)) {
       for (const id of target) {
-        const key = CombatSideState.findVariantKey(s, id)
-        if (!key) continue
-        stage(id, key)
+        if (!CombatSideState.findVariantKey(s, id)) continue
+        destroyed.push(id)
       }
     } else if (target.length > 1) {
       // UnitId is a single-char packed token; UnitBaseType is a
       // multi-char tag like "CRUISER". Distinguish by length.
       const found = CombatSideState.findFirstUnitId(s, target as UnitBaseType)
       if (!found) return
-      stage(found.unitId, found.key)
+      destroyed.push(found.unitId)
     } else {
       const unitId = target as UnitId
-      const key = CombatSideState.findVariantKey(s, unitId)
-      if (!key) return
-      stage(unitId, key)
+      if (!CombatSideState.findVariantKey(s, unitId)) return
+      destroyed.push(unitId)
     }
 
-    // Remove everything staged, then fire destroy abilities once.
-    const keys = Object.keys(destroyed)
-    if (keys.length === 0) return
-    const flat: UnitId[] = []
-    for (const k of keys) for (const id of destroyed[k]) flat.push(id)
-    CombatSideState.removeUnits(s, flat)
+    if (destroyed.length === 0) return
+    CombatSideState.removeUnits(s, destroyed)
 
     if (this._abilitiesParams) {
-      const context = {
-        attacker: {} as Record<string, UnitId[]>,
-        defender: {} as Record<string, UnitId[]>,
-      }
-      context[this._side] = destroyed
-      this._ctx.runDestroyAbilities(context)
+      this._ctx.runDestroyAbilities(destroyed)
     }
   }
 
@@ -356,11 +344,7 @@ export class SideApi {
     const abilitiesParams = this._abilitiesParams
     if (abilitiesParams) {
       for (const [unitType, newIds] of Object.entries(placed)) {
-        abilitiesParams.queueUnitInvokes(
-          this._side,
-          unitType as UnitType,
-          newIds,
-        )
+        abilitiesParams.addUnitInvokes(this._side, unitType as UnitType, newIds)
       }
     }
     enforceFleetPool(this)
@@ -377,7 +361,7 @@ export class SideApi {
     const abilitiesParams = this._abilitiesParams
     if (abilitiesParams) {
       for (const { key: vKey, ids } of keysWithAbilitiesChange) {
-        abilitiesParams.queueUnitInvokes(this._side, vKey, ids)
+        abilitiesParams.addUnitInvokes(this._side, vKey, ids)
       }
     }
   }
@@ -520,7 +504,11 @@ export class SideApi {
         'isEnabled' in liveEntry ? liveEntry.isEnabled : baseEntry?.isEnabled
       const newUses = 'uses' in liveEntry ? liveEntry.uses : baseEntry?.uses
       if (newIsEnabled !== oldIsEnabled || newUses !== oldUses) {
-        abilitiesParams.syncInvokesForKey(side, targetKey, state)
+        if (newIsEnabled === false) {
+          abilitiesParams.removeAbilityInvokes(side, targetKey)
+        } else {
+          abilitiesParams.addAbilityInvokes(side, targetKey, state)
+        }
       }
 
       abilitiesParams.invokeOnParamSet(
@@ -780,10 +768,7 @@ export class AbilityContext {
     )
   }
 
-  runDestroyAbilities(destroyed: {
-    attacker: Record<string, UnitId[]>
-    defender: Record<string, UnitId[]>
-  }): void {
+  runDestroyAbilities(destroyed: UnitId[]): void {
     // Push a PhaseStepGroup carrying the destroyed-units map as shared
     // context. The calling ability is inside a script-driven pass, so
     // `tryResolveOne` parks the outer pass on return (it observes the
@@ -843,6 +828,8 @@ export class AbilityContext {
     const baseData = combatState.data
     const baseInvokes = combatState._invokes
     const baseInvokesOwned = combatState._invokesOwned
+    const baseAllInvokes = combatState._allInvokes
+    const baseAllInvokesOwned = combatState._allInvokesOwned
     const baseLogger = this.logger
     // Snapshot outer pending stack so each iteration starts from the same
     // position — otherwise a callback that pushes script state (e.g. a
@@ -857,6 +844,8 @@ export class AbilityContext {
       // COW-arm invokes (same pattern as rollDiceOutcomes in CombatState)
       combatState._invokes = baseInvokes
       combatState._invokesOwned = false
+      combatState._allInvokes = baseAllInvokes
+      combatState._allInvokesOwned = false
 
       // Fresh per-iteration pending stack. Deep-copies groups so inner
       // steps-arrays aren't shared with the outer stack or other iterations.
@@ -884,6 +873,7 @@ export class AbilityContext {
         branches.push({
           data: combatState.data,
           invokes: combatState._invokes,
+          allInvokes: combatState._allInvokes,
           probability: outcome.probability,
           logger: branchLogger,
           pendingSteps: combatState.pendingSteps,
@@ -896,6 +886,7 @@ export class AbilityContext {
           branches.push({
             data: nested.data,
             invokes: nested.invokes,
+            allInvokes: nested.allInvokes,
             probability: outcome.probability * nested.probability,
             logger: nested.logger,
             pendingSteps: nested.pendingSteps ?? combatState.pendingSteps,
@@ -910,6 +901,8 @@ export class AbilityContext {
     // thrown interrupt — it clones/swaps branches for post-processing.
     combatState._invokes = baseInvokes
     combatState._invokesOwned = baseInvokesOwned
+    combatState._allInvokes = baseAllInvokes
+    combatState._allInvokesOwned = baseAllInvokesOwned
     combatState.data = baseData
     combatState.pendingSteps = basePendingSteps
     this.logger = baseLogger

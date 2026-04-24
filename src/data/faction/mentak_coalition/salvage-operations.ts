@@ -45,18 +45,16 @@ export const salvageOperations: Ability<Params> = {
   invoke: [
     {
       timing: 'DESTROY',
-      call: (ctx, params, units) => {
+      call: (ctx, params, ids) => {
         const { ships } = ctx.api.own.getAbilityConfig('SETTINGS')
         const shipsSet = new Set<UnitBaseType>(ships)
         const collected = new Set<UnitBaseType>(params._destroyedShipTypes)
-        for (const side of [units.own, units.opponent]) {
-          for (const k in side) {
-            const key = k as UnitType
-            const { type } = parseVariantId(key)
-            if (shipsSet.has(type) && side[key]?.length > 0) {
-              collected.add(type)
-            }
-          }
+        for (const id of ids) {
+          const variantKey =
+            ctx.api.own.getVariantKey(id) || ctx.api.opponent.getVariantKey(id)
+          if (!variantKey) continue
+          const { type } = parseVariantId(variantKey)
+          if (shipsSet.has(type)) collected.add(type)
         }
         ctx.api.own.updateAbilityConfig({
           _destroyedShipTypes: [...collected],

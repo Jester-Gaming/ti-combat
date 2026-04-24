@@ -26,6 +26,7 @@ export const fourthMoon: Ability = {
     },
     {
       timing: 'DESTROY',
+      isCallable: (_params, ctx, ids) => ids.includes(ctx.getUnit()),
       call: ctx => {
         ctx.api.opponent.removeUnitAbilityCannotBeUsed(
           'SUSTAIN_DAMAGE',

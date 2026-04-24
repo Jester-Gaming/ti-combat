@@ -28,6 +28,8 @@ export const quietus: Ability = {
     },
     {
       timing: 'DESTROY',
+      isCallable: (_params, ctx, ids) =>
+        ctx.unitSource !== undefined && ids.includes(ctx.unitSource),
       call: ctx => {
         for (const ability of UNIT_ABILITIES) {
           ctx.api.opponent.removeUnitAbilityLost(ability, 'QUIETUS')

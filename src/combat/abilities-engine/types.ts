@@ -102,9 +102,9 @@ declare global {
     BEFORE_UNIT_ABILITY_ROLL: void
     AFTER_UNIT_ABILITY_ROLL: void
 
-    DESTROY: SidedContext<Record<UnitType, UnitId[]>>
-    WHEN_DESTROY: SidedContext<Record<UnitType, UnitId[]>>
-    AFTER_DESTROY: SidedContext<Record<UnitType, UnitId[]>>
+    DESTROY: UnitId[]
+    WHEN_DESTROY: UnitId[]
+    AFTER_DESTROY: UnitId[]
 
     COMMIT_UNITS: void
   }
@@ -116,14 +116,6 @@ declare global {
   interface AbilityConfigMap {
     SETTINGS: SettingsParams
   }
-}
-
-// Internal map for ability calls (uses own/opponent)
-// Derived from TimingContextMap: SidedContext<T> -> OwnOpponentContext<T>
-type ToInternal<T> = T extends SidedContext<infer U> ? OwnOpponentContext<U> : T
-
-export type InternalTimingContextMap = {
-  [K in keyof TimingContextMap]: ToInternal<TimingContextMap[K]>
 }
 
 export type AbilityTiming = keyof TimingContextMap
@@ -151,6 +143,9 @@ export interface AbilityReadContext {
    *  before each `isCallable`/`call` invocation and by the UI before `uiConfig`.
    *  Lets helpers like `excludeSubtypeSource: [ctx.this.key]` stay generic. */
   readonly this: Ability
+  /** UnitId the ability is attached to, or `undefined` for config-sourced
+   *  candidates (including the allowExternal-no-unit fallback). */
+  readonly unitSource: UnitId | undefined
   /** Get the UnitId this ability is attached to. Throws if called from a non-unit ability. */
   getUnit(): UnitId
   /** Get enabled config abilities matching the given timing(s) for the current side. */
@@ -181,6 +176,9 @@ export interface AbilityCallContext {
   logger?: Logger
   /** Run abilities for the given timing inline during this call */
   trigger<K extends AbilityTiming>(name: K, context: TimingContextMap[K]): void
+  /** UnitId the ability is attached to, or `undefined` for config-sourced
+   *  candidates (including the allowExternal-no-unit fallback). */
+  readonly unitSource: UnitId | undefined
   /** Get the UnitId this ability is attached to. Throws if called from a non-unit ability. */
   getUnit(): UnitId
   /** Get enabled config abilities matching the given timing(s) for the current side. */
@@ -235,7 +233,6 @@ export interface AbilityCallContext {
 }
 
 // Auto-generate invoke type for each timing
-// Uses InternalTimingContextMap for ability perspective (own/opponent)
 type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
   timing: T
   /** Restrict this invoke to specific meta-phase(s). When set, the invoke
@@ -249,7 +246,7 @@ type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
    *  (e.g. CLEANUP_ROUND after START_OF_COMBAT_ROUND setup) so the pair counts
    *  as a single use. Rely on `isCallable` to gate firing. Default: false. */
   system?: boolean
-} & (InternalTimingContextMap[T] extends void
+} & (TimingContextMap[T] extends void
   ? {
       // Void timings (PREPARE, START_OF_COMBAT, BEFORE_DICE_ROLL, etc.)
       isCallable?: (params: TParams, ctx: AbilityReadContext) => boolean
@@ -260,12 +257,12 @@ type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
       isCallable?: (
         params: TParams,
         ctx: AbilityReadContext,
-        context: InternalTimingContextMap[T],
+        context: TimingContextMap[T],
       ) => boolean
       call: (
         ctx: AbilityCallContext,
         params: TParams,
-        context: InternalTimingContextMap[T],
+        context: TimingContextMap[T],
       ) => void
     })
 

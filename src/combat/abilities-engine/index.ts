@@ -1,5 +1,6 @@
 export {
   AbilitiesEngine,
+  type AbilityCandidate,
   type AbilityPassFrame,
   cloneInvokes,
   cloneTracker,
