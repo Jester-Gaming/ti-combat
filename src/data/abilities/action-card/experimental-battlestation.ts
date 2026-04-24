@@ -22,7 +22,7 @@ export const experimentalBattlestation: Ability = {
       call: ctx => {
         ctx.api.own.addDiceGroup(
           'EXPERIMENTAL_BATTLESTATION',
-          0 as UnitId,
+          '' as UnitId,
           [5, 3],
         )
       },

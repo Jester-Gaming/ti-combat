@@ -1,7 +1,7 @@
 import type {
   FactionKey,
   UnitBaseType,
-  UnitId,
+  UnitList,
   UnitState,
   UnitStats,
   UnitType,
@@ -46,9 +46,9 @@ function buildSideState(
   abilities: SideAbilitiesConfig,
 ): SideStateData {
   const upgradedSet = new Set(config.upgrades ?? [])
-  const participatingUnits: UnitId[] = []
-  const unitType: Record<UnitId, UnitType> = {}
-  const unitState: Record<number, UnitState> = {}
+  let participatingUnits = ''
+  const unitType: Record<string, UnitType> = {}
+  const unitState: Record<string, UnitState> = {}
   const unitStats: Record<string, UnitStats> = {}
 
   const factionConfig = getFactionUnitConfig(config.faction)
@@ -75,7 +75,7 @@ function buildSideState(
 
     const ids = nextUnitIds(count)
     for (const id of ids) {
-      participatingUnits.push(id)
+      participatingUnits += id
       unitType[id] = unitType_ as import('@/types').UnitType
     }
     unitStats[unitType_] = stats
@@ -83,8 +83,8 @@ function buildSideState(
 
   return {
     faction: config.faction,
-    participatingUnits,
-    nonParticipatingUnits: [],
+    participatingUnits: participatingUnits as UnitList,
+    nonParticipatingUnits: '' as UnitList,
     unitType,
     unitState,
     unitStats: {

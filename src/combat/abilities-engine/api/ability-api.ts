@@ -302,20 +302,25 @@ export class SideApi {
       else destroyed[key] = [unitId]
     }
 
-    if (Array.isArray(target)) {
+    if (target === undefined) {
+      return
+    } else if (Array.isArray(target)) {
       for (const id of target) {
         const key = CombatSideState.findVariantKey(s, id)
         if (!key) continue
         stage(id, key)
       }
-    } else if (typeof target === 'string') {
-      const found = CombatSideState.findFirstUnitId(s, target)
+    } else if (target.length > 1) {
+      // UnitId is a single-char packed token; UnitBaseType is a
+      // multi-char tag like "CRUISER". Distinguish by length.
+      const found = CombatSideState.findFirstUnitId(s, target as UnitBaseType)
       if (!found) return
       stage(found.unitId, found.key)
     } else {
-      const key = CombatSideState.findVariantKey(s, target)
+      const unitId = target as UnitId
+      const key = CombatSideState.findVariantKey(s, unitId)
       if (!key) return
-      stage(target, key)
+      stage(unitId, key)
     }
 
     // Remove everything staged, then fire destroy abilities once.
@@ -565,7 +570,8 @@ export class SideApi {
   addDiceCount(count: number, target?: 'BEST' | 'WORST' | UnitId): void {
     const pool = this._ctx.getDicePool(this._side)
     if (!pool) return
-    if (typeof target === 'number') {
+    // UnitId is a single-char packed token; 'BEST'/'WORST' are multi-char.
+    if (typeof target === 'string' && target !== 'BEST' && target !== 'WORST') {
       for (const dice of Object.values(pool)) {
         if (!dice) continue
         for (let i = 0; i < dice.length; i++) {
@@ -953,7 +959,7 @@ export class AbilityContext {
   }
 }
 
-const SENTINEL_UNIT_ID = -1 as UnitId
+const SENTINEL_UNIT_ID = '' as UnitId
 
 function diceGroupsToPool(groups: DiceGroup[] | undefined): DicePool {
   if (!groups || groups.length === 0) return {}

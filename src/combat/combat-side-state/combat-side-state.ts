@@ -5,6 +5,7 @@ import type {
   UnitAbility,
   UnitBaseType,
   UnitId,
+  UnitList,
   UnitState,
   UnitStats,
   UnitType,
@@ -76,10 +77,13 @@ function matchesValidTargets(
   return validTargets.includes(baseType)
 }
 
-/** Pick destruction targets from `pool` for a single HitPool. */
+/** Pick destruction targets from `pool` for a single HitPool. `pool`
+ *  may be either a packed UnitId string (as stored on SideStateData) or
+ *  an already-materialized array of UnitIds (the working copy used by
+ *  the slow path in `assignHits`). */
 function pickTargetsForPool(
   s: SideStateData,
-  pool: readonly UnitId[],
+  pool: UnitList | readonly UnitId[],
   hitPool: HitPool,
   priorityList?: readonly UnitType[],
 ): UnitId[] {
@@ -88,7 +92,11 @@ function pickTargetsForPool(
 
   if (!hasValidTargets(hitPool)) {
     const take = Math.min(total, pool.length)
-    return pool.slice(pool.length - take)
+    const result: UnitId[] = []
+    for (let i = pool.length - take; i < pool.length; i++) {
+      result.push(pool[i] as UnitId)
+    }
+    return result
   }
 
   const targets = hitPool.validTargets!
@@ -103,7 +111,7 @@ function pickTargetsForPool(
         if (!targetSet.has(baseType)) continue
       }
       for (let i = pool.length - 1; i >= 0 && result.length < total; i--) {
-        const id = pool[i]
+        const id = pool[i] as UnitId
         if (s.unitType[id] !== variantKey) continue
         if (result.includes(id)) continue
         result.push(id)
@@ -113,7 +121,7 @@ function pickTargetsForPool(
   }
 
   for (let i = pool.length - 1; i >= 0 && result.length < total; i--) {
-    const id = pool[i]
+    const id = pool[i] as UnitId
     if (result.includes(id)) continue
     if (matchesValidTargets(s, id, targets)) result.push(id)
   }
@@ -168,25 +176,28 @@ function _removeOne(
 ): void {
   let unitId: UnitId
 
-  if (typeof unitTypeOrUnit === 'string') {
-    const found = CombatSideState.findFirstUnitId(s, unitTypeOrUnit)
+  // UnitId is a single-char packed token; UnitBaseType is a multi-char
+  // tag like "CRUISER". Distinguish by length rather than `typeof`.
+  if (unitTypeOrUnit.length > 1) {
+    const found = CombatSideState.findFirstUnitId(
+      s,
+      unitTypeOrUnit as UnitBaseType,
+    )
     if (!found) return
     unitId = found.unitId
   } else {
-    unitId = unitTypeOrUnit
+    unitId = unitTypeOrUnit as UnitId
   }
 
   const pIdx = s.participatingUnits.indexOf(unitId)
   if (pIdx !== -1) {
-    const copy = s.participatingUnits.slice()
-    copy.splice(pIdx, 1)
-    s.participatingUnits = copy
+    s.participatingUnits = (s.participatingUnits.slice(0, pIdx) +
+      s.participatingUnits.slice(pIdx + 1)) as UnitList
   } else {
     const nIdx = s.nonParticipatingUnits.indexOf(unitId)
     if (nIdx === -1) return
-    const copy = s.nonParticipatingUnits.slice()
-    copy.splice(nIdx, 1)
-    s.nonParticipatingUnits = copy
+    s.nonParticipatingUnits = (s.nonParticipatingUnits.slice(0, nIdx) +
+      s.nonParticipatingUnits.slice(nIdx + 1)) as UnitList
   }
 
   delete s.unitState[unitId]
@@ -289,13 +300,7 @@ export class CombatSideState {
   /** Hash this side's units (participating, non-participating, and
    *  per-unit mutable state) for state deduplication. */
   static getUnitsHash(s: SideStateData): string {
-    return (
-      s.participatingUnits.join(',') +
-      '!' +
-      s.nonParticipatingUnits.join(',') +
-      '|' +
-      JSON.stringify(s.unitState)
-    )
+    return `${s.participatingUnits}!${s.nonParticipatingUnits}|${JSON.stringify(s.unitState)}`
   }
 
   /** Hash this side's `liveAbilities`. The initial `abilities` config is
@@ -377,11 +382,13 @@ export class CombatSideState {
     const { participatingUnits, nonParticipatingUnits, unitType } = s
     for (const id of participatingUnits) {
       const key = unitType[id]
-      if (parseVariantId(key).type === baseType) return { unitId: id, key }
+      if (parseVariantId(key).type === baseType)
+        return { unitId: id as UnitId, key }
     }
     for (const id of nonParticipatingUnits) {
       const key = unitType[id]
-      if (parseVariantId(key).type === baseType) return { unitId: id, key }
+      if (parseVariantId(key).type === baseType)
+        return { unitId: id as UnitId, key }
     }
     return undefined
   }
@@ -413,14 +420,16 @@ export class CombatSideState {
       if (participatingTypes && !participatingTypes.has(type)) continue
       for (const id of participatingUnits) {
         if (unitType[id] !== variantId) continue
-        if (!collect) return id
-        result.push(id)
+        const unitId = id as UnitId
+        if (!collect) return unitId
+        result.push(unitId)
         if (result.length >= amount) return result
       }
       for (const id of nonParticipatingUnits) {
         if (unitType[id] !== variantId) continue
-        if (!collect) return id
-        result.push(id)
+        const unitId = id as UnitId
+        if (!collect) return unitId
+        result.push(unitId)
         if (result.length >= amount) return result
       }
     }
@@ -474,18 +483,20 @@ export class CombatSideState {
     if (includeVariants) {
       const baseType = parseVariantId(unitType).type
       for (const id of participatingUnits) {
-        if (parseVariantId(typeMap[id]).type === baseType) result.push(id)
+        if (parseVariantId(typeMap[id]).type === baseType)
+          result.push(id as UnitId)
       }
       for (const id of nonParticipatingUnits) {
-        if (parseVariantId(typeMap[id]).type === baseType) result.push(id)
+        if (parseVariantId(typeMap[id]).type === baseType)
+          result.push(id as UnitId)
       }
       return result
     }
     for (const id of participatingUnits) {
-      if (typeMap[id] === unitType) result.push(id)
+      if (typeMap[id] === unitType) result.push(id as UnitId)
     }
     for (const id of nonParticipatingUnits) {
-      if (typeMap[id] === unitType) result.push(id)
+      if (typeMap[id] === unitType) result.push(id as UnitId)
     }
     return result
   }
@@ -561,7 +572,8 @@ export class CombatSideState {
     s: SideStateData,
     unitTypeOrId: string | UnitId,
   ): UnitStats | undefined {
-    if (typeof unitTypeOrId === 'string') {
+    // UnitId is a single-char packed token; any longer string is a variant key.
+    if (unitTypeOrId.length > 1) {
       const stats = resolveUnitStats(s.unitStats, unitTypeOrId as UnitType)
       if (stats) return stats
       const { type } = parseVariantId(unitTypeOrId as UnitType)
@@ -570,7 +582,7 @@ export class CombatSideState {
       }
       return undefined
     }
-    const key = CombatSideState.findVariantKey(s, unitTypeOrId)
+    const key = CombatSideState.findVariantKey(s, unitTypeOrId as UnitId)
     if (!key) return undefined
     return resolveUnitStats(s.unitStats, key)
   }
@@ -894,7 +906,7 @@ export class CombatSideState {
     >()
     const restrictionChecked = new Map<UnitBaseType, boolean>()
 
-    const walk = (pool: UnitId[], skipParticipatingCheck: boolean) => {
+    const walk = (pool: UnitList, skipParticipatingCheck: boolean) => {
       for (const id of pool) {
         const key = s.unitType[id]
         const { type } = parseVariantId(key)
@@ -943,7 +955,7 @@ export class CombatSideState {
 
         const [hitValue, dicePerUnit, bonusDice] = die
         const arr = result[type] ?? (result[type] = [])
-        arr.push([hitValue, dicePerUnit, bonusDice, id])
+        arr.push([hitValue, dicePerUnit, bonusDice, id as UnitId])
       }
     }
 
@@ -984,13 +996,13 @@ export class CombatSideState {
     if (allFast) {
       const take = Math.min(total, oldUnits.length)
       const kept = oldUnits.length - take
-      s.participatingUnits = oldUnits.slice(0, kept)
+      s.participatingUnits = oldUnits.slice(0, kept) as UnitList
       if (trackDestroyed) {
         for (let i = kept; i < oldUnits.length; i++)
-          destroyedIds.push(oldUnits[i])
+          destroyedIds.push(oldUnits[i] as UnitId)
       }
     } else {
-      const working = oldUnits.slice()
+      const working = [...oldUnits] as UnitId[]
       for (const pool of s.hitPools) {
         const picks = pickTargetsForPool(s, working, pool, priorityList)
         for (const id of picks) {
@@ -1000,7 +1012,7 @@ export class CombatSideState {
           if (trackDestroyed) destroyedIds.push(id)
         }
       }
-      s.participatingUnits = working
+      s.participatingUnits = working.join('') as UnitList
     }
 
     s.hitPools = []
@@ -1099,11 +1111,11 @@ export class CombatSideState {
     const { type, subtypes: currentSubtypes } = parseVariantId(variantId)
 
     const pickFrom = (
-      pool: UnitId[],
+      pool: UnitList,
       matchExact: boolean,
     ): UnitId | undefined => {
       for (let i = pool.length - 1; i >= 0; i--) {
-        const id = pool[i]
+        const id = pool[i] as UnitId
         const key = s.unitType[id]
         if (matchExact ? key === variantId : parseVariantId(key).type === type)
           return id
@@ -1148,9 +1160,9 @@ export class CombatSideState {
   ): void {
     const { type, subtypes: requiredSubtypes } = parseVariantId(variantId)
 
-    const findIn = (pool: UnitId[]): UnitId | undefined => {
+    const findIn = (pool: UnitList): UnitId | undefined => {
       for (let i = pool.length - 1; i >= 0; i--) {
-        const id = pool[i]
+        const id = pool[i] as UnitId
         const key = s.unitType[id]
         const { type: kType, subtypes: kSubs } = parseVariantId(key)
         if (kType !== type) continue
@@ -1207,9 +1219,10 @@ export class CombatSideState {
     if (!hasAbilitiesUpdate) return { keysWithAbilitiesChange: [] }
 
     const buckets = new Map<UnitType, UnitId[]>()
-    const bucketize = (pool: UnitId[]) => {
+    const bucketize = (pool: UnitList) => {
       for (const id of pool) {
-        const vKey = s.unitType[id]
+        const unitId = id as UnitId
+        const vKey = s.unitType[unitId]
         if (isVariantKey) {
           if (vKey !== key) continue
         } else {
@@ -1217,7 +1230,7 @@ export class CombatSideState {
         }
         let bucket = buckets.get(vKey)
         if (!bucket) buckets.set(vKey, (bucket = []))
-        bucket.push(id)
+        bucket.push(unitId)
       }
     }
     bucketize(s.participatingUnits)
@@ -1268,9 +1281,9 @@ export class CombatSideState {
 
       const newIds = nextUnitIds(allowed)
       if (participatingTypes.has(unitType_)) {
-        nextPart = [...nextPart, ...newIds]
+        nextPart = (nextPart + newIds.join('')) as UnitList
       } else {
-        nextNon = [...nextNon, ...newIds]
+        nextNon = (nextNon + newIds.join('')) as UnitList
       }
       const typeMapAdditions: Record<UnitId, UnitType> = {}
       for (const id of newIds) typeMapAdditions[id] = unitType_
@@ -1361,7 +1374,12 @@ export class CombatSideState {
     if (target === undefined) {
       list.push(base)
     } else if (typeof target === 'string') {
-      list.push({ ...base, unitType: target })
+      // UnitId is a single-char packed token; any longer string is a variant key.
+      if (target.length === 1) {
+        list.push({ ...base, unitId: target as UnitId })
+      } else {
+        list.push({ ...base, unitType: target })
+      }
     } else if (
       typeof target === 'object' &&
       target !== null &&

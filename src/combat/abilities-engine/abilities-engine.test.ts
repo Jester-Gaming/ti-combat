@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { UnitBaseType, UnitId, UnitStats } from '@/types'
+import type { UnitBaseType, UnitId, UnitList, UnitStats } from '@/types'
 
 import { CombatState } from '../combat-state/combat-state'
 import type { CombatStateData, SideStateData } from '../combat-state/types'
@@ -14,22 +14,22 @@ function buildSide(
   faction: SideStateData['faction'],
   unitSpecs: Record<string, { count: number; stats: UnitStats }>,
 ): SideStateData {
-  const participatingUnits: UnitId[] = []
+  let participatingUnits = ''
   const unitType: SideStateData['unitType'] = {}
   const unitStats = {} as SideStateData['unitStats']
   for (const [key, spec] of Object.entries(unitSpecs)) {
     const k = key as import('@/types').UnitType
     const ids = nextUnitIds(spec.count)
     for (const id of ids) {
-      participatingUnits.push(id)
+      participatingUnits += id
       unitType[id] = k
     }
     unitStats[k] = spec.stats
   }
   return {
     faction,
-    participatingUnits,
-    nonParticipatingUnits: [],
+    participatingUnits: participatingUnits as UnitList,
+    nonParticipatingUnits: '' as UnitList,
     unitType,
     unitState: {},
     unitStats,
@@ -43,8 +43,8 @@ const emptySide = (
   faction: SideStateData['faction'] = 'FEDERATION_OF_SOL',
 ): SideStateData => ({
   faction,
-  participatingUnits: [],
-  nonParticipatingUnits: [],
+  participatingUnits: '' as UnitList,
+  nonParticipatingUnits: '' as UnitList,
   unitType: {},
   unitState: {},
   unitStats: {} as SideStateData['unitStats'],
@@ -57,13 +57,13 @@ function unitsByBaseType(
   sideData: SideStateData,
 ): Partial<Record<UnitBaseType, UnitId[]>> {
   const result: Partial<Record<UnitBaseType, UnitId[]>> = {}
-  const collect = (pool: UnitId[]) => {
+  const collect = (pool: UnitList) => {
     for (const id of pool) {
       const key = sideData.unitType[id]
       if (!key) continue
       const { type } = parseVariantId(key)
       const arr = result[type] ?? (result[type] = [])
-      arr.push(id)
+      arr.push(id as UnitId)
     }
   }
   collect(sideData.participatingUnits)
@@ -225,9 +225,9 @@ describe('unit ability invocation', () => {
           timing: 'START_OF_COMBAT_ROUND',
           call: ctx => {
             invokeCalls.push(1)
-            // Destroy all units via direct mutation (flat array shape).
-            ctx.state.attacker.participatingUnits = []
-            ctx.state.attacker.nonParticipatingUnits = []
+            // Destroy all units via direct mutation (packed string).
+            ctx.state.attacker.participatingUnits = '' as UnitList
+            ctx.state.attacker.nonParticipatingUnits = '' as UnitList
           },
         },
       ],

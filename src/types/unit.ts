@@ -51,5 +51,16 @@ export type Unit = UnitStats &
     subtypes?: string[]
   }
 
-/** Branded unique identifier for a unit instance */
-export type UnitId = number & { readonly __brand: 'UnitId' }
+/** Branded unique identifier for a unit instance. A UnitId is a single
+ *  UTF-16 code unit (char) above the ASCII range, so a collection of
+ *  UnitIds can be stored as a plain string and used directly as a
+ *  state-identity hash without per-call conversion. */
+export type UnitId = string & { readonly __brand: 'UnitId' }
+
+/** A packed list of UnitIds, stored as a string with one UTF-16 char
+ *  per UnitId. Same runtime shape as `string`, but brand-distinct so a
+ *  general string can't be passed where a unit-list is expected. Use
+ *  `as UnitList` at construction sites (`arr.join('')`, slicing,
+ *  concatenation) and iterate with `for (const c of list)` (each char
+ *  is a UnitId — cast `as UnitId` when needed). */
+export type UnitList = string & { readonly __brand: 'UnitList' }

@@ -21,7 +21,13 @@ import {
   type CombatStateConfig,
   type SideConfig,
 } from '@/hooks/combat-setup/build-combat-state'
-import type { CombatSide, UnitBaseType, UnitId, UnitState } from '@/types'
+import type {
+  CombatSide,
+  UnitBaseType,
+  UnitId,
+  UnitList,
+  UnitState,
+} from '@/types'
 
 import { shuffleInPlace } from './shuffle'
 
@@ -112,7 +118,7 @@ function buildSideView(data: SideStateData): SideView {
   void unitStats
   const result: Partial<Record<UnitBaseType, TestUnit[]>> = {}
 
-  const collect = (pool: UnitId[]) => {
+  const collect = (pool: UnitList) => {
     for (const id of pool) {
       const key = unitType[id]
       if (!key) continue
@@ -134,13 +140,13 @@ export function unitsByBaseType(
   sideData: SideStateData,
 ): Partial<Record<UnitBaseType, UnitId[]>> {
   const result: Partial<Record<UnitBaseType, UnitId[]>> = {}
-  const collect = (pool: UnitId[]) => {
+  const collect = (pool: UnitList) => {
     for (const id of pool) {
       const key = sideData.unitType[id]
       if (!key) continue
       const { type } = parseVariantId(key)
       const arr = result[type] ?? (result[type] = [])
-      arr.push(id)
+      arr.push(id as UnitId)
     }
   }
   collect(sideData.participatingUnits)

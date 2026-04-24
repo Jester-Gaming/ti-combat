@@ -1,4 +1,4 @@
-import type { UnitId } from '@/types'
+import type { UnitList } from '@/types'
 
 import type { SideStateData } from '../../combat-state/types'
 import type { SurvivorSide } from '../../types'
@@ -13,7 +13,7 @@ import { parseVariantId } from '../../utils/unit-variant'
 export function extractSurvivors(sideState: SideStateData): SurvivorSide {
   const survivors: SurvivorSide = {}
 
-  const collect = (pool: UnitId[]) => {
+  const collect = (pool: UnitList) => {
     for (const id of pool) {
       const key = sideState.unitType[id]
       if (!key) continue

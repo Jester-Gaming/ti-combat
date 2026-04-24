@@ -99,8 +99,13 @@ describe.forEachSide('CAVALRY + EXOTRIREME', () => {
     // so we can confirm it survives once combat wraps and the subtype is stripped.
     t.advanceToTiming('ANNOUNCE_RETREAT_STEP')
     const atk = t.state.attacker
-    const findCavalry = (pool: readonly UnitId[]) =>
-      pool.find(id => atk.unitType[id] === ('DREADNOUGHT:Cavalry' as UnitType))
+    const findCavalry = (pool: string): UnitId | undefined => {
+      for (const id of pool) {
+        if (atk.unitType[id] === ('DREADNOUGHT:Cavalry' as UnitType))
+          return id as UnitId
+      }
+      return undefined
+    }
     const cavalryId =
       findCavalry(atk.participatingUnits) ??
       findCavalry(atk.nonParticipatingUnits)!

@@ -17,7 +17,7 @@ export const custodiaVigilia: Ability = {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: ['SPACE_CANNON_OFFENSE', 'SPACE_CANNON_DEFENSE'],
       call: ctx => {
-        ctx.api.own.addDiceGroup('CUSTODIA_VIGILIA', 0 as UnitId, [5, 1])
+        ctx.api.own.addDiceGroup('CUSTODIA_VIGILIA', '' as UnitId, [5, 1])
       },
     },
   ],

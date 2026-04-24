@@ -1,4 +1,4 @@
-import type { CombatSide, UnitId, UnitState, UnitType } from '@/types'
+import type { CombatSide, UnitId, UnitList, UnitState, UnitType } from '@/types'
 
 import type {
   Ability,
@@ -28,8 +28,8 @@ declare global {
 // ---------------------------------------------------------------------------
 
 export interface SavedRetreatData {
-  savedUnits: Record<string, number[]>
-  savedUnitState: Record<number, UnitState>
+  savedUnits: Record<string, UnitId[]>
+  savedUnitState: Record<string, UnitState>
 }
 
 /** Remove units from combat and save them into RETREAT's config for
@@ -50,13 +50,10 @@ export function retreatUnits(ctx: AbilityCallContext, unitIds: UnitId[]): void {
     const variantKey = ctx.api.own.getVariantKey(unitId)
     if (!variantKey) continue
 
-    mergedUnits[variantKey] = [
-      ...(mergedUnits[variantKey] ?? []),
-      unitId as unknown as number,
-    ]
+    mergedUnits[variantKey] = [...(mergedUnits[variantKey] ?? []), unitId]
 
     const us = side.unitState[unitId]
-    if (us) mergedState[unitId as unknown as number] = { ...us }
+    if (us) mergedState[unitId] = { ...us }
   }
 
   // Trigger WHEN_RETREAT for each unit before removal
@@ -83,28 +80,25 @@ export function restoreRetreatedUnits(
   const sideState = state[side]
 
   // Collect restored ids and their variant keys from saved buckets.
-  const restoredIds: UnitId[] = []
-  const restoredTypes: Record<UnitId, UnitType> = {}
+  let restoredIds = ''
+  const restoredTypes: Record<string, UnitType> = {}
   for (const [key, ids] of Object.entries(saved.savedUnits)) {
     const typedKey = key as UnitType
-    const castIds = ids as unknown as UnitId[]
-    for (const id of castIds) {
-      restoredIds.push(id)
+    for (const id of ids) {
+      restoredIds += id
       restoredTypes[id] = typedKey
     }
   }
 
   // CoW: append restored ids back onto participating units (they were
   // participating when retreat saved them) and merge type lookups.
-  sideState.participatingUnits = [
-    ...sideState.participatingUnits,
-    ...restoredIds,
-  ]
+  sideState.participatingUnits = (sideState.participatingUnits +
+    restoredIds) as UnitList
   sideState.unitType = { ...sideState.unitType, ...restoredTypes }
 
   sideState.unitState = { ...sideState.unitState }
   for (const [id, us] of Object.entries(saved.savedUnitState)) {
-    sideState.unitState[Number(id) as UnitId] = us as UnitState
+    sideState.unitState[id] = us as UnitState
   }
 }
 

@@ -5,6 +5,7 @@ import type {
   UnitAbility,
   UnitBaseType,
   UnitId,
+  UnitList,
   UnitState,
   UnitStats,
   UnitType,
@@ -118,21 +119,25 @@ export type SideAbilitiesConfig = Record<string, Record<string, unknown>>
 /** State data for one side of combat */
 export interface SideStateData {
   faction: FactionKey
-  /** Participating UnitIds, pre-sorted by combat-mode priority.
-   *  Highest priority first, lowest last. `slice(0, -N)` keeps the N
-   *  highest-priority units (the lowest-priority ones die first under
-   *  tail-slice assign-hits). */
-  participatingUnits: UnitId[]
-  /** Non-participating UnitIds for the current combat mode (e.g. ships
-   *  during ground combat). They can still fire unit abilities
-   *  (bombardment, SCO/SCD) but are never targeted by normal combat
-   *  hits. Unsorted. */
-  nonParticipatingUnits: UnitId[]
+  /** Participating UnitIds packed into a `UnitList` (one UTF-16 char
+   *  per UnitId), pre-sorted by combat-mode priority. Highest priority
+   *  first, lowest last. `slice(0, -N)` keeps the N highest-priority
+   *  units (the lowest-priority ones die first under tail-slice
+   *  assign-hits). Stored as a packed string so it can be concatenated
+   *  directly into the state-identity hash without conversion. */
+  participatingUnits: UnitList
+  /** Non-participating UnitIds packed into a `UnitList` (one UTF-16
+   *  char per UnitId), for the current combat mode (e.g. ships during
+   *  ground combat). They can still fire unit abilities (bombardment,
+   *  SCO/SCD) but are never targeted by normal combat hits. Unsorted. */
+  nonParticipatingUnits: UnitList
   /** UnitId → variant key. Populated at setup. Stale entries for
-   *  destroyed units are NEVER cleaned — do not use as an "alive" set. */
-  unitType: Record<UnitId, UnitType>
+   *  destroyed units are NEVER cleaned — do not use as an "alive" set.
+   *  Typed as `Record<string, UnitType>` so callers iterating a packed
+   *  UnitId string can index without re-branding each char. */
+  unitType: Record<string, UnitType>
   /** UnitId → per-unit mutable state (flat map, sparse — only entries with non-default state) */
-  unitState: Record<UnitId, UnitState>
+  unitState: Record<string, UnitState>
   /** Variant key → shared stats template (may be a factory for subtypes) */
   unitStats: Record<UnitType, UnitStatsEntry>
   hitPools: HitPool[]

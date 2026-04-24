@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import type { UnitId } from '@/types'
-
 import { combatTest, unitsByBaseType } from '../utils/combat-test'
 
 describe('APOLLO', () => {
@@ -160,11 +158,11 @@ describe('APOLLO', () => {
         data: (typeof branches)[number]['state']['data']['defender'],
         key: string,
       ) => {
-        const match = (id: UnitId) => data.unitType[id] === key
-        return (
-          data.participatingUnits.filter(match).length +
-          data.nonParticipatingUnits.filter(match).length
-        )
+        const match = (id: string) => data.unitType[id] === key
+        let total = 0
+        for (const id of data.participatingUnits) if (match(id)) total++
+        for (const id of data.nonParticipatingUnits) if (match(id)) total++
+        return total
       }
       const bothDead = branches.find(
         b =>

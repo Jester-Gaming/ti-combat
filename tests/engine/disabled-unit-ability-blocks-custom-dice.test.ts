@@ -40,7 +40,7 @@ const addCustomDiceAtSC: Ability = {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: ['SPACE_CANNON_OFFENSE', 'SPACE_CANNON_DEFENSE'],
       call: ctx => {
-        ctx.api.own.addDiceGroup('TEST_CUSTOM_SC_DICE', 0 as UnitId, [5, 3])
+        ctx.api.own.addDiceGroup('TEST_CUSTOM_SC_DICE', '' as UnitId, [5, 3])
       },
     },
   ],

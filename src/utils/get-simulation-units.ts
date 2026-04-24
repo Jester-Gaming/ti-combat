@@ -3,7 +3,7 @@ import { UNIT_TYPES } from '@/constants/units'
 import type {
   FactionKey,
   UnitBaseType,
-  UnitId,
+  UnitList,
   UnitSelection,
   UnitState,
   UnitStats,
@@ -14,21 +14,21 @@ import { getFactionUnitConfig } from './get-faction-unit-config'
 
 /**
  * Converts faction + unit selections into compact unit data for combat simulation.
- * Returns UnitId arrays and stats maps keyed by variant key (base type only at creation).
+ * Returns a packed UnitList and stats maps keyed by variant key (base type only at creation).
  */
 export function getSimulationUnits(
   faction: FactionKey,
   selections: Record<UnitBaseType, UnitSelection>,
 ): {
-  units: UnitId[]
-  unitType: Record<UnitId, UnitType>
-  unitState: Record<number, UnitState>
+  units: UnitList
+  unitType: Record<string, UnitType>
+  unitState: Record<string, UnitState>
   unitStats: Record<string, UnitStats>
 } {
   const factionConfig = getFactionUnitConfig(faction)
-  const units: UnitId[] = []
-  const unitType: Record<UnitId, UnitType> = {}
-  const unitState: Record<number, UnitState> = {}
+  let units = ''
+  const unitType: Record<string, UnitType> = {}
+  const unitState: Record<string, UnitState> = {}
   const unitStats: Record<string, UnitStats> = {}
 
   for (const baseType of UNIT_TYPES) {
@@ -50,16 +50,16 @@ export function getSimulationUnits(
 
     const ids = nextUnitIds(sel.count)
     for (const id of ids) {
-      units.push(id)
+      units += id
       unitType[id] = baseType as UnitType
     }
     unitStats[baseType] = effectiveStats
   }
 
-  // Returns a flat id list — the caller places them into
+  // Returns a packed UnitList — the caller places it into
   // `participatingUnits` and lets `sortUnitsAtSetup` split out the
   // non-participating tail.
-  return { units, unitType, unitState, unitStats }
+  return { units: units as UnitList, unitType, unitState, unitStats }
 }
 
 /**

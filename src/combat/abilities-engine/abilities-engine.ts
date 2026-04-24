@@ -3,6 +3,7 @@ import type {
   FactionKey,
   UnitBaseType,
   UnitId,
+  UnitList,
   UnitType,
 } from '@/types'
 
@@ -509,7 +510,7 @@ export class AbilitiesEngine {
 
     const entries: UnitAbilityEntry[] = []
 
-    const collect = (pool: UnitId[]) => {
+    const collect = (pool: UnitList) => {
       for (const id of pool) {
         const key = sideState.unitType[id]
         if (!key) continue
@@ -521,7 +522,7 @@ export class AbilitiesEngine {
           entries.push({
             ability,
             unitType: unitType as UnitBaseType,
-            unitId: id,
+            unitId: id as UnitId,
           })
         }
       }
@@ -734,7 +735,7 @@ export class AbilitiesEngine {
         // sustain, etc.) — allow it to fire even if the unit has since been
         // removed from the field (e.g. WHEN_RETREAT after the unit is pulled).
         const isSelfUnitTrigger =
-          typeof context === 'number' && (context as UnitId) === source.unitId
+          typeof context === 'string' && (context as UnitId) === source.unitId
 
         if (isDestroyTiming) {
           if (unitAlive) continue

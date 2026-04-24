@@ -19,7 +19,7 @@ export const metaliVoidArmaments: Ability = {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: 'AFB',
       call: ctx => {
-        ctx.api.own.addDiceGroup('METALI_VOID_ARMAMENTS', 0 as UnitId, [6, 3])
+        ctx.api.own.addDiceGroup('METALI_VOID_ARMAMENTS', '' as UnitId, [6, 3])
       },
     },
   ],

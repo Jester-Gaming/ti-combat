@@ -1,4 +1,4 @@
-import type { UnitBaseType, UnitId, UnitType } from '@/types'
+import type { UnitBaseType, UnitId, UnitList, UnitType } from '@/types'
 
 import type { SideStateData } from '../combat-state/types'
 import { parseVariantId } from './unit-variant'
@@ -54,10 +54,11 @@ export function sortUnitsByPriority(
 
   const participating: UnitId[] = []
   const nonParticipating: UnitId[] = []
-  const seed = (pool: readonly UnitId[]) => {
+  const seed = (pool: UnitList) => {
     for (const id of pool) {
-      if (participates(id)) participating.push(id)
-      else nonParticipating.push(id)
+      const unitId = id as UnitId
+      if (participates(unitId)) participating.push(unitId)
+      else nonParticipating.push(unitId)
     }
   }
   seed(side.participatingUnits)
@@ -71,6 +72,6 @@ export function sortUnitsByPriority(
     return rb - ra
   })
 
-  side.participatingUnits = participating
-  side.nonParticipatingUnits = nonParticipating
+  side.participatingUnits = participating.join('') as UnitList
+  side.nonParticipatingUnits = nonParticipating.join('') as UnitList
 }
