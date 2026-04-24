@@ -1015,15 +1015,15 @@ export function clonePendingSteps(steps: PendingStep[]): PendingStep[] {
 }
 
 function cloneStep(step: PhaseStep): PhaseStep {
-  if (step.kind !== 'timing') return step
-  const cloned = { ...step }
-  if (cloned.frame) {
-    cloned.frame = {
-      ...cloned.frame,
-      tracker: cloneTracker(cloned.frame.tracker),
-    }
+  if (step.kind !== 'timing' || !step.frame) return step
+
+  return {
+    ...step,
+    frame: {
+      ...step.frame,
+      tracker: cloneTracker(step.frame.tracker),
+    },
   }
-  return cloned
 }
 
 /** Compute RunAbilitiesOptions for a unit-ability phase's BEFORE/AFTER
