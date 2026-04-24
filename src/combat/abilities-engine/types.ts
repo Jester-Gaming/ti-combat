@@ -419,5 +419,17 @@ export interface Ability<Params extends Record<string, unknown> = any> {
     params: AbilityBaseParams & Params,
     settings: SettingsParams,
   ) => ParamChange[]
+  /** Pre-sort the unit-sourced invoke entries of this ability before the
+   *  engine iterates them. Called with the ability's merged params, a
+   *  read-only context, and the list of UnitIds that currently carry this
+   *  ability on the side being dispatched. Must return the same set of ids
+   *  in the desired invocation order. Use this when invocation order matters
+   *  and cannot be resolved inside `isCallable` (e.g. SUSTAIN_DAMAGE uses it
+   *  to prefer the highest-priority eligible unit). */
+  sort?: (
+    params: AbilityBaseParams & Params,
+    ctx: AbilityReadContext,
+    unitIds: UnitId[],
+  ) => UnitId[]
   invoke: AbilityInvoke<AbilityBaseParams & Params>[]
 }

@@ -1062,6 +1062,9 @@ export class AbilitiesEngine {
 
     this._combatState._invokes = collections
     this._combatState._invokesOwned = true
+
+    this.applyAllUnitSourceSorts('attacker')
+    this.applyAllUnitSourceSorts('defender')
   }
 
   hasCallableInvoke(timing: AbilityTiming, phase: MetaPhase[]): boolean {
@@ -1136,6 +1139,7 @@ export class AbilitiesEngine {
         this._combatState._invokes[side],
         draft[side].abilities,
       )
+      this.applyUnitSourceSort(side, key)
     }
   }
 
@@ -1284,5 +1288,68 @@ export class AbilitiesEngine {
       sortBucket(merged, this._combatState.data[side].abilities, timing)
     }
     return merged
+  }
+
+  /** Reorder unit-sourced entries of `abilityKey` in every phase/timing
+   *  bucket on `side` using the ability's `sort` function. No-op when the
+   *  ability doesn't define `sort`. Called at bucket construction (build
+   *  and on re-registration) so dispatch iterates entries in the
+   *  pre-sorted order. */
+  private applyUnitSourceSort(side: CombatSide, abilityKey: string): void {
+    const ability = this._abilities[side].find(a => a.key === abilityKey)
+    if (!ability?.sort) return
+
+    const sideMap = this._combatState._invokes[side]
+    const state = this._combatState.data
+    const liveOverlay = state[side].liveAbilities[abilityKey]
+    const ctx = this.context(side)
+
+    for (const bucket of sideMap.values()) {
+      for (const entries of bucket.values()) {
+        if (entries.length < 2) continue
+
+        const positions: number[] = []
+        for (let i = 0; i < entries.length; i++) {
+          const e = entries[i]
+          if (e.source.type === 'unit' && e.ability.key === abilityKey) {
+            positions.push(i)
+          }
+        }
+        if (positions.length < 2) continue
+
+        const firstEntry = entries[positions[0]]
+        const mergedParams = liveOverlay
+          ? { ...firstEntry.params, ...liveOverlay }
+          : firstEntry.params
+
+        const unitIds: UnitId[] = new Array(positions.length)
+        const entryByUnit = new Map<UnitId, TimingInvokeEntry>()
+        for (let i = 0; i < positions.length; i++) {
+          const e = entries[positions[i]]
+          const id = (e.source as { type: 'unit'; unitId: UnitId }).unitId
+          unitIds[i] = id
+          entryByUnit.set(id, e)
+        }
+
+        ctx.unitSource = undefined
+        ctx.ownerFaction = firstEntry.ownerFaction
+        ctx.ability = ability
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const sortedIds = (ability.sort as any)(mergedParams, ctx, unitIds)
+
+        for (let i = 0; i < positions.length; i++) {
+          const mapped = entryByUnit.get(sortedIds[i])
+          if (mapped) entries[positions[i]] = mapped
+        }
+      }
+    }
+  }
+
+  /** Apply `ability.sort` to every ability that declares one, for this side.
+   *  Called once after `buildInvokes` populates all buckets. */
+  private applyAllUnitSourceSorts(side: CombatSide): void {
+    for (const ability of this._abilities[side]) {
+      if (ability.sort) this.applyUnitSourceSort(side, ability.key)
+    }
   }
 }

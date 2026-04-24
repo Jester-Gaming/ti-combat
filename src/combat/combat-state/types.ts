@@ -100,6 +100,18 @@ export interface UnitAbilityRestrictions {
   lost?: Partial<Record<UnitAbility, RestrictionEntry[]>>
 }
 
+/** Resolved form of `UnitAbilityRestrictions`, derived from the raw
+ *  entries + current unit composition + live SETTINGS. Stored per layer
+ *  per ability: either `'ALL'` (blanket restriction, applies to every
+ *  unit type) or a `Set` of restricted variant keys / base types.
+ *  Lookup is O(1) — built lazily on first read after any mutation
+ *  that could affect restriction outcomes. */
+export type ResolvedRestrictionsLayer = Map<UnitAbility, Set<UnitType> | 'ALL'>
+export interface ResolvedRestrictions {
+  cannotBeUsed: ResolvedRestrictionsLayer
+  lost: ResolvedRestrictionsLayer
+}
+
 /** A stored hit-value modifier applied after BEFORE_DICE_ROLL abilities.
  *  Scoped to a dice-roll group via `DiceRollContext.hitValueModifiers`, so
  *  it's naturally discarded once the group processes. */
@@ -159,6 +171,13 @@ export interface SideStateData {
    *  with another SideStateData; mutations must clone first via
    *  `ensureHitPoolsOwned`. */
   _hitPoolsShared?: boolean
+  /** Derived O(1) lookup cache for `unitAbilityRestrictions`, rebuilt
+   *  lazily on first read after any mutation that could affect
+   *  restriction outcomes (entries added/removed, unit composition
+   *  change, SETTINGS live-param change, or cross-side restriction
+   *  change that affects source-disable cascades). Not serialized;
+   *  always derivable from the raw fields. */
+  _resolvedRestrictions?: ResolvedRestrictions
 }
 
 /** A single step in the phase-handler script. `advance()` pops one step

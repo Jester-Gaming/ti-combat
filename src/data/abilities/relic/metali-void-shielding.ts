@@ -44,7 +44,7 @@ function findVoidShieldTarget(ctx: AbilityReadContext): UnitId | undefined {
   const priority = sustainConfig?.spacePriority ?? []
 
   const validTargets = ctx.api.own.getHitPoolValidTargets()
-  const validTargetSet = validTargets.length > 0 ? new Set(validTargets) : null
+  const validTargetSet = validTargets ? new Set(validTargets) : null
 
   for (const variantId of priority) {
     const { type: unitType } = parseVariantId(variantId)

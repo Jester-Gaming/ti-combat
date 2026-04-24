@@ -21,6 +21,8 @@ import type {
   HitValueModifier,
   MetaPhase,
   PendingStep,
+  ResolvedRestrictions,
+  ResolvedRestrictionsLayer,
   RestrictionEntry,
   SideAbilitiesConfig,
   SideStateData,
@@ -189,6 +191,108 @@ function isSourceDisabled(
     }
   }
   return false
+}
+
+/** Shared empty resolved cache used when a side has no restrictions. */
+const EMPTY_RESOLVED: ResolvedRestrictions = {
+  cannotBeUsed: new Map(),
+  lost: new Map(),
+}
+
+/** Invalidate the resolved-restrictions cache on both sides. Cheap —
+ *  just drops the refs. Cache is rebuilt lazily on the next `isRestricted`
+ *  / `isAbilityBlocked` read. Must be called from any mutation that could
+ *  affect a restriction outcome: raw entry add/remove (this side or the
+ *  other, because cascades cross sides), unit composition changes (new
+ *  variant keys), and SETTINGS live-param writes (category membership). */
+function invalidateResolvedRestrictions(state: CombatStateData): void {
+  state.attacker._resolvedRestrictions = undefined
+  state.defender._resolvedRestrictions = undefined
+}
+
+/** Build the resolved-restrictions cache for one side. Runs the cascade
+ *  check (`isSourceDisabled`) once per raw entry, expands category/base
+ *  rules against the side's current variant keys, and caches a
+ *  `Set<UnitType> | 'ALL'` per (layer, ability). Subsequent checks are
+ *  Map.get + Set.has — O(1). */
+function buildResolvedForSide(
+  state: CombatStateData,
+  side: CombatSide,
+): ResolvedRestrictions {
+  const s = state[side]
+  const raw = s.unitAbilityRestrictions
+  if (!raw) return EMPTY_RESOLVED
+
+  const cannotBeUsed: ResolvedRestrictionsLayer = new Map()
+  const lost: ResolvedRestrictionsLayer = new Map()
+
+  // Unique variant keys currently on the side, needed to expand
+  // base-type and category rules into concrete variant matches.
+  const variantKeys = new Set<UnitType>()
+  for (const key of Object.values(s.unitType)) variantKeys.add(key)
+
+  const addToLayer = (
+    target: ResolvedRestrictionsLayer,
+    ability: UnitAbility,
+    entry: RestrictionEntry,
+  ) => {
+    const existing = target.get(ability)
+    if (existing === 'ALL') return
+
+    if (!entry.unitType && !entry.category) {
+      target.set(ability, 'ALL')
+      return
+    }
+
+    const set = existing ?? new Set<UnitType>()
+
+    if (entry.unitType) {
+      set.add(entry.unitType as UnitType)
+      // A bare baseType entry also restricts every variant of that type.
+      for (const key of variantKeys) {
+        if (parseVariantId(key).type === entry.unitType) set.add(key)
+      }
+    } else if (entry.category) {
+      for (const key of variantKeys) {
+        const baseType = parseVariantId(key).type
+        if (isCategoryMember(s, entry.category, baseType)) {
+          set.add(key)
+          set.add(baseType as UnitType)
+        }
+      }
+    }
+
+    target.set(ability, set)
+  }
+
+  for (const layer of ['lost', 'cannotBeUsed'] as const) {
+    const layerData = raw[layer]
+    if (!layerData) continue
+    const target = layer === 'lost' ? lost : cannotBeUsed
+    for (const ability in layerData) {
+      const entries = layerData[ability as UnitAbility]
+      if (!entries) continue
+      for (const entry of entries) {
+        if (isSourceDisabled(state, entry.reason, new Set())) continue
+        addToLayer(target, ability as UnitAbility, entry)
+      }
+    }
+  }
+
+  return { cannotBeUsed, lost }
+}
+
+/** Lazy accessor — returns the per-side resolved cache, building it on
+ *  first read after invalidation. */
+function getResolvedRestrictions(
+  state: CombatStateData,
+  side: CombatSide,
+): ResolvedRestrictions {
+  const cached = state[side]._resolvedRestrictions
+  if (cached) return cached
+  const built = buildResolvedForSide(state, side)
+  state[side]._resolvedRestrictions = built
+  return built
 }
 
 function _removeOne(
@@ -527,7 +631,6 @@ export class CombatSideState {
 
   /** Get UnitState for a UnitId. */
   static getUnitState(s: SideStateData, unitId: UnitId): UnitState | undefined {
-    if (!CombatSideState.hasUnit(s, unitId)) return undefined
     return s.unitState[unitId] ?? {}
   }
 
@@ -724,11 +827,11 @@ export class CombatSideState {
   }
 
   /** Get hit pool valid targets (falls back to settings valid targets) */
-  static getHitPoolValidTargets(s: SideStateData, meta: MetaPhase): UnitType[] {
+  static getHitPoolValidTargets(s: SideStateData): UnitType[] | undefined {
     const pool = s.hitPools[0]
     if (pool && pool.validTargets && pool.validTargets.length > 0)
       return pool.validTargets
-    return CombatSideState.getSettingsValidTargets(s, meta)
+    return undefined
   }
 
   // ==========================================================================
@@ -857,7 +960,9 @@ export class CombatSideState {
   // RESTRICTIONS (queries)
   // ==========================================================================
 
-  /** Check if a unit ability is restricted (variant-aware, category-aware) */
+  /** Check if a unit ability is restricted (variant-aware, category-aware).
+   *  O(1) — reads the pre-resolved cache (lazy-built on first call after
+   *  each restriction/unit/SETTINGS mutation). */
   static isRestricted(
     state: CombatStateData,
     side: CombatSide,
@@ -865,43 +970,26 @@ export class CombatSideState {
     ability: UnitAbility,
     unitType: string,
   ): boolean {
-    const s = state[side]
-    const entries = s.unitAbilityRestrictions?.[layer]?.[ability]
-    if (!entries) return false
-    const { type: baseType } = parseVariantId(unitType as UnitType)
-    const visited = new Set<string>()
-    return entries.some(e => {
-      if (e.unitType && e.unitType !== unitType && e.unitType !== baseType)
-        return false
-      if (e.category && !isCategoryMember(s, e.category, baseType)) return false
-      if (isSourceDisabled(state, e.reason, visited)) return false
-      return true
-    })
+    if (!state[side].unitAbilityRestrictions) return false
+    const resolved = getResolvedRestrictions(state, side)[layer].get(ability)
+    if (!resolved) return false
+    if (resolved === 'ALL') return true
+    return resolved.has(unitType as UnitType)
   }
 
-  /** Check if a unit ability is fully blocked by a blanket restriction */
+  /** Check if a unit ability is fully blocked by a blanket restriction.
+   *  O(1) — reads the pre-resolved cache. */
   static isAbilityBlocked(
     state: CombatStateData,
     side: CombatSide,
     ability: UnitAbility,
   ): boolean {
-    const s = state[side]
-    for (const layer of ['lost', 'cannotBeUsed'] as const) {
-      const entries = s.unitAbilityRestrictions?.[layer]?.[ability]
-      if (!entries) continue
-      const visited = new Set<string>()
-      if (
-        entries.some(
-          e =>
-            !e.unitType &&
-            !e.category &&
-            !isSourceDisabled(state, e.reason, visited),
-        )
-      ) {
-        return true
-      }
-    }
-    return false
+    if (!state[side].unitAbilityRestrictions) return false
+    const resolved = getResolvedRestrictions(state, side)
+    return (
+      resolved.lost.get(ability) === 'ALL' ||
+      resolved.cannotBeUsed.get(ability) === 'ALL'
+    )
   }
 
   // ==========================================================================
@@ -1176,6 +1264,7 @@ export class CombatSideState {
     if (newKey === sourceKey) return
 
     s.unitType = { ...s.unitType, [pickedId]: newKey }
+    s._resolvedRestrictions = undefined
 
     if (!s.unitStats[newKey]) {
       let value: UnitStats | ((parentStats: UnitStats) => UnitStats) | undefined
@@ -1225,6 +1314,7 @@ export class CombatSideState {
     if (newKey === sourceKey) return
 
     s.unitType = { ...s.unitType, [pickedId]: newKey }
+    s._resolvedRestrictions = undefined
   }
 
   /**
@@ -1340,6 +1430,7 @@ export class CombatSideState {
     s.participatingUnits = nextPart
     s.nonParticipatingUnits = nextNon
     s.unitType = nextUnitType
+    s._resolvedRestrictions = undefined
 
     return placed
   }
@@ -1349,12 +1440,14 @@ export class CombatSideState {
   // ==========================================================================
 
   static addRestriction(
-    s: SideStateData,
+    state: CombatStateData,
+    side: CombatSide,
     layer: 'lost' | 'cannotBeUsed',
     ability: UnitAbility,
     reason: string,
     target?: UnitBaseType | UnitCategory,
   ): void {
+    const s = state[side]
     const isCategory = target !== undefined && target in UNIT_CATEGORIES
     s.unitAbilityRestrictions = addRestrictionEntry(
       s.unitAbilityRestrictions,
@@ -1364,15 +1457,19 @@ export class CombatSideState {
       isCategory ? undefined : (target as UnitBaseType),
       isCategory ? (target as UnitCategory) : undefined,
     )
+    // Cascade crosses sides — drop both caches.
+    invalidateResolvedRestrictions(state)
   }
 
   static removeRestriction(
-    s: SideStateData,
+    state: CombatStateData,
+    side: CombatSide,
     layer: 'lost' | 'cannotBeUsed',
     ability: UnitAbility,
     reason: string,
     target?: UnitBaseType | UnitCategory,
   ): void {
+    const s = state[side]
     const isCategory = target !== undefined && target in UNIT_CATEGORIES
     s.unitAbilityRestrictions = removeRestrictionEntry(
       s.unitAbilityRestrictions,
@@ -1382,6 +1479,7 @@ export class CombatSideState {
       isCategory ? undefined : (target as UnitBaseType),
       isCategory ? (target as UnitCategory) : undefined,
     )
+    invalidateResolvedRestrictions(state)
   }
 
   // ==========================================================================

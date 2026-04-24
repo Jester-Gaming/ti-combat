@@ -181,10 +181,7 @@ export class SideApi {
   }
 
   getHitPoolValidTargets() {
-    return CombatSideState.getHitPoolValidTargets(
-      this._sideData,
-      this._ctx.meta,
-    )
+    return CombatSideState.getHitPoolValidTargets(this._sideData)
   }
 
   getActiveBaseTypes() {
@@ -268,7 +265,7 @@ export class SideApi {
     return CombatSideState.getUnitVariant(this._sideData, unitId)
   }
 
-  isUnitAbilityLost(ability: UnitAbility, unitType: string) {
+  isUnitAbilityLost(ability: UnitAbility, unitType: UnitType) {
     return CombatSideState.isRestricted(
       this.state,
       this._side,
@@ -278,7 +275,7 @@ export class SideApi {
     )
   }
 
-  isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: string) {
+  isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: UnitType) {
     return CombatSideState.isRestricted(
       this.state,
       this._side,
@@ -388,7 +385,8 @@ export class SideApi {
     target?: UnitBaseType | UnitCategory,
   ) {
     CombatSideState.addRestriction(
-      this._sideData,
+      this.state,
+      this._side,
       'lost',
       ability,
       reason,
@@ -402,7 +400,8 @@ export class SideApi {
     target?: UnitBaseType | UnitCategory,
   ) {
     CombatSideState.removeRestriction(
-      this._sideData,
+      this.state,
+      this._side,
       'lost',
       ability,
       reason,
@@ -416,7 +415,8 @@ export class SideApi {
     target?: UnitBaseType | UnitCategory,
   ) {
     CombatSideState.addRestriction(
-      this._sideData,
+      this.state,
+      this._side,
       'cannotBeUsed',
       ability,
       reason,
@@ -430,7 +430,8 @@ export class SideApi {
     target?: UnitBaseType | UnitCategory,
   ) {
     CombatSideState.removeRestriction(
-      this._sideData,
+      this.state,
+      this._side,
       'cannotBeUsed',
       ability,
       reason,
@@ -527,6 +528,13 @@ export class SideApi {
       affectsParticipating(targetKey, Object.keys(updates))
     ) {
       abilitiesParams.combatState.resyncParticipating(side)
+    }
+
+    // SETTINGS drives `isCategoryMember`, which feeds the resolved-
+    // restrictions cache. Drop the side's cache so the next check
+    // rebuilds with fresh category membership.
+    if (targetKey === 'SETTINGS') {
+      sideData._resolvedRestrictions = undefined
     }
   }
 
