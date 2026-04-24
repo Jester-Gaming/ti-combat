@@ -6,10 +6,7 @@ import type {
   UnitType,
 } from '@/types'
 
-import {
-  getOpponentSide,
-  resolveUnitStats,
-} from '../combat-side-state/combat-side-state'
+import { getOpponentSide } from '../combat-side-state/combat-side-state'
 import { CombatState } from '../combat-state/combat-state'
 import type {
   CombatStateData,
@@ -17,6 +14,7 @@ import type {
   SideStateData,
 } from '../combat-state/types'
 import { Logger } from '../logger'
+import { resolveUnitStats } from '../utils/resolve-unit-stats'
 import { parseVariantId } from '../utils/unit-variant'
 import {
   type AbilityBranch,

@@ -19,7 +19,6 @@ import {
   type SidedDiceData,
 } from '../abilities-engine'
 import {
-  assignHitsForSide,
   CombatSideState,
   getOpponentSide,
 } from '../combat-side-state/combat-side-state'
@@ -341,14 +340,11 @@ export class CombatState {
   }
 
   getUnitsHash(): string {
-    return `${getSideHash(this.data.attacker)}|${getSideHash(this.data.defender)}`
+    return `${this.attacker.getUnitsHash()}|${this.defender.getUnitsHash()}`
   }
 
   getHash(): string {
-    const a = getSideLiveAbilitiesHash(this.data.attacker.liveAbilities)
-    const d = getSideLiveAbilitiesHash(this.data.defender.liveAbilities)
-    const combined = !a && !d ? '' : `a{${a}}d{${d}}`
-    return `${this.getUnitsHash()}|${combined}`
+    return `${this.attacker.getHash()}|${this.defender.getHash()}`
   }
 
   /**
@@ -552,11 +548,11 @@ export class CombatState {
     // combat-round metas can shortcut on missing participants.
     const isCombatRound = meta === 'SPACE_COMBAT' || meta === 'GROUND_COMBAT'
     const attackerOut = isCombatRound
-      ? !this.side('attacker').hasParticipatingUnits()
-      : !hasAnyUnits(this.data.attacker)
+      ? !this.attacker.hasParticipatingUnits()
+      : !this.attacker.hasAnyUnits()
     const defenderOut = isCombatRound
-      ? !this.side('defender').hasParticipatingUnits()
-      : !hasAnyUnits(this.data.defender)
+      ? !this.defender.hasParticipatingUnits()
+      : !this.defender.hasAnyUnits()
 
     let winner: CombatSide | 'draw' | undefined
     if (attackerOut && defenderOut) winner = 'draw'
@@ -660,15 +656,13 @@ export class CombatState {
       !!this._logger || this._params.hasDestroyAbilities(this._invokes)
 
     const meta = innerMeta(phase)
-    const attackerPriority = getPhasePriorityList(this.data, 'attacker', meta)
-    const defenderPriority = getPhasePriorityList(this.data, 'defender', meta)
-    const attackerDestroyed = assignHitsForSide(
-      this.data.attacker,
+    const attackerPriority = this.attacker.getPhasePriorityList(meta)
+    const defenderPriority = this.defender.getPhasePriorityList(meta)
+    const attackerDestroyed = this.attacker.assignHits(
       trackDestroyed,
       attackerPriority,
     )
-    const defenderDestroyed = assignHitsForSide(
-      this.data.defender,
+    const defenderDestroyed = this.defender.assignHits(
       trackDestroyed,
       defenderPriority,
     )
@@ -855,13 +849,13 @@ export class CombatState {
         this._invokesOwned = false
 
         const branchData = cloneStateForBranch(baseData)
-        addHitsToData(
-          branchData,
-          attOutcome.hits,
-          defOutcome.hits,
-          validTargets,
-          routing,
-        )
+        const branchState = CombatState.fromData(branchData, this._params)
+        branchState
+          .side(attackerHitTarget)
+          .addBaseHits(attOutcome.hits, validTargets[attackerHitTarget])
+        branchState
+          .side(defenderHitTarget)
+          .addBaseHits(defOutcome.hits, validTargets[defenderHitTarget])
 
         const branchLogger = this._logger?.fork()
         branchLogger?.child(metaPhase).child('DICE_ROLL').log({
@@ -880,7 +874,6 @@ export class CombatState {
           defender: hitsToDefender,
         })
 
-        const branchState = CombatState.fromData(branchData, this._params)
         branchState._logger = branchLogger
         branchState.pendingSteps = clonePendingSteps(basePendingSteps)
         results.push({ state: branchState, probability })
@@ -1225,96 +1218,4 @@ export function cloneStateForBranch(base: CombatStateData): CombatStateData {
       unitState: cloneUnitState(base.defender.unitState),
     },
   }
-}
-
-/** Add hits to data by mutating in-place.
- *  `routing` maps firing side → target side. Defaults: attacker → defender,
- *  defender → attacker. `validTargets` is keyed by target side. */
-function addHitsToData(
-  data: CombatStateData,
-  attackerHits: number,
-  defenderHits: number,
-  validTargets: { attacker: UnitType[]; defender: UnitType[] },
-  routing?: { attacker: CombatSide; defender: CombatSide },
-): void {
-  const defenderHitsTarget = routing?.defender ?? 'attacker'
-  const attackerHitsTarget = routing?.attacker ?? 'defender'
-  if (defenderHits > 0) {
-    data[defenderHitsTarget].hitPools.push({
-      hits: [defenderHits, 0],
-      validTargets: validTargets[defenderHitsTarget],
-    })
-  }
-  if (attackerHits > 0) {
-    data[attackerHitsTarget].hitPools.push({
-      hits: [attackerHits, 0],
-      validTargets: validTargets[attackerHitsTarget],
-    })
-  }
-}
-
-/** Check if a side has any alive units (participating or not). */
-function hasAnyUnits(side: SideStateData): boolean {
-  return (
-    side.participatingUnits.length > 0 || side.nonParticipatingUnits.length > 0
-  )
-}
-
-/** Pick the sacrifice-priority list for `side` during `meta`:
- *  - SCO → `scoUnitPriority` (may be reordered by e.g. Graviton)
- *  - GROUND metas → `groundUnitPriority`
- *  - SPACE / AFB / BOMBARDMENT / SCD → `spaceUnitPriority` (they all
- *    target ships or use the same space priority ordering). */
-function getPhasePriorityList(
-  data: CombatStateData,
-  side: CombatSide,
-  meta: MetaPhase,
-): UnitType[] | undefined {
-  const baseSide = data[side].abilities
-  const liveSide = data[side].liveAbilities
-  const baseUP = baseSide['UNIT_PRIORITY']
-  const liveUP = liveSide['UNIT_PRIORITY']
-  if (baseUP === undefined && liveUP === undefined) return undefined
-  const unitPriority =
-    liveUP === undefined
-      ? baseUP
-      : baseUP === undefined
-        ? liveUP
-        : { ...baseUP, ...liveUP }
-  if (!unitPriority) return undefined
-  const key =
-    meta === 'SPACE_CANNON_OFFENSE'
-      ? 'scoUnitPriority'
-      : data.combatMode === 'GROUND'
-        ? 'groundUnitPriority'
-        : 'spaceUnitPriority'
-  return unitPriority[key] as UnitType[] | undefined
-}
-
-const liveAbilitiesSideHashCache = new WeakMap<SideAbilitiesConfig, string>()
-
-/** Hash one side's `liveAbilities` — the initial `abilities` config is fixed
- *  for the whole combat, so it never differentiates states. Only runtime
- *  mutations (isEnabled, uses, ability-specific fields) matter for state
- *  identity. */
-function getSideLiveAbilitiesHash(side: SideAbilitiesConfig): string {
-  const cached = liveAbilitiesSideHashCache.get(side)
-  if (cached !== undefined) return cached
-  const keys = Object.keys(side).sort()
-  const result =
-    keys.length === 0
-      ? ''
-      : keys.map(k => `${k}:${JSON.stringify(side[k])}`).join(',')
-  liveAbilitiesSideHashCache.set(side, result)
-  return result
-}
-
-function getSideHash(side: SideStateData): string {
-  return (
-    side.participatingUnits.join(',') +
-    '!' +
-    side.nonParticipatingUnits.join(',') +
-    '|' +
-    JSON.stringify(side.unitState)
-  )
 }

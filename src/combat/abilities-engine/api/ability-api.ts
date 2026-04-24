@@ -201,7 +201,7 @@ export class SideApi {
    *  returns the UnitIds that would be destroyed, in sacrifice order.
    *  Non-destructive. */
   getAssignHitsTargets(hitPool: HitPool): UnitId[] {
-    return this._sideState.getAssignHitsTargets(hitPool, this._ctx.meta)
+    return this._sideState.getAssignHitsTargets(hitPool)
   }
 
   getUnitStats(unitTypeOrId: string | UnitId) {

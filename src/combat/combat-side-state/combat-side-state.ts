@@ -22,10 +22,12 @@ import type {
   MetaPhase,
   PendingStep,
   RestrictionEntry,
+  SideAbilitiesConfig,
   SideStateData,
   UnitAbilityRestrictions,
 } from '../combat-state/types'
 import { isDiceRollContext } from '../combat-state/types'
+import { resolveUnitStats } from '../utils/resolve-unit-stats'
 import { nextUnitIds } from '../utils/unit-id'
 import {
   getVariantDisplayName,
@@ -39,39 +41,6 @@ const CATEGORY_TO_SETTINGS_KEY: Record<UnitCategory, string> = {
   NON_FIGHTER_SHIPS: 'nonFighterShips',
   GROUND_FORCES: 'groundForces',
   STRUCTURES: 'structures',
-}
-
-/**
- * Resolve a unitStats entry to concrete UnitStats.
- * If the entry is a factory function, applies it to the nearest parent with
- * concrete stats (tries each one-subtype-removed variant, then base type).
- */
-export function resolveUnitStats(
-  unitStats: SideStateData['unitStats'],
-  key: UnitType,
-): UnitStats | undefined {
-  const entry = unitStats[key]
-  if (!entry) return undefined
-  if (typeof entry === 'function') {
-    const { type, subtypes } = parseVariantId(key)
-    // Try each parent variant (remove one subtype at a time)
-    for (let i = 0; i < subtypes.length; i++) {
-      const parentSubs = [...subtypes.slice(0, i), ...subtypes.slice(i + 1)]
-      const parentKey =
-        parentSubs.length > 0 ? makeVariantId(type, parentSubs) : type
-      const parentStats = resolveUnitStats(unitStats, parentKey)
-      if (parentStats !== undefined) {
-        return entry(parentStats)
-      }
-    }
-    // Fallback: base type
-    const baseEntry = unitStats[type]
-    if (baseEntry !== undefined && typeof baseEntry !== 'function') {
-      return entry(baseEntry)
-    }
-    return undefined
-  }
-  return entry
 }
 
 import { getSettingsValidTargets as getSettingsValidTargetsUtil } from './utils/get-settings-valid-targets'
@@ -180,81 +149,6 @@ function pickTargetsForPool(
   return result
 }
 
-/** Returns the UnitIds that would be destroyed if the given HitPool were
- *  resolved now against this side's participating units. Non-destructive. */
-export function getAssignHitsTargets(
-  sideData: SideStateData,
-  hitPool: HitPool,
-  priorityList?: readonly UnitType[],
-): UnitId[] {
-  return pickTargetsForPool(
-    sideData,
-    sideData.participatingUnits,
-    hitPool,
-    priorityList,
-  )
-}
-
-/** Standalone hit assignment — fast tail-slice when no `validTargets`,
- *  full traversal when they are set. Mutates only `participatingUnits`.
- *  CoW-safe: replaces `sideData.participatingUnits` with a fresh array;
- *  the old reference (shared with sibling branches) is untouched. */
-export function assignHitsForSide(
-  sideData: SideStateData,
-  trackDestroyed?: boolean,
-  priorityList?: readonly UnitType[],
-): Record<string, UnitId[]> {
-  if (sideData.hitPools.length === 0) return EMPTY_DESTROYED
-
-  const allFast = sideData.hitPools.every(p => !hasValidTargets(p))
-  let total = 0
-  for (const pool of sideData.hitPools) {
-    total += pool.hits[0] + pool.hits[1]
-  }
-  if (total === 0) {
-    sideData.hitPools = []
-    return EMPTY_DESTROYED
-  }
-
-  const oldUnits = sideData.participatingUnits
-  const destroyedIds: UnitId[] = []
-
-  if (allFast) {
-    const take = Math.min(total, oldUnits.length)
-    const kept = oldUnits.length - take
-    sideData.participatingUnits = oldUnits.slice(0, kept)
-    if (trackDestroyed) {
-      for (let i = kept; i < oldUnits.length; i++)
-        destroyedIds.push(oldUnits[i])
-    }
-  } else {
-    // Resolve each pool with slow-path targeting (respects validTargets
-    // and per-phase priority). Splice picks out of a shared working copy.
-    const working = oldUnits.slice()
-    for (const pool of sideData.hitPools) {
-      const picks = pickTargetsForPool(sideData, working, pool, priorityList)
-      for (const id of picks) {
-        const idx = working.indexOf(id)
-        if (idx === -1) continue
-        working.splice(idx, 1)
-        if (trackDestroyed) destroyedIds.push(id)
-      }
-    }
-    sideData.participatingUnits = working
-  }
-
-  sideData.hitPools = []
-
-  if (!trackDestroyed) return EMPTY_DESTROYED
-
-  const destroyed: Record<string, UnitId[]> = {}
-  for (const id of destroyedIds) {
-    const key = sideData.unitType[id]
-    ;(destroyed[key] ??= []).push(id)
-  }
-  return destroyed
-}
-
 /** Build a restriction entry */
 function addRestrictionEntry(
   restrictions: UnitAbilityRestrictions | undefined,
@@ -314,6 +208,20 @@ function removeRestrictionEntry(
   }
 
   if (!result.lost && !result.cannotBeUsed) return undefined
+  return result
+}
+
+const liveAbilitiesSideHashCache = new WeakMap<SideAbilitiesConfig, string>()
+
+function getSideLiveAbilitiesHash(side: SideAbilitiesConfig): string {
+  const cached = liveAbilitiesSideHashCache.get(side)
+  if (cached !== undefined) return cached
+  const keys = Object.keys(side).sort()
+  const result =
+    keys.length === 0
+      ? ''
+      : keys.map(k => `${k}:${JSON.stringify(side[k])}`).join(',')
+  liveAbilitiesSideHashCache.set(side, result)
   return result
 }
 
@@ -885,6 +793,66 @@ export class CombatSideState {
     return this.data.participatingUnits.length > 0
   }
 
+  /** True if the side has any alive unit (participating or not). */
+  hasAnyUnits(): boolean {
+    const data = this.data
+    return (
+      data.participatingUnits.length > 0 ||
+      data.nonParticipatingUnits.length > 0
+    )
+  }
+
+  /** Hash this side's units (participating, non-participating, and
+   *  per-unit mutable state) for state deduplication. */
+  getUnitsHash(): string {
+    const data = this.data
+    return (
+      data.participatingUnits.join(',') +
+      '!' +
+      data.nonParticipatingUnits.join(',') +
+      '|' +
+      JSON.stringify(data.unitState)
+    )
+  }
+
+  /** Hash this side's `liveAbilities`. The initial `abilities` config is
+   *  fixed for the whole combat so it never differentiates states; only
+   *  runtime mutations (isEnabled, uses, ability-specific fields) matter
+   *  for state identity. */
+  getAbilitiesHash(): string {
+    return getSideLiveAbilitiesHash(this.data.liveAbilities)
+  }
+
+  getHash(): string {
+    return `${this.getUnitsHash()}+${this.getAbilitiesHash()}`
+  }
+
+  /** Pick the sacrifice-priority list for this side during `meta`:
+   *   - SCO → `scoUnitPriority` (may be reordered by e.g. Graviton)
+   *   - GROUND metas → `groundUnitPriority`
+   *   - SPACE / AFB / BOMBARDMENT / SCD → `spaceUnitPriority` (they all
+   *     target ships or use the same space priority ordering). */
+  getPhasePriorityList(meta: MetaPhase): UnitType[] | undefined {
+    const sideData = this.data
+    const baseUP = sideData.abilities['UNIT_PRIORITY']
+    const liveUP = sideData.liveAbilities['UNIT_PRIORITY']
+    if (baseUP === undefined && liveUP === undefined) return undefined
+    const unitPriority =
+      liveUP === undefined
+        ? baseUP
+        : baseUP === undefined
+          ? liveUP
+          : { ...baseUP, ...liveUP }
+    if (!unitPriority) return undefined
+    const key =
+      meta === 'SPACE_CANNON_OFFENSE'
+        ? 'scoUnitPriority'
+        : this.stateData.combatMode === 'GROUND'
+          ? 'groundUnitPriority'
+          : 'spaceUnitPriority'
+    return unitPriority[key] as UnitType[] | undefined
+  }
+
   /** Get valid targets from SETTINGS for the given meta. */
   getValidTargetsForPhase(meta: MetaPhase): UnitBaseType[] {
     const settings = this.getLiveParams('SETTINGS')
@@ -980,20 +948,75 @@ export class CombatSideState {
 
   /** Assign hits to this side. Replaces sideData.units with a new array
    *  (does NOT mutate the original — safe for shared branch data).
-   *  Returns destroyed UnitIds grouped by variant key. */
+   *  Returns destroyed UnitIds grouped by variant key.
+   *  Fast tail-slice when no `validTargets`; full traversal when set.
+   *  `priorityList` drives slow-path pick order. */
   assignHits(
-    _stateData: CombatStateData,
-    _meta: MetaPhase,
     trackDestroyed?: boolean,
+    priorityList?: readonly UnitType[],
   ): Record<string, UnitId[]> {
-    return assignHitsForSide(this.data, trackDestroyed)
+    const sideData = this.data
+    if (sideData.hitPools.length === 0) return EMPTY_DESTROYED
+
+    const allFast = sideData.hitPools.every(p => !hasValidTargets(p))
+    let total = 0
+    for (const pool of sideData.hitPools) {
+      total += pool.hits[0] + pool.hits[1]
+    }
+    if (total === 0) {
+      sideData.hitPools = []
+      return EMPTY_DESTROYED
+    }
+
+    const oldUnits = sideData.participatingUnits
+    const destroyedIds: UnitId[] = []
+
+    if (allFast) {
+      const take = Math.min(total, oldUnits.length)
+      const kept = oldUnits.length - take
+      sideData.participatingUnits = oldUnits.slice(0, kept)
+      if (trackDestroyed) {
+        for (let i = kept; i < oldUnits.length; i++)
+          destroyedIds.push(oldUnits[i])
+      }
+    } else {
+      const working = oldUnits.slice()
+      for (const pool of sideData.hitPools) {
+        const picks = pickTargetsForPool(sideData, working, pool, priorityList)
+        for (const id of picks) {
+          const idx = working.indexOf(id)
+          if (idx === -1) continue
+          working.splice(idx, 1)
+          if (trackDestroyed) destroyedIds.push(id)
+        }
+      }
+      sideData.participatingUnits = working
+    }
+
+    sideData.hitPools = []
+
+    if (!trackDestroyed) return EMPTY_DESTROYED
+
+    const destroyed: Record<string, UnitId[]> = {}
+    for (const id of destroyedIds) {
+      const key = sideData.unitType[id]
+      ;(destroyed[key] ??= []).push(id)
+    }
+    return destroyed
   }
 
   /** Simulate resolving a single HitPool against this side's current units.
    *  Returns the UnitIds that would be destroyed, in sacrifice order (tail first). */
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  getAssignHitsTargets(hitPool: HitPool, _meta: MetaPhase): UnitId[] {
-    return getAssignHitsTargets(this.data, hitPool)
+  getAssignHitsTargets(
+    hitPool: HitPool,
+    priorityList?: readonly UnitType[],
+  ): UnitId[] {
+    return pickTargetsForPool(
+      this.data,
+      this.data.participatingUnits,
+      hitPool,
+      priorityList,
+    )
   }
 
   // ==========================================================================
@@ -1069,6 +1092,12 @@ export class CombatSideState {
   addHits(hits: number, validTargets: UnitType[]): void {
     if (hits === 0) return
     this.data.hitPools.push({ hits: [0, hits], validTargets })
+  }
+
+  /** Add a hit pool from a combat dice-roll outcome (hits go into base slot). */
+  addBaseHits(hits: number, validTargets: UnitType[]): void {
+    if (hits <= 0) return
+    this.data.hitPools.push({ hits: [hits, 0], validTargets })
   }
 
   /** Move one unit to a new variant with an added subtype.
