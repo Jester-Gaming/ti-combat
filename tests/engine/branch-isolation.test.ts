@@ -79,12 +79,16 @@ describe('engine: branch isolation', () => {
       hitBranch.state = s
     }
 
-    expect(hitBranch.state.abilities.attacker.DIRECT_HIT.uses).toBe(0)
+    const directHitUses = (s: (typeof hitBranch)['state']) =>
+      (s.data.liveAbilities.attacker['DIRECT_HIT']?.uses ??
+        s.data.abilities.attacker['DIRECT_HIT']?.uses) as number
+
+    expect(directHitUses(hitBranch.state)).toBe(0)
 
     // The no-hit branch should still have the defender's dreadnought.
     // BUG: removeUnits mutated the shared units object via splice,
     // so the dreadnought is gone from ALL branches.
-    expect(noHitBranch.state.abilities.attacker.DIRECT_HIT.uses).toBe(1)
+    expect(directHitUses(noHitBranch.state)).toBe(1)
     expect(defenderUnits['DREADNOUGHT']).toBeDefined()
     expect(defenderUnits['DREADNOUGHT'].length).toBe(1)
   })

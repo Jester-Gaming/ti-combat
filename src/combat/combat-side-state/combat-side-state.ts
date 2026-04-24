@@ -167,27 +167,47 @@ export interface AssignHitsParams {
   sacrificeOrder: string[]
 }
 
-/** Compute hit assignment params from state data for a side */
+/** Compute hit assignment params for a side. Takes `stateData` + `side`
+ *  directly (not a `CombatSideState`) because this is called millions of
+ *  times per simulation — avoiding the method-call overhead on hot path. */
 export function getAssignHitsParams(
   stateData: CombatStateData,
   side: CombatSide,
   meta: MetaPhase,
 ): AssignHitsParams {
-  const settings = stateData.abilities[side]['SETTINGS']
+  const baseSide = stateData.abilities[side]
+  const liveSide = stateData.liveAbilities[side]
+
+  const liveSettings = liveSide['SETTINGS']
+  const baseSettings = baseSide['SETTINGS']
+  const settings =
+    liveSettings === undefined
+      ? baseSettings
+      : baseSettings === undefined
+        ? liveSettings
+        : { ...baseSettings, ...liveSettings }
   if (!settings) throw new Error('No SETTINGS in getAssignHitsParams')
 
+  const combatMode = stateData.combatMode
   const units =
-    stateData.combatMode === 'GROUND'
+    combatMode === 'GROUND'
       ? (settings.groundCombatParticipating as UnitBaseType[])
       : (settings.spaceCombatParticipating as UnitBaseType[])
 
   const participatingUnits = getParticipatingUnitsSet(units)
 
-  const unitPriority = stateData.abilities[side]['UNIT_PRIORITY']
+  const liveUP = liveSide['UNIT_PRIORITY']
+  const baseUP = baseSide['UNIT_PRIORITY']
+  const unitPriority =
+    liveUP === undefined
+      ? baseUP
+      : baseUP === undefined
+        ? liveUP
+        : { ...baseUP, ...liveUP }
   if (!unitPriority) throw new Error('No UNIT_PRIORITY in getAssignHitsParams')
 
   const key =
-    stateData.combatMode === 'GROUND'
+    combatMode === 'GROUND'
       ? 'groundUnitPriority'
       : meta === 'SPACE_CANNON_OFFENSE'
         ? 'scoUnitPriority'
@@ -398,6 +418,25 @@ export class CombatSideState {
     return this._side
   }
 
+  get combatMode(): CombatMode {
+    return this.stateData.combatMode
+  }
+
+  /** Merge base ability config with any live overlay for this side. Returns
+   *  undefined if neither base nor live has an entry for `abilityKey`. The
+   *  live overlay holds partial deltas (only fields written via
+   *  `updateAbilityConfig` or `decrementUses`); fields not present in live
+   *  fall through to base. */
+  getLiveParams(abilityKey: string): Record<string, unknown> | undefined {
+    const state = this.stateData
+    const side = this._side
+    const live = state.liveAbilities[side][abilityKey]
+    if (live === undefined) return state.abilities[side][abilityKey]
+    const base = state.abilities[side][abilityKey]
+    if (base === undefined) return live
+    return { ...base, ...live }
+  }
+
   // ==========================================================================
   // QUERY METHODS
   // ==========================================================================
@@ -556,7 +595,7 @@ export class CombatSideState {
 
   /** Check if a unit type belongs to a category using runtime SETTINGS */
   private isCategoryMember(category: UnitCategory, baseType: string): boolean {
-    const settings = this.stateData.abilities[this._side]['SETTINGS']
+    const settings = this.getLiveParams('SETTINGS')
     if (settings) {
       const key = CATEGORY_TO_SETTINGS_KEY[category]
       const list = settings[key] as UnitBaseType[] | undefined
@@ -680,7 +719,7 @@ export class CombatSideState {
   /** Get participating unit types from SETTINGS */
   getParticipatingUnitTypes(combatModeOverride?: CombatMode): UnitBaseType[] {
     const state = this.stateData
-    const settings = state.abilities[this._side]['SETTINGS']
+    const settings = this.getLiveParams('SETTINGS')
     const mode = combatModeOverride ?? state.combatMode
     if (!settings) {
       const sideState = this.data
@@ -724,11 +763,10 @@ export class CombatSideState {
     combatMode?: CombatMode
     includeNonParticipating?: boolean
   }): UnitType[] {
-    const state = this.stateData
     const baseTypes = filter?.includeNonParticipating
       ? this.getAllUnitTypes()
       : this.getParticipatingUnitTypes(filter?.combatMode)
-    const settings = state.abilities[this._side]['SETTINGS']
+    const settings = this.getLiveParams('SETTINGS')
     const allDeclaredSubtypes = (settings?.subtypes ?? []) as DeclaredSubtype[]
     const excludedSources = filter?.excludeSubtypeSource
       ? new Set<string>(filter.excludeSubtypeSource)
@@ -829,8 +867,7 @@ export class CombatSideState {
 
   /** Resolve valid targets from SETTINGS for the given meta. */
   getSettingsValidTargets(meta: MetaPhase): UnitBaseType[] {
-    const state = this.stateData
-    const settings = state.abilities[this._side]['SETTINGS']
+    const settings = this.getLiveParams('SETTINGS')
     if (!settings) return []
     return getSettingsValidTargetsUtil(settings, meta)
   }
@@ -847,10 +884,19 @@ export class CombatSideState {
   // EXISTING QUERY METHODS (from original CombatSideState)
   // ==========================================================================
 
-  /** Get participating units from SETTINGS ability */
+  /** Get participating units from SETTINGS ability. Hot path — called
+   *  millions of times via `hasParticipatingUnits`, so inline the merge. */
   getParticipatingUnits(): ReadonlySet<UnitBaseType> {
     const state = this.stateData
-    const settings = state.abilities[this._side]['SETTINGS']
+    const side = this._side
+    const liveSettings = state.liveAbilities[side]['SETTINGS']
+    const baseSettings = state.abilities[side]['SETTINGS']
+    const settings =
+      liveSettings === undefined
+        ? baseSettings
+        : baseSettings === undefined
+          ? liveSettings
+          : { ...baseSettings, ...liveSettings }
 
     if (!settings) {
       throw new Error('No SETTINGS in getParticipatingUnits')
@@ -878,11 +924,8 @@ export class CombatSideState {
   }
 
   /** Get valid targets from SETTINGS for the given meta. */
-  getValidTargetsForPhase(
-    stateData: CombatStateData,
-    meta: MetaPhase,
-  ): UnitBaseType[] {
-    const settings = stateData.abilities[this._side]['SETTINGS']
+  getValidTargetsForPhase(meta: MetaPhase): UnitBaseType[] {
+    const settings = this.getLiveParams('SETTINGS')
 
     if (!settings) {
       throw new Error('No SETTINGS in getValidTargetsForPhase')

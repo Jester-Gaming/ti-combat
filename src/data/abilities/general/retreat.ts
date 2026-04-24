@@ -18,6 +18,9 @@ declare global {
     ANNOUNCE_RETREAT: void
     WHEN_RETREAT: UnitId
   }
+  interface AbilityConfigMap {
+    RETREAT: Params
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -33,9 +36,7 @@ export interface SavedRetreatData {
  *  restoration at CLEANUP. Can be called by any ability (e.g. Ojz). */
 export function retreatUnits(ctx: AbilityCallContext, unitIds: UnitId[]): void {
   const side = ctx.state[ctx.side]
-  const retreatConfig = ctx.state.abilities[ctx.side]['RETREAT'] as
-    | Record<string, unknown>
-    | undefined
+  const retreatConfig = ctx.api.own.getAbilityConfig('RETREAT')
   const existing = (retreatConfig?._saved as SavedRetreatData | undefined) ?? {
     savedUnits: {},
     savedUnitState: {},

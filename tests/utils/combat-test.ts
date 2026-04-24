@@ -41,6 +41,38 @@ export function setReversed(value: boolean) {
 const swapSide = (s: CombatSide): CombatSide =>
   s === 'attacker' ? 'defender' : 'attacker'
 
+/** Return a CombatStateData whose `abilities` reflects the live overlay
+ *  merged on top of the base config, so tests reading
+ *  `t.state.abilities.<side>.<key>.<field>` see current values for fields
+ *  mutated during the run (uses, reinforcementTokens, etc.). */
+function mergeLiveAbilitiesView(state: CombatStateData): CombatStateData {
+  const mergeSide = (
+    side: Record<string, Record<string, unknown>>,
+    live: Record<string, Record<string, unknown>>,
+  ): Record<string, Record<string, unknown>> => {
+    const liveKeys = Object.keys(live)
+    if (liveKeys.length === 0) return side
+    const result = { ...side }
+    for (const key of liveKeys) {
+      result[key] = result[key] ? { ...result[key], ...live[key] } : live[key]
+    }
+    return result
+  }
+  return {
+    ...state,
+    abilities: {
+      attacker: mergeSide(
+        state.abilities.attacker,
+        state.liveAbilities.attacker,
+      ),
+      defender: mergeSide(
+        state.abilities.defender,
+        state.liveAbilities.defender,
+      ),
+    },
+  }
+}
+
 // ============================================================================
 // HITS SPEC
 // ============================================================================
@@ -146,14 +178,19 @@ export class CombatTest {
   // --- State access ---
 
   get state(): CombatStateData {
-    if (!this._reversed) return this._state
+    const merged = mergeLiveAbilitiesView(this._state)
+    if (!this._reversed) return merged
     return {
-      ...this._state,
-      attacker: this._state.defender,
-      defender: this._state.attacker,
+      ...merged,
+      attacker: merged.defender,
+      defender: merged.attacker,
       abilities: {
-        attacker: this._state.abilities.defender,
-        defender: this._state.abilities.attacker,
+        attacker: merged.abilities.defender,
+        defender: merged.abilities.attacker,
+      },
+      liveAbilities: {
+        attacker: merged.liveAbilities.defender,
+        defender: merged.liveAbilities.attacker,
       },
     }
   }

@@ -203,7 +203,7 @@ export class SideApi {
     key: K,
   ): AbilityBaseParams & AbilityConfigMap[K]
   getAbilityConfig(key: string) {
-    return this.state.abilities[this._side][key]
+    return this._sideState.getLiveParams(key)
   }
 
   /** Destroy one or more units and fire DESTROY/WHEN_DESTROY/AFTER_DESTROY
@@ -365,32 +365,42 @@ export class SideApi {
       updates = keyOrUpdates
     }
 
-    // COW: shallow-copy the abilities path so mutations don't leak
-    // into other branches sharing the same abilities object.
-    state.abilities = { ...state.abilities }
-    state.abilities[side] = { ...state.abilities[side] }
-    const sideConfig = state.abilities[side]
+    const baseEntry = state.abilities[side]?.[targetKey]
+    const oldLiveEntry = state.liveAbilities[side][targetKey]
 
-    if (!sideConfig[targetKey]) {
-      sideConfig[targetKey] = {}
-    } else {
-      sideConfig[targetKey] = { ...sideConfig[targetKey] }
-    }
+    const oldIsEnabled =
+      oldLiveEntry && 'isEnabled' in oldLiveEntry
+        ? oldLiveEntry.isEnabled
+        : baseEntry?.isEnabled
+    const oldUses =
+      oldLiveEntry && 'uses' in oldLiveEntry
+        ? oldLiveEntry.uses
+        : baseEntry?.uses
 
-    const oldIsEnabled = sideConfig[targetKey].isEnabled
-    const oldUses = sideConfig[targetKey].uses
+    // COW: shallow-copy the liveAbilities path so mutations don't leak
+    // into other branches sharing the same liveAbilities object.
+    state.liveAbilities = { ...state.liveAbilities }
+    state.liveAbilities[side] = { ...state.liveAbilities[side] }
+    const liveSideConfig = state.liveAbilities[side]
+    liveSideConfig[targetKey] = oldLiveEntry ? { ...oldLiveEntry } : {}
+    const liveEntry = liveSideConfig[targetKey]
 
     for (const [key, value] of Object.entries(updates)) {
-      sideConfig[targetKey][key] =
-        typeof value === 'function' ? value(sideConfig[targetKey][key]) : value
+      if (typeof value === 'function') {
+        const currentValue =
+          key in liveEntry ? liveEntry[key] : baseEntry?.[key]
+        liveEntry[key] = value(currentValue)
+      } else {
+        liveEntry[key] = value
+      }
     }
 
     const abilitiesParams = this._abilitiesParams
     if (abilitiesParams) {
-      if (
-        sideConfig[targetKey].isEnabled !== oldIsEnabled ||
-        sideConfig[targetKey].uses !== oldUses
-      ) {
+      const newIsEnabled =
+        'isEnabled' in liveEntry ? liveEntry.isEnabled : baseEntry?.isEnabled
+      const newUses = 'uses' in liveEntry ? liveEntry.uses : baseEntry?.uses
+      if (newIsEnabled !== oldIsEnabled || newUses !== oldUses) {
         abilitiesParams.syncInvokesForKey(side, targetKey, state)
       }
 

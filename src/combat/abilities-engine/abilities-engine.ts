@@ -184,23 +184,26 @@ function sortPreSortedBuckets(
   }
 }
 
-/** Copy-on-write: shallow-copy the abilities path so in-place mutations
- *  don't leak into other branches that share the same abilities object.
- *  Returns the (now owned) ability entry for `abilityKey`. */
-function cowAbilityEntry(
+/** Copy-on-write: shallow-copy the liveAbilities path so in-place mutations
+ *  don't leak into other branches that share the same liveAbilities object.
+ *  Returns the (now owned) live-ability entry for `abilityKey`. */
+function cowLiveAbilityEntry(
   draft: CombatStateData,
   side: CombatSide,
   abilityKey: string,
 ): Record<string, unknown> {
-  draft.abilities = { ...draft.abilities }
-  draft.abilities[side] = { ...draft.abilities[side] }
-  const entry = draft.abilities[side][abilityKey]
+  draft.liveAbilities = { ...draft.liveAbilities }
+  draft.liveAbilities[side] = { ...draft.liveAbilities[side] }
+  const entry = draft.liveAbilities[side][abilityKey]
   const clone = entry ? { ...entry } : {}
-  draft.abilities[side][abilityKey] = clone
+  draft.liveAbilities[side][abilityKey] = clone
   return clone
 }
 
-/** Decrement `uses` in ability config after a successful invocation */
+/** Decrement `uses` in ability config after a successful invocation.
+ *  Writes the new value into `liveAbilities`, leaving `abilities` untouched.
+ *  Reads the *current* uses (live overlay → base → pre-call params) so that
+ *  abilities that update their own uses inside the call aren't clobbered. */
 function decrementUses(
   draft: CombatStateData,
   side: CombatSide,
@@ -213,13 +216,16 @@ function decrementUses(
     typeof params.uses === 'number' &&
     isFinite(params.uses)
   ) {
-    const config = draft.abilities[side][abilityKey]
-    const entry = cowAbilityEntry(draft, side, abilityKey)
-    if (config && typeof config.uses === 'number') {
-      entry.uses = config.uses - 1
-    } else {
-      entry.uses = params.uses - 1
-    }
+    const live = draft.liveAbilities[side]?.[abilityKey]
+    const base = draft.abilities[side]?.[abilityKey]
+    const currentUses =
+      live && typeof live.uses === 'number'
+        ? live.uses
+        : base && typeof base.uses === 'number'
+          ? base.uses
+          : (params.uses as number)
+    const entry = cowLiveAbilityEntry(draft, side, abilityKey)
+    entry.uses = currentUses - 1
     if (engine) {
       engine.syncInvokesForKey(side, abilityKey, draft)
     }
@@ -732,8 +738,8 @@ export class AbilitiesEngine {
         }
       }
 
-      const liveConfig = state.abilities[side][ability.key]
-      const freshParams = liveConfig ? { ...params, ...liveConfig } : params
+      const liveOverlay = state.liveAbilities[side][ability.key]
+      const freshParams = liveOverlay ? { ...params, ...liveOverlay } : params
 
       let internalContext: InternalTimingContextMap[T] | undefined
       if (context !== undefined && isSidedContext(context)) {
@@ -885,14 +891,14 @@ export class AbilitiesEngine {
 
     for (const side of ['attacker', 'defender'] as const) {
       const sideMap = collections[side]
-      const sideConfig = state.abilities[side]
       const unitAbilityKeys = this._unitAbilityKeys[side]
+      const sideState = this._combatState.side(side)
 
       for (const ability of this._abilities[side]) {
         if (unitAbilityKeys.has(ability.key)) continue
         if (ability.context && ability.context !== state.combatMode) continue
 
-        const configParams = sideConfig[ability.key]
+        const configParams = sideState.getLiveParams(ability.key)
         const mergedParams = configParams
           ? { ...extractDefaults(ability), ...configParams }
           : extractDefaults(ability)
@@ -932,7 +938,7 @@ export class AbilitiesEngine {
       for (const { ability, unitType, unitId } of unitAbilities) {
         collectedUnitKeys.add(ability.key)
         if (ability.context && ability.context !== state.combatMode) continue
-        const configParams = sideConfig[ability.key]
+        const configParams = sideState.getLiveParams(ability.key)
         const mergedParams = configParams
           ? { ...extractDefaults(ability), ...configParams }
           : extractDefaults(ability)
@@ -955,7 +961,7 @@ export class AbilitiesEngine {
         if (collectedUnitKeys.has(ability.key)) continue
         if (ability.context && ability.context !== state.combatMode) continue
 
-        const configParams = sideConfig[ability.key]
+        const configParams = sideState.getLiveParams(ability.key)
         const mergedParams = configParams
           ? { ...extractDefaults(ability), ...configParams }
           : extractDefaults(ability)
@@ -993,7 +999,7 @@ export class AbilitiesEngine {
       )
       for (const { ability, unitType } of deployAbilities) {
         if (ability.context && ability.context !== state.combatMode) continue
-        const configParams = sideConfig[ability.key]
+        const configParams = sideState.getLiveParams(ability.key)
         const mergedParams = configParams
           ? { ...extractDefaults(ability), ...configParams }
           : extractDefaults(ability)
@@ -1018,7 +1024,7 @@ export class AbilitiesEngine {
         }
       }
 
-      sortPreSortedBuckets(sideMap, sideConfig)
+      sortPreSortedBuckets(sideMap, state.abilities[side])
     }
 
     this._combatState._invokes = collections
@@ -1068,7 +1074,7 @@ export class AbilitiesEngine {
     if (!stats?.ABILITIES) return
 
     this._combatState.ensureOwnInvokes()
-    const sideConfig = this.state.abilities[side]
+    const state = this.state
     const sideMap = this._combatState._invokes[side]
     const { type: unitType } = parseVariantId(variantKey as UnitType)
 
@@ -1084,9 +1090,10 @@ export class AbilitiesEngine {
       }
     }
 
+    const combatSideState = this._combatState.side(side)
     for (const ability of stats.ABILITIES) {
-      if (ability.context && ability.context !== this.state.combatMode) continue
-      const configParams = sideConfig[ability.key]
+      if (ability.context && ability.context !== state.combatMode) continue
+      const configParams = combatSideState.getLiveParams(ability.key)
       const mergedParams = configParams
         ? { ...extractDefaults(ability), ...configParams }
         : extractDefaults(ability)
@@ -1108,7 +1115,7 @@ export class AbilitiesEngine {
       }
     }
 
-    sortPreSortedBuckets(sideMap, sideConfig)
+    sortPreSortedBuckets(sideMap, state.abilities[side])
   }
 
   private removeConfigInvokeEntries(
@@ -1212,7 +1219,7 @@ export class AbilitiesEngine {
     const deployEntry = deployAbilities.find(d => d.ability.key === key)
     if (deployEntry) {
       this.removeConfigInvokeEntries(side, key)
-      const newConfig = draft.abilities[side][key]
+      const newConfig = this._combatState.side(side).getLiveParams(key)
       const defaults = extractDefaults(deployEntry.ability)
       const mergedParams = newConfig ? { ...defaults, ...newConfig } : defaults
 
@@ -1233,7 +1240,7 @@ export class AbilitiesEngine {
 
     this.removeConfigInvokeEntries(side, key)
 
-    const newConfig = draft.abilities[side][key]
+    const newConfig = this._combatState.side(side).getLiveParams(key)
     const defaults = extractDefaults(ability)
     const mergedParams = newConfig ? { ...defaults, ...newConfig } : defaults
 
@@ -1250,10 +1257,21 @@ export class AbilitiesEngine {
   ): void {
     const ability = this._abilities[side].find(a => a.key === targetKey)
     if (!ability?.onParamSet) return
-    const params = draft.abilities[side][targetKey]
-    if (!params) return
+    // Give onParamSet a mutable merged view. It writes derived fields back
+    // (e.g. ships → nonFighterShips/spaceCombatParticipating). Capture any
+    // mutations via a before/after diff and persist them in liveAbilities
+    // so subsequent reads see the derived values.
+    const params = { ...this._combatState.side(side).getLiveParams(targetKey) }
+    const before = { ...params }
     for (const key of changedKeys) {
       ability.onParamSet(params, key, params[key])
+    }
+    let liveEntry: Record<string, unknown> | undefined
+    for (const key of Object.keys(params)) {
+      if (params[key] !== before[key]) {
+        if (!liveEntry) liveEntry = cowLiveAbilityEntry(draft, side, targetKey)
+        liveEntry[key] = params[key]
+      }
     }
   }
 

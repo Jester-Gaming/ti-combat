@@ -194,6 +194,7 @@ export class CombatState {
       attacker,
       defender,
       abilities: config,
+      liveAbilities: { attacker: {}, defender: {} },
       combatMode,
     }
 
@@ -288,7 +289,7 @@ export class CombatState {
   }
 
   getHash(): string {
-    return `${this.getUnitsHash()}|${getAbilitiesHash(this.abilities)}`
+    return `${this.getUnitsHash()}|${getAbilitiesHash(this.data.liveAbilities)}`
   }
 
   /**
@@ -655,8 +656,8 @@ export class CombatState {
     // abilities which modify SETTINGS (e.g. WAYLAY, EIDOLON_MAXIMUM) are
     // reflected in target resolution before we branch by outcome.
     const validTargets = {
-      attacker: this.side('attacker').getValidTargetsForPhase(this.data, meta),
-      defender: this.side('defender').getValidTargetsForPhase(this.data, meta),
+      attacker: this.side('attacker').getValidTargetsForPhase(meta),
+      defender: this.side('defender').getValidTargetsForPhase(meta),
     }
 
     const attackerModifiers = ctx.hitValueModifiers?.attacker
@@ -1110,7 +1111,6 @@ function cloneUnitState(
 export function cloneStateForBranch(base: CombatStateData): CombatStateData {
   return {
     ...base,
-    abilities: base.abilities,
     attacker: {
       ...base.attacker,
       hitPools: [...base.attacker.hitPools],
@@ -1158,25 +1158,28 @@ function hasAnyUnits(units: Record<string, unknown[]>): boolean {
   return false
 }
 
-const abilitiesSideHashCache = new WeakMap<
+const liveAbilitiesSideHashCache = new WeakMap<
   Record<string, Record<string, unknown>>,
   string
 >()
 
-function getAbilitiesHash(abilities: AbilitiesConfig): string {
+/** Hash only `liveAbilities` — the initial `abilities` config is fixed for the
+ *  whole combat, so it never differentiates states. Only runtime mutations
+ *  (isEnabled, uses, ability-specific fields) matter for state identity. */
+function getAbilitiesHash(liveAbilities: AbilitiesConfig): string {
   const hashSide = (side: AbilitiesConfig[keyof AbilitiesConfig]) => {
-    const cached = abilitiesSideHashCache.get(side)
+    const cached = liveAbilitiesSideHashCache.get(side)
     if (cached !== undefined) return cached
     const keys = Object.keys(side).sort()
     const result =
       keys.length === 0
         ? ''
         : keys.map(k => `${k}:${JSON.stringify(side[k])}`).join(',')
-    abilitiesSideHashCache.set(side, result)
+    liveAbilitiesSideHashCache.set(side, result)
     return result
   }
-  const a = hashSide(abilities.attacker)
-  const d = hashSide(abilities.defender)
+  const a = hashSide(liveAbilities.attacker)
+  const d = hashSide(liveAbilities.defender)
   if (!a && !d) return ''
   return `a{${a}}d{${d}}`
 }

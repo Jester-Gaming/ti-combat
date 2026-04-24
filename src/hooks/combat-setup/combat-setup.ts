@@ -117,6 +117,7 @@ export class CombatSetup {
         hitPools: [],
       },
       abilities: this._abilities,
+      liveAbilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
     }
 

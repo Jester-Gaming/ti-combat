@@ -220,7 +220,15 @@ export function isDiceRollContext(ctx: unknown): ctx is DiceRollContext {
 export interface CombatStateData {
   attacker: SideStateData
   defender: SideStateData
+  /** Initial ability config, set once at combat start. Immutable during
+   *  the run — runtime mutations (isEnabled, uses, ability-specific fields)
+   *  live in `liveAbilities` as partial overlays. */
   abilities: AbilitiesConfig
+  /** Partial overlays on top of `abilities`, written via
+   *  `updateAbilityConfig` and `decrementUses`. Only contains entries for
+   *  abilities whose config changed during the run. Hashed into the state
+   *  identity; reads must merge base+live (see `CombatSideState.getLiveParams`). */
+  liveAbilities: AbilitiesConfig
   combatMode: CombatMode
   /** The side that won, or 'draw'. Set whenever a side is wiped (via
    *  `_removeOne` or `_postAssignHits`) or via an ability's `transitionTo`.

@@ -229,7 +229,10 @@ describe('COURAGEOUS_TO_THE_END', () => {
     expect(branches).toHaveLength(3)
     for (const b of branches) {
       expect(b.state.data.attacker.units.CARRIER ?? []).toHaveLength(0)
-      expect(b.state.abilities.attacker.COURAGEOUS_TO_THE_END.uses).toBe(0)
+      expect(
+        b.state.data.liveAbilities.attacker['COURAGEOUS_TO_THE_END']?.uses ??
+          b.state.data.abilities.attacker['COURAGEOUS_TO_THE_END']?.uses,
+      ).toBe(0)
     }
 
     // Defender cruiser distribution after Courageous 2d9:
@@ -301,7 +304,10 @@ describe('COURAGEOUS_TO_THE_END', () => {
     for (const b of branches) {
       expect(b.state.data.attacker.units.CRUISER ?? []).toHaveLength(0)
       expect(b.state.data.defender.units.CRUISER ?? []).toHaveLength(0)
-      expect(b.state.abilities.attacker.COURAGEOUS_TO_THE_END.uses).toBe(0)
+      expect(
+        b.state.data.liveAbilities.attacker['COURAGEOUS_TO_THE_END']?.uses ??
+          b.state.data.abilities.attacker['COURAGEOUS_TO_THE_END']?.uses,
+      ).toBe(0)
     }
 
     // Defender carrier distribution after Courageous 2d7 (only 1 carrier
