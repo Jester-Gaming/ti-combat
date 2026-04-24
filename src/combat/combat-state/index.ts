@@ -11,7 +11,6 @@ export {
   SPACE_FLOW,
 } from './phase-utils'
 export {
-  type AbilitiesConfig,
   type CombatMode,
   type CombatStateData,
   type HitSource,
@@ -19,6 +18,7 @@ export {
   type PhaseMarker,
   type PhaseStep,
   type PhaseTransitionTarget,
+  type SideAbilitiesConfig,
   type SideStateData,
   UNIT_ABILITY_PHASES,
   type UnitAbilityMeta,

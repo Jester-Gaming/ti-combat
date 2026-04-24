@@ -41,9 +41,9 @@ export function setReversed(value: boolean) {
 const swapSide = (s: CombatSide): CombatSide =>
   s === 'attacker' ? 'defender' : 'attacker'
 
-/** Return a CombatStateData whose `abilities` reflects the live overlay
- *  merged on top of the base config, so tests reading
- *  `t.state.abilities.<side>.<key>.<field>` see current values for fields
+/** Return a CombatStateData whose per-side `abilities` reflects the live
+ *  overlay merged on top of the base config, so tests reading
+ *  `t.state.<side>.abilities.<key>.<field>` see current values for fields
  *  mutated during the run (uses, reinforcementTokens, etc.). */
 function mergeLiveAbilitiesView(state: CombatStateData): CombatStateData {
   const mergeSide = (
@@ -60,14 +60,18 @@ function mergeLiveAbilitiesView(state: CombatStateData): CombatStateData {
   }
   return {
     ...state,
-    abilities: {
-      attacker: mergeSide(
-        state.abilities.attacker,
-        state.liveAbilities.attacker,
+    attacker: {
+      ...state.attacker,
+      abilities: mergeSide(
+        state.attacker.abilities,
+        state.attacker.liveAbilities,
       ),
-      defender: mergeSide(
-        state.abilities.defender,
-        state.liveAbilities.defender,
+    },
+    defender: {
+      ...state.defender,
+      abilities: mergeSide(
+        state.defender.abilities,
+        state.defender.liveAbilities,
       ),
     },
   }
@@ -218,14 +222,6 @@ export class CombatTest {
       ...merged,
       attacker: merged.defender,
       defender: merged.attacker,
-      abilities: {
-        attacker: merged.abilities.defender,
-        defender: merged.abilities.attacker,
-      },
-      liveAbilities: {
-        attacker: merged.liveAbilities.defender,
-        defender: merged.liveAbilities.attacker,
-      },
     }
   }
 

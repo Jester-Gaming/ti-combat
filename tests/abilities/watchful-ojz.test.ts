@@ -27,7 +27,7 @@ describe.forEachSide('WATCHFUL_OJZ', () => {
     expect(t.isFinished()).toBe(true)
     // All 3 cruisers saved in RETREAT config (2 by Ojz + 1 by RETREAT)
     const saved = (
-      t.state.abilities.attacker.RETREAT as Record<string, unknown>
+      t.state.attacker.abilities.RETREAT as Record<string, unknown>
     )?._saved as SavedRetreatData
     expect(saved?.savedUnits.CRUISER).toHaveLength(3)
     expect(t.abilityLog('WATCHFUL_OJZ')).not.toHaveLength(0)

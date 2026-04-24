@@ -42,11 +42,11 @@ describe('SSRUU + DAME_BRIAR', () => {
     expect(galvanized).toHaveLength(2)
 
     // Each agent consumed its own use
-    expect(t.state.abilities.attacker.DAME_BRIAR.uses).toBe(0)
-    expect(t.state.abilities.attacker.SSRUU.uses).toBe(0)
+    expect(t.state.attacker.abilities.DAME_BRIAR.uses).toBe(0)
+    expect(t.state.attacker.abilities.SSRUU.uses).toBe(0)
 
     // Two reinforcement tokens consumed (7 → 5)
-    expect(t.state.abilities.attacker.PRE_GALVANIZED.reinforcementTokens).toBe(
+    expect(t.state.attacker.abilities.PRE_GALVANIZED.reinforcementTokens).toBe(
       5,
     )
   })
@@ -84,12 +84,12 @@ describe('SSRUU + DAME_BRIAR', () => {
     expect(t.attacker.units.CRUISER![0].subtypes).toContain('Galvanized')
 
     // Only one use consumed across both agents (total remaining = 1)
-    const dameUses = (t.state.abilities.attacker.DAME_BRIAR.uses as number) ?? 1
-    const ssruuUses = (t.state.abilities.attacker.SSRUU.uses as number) ?? 1
+    const dameUses = (t.state.attacker.abilities.DAME_BRIAR.uses as number) ?? 1
+    const ssruuUses = (t.state.attacker.abilities.SSRUU.uses as number) ?? 1
     expect(dameUses + ssruuUses).toBe(1)
 
     // Only one reinforcement token consumed (7 → 6)
-    expect(t.state.abilities.attacker.PRE_GALVANIZED.reinforcementTokens).toBe(
+    expect(t.state.attacker.abilities.PRE_GALVANIZED.reinforcementTokens).toBe(
       6,
     )
   })

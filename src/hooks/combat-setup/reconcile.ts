@@ -10,7 +10,10 @@ import type {
   SettingsParams,
   SyncSourceConfig,
 } from '@/combat/abilities-engine/types'
-import type { AbilitiesConfig, CombatMode } from '@/combat/combat-state/types'
+import type {
+  CombatMode,
+  SideAbilitiesConfig,
+} from '@/combat/combat-state/types'
 import { GROUND_FORCES, SHIPS } from '@/constants/units'
 import type { CombatSide, UnitBaseType } from '@/types'
 
@@ -21,7 +24,8 @@ import {
   sortByPrice,
 } from './reconcile-helpers'
 
-type SideConfig = Record<string, Record<string, unknown>>
+type AbilitiesConfig = Record<CombatSide, SideAbilitiesConfig>
+type SideConfig = SideAbilitiesConfig
 
 /** Tracks the last-seen valid list per sync-source param, so reconciliation
  *  can distinguish "user unchecked this" from "genuinely new item." */

@@ -1,6 +1,6 @@
 import type { CombatSide } from '@/types'
 
-import type { AbilitiesConfig, SideStateData } from '../../combat-state/types'
+import type { SideStateData } from '../../combat-state/types'
 
 /**
  * Outcome with probability relative to reaching the node.
@@ -14,7 +14,6 @@ import type { AbilitiesConfig, SideStateData } from '../../combat-state/types'
 export interface RelativeOutcome {
   attackerData: SideStateData
   defenderData: SideStateData
-  abilities: AbilitiesConfig
   probability: number
   winnerSide: CombatSide | 'draw'
 }

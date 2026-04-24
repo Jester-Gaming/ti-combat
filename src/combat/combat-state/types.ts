@@ -112,6 +112,9 @@ export interface HitValueModifier {
 /** A stats entry: either concrete stats or a factory that derives from parent type stats */
 export type UnitStatsEntry = UnitStats | ((parentStats: UnitStats) => UnitStats)
 
+/** Ability configuration for one side (key → params). */
+export type SideAbilitiesConfig = Record<string, Record<string, unknown>>
+
 /** State data for one side of combat */
 export interface SideStateData {
   faction: FactionKey
@@ -134,12 +137,15 @@ export interface SideStateData {
   unitStats: Record<UnitType, UnitStatsEntry>
   hitPools: HitPool[]
   unitAbilityRestrictions?: UnitAbilityRestrictions
-}
-
-/** Ability configuration for both sides */
-export interface AbilitiesConfig {
-  attacker: Record<string, Record<string, unknown>>
-  defender: Record<string, Record<string, unknown>>
+  /** Initial ability config for this side, set once at combat start.
+   *  Immutable during the run — runtime mutations (isEnabled, uses,
+   *  ability-specific fields) live in `liveAbilities` as partial overlays. */
+  abilities: SideAbilitiesConfig
+  /** Partial overlays on top of `abilities`, written via
+   *  `updateAbilityConfig` and `decrementUses`. Only contains entries for
+   *  abilities whose config changed during the run. Hashed into the state
+   *  identity; reads must merge base+live (see `CombatSideState.getLiveParams`). */
+  liveAbilities: SideAbilitiesConfig
 }
 
 /** A single step in the phase-handler script. `advance()` pops one step
@@ -231,15 +237,6 @@ export function isDiceRollContext(ctx: unknown): ctx is DiceRollContext {
 export interface CombatStateData {
   attacker: SideStateData
   defender: SideStateData
-  /** Initial ability config, set once at combat start. Immutable during
-   *  the run — runtime mutations (isEnabled, uses, ability-specific fields)
-   *  live in `liveAbilities` as partial overlays. */
-  abilities: AbilitiesConfig
-  /** Partial overlays on top of `abilities`, written via
-   *  `updateAbilityConfig` and `decrementUses`. Only contains entries for
-   *  abilities whose config changed during the run. Hashed into the state
-   *  identity; reads must merge base+live (see `CombatSideState.getLiveParams`). */
-  liveAbilities: AbilitiesConfig
   combatMode: CombatMode
   /** The side that won, or 'draw'. Set whenever a side is wiped (via
    *  `_removeOne` or `_postAssignHits`) or via an ability's `transitionTo`.

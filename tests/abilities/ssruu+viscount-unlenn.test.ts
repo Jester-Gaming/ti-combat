@@ -84,7 +84,7 @@ describe('SSRUU + VISCOUNT_UNLENN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    const settings = t.state.abilities.attacker.SETTINGS as {
+    const settings = t.state.attacker.abilities.SETTINGS as {
       subtypes: { name: string; unitType: string; source?: string }[]
     }
     const viscountDecls = settings.subtypes.filter(s => s.name === 'Viscount')

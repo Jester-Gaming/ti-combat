@@ -34,6 +34,8 @@ function buildSide(
     unitState: {},
     unitStats,
     hitPools: [],
+    abilities: {},
+    liveAbilities: {},
   }
 }
 
@@ -47,6 +49,8 @@ const emptySide = (
   unitState: {},
   unitStats: {} as SideStateData['unitStats'],
   hitPools: [],
+  abilities: {},
+  liveAbilities: {},
 })
 
 function unitsByBaseType(
@@ -100,8 +104,6 @@ describe('collectUnitAbilities', () => {
         },
       }),
       defender: emptySide(),
-      abilities: { attacker: {}, defender: {} },
-      liveAbilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
     }
 
@@ -126,8 +128,6 @@ describe('collectUnitAbilities', () => {
         CRUISER: { count: 1, stats: { COMBAT: [7, 1], UNIT_ABILITIES: {} } },
       }),
       defender: emptySide(),
-      abilities: { attacker: {}, defender: {} },
-      liveAbilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
     }
 
@@ -164,8 +164,6 @@ describe('collectUnitAbilities', () => {
         },
       }),
       defender: emptySide(),
-      abilities: { attacker: {}, defender: {} },
-      liveAbilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
     }
 
@@ -207,8 +205,6 @@ describe('unit ability invocation', () => {
         },
       }),
       defender: emptySide(),
-      abilities: { attacker: {}, defender: {} },
-      liveAbilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
     }
 
@@ -249,8 +245,6 @@ describe('unit ability invocation', () => {
         },
       }),
       defender: emptySide(),
-      abilities: { attacker: {}, defender: {} },
-      liveAbilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
     }
 
@@ -326,8 +320,6 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
           },
         },
       }),
-      abilities: { attacker: {}, defender: {} },
-      liveAbilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
     }
 
@@ -388,8 +380,6 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
       defender: buildSide('FEDERATION_OF_SOL', {
         FIGHTER: { count: 1, stats: { COMBAT: [9, 1], UNIT_ABILITIES: {} } },
       }),
-      abilities: { attacker: {}, defender: {} },
-      liveAbilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
     }
 
@@ -456,8 +446,6 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
         },
         CRUISER: { count: 1, stats: { COMBAT: [7, 1], UNIT_ABILITIES: {} } },
       }),
-      abilities: { attacker: {}, defender: {} },
-      liveAbilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
     }
 
@@ -517,8 +505,6 @@ describe('merged START_OF_COMBAT bucket', () => {
         },
       }),
       defender: emptySide(),
-      abilities: { attacker: {}, defender: {} },
-      liveAbilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
     }
 
@@ -555,8 +541,6 @@ describe('merged START_OF_COMBAT bucket', () => {
         },
       }),
       defender: emptySide(),
-      abilities: { attacker: {}, defender: {} },
-      liveAbilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
     }
 

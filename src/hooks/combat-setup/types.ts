@@ -1,5 +1,10 @@
-import type { AbilitiesConfig, CombatMode } from '@/combat'
-import type { FactionKey, UnitBaseType, UnitSelection } from '@/types'
+import type { CombatMode, SideAbilitiesConfig } from '@/combat'
+import type {
+  CombatSide,
+  FactionKey,
+  UnitBaseType,
+  UnitSelection,
+} from '@/types'
 
 export interface SimulationInput {
   attackerFaction: FactionKey
@@ -7,5 +12,5 @@ export interface SimulationInput {
   attackerSelections: Record<UnitBaseType, UnitSelection>
   defenderSelections: Record<UnitBaseType, UnitSelection>
   combatMode: CombatMode
-  abilities: AbilitiesConfig
+  abilities: Record<CombatSide, SideAbilitiesConfig>
 }

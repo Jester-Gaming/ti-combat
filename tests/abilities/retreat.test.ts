@@ -7,7 +7,7 @@ function getRetreatSaved(
   t: ReturnType<typeof combatTest>,
   side: 'attacker' | 'defender',
 ) {
-  return (t.state.abilities[side].RETREAT as Record<string, unknown>)
+  return (t.state[side].abilities.RETREAT as Record<string, unknown>)
     ?._saved as SavedRetreatData | undefined
 }
 

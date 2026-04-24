@@ -23,8 +23,8 @@ describe('SSRUU + TELLURIAN', () => {
     expect(t.attacker.units.CRUISER).toHaveLength(2)
     expect(t.abilityLog('TELLURIAN')).not.toHaveLength(0)
     expect(t.abilityLog('SSRUU')).not.toHaveLength(0)
-    expect(t.state.abilities.attacker.TELLURIAN.uses).toBe(0)
-    expect(t.state.abilities.attacker.SSRUU.uses).toBe(0)
+    expect(t.state.attacker.abilities.TELLURIAN.uses).toBe(0)
+    expect(t.state.attacker.abilities.SSRUU.uses).toBe(0)
   })
 
   it('Ssruu copy does not double-fire if already used', () => {

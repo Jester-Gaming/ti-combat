@@ -26,7 +26,6 @@ import {
 import { type LogEntry, Logger } from '../logger'
 import { sortUnitsByPriority } from '../utils/sort-units-by-priority'
 import type {
-  AbilitiesConfig,
   CombatMode,
   CombatStateData,
   DiceRollContext,
@@ -36,6 +35,7 @@ import type {
   PendingStep,
   PhaseStep,
   PhaseStepGroup,
+  SideAbilitiesConfig,
   SideStateData,
   UnitAbilityMeta,
 } from './types'
@@ -61,8 +61,8 @@ function sortUnitsAtSetup(data: CombatStateData): void {
     // Merge base + live SETTINGS and UNIT_PRIORITY — PREPARE may have
     // written derived fields (Hel Titan → groundCombatParticipating
     // includes PDS) into liveAbilities.
-    const baseSide = data.abilities[side]
-    const liveSide = data.liveAbilities[side]
+    const baseSide = data[side].abilities
+    const liveSide = data[side].liveAbilities
 
     const baseUP = baseSide['UNIT_PRIORITY']
     const liveUP = liveSide['UNIT_PRIORITY']
@@ -211,8 +211,12 @@ export class CombatState {
     return side === 'attacker' ? this.attacker : this.defender
   }
 
-  get abilities(): AbilitiesConfig {
-    return this.data.abilities
+  abilitiesFor(side: CombatSide): SideAbilitiesConfig {
+    return this.data[side].abilities
+  }
+
+  liveAbilitiesFor(side: CombatSide): SideAbilitiesConfig {
+    return this.data[side].liveAbilities
   }
 
   get combatMode(): CombatMode {
@@ -228,7 +232,6 @@ export class CombatState {
     attacker: SideStateData,
     defender: SideStateData,
     combatMode: CombatMode,
-    abilitiesConfig?: AbilitiesConfig,
     abilities?: Record<
       import('@/types').CombatSide,
       import('../abilities-engine').Ability[]
@@ -239,17 +242,11 @@ export class CombatState {
       ReadonlySet<string>
     >,
   ): CombatState {
-    const config = abilitiesConfig
-      ? structuredClone(abilitiesConfig)
-      : { attacker: {}, defender: {} }
-
     const instance = Object.create(CombatState.prototype) as CombatState
 
     const baseData: CombatStateData = {
       attacker,
       defender,
-      abilities: config,
-      liveAbilities: { attacker: {}, defender: {} },
       combatMode,
     }
 
@@ -348,7 +345,10 @@ export class CombatState {
   }
 
   getHash(): string {
-    return `${this.getUnitsHash()}|${getAbilitiesHash(this.data.liveAbilities)}`
+    const a = getSideLiveAbilitiesHash(this.data.attacker.liveAbilities)
+    const d = getSideLiveAbilitiesHash(this.data.defender.liveAbilities)
+    const combined = !a && !d ? '' : `a{${a}}d{${d}}`
+    return `${this.getUnitsHash()}|${combined}`
   }
 
   /**
@@ -579,8 +579,8 @@ export class CombatState {
    *  changes. */
   public resyncParticipating(side: CombatSide): void {
     const data = this.data
-    const liveSide = data.liveAbilities[side]
-    const baseSide = data.abilities[side]
+    const liveSide = data[side].liveAbilities
+    const baseSide = data[side].abilities
 
     const liveSettings = liveSide['SETTINGS']
     const baseSettings = baseSide['SETTINGS']
@@ -1208,7 +1208,9 @@ function cloneUnitState(
  *  `units: UnitId[]` and `unitType: Record<UnitId, UnitType>` stay shared
  *  with base; every mutation path (assignHits, removeUnits, placeUnits,
  *  addSubtype, removeSubtype) writes fresh arrays/records. unitState is
- *  deep-cloned because SUSTAIN_DAMAGE mutates entries (`isDamaged`). */
+ *  deep-cloned because SUSTAIN_DAMAGE mutates entries (`isDamaged`).
+ *  `abilities` (initial config) is shared by reference; `liveAbilities`
+ *  is shallow-copied so per-entry COW mutations stay branch-local. */
 export function cloneStateForBranch(base: CombatStateData): CombatStateData {
   return {
     ...base,
@@ -1268,8 +1270,8 @@ function getPhasePriorityList(
   side: CombatSide,
   meta: MetaPhase,
 ): UnitType[] | undefined {
-  const baseSide = data.abilities[side]
-  const liveSide = data.liveAbilities[side]
+  const baseSide = data[side].abilities
+  const liveSide = data[side].liveAbilities
   const baseUP = baseSide['UNIT_PRIORITY']
   const liveUP = liveSide['UNIT_PRIORITY']
   if (baseUP === undefined && liveUP === undefined) return undefined
@@ -1289,30 +1291,22 @@ function getPhasePriorityList(
   return unitPriority[key] as UnitType[] | undefined
 }
 
-const liveAbilitiesSideHashCache = new WeakMap<
-  Record<string, Record<string, unknown>>,
-  string
->()
+const liveAbilitiesSideHashCache = new WeakMap<SideAbilitiesConfig, string>()
 
-/** Hash only `liveAbilities` — the initial `abilities` config is fixed for the
- *  whole combat, so it never differentiates states. Only runtime mutations
- *  (isEnabled, uses, ability-specific fields) matter for state identity. */
-function getAbilitiesHash(liveAbilities: AbilitiesConfig): string {
-  const hashSide = (side: AbilitiesConfig[keyof AbilitiesConfig]) => {
-    const cached = liveAbilitiesSideHashCache.get(side)
-    if (cached !== undefined) return cached
-    const keys = Object.keys(side).sort()
-    const result =
-      keys.length === 0
-        ? ''
-        : keys.map(k => `${k}:${JSON.stringify(side[k])}`).join(',')
-    liveAbilitiesSideHashCache.set(side, result)
-    return result
-  }
-  const a = hashSide(liveAbilities.attacker)
-  const d = hashSide(liveAbilities.defender)
-  if (!a && !d) return ''
-  return `a{${a}}d{${d}}`
+/** Hash one side's `liveAbilities` — the initial `abilities` config is fixed
+ *  for the whole combat, so it never differentiates states. Only runtime
+ *  mutations (isEnabled, uses, ability-specific fields) matter for state
+ *  identity. */
+function getSideLiveAbilitiesHash(side: SideAbilitiesConfig): string {
+  const cached = liveAbilitiesSideHashCache.get(side)
+  if (cached !== undefined) return cached
+  const keys = Object.keys(side).sort()
+  const result =
+    keys.length === 0
+      ? ''
+      : keys.map(k => `${k}:${JSON.stringify(side[k])}`).join(',')
+  liveAbilitiesSideHashCache.set(side, result)
+  return result
 }
 
 function getSideHash(side: SideStateData): string {

@@ -8,11 +8,16 @@ import {
 
 import { CombatEngine } from './combat-engine'
 import { CombatState } from './combat-state'
-import type { SideStateData, UnitStatsEntry } from './combat-state/types'
+import type {
+  SideAbilitiesConfig,
+  SideStateData,
+  UnitStatsEntry,
+} from './combat-state/types'
 
 function buildSideState(
   faction: FactionKey,
   selections: Record<UnitBaseType, UnitSelection>,
+  abilities: SideAbilitiesConfig,
 ): SideStateData {
   const upgradedSet = new Set<UnitBaseType>()
   for (const [k, v] of Object.entries(selections)) {
@@ -33,6 +38,8 @@ function buildSideState(
       ...unitStats,
     } as Record<string, UnitStatsEntry>,
     hitPools: [],
+    abilities,
+    liveAbilities: {},
   }
 }
 
@@ -54,10 +61,9 @@ self.onmessage = (e: MessageEvent<SimulationInput>) => {
     combatMode,
   )
   const combatState = CombatState.forSimulation(
-    buildSideState(attackerFaction, attackerSelections),
-    buildSideState(defenderFaction, defenderSelections),
+    buildSideState(attackerFaction, attackerSelections, abilities.attacker),
+    buildSideState(defenderFaction, defenderSelections, abilities.defender),
     combatMode,
-    abilities,
     {
       attacker: sideAbilities.attacker.abilities,
       defender: sideAbilities.defender.abilities,

@@ -134,7 +134,7 @@ describe.forEachSide('DAME_BRIAR', () => {
     t.advanceRound({ attacker: 1 })
 
     expect(t.abilityLog('DAME_BRIAR')).not.toHaveLength(0)
-    expect(t.state.abilities.attacker.PRE_GALVANIZED.reinforcementTokens).toBe(
+    expect(t.state.attacker.abilities.PRE_GALVANIZED.reinforcementTokens).toBe(
       2,
     )
   })

@@ -1,5 +1,4 @@
 import {
-  type AbilitiesConfig,
   AbilitiesEngine,
   type Ability,
   type AbilityReadContext,
@@ -8,6 +7,7 @@ import {
   type CombatStateData,
   extractDefaults,
   getOpponentSide,
+  type SideAbilitiesConfig,
 } from '@/combat'
 import { UNIT_LIMITS, UNIT_TYPES } from '@/constants/units'
 import factions from '@/data/faction'
@@ -60,7 +60,7 @@ export class CombatSetup {
   private _attackerSelections: Record<UnitBaseType, UnitSelection>
   private _defenderSelections: Record<UnitBaseType, UnitSelection>
   private _combatMode: CombatMode
-  private _abilities: AbilitiesConfig
+  private _abilities: Record<CombatSide, SideAbilitiesConfig>
   private _sideAbilities: Record<CombatSide, Ability[]>
   private _unitAbilityKeys: Record<CombatSide, ReadonlySet<string>>
   private _factionOwnedKeys: Record<CombatSide, ReadonlySet<string>>
@@ -109,6 +109,8 @@ export class CombatSetup {
         unitState: {},
         unitStats: defaultUnitStats,
         hitPools: [],
+        abilities: this._abilities.attacker,
+        liveAbilities: {},
       },
       defender: {
         faction: defaultFaction,
@@ -118,9 +120,9 @@ export class CombatSetup {
         unitState: {},
         unitStats: defaultUnitStats,
         hitPools: [],
+        abilities: this._abilities.defender,
+        liveAbilities: {},
       },
-      abilities: this._abilities,
-      liveAbilities: { attacker: {}, defender: {} },
       combatMode: 'SPACE',
     }
 
@@ -168,7 +170,7 @@ export class CombatSetup {
     return this._combatMode
   }
 
-  get abilities(): AbilitiesConfig {
+  get abilities(): Record<CombatSide, SideAbilitiesConfig> {
     return this._abilities
   }
 
@@ -217,6 +219,10 @@ export class CombatSetup {
     }
 
     this._abilities[side] = newSideConfig
+    this._stateData = {
+      ...this._stateData,
+      [side]: { ...this._stateData[side], abilities: newSideConfig },
+    }
 
     // Rebuild unit data
     const selections = this.selectionsForSide(side)
@@ -314,6 +320,10 @@ export class CombatSetup {
 
   resetAbilities(side: CombatSide): void {
     this._abilities[side] = {}
+    this._stateData = {
+      ...this._stateData,
+      [side]: { ...this._stateData[side], abilities: this._abilities[side] },
+    }
     initializeAbilityDefaults(this._abilities, this._sideAbilities)
     reconcileAbilitiesConfig(
       this._abilities,
@@ -351,12 +361,11 @@ export class CombatSetup {
       defender: this._abilities.attacker,
     }
 
-    // Rebuild stateData
+    // Rebuild stateData (each side's abilities travels with it)
     this._stateData = {
       ...this._stateData,
       attacker: this._stateData.defender,
       defender: this._stateData.attacker,
-      abilities: this._abilities,
     }
 
     // Rebuild units for both sides
@@ -399,7 +408,10 @@ export class CombatSetup {
     // Compute reconciled defaults to diff against — this captures
     // auto-populated values (declared params with source) so we only
     // store what the user actually changed
-    const freshAbilities: AbilitiesConfig = { attacker: {}, defender: {} }
+    const freshAbilities: Record<CombatSide, SideAbilitiesConfig> = {
+      attacker: {},
+      defender: {},
+    }
     initializeAbilityDefaults(freshAbilities, this._sideAbilities)
     reconcileAbilitiesConfig(
       freshAbilities,
@@ -501,7 +513,14 @@ export class CombatSetup {
     // Rebuild stateData references
     this._stateData = {
       ...this._stateData,
-      abilities: this._abilities,
+      attacker: {
+        ...this._stateData.attacker,
+        abilities: this._abilities.attacker,
+      },
+      defender: {
+        ...this._stateData.defender,
+        abilities: this._abilities.defender,
+      },
       combatMode: this._combatMode,
     }
 
@@ -645,12 +664,23 @@ export class CombatSetup {
     }
 
     this._abilities[side] = newSideConfig
+    this._stateData = {
+      ...this._stateData,
+      [side]: { ...this._stateData[side], abilities: newSideConfig },
+    }
 
     if (ability?.sync) {
       const otherSide = getOpponentSide(side)
       this._abilities[otherSide] = {
         ...this._abilities[otherSide],
         [abilityKey]: finalParams,
+      }
+      this._stateData = {
+        ...this._stateData,
+        [otherSide]: {
+          ...this._stateData[otherSide],
+          abilities: this._abilities[otherSide],
+        },
       }
     }
   }

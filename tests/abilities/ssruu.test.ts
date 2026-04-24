@@ -69,6 +69,6 @@ describe('SSRUU', () => {
     expect(t.attacker.units.CRUISER).toHaveLength(1)
 
     expect(t.abilityLog('SSRUU')).toHaveLength(1)
-    expect(t.state.abilities.attacker.SSRUU.uses).toBe(0)
+    expect(t.state.attacker.abilities.SSRUU.uses).toBe(0)
   })
 })

@@ -21,7 +21,7 @@ describe('TECHNOLOGICAL_SINGULARITY + TEMPORAL_COMMAND_SUITE', () => {
     })
 
     // Nekro's copy applies +1 to Viscount uses (1 → 2)
-    expect(t.state.abilities.attacker.VISCOUNT_UNLENN.uses).toBe(2)
+    expect(t.state.attacker.abilities.VISCOUNT_UNLENN.uses).toBe(2)
   })
 
   it('normal TCS and Nekro copy can both be enabled independently', () => {
@@ -46,6 +46,6 @@ describe('TECHNOLOGICAL_SINGULARITY + TEMPORAL_COMMAND_SUITE', () => {
     })
 
     // Both copies fire at PREPARE: 1 → 2 → 3
-    expect(t.state.abilities.attacker.VISCOUNT_UNLENN.uses).toBe(3)
+    expect(t.state.attacker.abilities.VISCOUNT_UNLENN.uses).toBe(3)
   })
 })

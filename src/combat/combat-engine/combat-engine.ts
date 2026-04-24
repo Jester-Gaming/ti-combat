@@ -148,7 +148,6 @@ export class CombatEngine {
               merged.set(key, {
                 attackerData: outcome.attackerData,
                 defenderData: outcome.defenderData,
-                abilities: outcome.abilities,
                 probability: outcome.probability * totalProb,
                 winnerSide: outcome.winnerSide,
               })
@@ -177,7 +176,6 @@ export class CombatEngine {
               merged.set(key, {
                 attackerData: outcome.attackerData,
                 defenderData: outcome.defenderData,
-                abilities: outcome.abilities,
                 probability: adjustedProb,
                 winnerSide: outcome.winnerSide,
               })
@@ -235,7 +233,6 @@ function makeLeafOutcome(state: CombatState): OutcomeRecord {
   record.set(key, {
     attackerData: state.data.attacker,
     defenderData: state.data.defender,
-    abilities: state.data.abilities,
     probability: 1,
     winnerSide,
   })

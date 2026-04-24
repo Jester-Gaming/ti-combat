@@ -398,8 +398,9 @@ export class SideApi {
       updates = keyOrUpdates
     }
 
-    const baseEntry = state.abilities[side]?.[targetKey]
-    const oldLiveEntry = state.liveAbilities[side][targetKey]
+    const sideData = state[side]
+    const baseEntry = sideData.abilities[targetKey]
+    const oldLiveEntry = sideData.liveAbilities[targetKey]
 
     const oldIsEnabled =
       oldLiveEntry && 'isEnabled' in oldLiveEntry
@@ -412,9 +413,8 @@ export class SideApi {
 
     // COW: shallow-copy the liveAbilities path so mutations don't leak
     // into other branches sharing the same liveAbilities object.
-    state.liveAbilities = { ...state.liveAbilities }
-    state.liveAbilities[side] = { ...state.liveAbilities[side] }
-    const liveSideConfig = state.liveAbilities[side]
+    sideData.liveAbilities = { ...sideData.liveAbilities }
+    const liveSideConfig = sideData.liveAbilities
     liveSideConfig[targetKey] = oldLiveEntry ? { ...oldLiveEntry } : {}
     const liveEntry = liveSideConfig[targetKey]
 

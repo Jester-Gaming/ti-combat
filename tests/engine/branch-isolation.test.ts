@@ -82,8 +82,8 @@ describe('engine: branch isolation', () => {
     }
 
     const directHitUses = (s: (typeof hitBranch)['state']) =>
-      (s.data.liveAbilities.attacker['DIRECT_HIT']?.uses ??
-        s.data.abilities.attacker['DIRECT_HIT']?.uses) as number
+      (s.data.attacker.liveAbilities['DIRECT_HIT']?.uses ??
+        s.data.attacker.abilities['DIRECT_HIT']?.uses) as number
 
     expect(directHitUses(hitBranch.state)).toBe(0)
 

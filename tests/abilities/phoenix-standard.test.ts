@@ -195,7 +195,7 @@ describe('PHOENIX_STANDARD', () => {
     t.advanceTo('COMPLETE')
 
     expect(t.abilityLog('PHOENIX_STANDARD')).not.toHaveLength(0)
-    expect(t.state.abilities.attacker.PRE_GALVANIZED.reinforcementTokens).toBe(
+    expect(t.state.attacker.abilities.PRE_GALVANIZED.reinforcementTokens).toBe(
       2,
     )
   })

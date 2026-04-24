@@ -2,8 +2,8 @@ import type { CombatSide, FactionKey } from '@/types'
 
 import type { Ability } from '../../combat/abilities-engine/types'
 import type {
-  AbilitiesConfig,
   CombatMode,
+  SideAbilitiesConfig,
 } from '../../combat/combat-state/types'
 import {
   getAvailableAbilities,
@@ -34,7 +34,7 @@ interface SideAbilitiesData {
 }
 
 export function prepareSimulationConfig(
-  config: AbilitiesConfig,
+  config: Record<CombatSide, SideAbilitiesConfig>,
   attackerFaction: FactionKey,
   defenderFaction: FactionKey,
   combatMode: CombatMode,

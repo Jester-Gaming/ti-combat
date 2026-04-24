@@ -35,7 +35,7 @@ describe.forEachSide('LAST_DISPATCH + WATCHFUL_OJZ', () => {
 
     // Flagship should be in retreat saved data
     const saved = (
-      t.state.abilities.attacker.RETREAT as Record<string, unknown>
+      t.state.attacker.abilities.RETREAT as Record<string, unknown>
     )?._saved as SavedRetreatData
     expect(saved?.savedUnits.FLAGSHIP).toHaveLength(1)
   })

@@ -30,7 +30,7 @@ describe.forEachSide('RAISE_THE_STANDARD', () => {
     expect(
       t.attacker.units.CRUISER!.some(u => u.subtypes?.includes('Galvanized')),
     ).toBe(true)
-    expect(t.state.abilities.attacker.RAISE_THE_STANDARD.uses).toBe(0)
+    expect(t.state.attacker.abilities.RAISE_THE_STANDARD.uses).toBe(0)
   })
 
   it('galvanizes a surviving infantry at end of ground combat', () => {
@@ -164,7 +164,7 @@ describe.forEachSide('RAISE_THE_STANDARD', () => {
     t.advanceTo('COMPLETE')
 
     expect(t.abilityLog('RAISE_THE_STANDARD')).not.toHaveLength(0)
-    expect(t.state.abilities.attacker.PRE_GALVANIZED.reinforcementTokens).toBe(
+    expect(t.state.attacker.abilities.PRE_GALVANIZED.reinforcementTokens).toBe(
       2,
     )
   })

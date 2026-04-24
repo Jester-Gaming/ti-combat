@@ -192,11 +192,11 @@ function cowLiveAbilityEntry(
   side: CombatSide,
   abilityKey: string,
 ): Record<string, unknown> {
-  draft.liveAbilities = { ...draft.liveAbilities }
-  draft.liveAbilities[side] = { ...draft.liveAbilities[side] }
-  const entry = draft.liveAbilities[side][abilityKey]
+  const sideData = draft[side]
+  sideData.liveAbilities = { ...sideData.liveAbilities }
+  const entry = sideData.liveAbilities[abilityKey]
   const clone = entry ? { ...entry } : {}
-  draft.liveAbilities[side][abilityKey] = clone
+  sideData.liveAbilities[abilityKey] = clone
   return clone
 }
 
@@ -216,8 +216,8 @@ function decrementUses(
     typeof params.uses === 'number' &&
     isFinite(params.uses)
   ) {
-    const live = draft.liveAbilities[side]?.[abilityKey]
-    const base = draft.abilities[side]?.[abilityKey]
+    const live = draft[side].liveAbilities[abilityKey]
+    const base = draft[side].abilities[abilityKey]
     const currentUses =
       live && typeof live.uses === 'number'
         ? live.uses
@@ -311,8 +311,8 @@ interface BranchStateSnapshot {
  * Simulation-only ability engine.
  *
  * Has a direct bidirectional link with CombatState — reads and writes
- * ability config through CombatState.data.abilities. Abilities mutate
- * the shared Mutative draft on CombatState.data directly.
+ * ability config through CombatState.data[side].abilities. Abilities
+ * mutate the shared Mutative draft on CombatState.data directly.
  */
 export class AbilitiesEngine {
   private _combatState!: CombatState
@@ -384,10 +384,6 @@ export class AbilitiesEngine {
 
   get defenderFaction(): FactionKey {
     return this.state.defender.faction
-  }
-
-  get config() {
-    return this.state.abilities
   }
 
   getAbilities(side: CombatSide): Ability[] {
@@ -737,7 +733,7 @@ export class AbilitiesEngine {
         }
       }
 
-      const liveOverlay = state.liveAbilities[side][ability.key]
+      const liveOverlay = state[side].liveAbilities[ability.key]
       const freshParams = liveOverlay ? { ...params, ...liveOverlay } : params
 
       let internalContext: InternalTimingContextMap[T] | undefined
@@ -1023,7 +1019,7 @@ export class AbilitiesEngine {
         }
       }
 
-      sortPreSortedBuckets(sideMap, state.abilities[side])
+      sortPreSortedBuckets(sideMap, state[side].abilities)
     }
 
     this._combatState._invokes = collections
@@ -1114,7 +1110,7 @@ export class AbilitiesEngine {
       }
     }
 
-    sortPreSortedBuckets(sideMap, state.abilities[side])
+    sortPreSortedBuckets(sideMap, state[side].abilities)
   }
 
   private removeConfigInvokeEntries(
@@ -1167,7 +1163,7 @@ export class AbilitiesEngine {
           : undefined,
       })
     }
-    sortPreSortedBuckets(sideMap, state.abilities[side])
+    sortPreSortedBuckets(sideMap, state[side].abilities)
   }
 
   private addDeployAbilityInvokes(
@@ -1196,7 +1192,7 @@ export class AbilitiesEngine {
         ownerFaction: state[side].faction,
       })
     }
-    sortPreSortedBuckets(sideMap, state.abilities[side])
+    sortPreSortedBuckets(sideMap, state[side].abilities)
   }
 
   syncInvokesForKey(

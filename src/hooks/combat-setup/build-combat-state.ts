@@ -12,8 +12,8 @@ import { buildUnitStatsMap } from '@/utils/get-simulation-units'
 import { CombatState } from '../../combat/combat-state/combat-state'
 import type { UnitStatsEntry } from '../../combat/combat-state/types'
 import type {
-  AbilitiesConfig,
   CombatMode,
+  SideAbilitiesConfig,
   SideStateData,
 } from '../../combat/combat-state/types'
 import { nextUnitIds } from '../../combat/utils/unit-id'
@@ -41,7 +41,10 @@ export interface CombatStateConfig {
 // BUILDERS
 // ============================================================================
 
-function buildSideState(config: SideConfig): SideStateData {
+function buildSideState(
+  config: SideConfig,
+  abilities: SideAbilitiesConfig,
+): SideStateData {
   const upgradedSet = new Set(config.upgrades ?? [])
   const participatingUnits: UnitId[] = []
   const unitType: Record<UnitId, UnitType> = {}
@@ -89,33 +92,23 @@ function buildSideState(config: SideConfig): SideStateData {
       ...unitStats,
     } as Record<import('@/types').UnitType, UnitStatsEntry>,
     hitPools: [],
+    abilities,
+    liveAbilities: {},
   }
 }
 
-function buildAbilitiesConfig(
-  attacker: SideConfig,
-  defender: SideConfig,
-): AbilitiesConfig {
-  const buildSideConfig = (
-    config: SideConfig,
-  ): Record<string, Record<string, unknown>> => {
-    const result: Record<string, Record<string, unknown>> = {}
-    if (!config.abilities) return result
+function buildSideAbilitiesConfig(config: SideConfig): SideAbilitiesConfig {
+  const result: SideAbilitiesConfig = {}
+  if (!config.abilities) return result
 
-    for (const [key, value] of Object.entries(config.abilities)) {
-      if (value === true) {
-        result[key] = { isEnabled: true }
-      } else {
-        result[key] = { ...value }
-      }
+  for (const [key, value] of Object.entries(config.abilities)) {
+    if (value === true) {
+      result[key] = { isEnabled: true }
+    } else {
+      result[key] = { ...value }
     }
-    return result
   }
-
-  return {
-    attacker: buildSideConfig(attacker),
-    defender: buildSideConfig(defender),
-  }
+  return result
 }
 
 // ============================================================================
@@ -123,9 +116,10 @@ function buildAbilitiesConfig(
 // ============================================================================
 
 export function buildCombatState(config: CombatStateConfig): CombatState {
-  const attackerSide = buildSideState(config.attacker)
-  const defenderSide = buildSideState(config.defender)
-  const abilitiesConfig = buildAbilitiesConfig(config.attacker, config.defender)
+  const abilitiesConfig = {
+    attacker: buildSideAbilitiesConfig(config.attacker),
+    defender: buildSideAbilitiesConfig(config.defender),
+  }
 
   const sideAbilities = prepareSimulationConfig(
     abilitiesConfig,
@@ -135,11 +129,13 @@ export function buildCombatState(config: CombatStateConfig): CombatState {
     config.customAbilities,
   )
 
+  const attackerSide = buildSideState(config.attacker, abilitiesConfig.attacker)
+  const defenderSide = buildSideState(config.defender, abilitiesConfig.defender)
+
   return CombatState.forSimulation(
     attackerSide,
     defenderSide,
     config.mode,
-    abilitiesConfig,
     {
       attacker: sideAbilities.attacker.abilities,
       defender: sideAbilities.defender.abilities,

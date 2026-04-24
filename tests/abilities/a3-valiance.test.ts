@@ -38,7 +38,7 @@ describe('A3_VALIANCE', () => {
     expect(infantry).toHaveLength(3)
     const galvanized = infantry.filter(u => u.subtypes?.includes('Galvanized'))
     expect(galvanized).toHaveLength(3)
-    expect(t.state.abilities.attacker.PRE_GALVANIZED.reinforcementTokens).toBe(
+    expect(t.state.attacker.abilities.PRE_GALVANIZED.reinforcementTokens).toBe(
       0,
     )
   })
@@ -245,7 +245,7 @@ describe('A3_VALIANCE', () => {
     expect(infantry).toHaveLength(3)
     const galvanized = infantry.filter(u => u.subtypes?.includes('Galvanized'))
     expect(galvanized).toHaveLength(1)
-    expect(t.state.abilities.attacker.PRE_GALVANIZED.reinforcementTokens).toBe(
+    expect(t.state.attacker.abilities.PRE_GALVANIZED.reinforcementTokens).toBe(
       0,
     )
   })

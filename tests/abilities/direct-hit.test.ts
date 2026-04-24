@@ -108,7 +108,7 @@ describe.forEachSide('DIRECT_HIT', () => {
     t.advanceRound({ defender: 1 })
 
     // Uses should remain at 1 — not consumed on immune unit
-    expect(t.state.abilities.attacker.DIRECT_HIT.uses).toBe(1)
+    expect(t.state.attacker.abilities.DIRECT_HIT.uses).toBe(1)
   })
 
   it('does not destroy upgraded Sardakk Dreadnought (immune)', () => {

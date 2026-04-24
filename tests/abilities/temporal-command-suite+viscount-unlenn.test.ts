@@ -21,7 +21,7 @@ describe('TEMPORAL_COMMAND_SUITE + VISCOUNT_UNLENN', () => {
     })
 
     // Viscount default uses: 1 → +1 from Temporal Command Suite = 2
-    expect(t.state.abilities.attacker.VISCOUNT_UNLENN.uses).toBe(2)
+    expect(t.state.attacker.abilities.VISCOUNT_UNLENN.uses).toBe(2)
   })
 
   it('does nothing when no agent is selected', () => {
@@ -39,7 +39,7 @@ describe('TEMPORAL_COMMAND_SUITE + VISCOUNT_UNLENN', () => {
     })
 
     // Viscount uses stays at default (1)
-    expect(t.state.abilities.attacker.VISCOUNT_UNLENN.uses).toBe(1)
+    expect(t.state.attacker.abilities.VISCOUNT_UNLENN.uses).toBe(1)
   })
 
   it('works for non-Nomad factions (external tech)', () => {
@@ -59,6 +59,6 @@ describe('TEMPORAL_COMMAND_SUITE + VISCOUNT_UNLENN', () => {
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
     })
 
-    expect(t.state.abilities.attacker.VISCOUNT_UNLENN.uses).toBe(2)
+    expect(t.state.attacker.abilities.VISCOUNT_UNLENN.uses).toBe(2)
   })
 })

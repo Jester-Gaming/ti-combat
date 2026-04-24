@@ -19,7 +19,6 @@ export {
 export { CombatEngine } from './combat-engine'
 export { getOpponentSide } from './combat-side-state/combat-side-state'
 export {
-  type AbilitiesConfig,
   type CombatMode,
   CombatState,
   type CombatStateData,
@@ -32,6 +31,7 @@ export {
   type PhaseMarker,
   type PhaseStep,
   type PhaseTransitionTarget,
+  type SideAbilitiesConfig,
   type SideStateData,
   SPACE_FLOW,
   type StateWithProbability,

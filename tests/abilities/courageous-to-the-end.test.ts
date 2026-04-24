@@ -224,7 +224,7 @@ describe('COURAGEOUS_TO_THE_END', () => {
     expect(t.attacker.units.CRUISER ?? []).toHaveLength(0)
     expect(t.attacker.units.CARRIER).toHaveLength(1)
     expect(t.defender.units.CRUISER).toHaveLength(3) // no Courageous damage
-    expect(t.state.abilities.attacker.COURAGEOUS_TO_THE_END.uses).toBe(1)
+    expect(t.state.attacker.abilities.COURAGEOUS_TO_THE_END.uses).toBe(1)
 
     // R2: carrier dies, Courageous fires with 2d9.
     t.advanceToTiming(
@@ -241,8 +241,8 @@ describe('COURAGEOUS_TO_THE_END', () => {
         0,
       )
       expect(
-        b.state.data.liveAbilities.attacker['COURAGEOUS_TO_THE_END']?.uses ??
-          b.state.data.abilities.attacker['COURAGEOUS_TO_THE_END']?.uses,
+        b.state.data.attacker.liveAbilities['COURAGEOUS_TO_THE_END']?.uses ??
+          b.state.data.attacker.abilities['COURAGEOUS_TO_THE_END']?.uses,
       ).toBe(0)
     }
 
@@ -298,7 +298,7 @@ describe('COURAGEOUS_TO_THE_END', () => {
     expect(t.attacker.units.CRUISER).toHaveLength(1)
     expect(t.defender.units.CARRIER).toHaveLength(1)
     expect(t.defender.units.CRUISER).toHaveLength(1)
-    expect(t.state.abilities.attacker.COURAGEOUS_TO_THE_END.uses).toBe(1)
+    expect(t.state.attacker.abilities.COURAGEOUS_TO_THE_END.uses).toBe(1)
 
     // R2: both sides lose 1 ship. Defender's cruiser dies first (cheapest)
     // → defender's top-priority target becomes CARRIER (checked) →
@@ -320,8 +320,8 @@ describe('COURAGEOUS_TO_THE_END', () => {
         0,
       )
       expect(
-        b.state.data.liveAbilities.attacker['COURAGEOUS_TO_THE_END']?.uses ??
-          b.state.data.abilities.attacker['COURAGEOUS_TO_THE_END']?.uses,
+        b.state.data.attacker.liveAbilities['COURAGEOUS_TO_THE_END']?.uses ??
+          b.state.data.attacker.abilities['COURAGEOUS_TO_THE_END']?.uses,
       ).toBe(0)
     }
 

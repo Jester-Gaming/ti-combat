@@ -110,7 +110,7 @@ describe('DEPLOY uses limit in simulation', () => {
     expect(reaperInvokes[0].params.uses).toBe(2)
 
     // Check config has the uses value
-    expect(combatState.data.abilities.attacker['DUNLAIN_REAPER']?.uses).toBe(2)
+    expect(combatState.data.attacker.abilities['DUNLAIN_REAPER']?.uses).toBe(2)
   })
 
   it('uses decrements through simulation advance path', () => {
@@ -140,8 +140,8 @@ describe('DEPLOY uses limit in simulation', () => {
     state = advancePastStartOfCombat(state, 0, meta)
     expect(countMechs(state.data)).toBe(1) // 1 mech deployed
     const usesAfterRound1 =
-      state.data.liveAbilities.attacker['DUNLAIN_REAPER']?.uses ??
-      state.data.abilities.attacker['DUNLAIN_REAPER']?.uses
+      state.data.attacker.liveAbilities['DUNLAIN_REAPER']?.uses ??
+      state.data.attacker.abilities['DUNLAIN_REAPER']?.uses
     expect(usesAfterRound1).toBe(1) // uses decremented
   })
 })

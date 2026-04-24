@@ -133,6 +133,6 @@ describe('TELLURIAN', () => {
 
     expect(t.abilityLog('TELLURIAN')).toHaveLength(0)
     // Uses not consumed
-    expect(t.state.abilities.attacker.TELLURIAN.uses).toBe(1)
+    expect(t.state.attacker.abilities.TELLURIAN.uses).toBe(1)
   })
 })

@@ -372,9 +372,10 @@ export class CombatSideState {
   getLiveParams(abilityKey: string): Record<string, unknown> | undefined {
     const state = this.stateData
     const side = this._side
-    const live = state.liveAbilities[side][abilityKey]
-    if (live === undefined) return state.abilities[side][abilityKey]
-    const base = state.abilities[side][abilityKey]
+    const sideData = state[side]
+    const live = sideData.liveAbilities[abilityKey]
+    if (live === undefined) return sideData.abilities[abilityKey]
+    const base = sideData.abilities[abilityKey]
     if (base === undefined) return live
     return { ...base, ...live }
   }
@@ -857,10 +858,9 @@ export class CombatSideState {
   /** Get participating units from SETTINGS ability. Hot path — called
    *  millions of times via `hasParticipatingUnits`, so inline the merge. */
   getParticipatingUnits(): ReadonlySet<UnitBaseType> {
-    const state = this.stateData
-    const side = this._side
-    const liveSettings = state.liveAbilities[side]['SETTINGS']
-    const baseSettings = state.abilities[side]['SETTINGS']
+    const sideData = this.stateData[this._side]
+    const liveSettings = sideData.liveAbilities['SETTINGS']
+    const baseSettings = sideData.abilities['SETTINGS']
     const settings =
       liveSettings === undefined
         ? baseSettings
@@ -873,7 +873,7 @@ export class CombatSideState {
     }
 
     const units =
-      state.combatMode === 'GROUND'
+      this.stateData.combatMode === 'GROUND'
         ? (settings.groundCombatParticipating as UnitBaseType[])
         : (settings.spaceCombatParticipating as UnitBaseType[])
 
