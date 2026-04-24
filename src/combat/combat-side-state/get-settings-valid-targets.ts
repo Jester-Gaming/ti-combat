@@ -1,6 +1,6 @@
 import type { UnitBaseType } from '@/types'
 
-import type { MetaPhase } from '../../combat-state/types'
+import type { MetaPhase } from '../combat-state/types'
 
 export function getSettingsValidTargets(
   params: Record<string, unknown>,

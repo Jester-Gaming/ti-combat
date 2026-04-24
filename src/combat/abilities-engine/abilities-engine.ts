@@ -6,7 +6,10 @@ import type {
   UnitType,
 } from '@/types'
 
-import { getOpponentSide } from '../combat-side-state/combat-side-state'
+import {
+  CombatSideState,
+  getOpponentSide,
+} from '../combat-side-state/combat-side-state'
 import { CombatState } from '../combat-state/combat-state'
 import type {
   CombatStateData,
@@ -697,9 +700,25 @@ export class AbilitiesEngine {
         }
       } else if (source.type === 'deploy') {
         if (sideTracker.configAbilities.has(invoke)) continue
-        const sideState = this._combatState.side(side)
-        if (sideState.isRestricted('lost', 'DEPLOY', source.unitType)) continue
-        if (sideState.isRestricted('cannotBeUsed', 'DEPLOY', source.unitType))
+        if (
+          CombatSideState.isRestricted(
+            state,
+            side,
+            'lost',
+            'DEPLOY',
+            source.unitType,
+          )
+        )
+          continue
+        if (
+          CombatSideState.isRestricted(
+            state,
+            side,
+            'cannotBeUsed',
+            'DEPLOY',
+            source.unitType,
+          )
+        )
           continue
       } else if (source.type === 'unit') {
         const sideStateData = state[side]
@@ -885,13 +904,16 @@ export class AbilitiesEngine {
     for (const side of ['attacker', 'defender'] as const) {
       const sideMap = collections[side]
       const unitAbilityKeys = this._unitAbilityKeys[side]
-      const sideState = this._combatState.side(side)
+      const sideData = state[side]
 
       for (const ability of this._abilities[side]) {
         if (unitAbilityKeys.has(ability.key)) continue
         if (ability.context && ability.context !== state.combatMode) continue
 
-        const configParams = sideState.getLiveParams(ability.key)
+        const configParams = CombatSideState.getLiveParams(
+          sideData,
+          ability.key,
+        )
         const mergedParams = configParams
           ? { ...extractDefaults(ability), ...configParams }
           : extractDefaults(ability)
@@ -931,7 +953,10 @@ export class AbilitiesEngine {
       for (const { ability, unitType, unitId } of unitAbilities) {
         collectedUnitKeys.add(ability.key)
         if (ability.context && ability.context !== state.combatMode) continue
-        const configParams = sideState.getLiveParams(ability.key)
+        const configParams = CombatSideState.getLiveParams(
+          sideData,
+          ability.key,
+        )
         const mergedParams = configParams
           ? { ...extractDefaults(ability), ...configParams }
           : extractDefaults(ability)
@@ -954,7 +979,10 @@ export class AbilitiesEngine {
         if (collectedUnitKeys.has(ability.key)) continue
         if (ability.context && ability.context !== state.combatMode) continue
 
-        const configParams = sideState.getLiveParams(ability.key)
+        const configParams = CombatSideState.getLiveParams(
+          sideData,
+          ability.key,
+        )
         const mergedParams = configParams
           ? { ...extractDefaults(ability), ...configParams }
           : extractDefaults(ability)
@@ -992,7 +1020,10 @@ export class AbilitiesEngine {
       )
       for (const { ability, unitType } of deployAbilities) {
         if (ability.context && ability.context !== state.combatMode) continue
-        const configParams = sideState.getLiveParams(ability.key)
+        const configParams = CombatSideState.getLiveParams(
+          sideData,
+          ability.key,
+        )
         const mergedParams = configParams
           ? { ...extractDefaults(ability), ...configParams }
           : extractDefaults(ability)
@@ -1083,10 +1114,9 @@ export class AbilitiesEngine {
       }
     }
 
-    const combatSideState = this._combatState.side(side)
     for (const ability of stats.ABILITIES) {
       if (ability.context && ability.context !== state.combatMode) continue
-      const configParams = combatSideState.getLiveParams(ability.key)
+      const configParams = CombatSideState.getLiveParams(sideState, ability.key)
       const mergedParams = configParams
         ? { ...extractDefaults(ability), ...configParams }
         : extractDefaults(ability)
@@ -1212,7 +1242,7 @@ export class AbilitiesEngine {
     const deployEntry = deployAbilities.find(d => d.ability.key === key)
     if (deployEntry) {
       this.removeConfigInvokeEntries(side, key)
-      const newConfig = this._combatState.side(side).getLiveParams(key)
+      const newConfig = CombatSideState.getLiveParams(draft[side], key)
       const defaults = extractDefaults(deployEntry.ability)
       const mergedParams = newConfig ? { ...defaults, ...newConfig } : defaults
 
@@ -1233,7 +1263,7 @@ export class AbilitiesEngine {
 
     this.removeConfigInvokeEntries(side, key)
 
-    const newConfig = this._combatState.side(side).getLiveParams(key)
+    const newConfig = CombatSideState.getLiveParams(draft[side], key)
     const defaults = extractDefaults(ability)
     const mergedParams = newConfig ? { ...defaults, ...newConfig } : defaults
 
@@ -1254,7 +1284,7 @@ export class AbilitiesEngine {
     // (e.g. ships → nonFighterShips/spaceCombatParticipating). Capture any
     // mutations via a before/after diff and persist them in liveAbilities
     // so subsequent reads see the derived values.
-    const params = { ...this._combatState.side(side).getLiveParams(targetKey) }
+    const params = { ...CombatSideState.getLiveParams(draft[side], targetKey) }
     const before = { ...params }
     for (const key of changedKeys) {
       ability.onParamSet(params, key, params[key])

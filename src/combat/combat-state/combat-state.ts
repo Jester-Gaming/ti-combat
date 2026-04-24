@@ -34,7 +34,6 @@ import type {
   PendingStep,
   PhaseStep,
   PhaseStepGroup,
-  SideAbilitiesConfig,
   SideStateData,
   UnitAbilityMeta,
 } from './types'
@@ -155,8 +154,6 @@ export class CombatState {
   data!: CombatStateData
   _logger?: Logger
   private _params!: AbilitiesEngine
-  private _attacker: CombatSideState | undefined
-  private _defender: CombatSideState | undefined
   public _invokes!: InvokeCollections
   public _invokesOwned = true
   /** LIFO stack of steps for the current meta's phase script. `advance()`
@@ -196,26 +193,6 @@ export class CombatState {
       this._invokes = cloneInvokes(this._invokes)
       this._invokesOwned = true
     }
-  }
-
-  get attacker(): CombatSideState {
-    return (this._attacker ??= new CombatSideState(this, 'attacker'))
-  }
-
-  get defender(): CombatSideState {
-    return (this._defender ??= new CombatSideState(this, 'defender'))
-  }
-
-  side(side: CombatSide): CombatSideState {
-    return side === 'attacker' ? this.attacker : this.defender
-  }
-
-  abilitiesFor(side: CombatSide): SideAbilitiesConfig {
-    return this.data[side].abilities
-  }
-
-  liveAbilitiesFor(side: CombatSide): SideAbilitiesConfig {
-    return this.data[side].liveAbilities
   }
 
   get combatMode(): CombatMode {
@@ -340,11 +317,13 @@ export class CombatState {
   }
 
   getUnitsHash(): string {
-    return `${this.attacker.getUnitsHash()}|${this.defender.getUnitsHash()}`
+    const d = this.data
+    return `${CombatSideState.getUnitsHash(d.attacker)}|${CombatSideState.getUnitsHash(d.defender)}`
   }
 
   getHash(): string {
-    return `${this.attacker.getHash()}|${this.defender.getHash()}`
+    const d = this.data
+    return `${CombatSideState.getHash(d.attacker)}|${CombatSideState.getHash(d.defender)}`
   }
 
   /**
@@ -547,12 +526,13 @@ export class CombatState {
     // still fires in SCD after bombardment clears ground forces. Only the
     // combat-round metas can shortcut on missing participants.
     const isCombatRound = meta === 'SPACE_COMBAT' || meta === 'GROUND_COMBAT'
+    const d = this.data
     const attackerOut = isCombatRound
-      ? !this.attacker.hasParticipatingUnits()
-      : !this.attacker.hasAnyUnits()
+      ? !CombatSideState.hasParticipatingUnits(d.attacker)
+      : !CombatSideState.hasAnyUnits(d.attacker)
     const defenderOut = isCombatRound
-      ? !this.defender.hasParticipatingUnits()
-      : !this.defender.hasAnyUnits()
+      ? !CombatSideState.hasParticipatingUnits(d.defender)
+      : !CombatSideState.hasAnyUnits(d.defender)
 
     let winner: CombatSide | 'draw' | undefined
     if (attackerOut && defenderOut) winner = 'draw'
@@ -656,13 +636,25 @@ export class CombatState {
       !!this._logger || this._params.hasDestroyAbilities(this._invokes)
 
     const meta = innerMeta(phase)
-    const attackerPriority = this.attacker.getPhasePriorityList(meta)
-    const defenderPriority = this.defender.getPhasePriorityList(meta)
-    const attackerDestroyed = this.attacker.assignHits(
+    const data = this.data
+    const mode = data.combatMode
+    const attackerPriority = CombatSideState.getPhasePriorityList(
+      data.attacker,
+      mode,
+      meta,
+    )
+    const defenderPriority = CombatSideState.getPhasePriorityList(
+      data.defender,
+      mode,
+      meta,
+    )
+    const attackerDestroyed = CombatSideState.assignHits(
+      data.attacker,
       trackDestroyed,
       attackerPriority,
     )
-    const defenderDestroyed = this.defender.assignHits(
+    const defenderDestroyed = CombatSideState.assignHits(
+      data.defender,
       trackDestroyed,
       defenderPriority,
     )
@@ -697,9 +689,15 @@ export class CombatState {
       throw new Error('_collectDice called outside a dice-roll group')
     }
 
+    const data = this.data
+
     if (ctx.isUnitAbility) {
       const blocked = ctx.firing.filter(side =>
-        this.side(side).isAbilityBlocked(ctx.hitSource as UnitAbility),
+        CombatSideState.isAbilityBlocked(
+          data,
+          side,
+          ctx.hitSource as UnitAbility,
+        ),
       )
       if (blocked.length === ctx.firing.length) {
         this._discardCurrentMetaScript(phase)
@@ -723,11 +721,21 @@ export class CombatState {
 
     const attackerDice: DicePool = ctx.firing.includes('attacker')
       ? (ctx.customDice?.attacker ??
-        this.side('attacker').collectDice(ctx.hitSource, ctx.allowedUnitTypes))
+        CombatSideState.collectDice(
+          data,
+          'attacker',
+          ctx.hitSource,
+          ctx.allowedUnitTypes,
+        ))
       : {}
     const defenderDice: DicePool = ctx.firing.includes('defender')
       ? (ctx.customDice?.defender ??
-        this.side('defender').collectDice(ctx.hitSource, ctx.allowedUnitTypes))
+        CombatSideState.collectDice(
+          data,
+          'defender',
+          ctx.hitSource,
+          ctx.allowedUnitTypes,
+        ))
       : {}
 
     ctx.dicePool = { attacker: attackerDice, defender: defenderDice }
@@ -758,8 +766,14 @@ export class CombatState {
     // assignment uses the fast tail-slice path.
     const validTargets = ctx.isUnitAbility
       ? {
-          attacker: this.side('attacker').getValidTargetsForPhase(meta),
-          defender: this.side('defender').getValidTargetsForPhase(meta),
+          attacker: CombatSideState.getValidTargetsForPhase(
+            this.data.attacker,
+            meta,
+          ),
+          defender: CombatSideState.getValidTargetsForPhase(
+            this.data.defender,
+            meta,
+          ),
         }
       : { attacker: [], defender: [] }
 
@@ -849,13 +863,16 @@ export class CombatState {
         this._invokesOwned = false
 
         const branchData = cloneStateForBranch(baseData)
-        const branchState = CombatState.fromData(branchData, this._params)
-        branchState
-          .side(attackerHitTarget)
-          .addBaseHits(attOutcome.hits, validTargets[attackerHitTarget])
-        branchState
-          .side(defenderHitTarget)
-          .addBaseHits(defOutcome.hits, validTargets[defenderHitTarget])
+        CombatSideState.addBaseHits(
+          branchData[attackerHitTarget],
+          attOutcome.hits,
+          validTargets[attackerHitTarget],
+        )
+        CombatSideState.addBaseHits(
+          branchData[defenderHitTarget],
+          defOutcome.hits,
+          validTargets[defenderHitTarget],
+        )
 
         const branchLogger = this._logger?.fork()
         branchLogger?.child(metaPhase).child('DICE_ROLL').log({
@@ -874,6 +891,7 @@ export class CombatState {
           defender: hitsToDefender,
         })
 
+        const branchState = CombatState.fromData(branchData, this._params)
         branchState._logger = branchLogger
         branchState.pendingSteps = clonePendingSteps(basePendingSteps)
         results.push({ state: branchState, probability })
@@ -1069,7 +1087,7 @@ function buildUnitAbilityRunOptions(
 /** Build the four-step group that resolves a combat dice roll:
  *  _collectDice → BEFORE_DICE_ROLL → _rollDice → AFTER_DICE_ROLL.
  *  Stored reversed for the LIFO stack. */
-export function buildCombatDiceRollGroup(phase: MetaPhase[]): PhaseStepGroup {
+function buildCombatDiceRollGroup(phase: MetaPhase[]): PhaseStepGroup {
   const data: DiceRollContext = {
     hitSource: 'COMBAT',
     firing: ['attacker', 'defender'],
@@ -1092,7 +1110,7 @@ export function buildCombatDiceRollGroup(phase: MetaPhase[]): PhaseStepGroup {
  *  emissions and merged with overrides from
  *  `runUnitAbilityStepForAbility` (firing restricted to the caller's
  *  side, optional `customDice`, optional `routing`). */
-export function buildUnitAbilityDiceRollGroup(
+function buildUnitAbilityDiceRollGroup(
   phase: MetaPhase[],
   config: {
     firing: CombatSide[]

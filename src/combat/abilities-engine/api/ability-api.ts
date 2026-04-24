@@ -14,8 +14,10 @@ import type {
   UnitVariantId,
 } from '@/types'
 
-import type { CombatSideState } from '../../combat-side-state/combat-side-state'
-import { getOpponentSide } from '../../combat-side-state/combat-side-state'
+import {
+  CombatSideState,
+  getOpponentSide,
+} from '../../combat-side-state/combat-side-state'
 import {
   buildDestroyGroup,
   clonePendingSteps,
@@ -27,6 +29,7 @@ import type {
   HitPool,
   MetaPhase,
   PendingStep,
+  SideStateData,
   UnitAbilityMeta,
 } from '../../combat-state/types'
 import { isDiceRollContext } from '../../combat-state/types'
@@ -125,8 +128,8 @@ export class SideApi {
     return prev
   }
 
-  private get _sideState(): CombatSideState {
-    return this._ctx.sideState(this._side)
+  private get _sideData(): SideStateData {
+    return this._ctx.state[this._side]
   }
 
   private get state(): CombatStateData {
@@ -138,38 +141,56 @@ export class SideApi {
   }
 
   getUnits(unitType: UnitType, options?: { includeVariants: true }) {
-    return this._sideState.getUnits(unitType, options?.includeVariants)
+    return CombatSideState.getUnits(
+      this._sideData,
+      unitType,
+      options?.includeVariants,
+    )
   }
 
   hasUnit(unitId: UnitId) {
-    return this._sideState.hasUnit(unitId)
+    return CombatSideState.hasUnit(this._sideData, unitId)
   }
 
   hasUnitType(unitType: UnitType, options?: { includeVariants: true }) {
-    return this._sideState.hasUnitType(unitType, options?.includeVariants)
+    return CombatSideState.hasUnitType(
+      this._sideData,
+      unitType,
+      options?.includeVariants,
+    )
   }
 
   countUnits(
     filter?: UnitType | UnitType[],
     options?: { includeVariants: true },
   ) {
-    return this._sideState.countUnits(filter, options?.includeVariants)
+    return CombatSideState.countUnits(
+      this._sideData,
+      filter,
+      options?.includeVariants,
+    )
   }
 
   getPendingHits(filter?: { base?: true; bonus?: true }) {
-    return this._sideState.getPendingHits(filter)
+    return CombatSideState.getPendingHits(this._sideData, filter)
   }
 
   getHitPoolValidTargets() {
-    return this._sideState.getHitPoolValidTargets(this._ctx.meta)
+    return CombatSideState.getHitPoolValidTargets(
+      this._sideData,
+      this._ctx.meta,
+    )
   }
 
   getActiveBaseTypes() {
-    return this._sideState.getActiveBaseTypes()
+    return CombatSideState.getActiveBaseTypes(this._sideData)
   }
 
   getParticipatingUnitTypes(options?: { combatMode?: CombatMode }) {
-    return this._sideState.getParticipatingUnitTypes(options?.combatMode)
+    return CombatSideState.getParticipatingUnitTypes(
+      this._sideData,
+      options?.combatMode ?? this.state.combatMode,
+    )
   }
 
   getUnitVariantsOptions(filter?: {
@@ -181,7 +202,11 @@ export class SideApi {
     combatMode?: CombatMode
     includeNonParticipating?: boolean
   }) {
-    return this._sideState.getUnitVariantOptions(filter)
+    return CombatSideState.getUnitVariantOptions(
+      this._sideData,
+      this.state.combatMode,
+      filter,
+    )
   }
 
   findUnitByPriority(priority: UnitType[]): UnitId | undefined
@@ -190,58 +215,85 @@ export class SideApi {
     priority: UnitType[],
     amount?: number,
   ): UnitId | UnitId[] | undefined {
-    const participating = new Set(this._sideState.getParticipatingUnitTypes())
+    const participating = new Set(
+      CombatSideState.getParticipatingUnitTypes(
+        this._sideData,
+        this.state.combatMode,
+      ),
+    )
     if (amount !== undefined) {
-      return this._sideState.findUnitByPriority(priority, participating, amount)
+      return CombatSideState.findUnitByPriority(
+        this._sideData,
+        priority,
+        participating,
+        amount,
+      )
     }
-    return this._sideState.findUnitByPriority(priority, participating)
+    return CombatSideState.findUnitByPriority(
+      this._sideData,
+      priority,
+      participating,
+    )
   }
 
   /** Simulate resolving a HitPool against this side's current units —
    *  returns the UnitIds that would be destroyed, in sacrifice order.
    *  Non-destructive. */
   getAssignHitsTargets(hitPool: HitPool): UnitId[] {
-    return this._sideState.getAssignHitsTargets(hitPool)
+    return CombatSideState.getAssignHitsTargets(this._sideData, hitPool)
   }
 
   getUnitStats(unitTypeOrId: string | UnitId) {
-    return this._sideState.getUnitStats(unitTypeOrId)
+    return CombatSideState.getUnitStats(this._sideData, unitTypeOrId)
   }
 
   getVariantKey(unitId: UnitId) {
-    return this._sideState.findVariantKey(unitId) || undefined
+    return CombatSideState.findVariantKey(this._sideData, unitId) || undefined
   }
 
   getUnitState(unitId: UnitId) {
-    return this._sideState.getUnitState(unitId)
+    return CombatSideState.getUnitState(this._sideData, unitId)
   }
 
   getUnitBaseType(unitId: UnitId) {
-    return this._sideState.getUnitBaseType(unitId)
+    return CombatSideState.getUnitBaseType(this._sideData, unitId)
   }
 
   getUnitVariant(unitId: UnitId) {
-    return this._sideState.getUnitVariant(unitId)
+    return CombatSideState.getUnitVariant(this._sideData, unitId)
   }
 
   isUnitAbilityLost(ability: UnitAbility, unitType: string) {
-    return this._sideState.isRestricted('lost', ability, unitType)
+    return CombatSideState.isRestricted(
+      this.state,
+      this._side,
+      'lost',
+      ability,
+      unitType,
+    )
   }
 
   isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: string) {
-    return this._sideState.isRestricted('cannotBeUsed', ability, unitType)
+    return CombatSideState.isRestricted(
+      this.state,
+      this._side,
+      'cannotBeUsed',
+      ability,
+      unitType,
+    )
   }
 
   getAbilityConfig<K extends keyof AbilityConfigMap>(
     key: K,
   ): AbilityBaseParams & AbilityConfigMap[K]
   getAbilityConfig(key: string) {
-    return this._sideState.getLiveParams(key)
+    return CombatSideState.getLiveParams(this._sideData, key)
   }
 
   /** Destroy one or more units and fire DESTROY/WHEN_DESTROY/AFTER_DESTROY
    *  exactly once for the combined set (simultaneous destruction). */
   destroyUnits(target: UnitBaseType | UnitId | UnitId[]): void {
+    const s = this._sideData
     const destroyed: Record<string, UnitId[]> = {}
 
     const stage = (unitId: UnitId, key: UnitType) => {
@@ -252,16 +304,16 @@ export class SideApi {
 
     if (Array.isArray(target)) {
       for (const id of target) {
-        const key = this._sideState.findVariantKey(id)
+        const key = CombatSideState.findVariantKey(s, id)
         if (!key) continue
         stage(id, key)
       }
     } else if (typeof target === 'string') {
-      const found = this._sideState.findFirstUnitId(target)
+      const found = CombatSideState.findFirstUnitId(s, target)
       if (!found) return
       stage(found.unitId, found.key)
     } else {
-      const key = this._sideState.findVariantKey(target)
+      const key = CombatSideState.findVariantKey(s, target)
       if (!key) return
       stage(target, key)
     }
@@ -271,7 +323,7 @@ export class SideApi {
     if (keys.length === 0) return
     const flat: UnitId[] = []
     for (const k of keys) for (const id of destroyed[k]) flat.push(id)
-    this._sideState.removeUnits(flat)
+    CombatSideState.removeUnits(s, flat)
 
     if (this._abilitiesParams) {
       const context = {
@@ -284,13 +336,17 @@ export class SideApi {
   }
 
   removeUnits(target: UnitBaseType | UnitId | UnitId[]): void {
-    this._sideState.removeUnits(target)
+    CombatSideState.removeUnits(this._sideData, target)
   }
 
   placeUnits(
     unitsToAdd: Partial<Record<UnitBaseType, number>>,
   ): Record<UnitBaseType, UnitId[]> {
-    const placed = this._sideState.placeUnits(unitsToAdd)
+    const placed = CombatSideState.placeUnits(
+      this._sideData,
+      this.state.combatMode,
+      unitsToAdd,
+    )
 
     const abilitiesParams = this._abilitiesParams
     if (abilitiesParams) {
@@ -307,7 +363,8 @@ export class SideApi {
   }
 
   modifyUnitType(key: UnitType, updates: Partial<UnitStats>): void {
-    const { keysWithAbilitiesChange } = this._sideState.modifyUnitType(
+    const { keysWithAbilitiesChange } = CombatSideState.modifyUnitType(
+      this._sideData,
       key,
       updates,
     )
@@ -321,18 +378,18 @@ export class SideApi {
   }
 
   modifyUnitState(unitId: UnitId, updates: Partial<UnitState>): void {
-    this._sideState.modifyUnitState(unitId, updates)
+    CombatSideState.modifyUnitState(this._sideData, unitId, updates)
   }
 
   reduceHits(amount: number) {
-    this._sideState.reduceHits(amount)
+    CombatSideState.reduceHits(this._sideData, amount)
   }
 
   addHits(hits: number, validTargets: UnitType[]) {
     const data = this.state
     const wasEmpty =
       data.attacker.hitPools.length === 0 && data.defender.hitPools.length === 0
-    this._sideState.addHits(hits, validTargets)
+    CombatSideState.addHits(this._sideData, hits, validTargets)
     if (wasEmpty) this._ctx._assignHits()
   }
 
@@ -341,7 +398,13 @@ export class SideApi {
     reason: string,
     target?: UnitBaseType | UnitCategory,
   ) {
-    this._sideState.addRestriction('lost', ability, reason, target)
+    CombatSideState.addRestriction(
+      this._sideData,
+      'lost',
+      ability,
+      reason,
+      target,
+    )
   }
 
   removeUnitAbilityLost(
@@ -349,7 +412,13 @@ export class SideApi {
     reason: string,
     target?: UnitBaseType | UnitCategory,
   ) {
-    this._sideState.removeRestriction('lost', ability, reason, target)
+    CombatSideState.removeRestriction(
+      this._sideData,
+      'lost',
+      ability,
+      reason,
+      target,
+    )
   }
 
   setUnitAbilityCannotBeUsed(
@@ -357,7 +426,13 @@ export class SideApi {
     reason: string,
     target?: UnitBaseType | UnitCategory,
   ) {
-    this._sideState.addRestriction('cannotBeUsed', ability, reason, target)
+    CombatSideState.addRestriction(
+      this._sideData,
+      'cannotBeUsed',
+      ability,
+      reason,
+      target,
+    )
   }
 
   removeUnitAbilityCannotBeUsed(
@@ -365,7 +440,13 @@ export class SideApi {
     reason: string,
     target?: UnitBaseType | UnitCategory,
   ) {
-    this._sideState.removeRestriction('cannotBeUsed', ability, reason, target)
+    CombatSideState.removeRestriction(
+      this._sideData,
+      'cannotBeUsed',
+      ability,
+      reason,
+      target,
+    )
   }
 
   addSubtype(
@@ -373,11 +454,11 @@ export class SideApi {
     subtype: UnitVariantId,
     statsFactory?: (parentStats: UnitStats) => UnitStats,
   ) {
-    this._sideState.addSubtype(variantId, subtype, statsFactory)
+    CombatSideState.addSubtype(this._sideData, variantId, subtype, statsFactory)
   }
 
   removeSubtype(variantId: UnitType, subtype: UnitVariantId) {
-    this._sideState.removeSubtype(variantId, subtype)
+    CombatSideState.removeSubtype(this._sideData, variantId, subtype)
   }
 
   updateAbilityConfig(
@@ -457,7 +538,13 @@ export class SideApi {
   }
 
   modifyHitValue(amount: number, target?: unknown): void {
-    this._sideState.addHitValueModifier(amount, target, this._ctx.meta)
+    CombatSideState.addHitValueModifier(
+      this._ctx._abilitiesParams.combatState.pendingSteps,
+      this._side,
+      amount,
+      target,
+      this._ctx.meta,
+    )
   }
 
   /** True if this side's dice pool has no dice. Only meaningful during
@@ -561,7 +648,7 @@ export class AbilityContext {
   ownerFaction?: FactionKey
   ability?: Ability
 
-  private _abilitiesParams: AbilitiesEngine
+  _abilitiesParams: AbilitiesEngine
   private _side: CombatSide
   private _api: { own: SideApi; opponent: SideApi }
 
@@ -606,10 +693,6 @@ export class AbilityContext {
       throw new Error('ctx.this is not set — no ability is currently running')
     }
     return this.ability
-  }
-
-  sideState(side: CombatSide): CombatSideState {
-    return this._abilitiesParams.combatState.side(side)
   }
 
   get api(): { own: SideApi; opponent: SideApi } {

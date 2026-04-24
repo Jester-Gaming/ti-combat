@@ -17,7 +17,10 @@ export {
   extractSyncSources,
 } from './abilities-engine/declare-param'
 export { CombatEngine } from './combat-engine'
-export { getOpponentSide } from './combat-side-state/combat-side-state'
+export {
+  CombatSideState,
+  getOpponentSide,
+} from './combat-side-state/combat-side-state'
 export {
   type CombatMode,
   CombatState,
