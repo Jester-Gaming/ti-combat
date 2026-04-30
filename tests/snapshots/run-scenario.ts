@@ -72,7 +72,7 @@ function formatSide(side: SurvivorSide): string {
   return parts.join(', ')
 }
 
-const PROBABILITY_DECIMALS = 10
+const PROBABILITY_DECIMALS = 12
 const PROBABILITY_FACTOR = 10 ** PROBABILITY_DECIMALS
 
 interface FormattedOutcome {
@@ -94,11 +94,14 @@ export function runScenario(
     defender: { faction, units: parseUnits(defender) },
   })
   const engine = new CombatEngine()
-  return engine.simulate(state).map(o => ({
-    attacker: formatSide(o.attacker),
-    defender: formatSide(o.defender),
-    winner: o.winner,
-    probability:
-      Math.round(o.probability * PROBABILITY_FACTOR) / PROBABILITY_FACTOR,
-  }))
+  return engine
+    .simulate(state)
+    .sort((a, b) => a.probability - b.probability)
+    .map(o => ({
+      attacker: formatSide(o.attacker),
+      defender: formatSide(o.defender),
+      winner: o.winner,
+      probability:
+        Math.round(o.probability * PROBABILITY_FACTOR) / PROBABILITY_FACTOR,
+    }))
 }
