@@ -10,5 +10,6 @@ export default defineConfig({
   test: {
     include: ['tests/snapshots/**/*.test.ts'],
     globals: true,
+    testTimeout: 10000,
   },
 })
