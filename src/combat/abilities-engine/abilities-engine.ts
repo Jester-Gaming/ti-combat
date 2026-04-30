@@ -1147,6 +1147,112 @@ export class AbilitiesEngine {
     this.removeInvokeEntries(side, key)
   }
 
+  /** Remove a (unit, ability) entry pair from every phase/timing bucket on
+   *  `side`. Idempotent. Safe to call mid-iteration — produces a fresh
+   *  bucket array so an in-flight iteration on the pre-swap array continues
+   *  unaffected. Once removed, `hasCallableInvoke` no longer sees the
+   *  entry, so subsequent dispatch passes skip the timing entirely if the
+   *  bucket is left empty. */
+  disableUnitAbility(
+    side: CombatSide,
+    unitId: UnitId,
+    abilityKey: string,
+  ): void {
+    const existing = this._combatState._invokes[side]
+    let hasMatch = false
+    outer: for (const bucket of existing.values()) {
+      for (const entries of bucket.values()) {
+        for (const e of entries) {
+          if (
+            e.source.type === 'unit' &&
+            e.source.unitId === unitId &&
+            e.ability.key === abilityKey
+          ) {
+            hasMatch = true
+            break outer
+          }
+        }
+      }
+    }
+    if (!hasMatch) return
+
+    this._combatState.ensureOwnInvokes()
+    const owned = this._combatState._invokes[side]
+    for (const bucket of owned.values()) {
+      for (const [timing, entries] of bucket) {
+        const filtered = entries.filter(
+          e =>
+            !(
+              e.source.type === 'unit' &&
+              e.source.unitId === unitId &&
+              e.ability.key === abilityKey
+            ),
+        )
+        if (filtered.length === entries.length) continue
+        if (filtered.length === 0) bucket.delete(timing)
+        else bucket.set(timing, filtered)
+      }
+    }
+  }
+
+  /** Re-register a (unit, ability) entry pair previously removed via
+   *  `disableUnitAbility`. Idempotent. */
+  enableUnitAbility(
+    side: CombatSide,
+    unitId: UnitId,
+    abilityKey: string,
+  ): void {
+    const existing = this._combatState._invokes[side]
+    for (const bucket of existing.values()) {
+      for (const entries of bucket.values()) {
+        for (const e of entries) {
+          if (
+            e.source.type === 'unit' &&
+            e.source.unitId === unitId &&
+            e.ability.key === abilityKey
+          ) {
+            return
+          }
+        }
+      }
+    }
+
+    const candidate = this._combatState._allInvokes[side].find(
+      c =>
+        c.source.type === 'unit' &&
+        c.source.unitId === unitId &&
+        c.ability.key === abilityKey,
+    )
+    if (!candidate) return
+
+    const state = this._combatState.data
+    const mergedParams = resolveMergedParams(state[side], candidate.ability)
+    if (!mergedParams) return
+
+    this._combatState.ensureOwnInvokes()
+    const owned = this._combatState._invokes[side]
+    let pushed = false
+    for (const invoke of candidate.ability.invoke) {
+      if (!passesInvoke(invoke, mergedParams)) continue
+      pushInvokeEntry(
+        owned,
+        buildEntry(
+          candidate.ability,
+          invoke,
+          mergedParams,
+          candidate.source,
+          candidate.ownerFaction,
+        ),
+      )
+      pushed = true
+    }
+
+    if (pushed) {
+      sortPreSortedBuckets(owned, state[side].abilities)
+      this.applyUnitSourceSort(side, abilityKey)
+    }
+  }
+
   /** Register a new variant's unit-source candidates for the given unit IDs
    *  and refresh emitted invokes for affected ability keys. Removes any prior
    *  unit-source candidates for the same IDs so variant changes

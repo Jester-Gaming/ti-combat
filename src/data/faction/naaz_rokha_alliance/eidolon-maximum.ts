@@ -72,6 +72,7 @@ export const eidolonMaximum: Ability = {
         })) {
           if (ctx.api.own.getUnitState(id)?.isDamaged) {
             ctx.api.own.modifyUnitState(id, { isDamaged: false })
+            ctx.api.own.enableUnitAbility(id, 'SUSTAIN_DAMAGE')
           }
         }
       },

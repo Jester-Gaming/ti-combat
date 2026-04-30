@@ -67,7 +67,10 @@ export const sustainDamage: Ability<Params> = {
         if (ctx.api.own.getPendingHits() <= 0) return false
 
         const unitId = ctx.getUnit()
-        if (ctx.api.own.getUnitState(unitId)?.isDamaged) return false
+        if (ctx.api.own.getUnitState(unitId)?.isDamaged) {
+          ctx.api.own.disableUnitAbility(unitId, 'SUSTAIN_DAMAGE')
+          return false
+        }
         if (!ctx.api.own.getUnitStats(unitId)?.UNIT_ABILITIES?.SUSTAIN_DAMAGE)
           return false
 
@@ -95,12 +98,13 @@ export const sustainDamage: Ability<Params> = {
         return true
       },
       call: ctx => {
-        ctx.api.own.modifyUnitState(ctx.getUnit(), { isDamaged: true })
+        const unitId = ctx.getUnit()
+        ctx.api.own.modifyUnitState(unitId, { isDamaged: true })
         ctx.api.own.reduceHits(1)
-        ctx.logger?.log(ctx.api.own.getUnitBaseType(ctx.getUnit()))
+        ctx.logger?.log(ctx.api.own.getUnitBaseType(unitId))
         // Triggered steps pop LIFO — push AFTER first so WHEN runs first.
-        ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', ctx.getUnit())
-        ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', ctx.getUnit())
+        ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', unitId)
+        ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', unitId)
       },
     },
   ],

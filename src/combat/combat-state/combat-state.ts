@@ -926,6 +926,7 @@ export class CombatState {
     this._allInvokes = baseAllInvokes
     this._allInvokesOwned = true
 
+    // console.log('RESULTS', results.length)
     return results
   }
 

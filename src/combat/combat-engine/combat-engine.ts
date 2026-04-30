@@ -205,6 +205,7 @@ export class CombatEngine {
       : expandNode(initialState, 0, initialMeta)
 
     if (!outcomes) return []
+    console.log(subtreeCache.size)
     return outcomeRecordToArray(outcomes)
   }
 }

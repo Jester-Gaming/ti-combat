@@ -50,6 +50,7 @@ export const duraniumArmor: Ability<Params> = {
       call: (ctx, params) => {
         const target = findRepairTarget(params, ctx)!
         ctx.api.own.modifyUnitState(target, { isDamaged: false })
+        ctx.api.own.enableUnitAbility(target, 'SUSTAIN_DAMAGE')
       },
     },
     {

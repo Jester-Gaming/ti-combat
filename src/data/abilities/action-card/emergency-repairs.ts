@@ -53,6 +53,7 @@ function call(ctx: AbilityCallContext): void {
   for (const id of getSustainUnits(ctx)) {
     if (ctx.api.own.getUnitState(id)?.isDamaged) {
       ctx.api.own.modifyUnitState(id, { isDamaged: false })
+      ctx.api.own.enableUnitAbility(id, 'SUSTAIN_DAMAGE')
     }
   }
 }

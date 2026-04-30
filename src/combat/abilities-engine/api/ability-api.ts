@@ -285,6 +285,25 @@ export class SideApi {
     )
   }
 
+  /** Remove this `(unitId, abilityKey)` pair from `_invokes` on this side.
+   *  Intended for self-pruning from `isCallable` when a stable
+   *  disqualification (e.g. damaged, ability lost) is detected. Idempotent.
+   *  Safe to call during ability iteration. */
+  disableUnitAbility(unitId: UnitId, abilityKey: string): void {
+    this._ctx._abilitiesParams.disableUnitAbility(
+      this._side,
+      unitId,
+      abilityKey,
+    )
+  }
+
+  /** Re-register a previously disabled `(unitId, abilityKey)` entry.
+   *  Used by abilities that restore a previously-unavailable ability on a
+   *  unit (e.g. Duranium Armor repairing a damaged ship). Idempotent. */
+  enableUnitAbility(unitId: UnitId, abilityKey: string): void {
+    this._ctx._abilitiesParams.enableUnitAbility(this._side, unitId, abilityKey)
+  }
+
   getAbilityConfig<K extends keyof AbilityConfigMap>(
     key: K,
   ): AbilityBaseParams & AbilityConfigMap[K]
