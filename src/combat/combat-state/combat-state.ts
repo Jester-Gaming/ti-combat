@@ -26,6 +26,7 @@ import {
 } from '../combat-side-state/combat-side-state'
 import { type LogEntry, Logger } from '../logger'
 import { sortUnitsByPriority } from '../utils/sort-units-by-priority'
+import { parseVariantId } from '../utils/unit-variant'
 import type {
   CombatMode,
   CombatStateData,
@@ -40,7 +41,7 @@ import type {
   UnitAbilityMeta,
 } from './types'
 import { isDiceRollContext } from './types'
-import { getCombinedDiceDistribution } from './utils'
+import { clampDistribution, getCombinedDiceDistribution } from './utils'
 
 /** A state with its probability */
 export interface StateWithProbability {
@@ -149,6 +150,29 @@ function flattenDicePool(pool: DicePool): DiceGroup[] {
   }
 
   return result
+}
+
+function isFighterOnlyTargets(targets: UnitType[]): boolean {
+  return targets.length === 1 && targets[0] === 'FIGHTER'
+}
+
+function countParticipatingFighters(side: SideStateData): number {
+  let n = 0
+  for (const id of side.participatingUnits) {
+    if (parseVariantId(side.unitType[id]).type === 'FIGHTER') n++
+  }
+  return n
+}
+
+/** AFB-context AFTER_UNIT_ABILITY_ROLL abilities (e.g. RAID_FORMATION) only
+ *  affect their owner's own dice output, so the gate is per-side: skip
+ *  clamping the firing side's distribution when that side has any such
+ *  invoke registered. */
+function hasAfbAfterRollInvokes(
+  invokes: InvokeCollections,
+  side: CombatSide,
+): boolean {
+  return !!invokes[side].get('AFB')?.get('AFTER_UNIT_ABILITY_ROLL')?.length
 }
 
 /** Main combat state class */
@@ -857,22 +881,43 @@ export class CombatState {
     phase: MetaPhase[],
     routing?: { attacker: CombatSide; defender: CombatSide },
   ): StateWithProbability[] {
-    const attackerDist = getCombinedDiceDistribution(
+    let attackerDist = getCombinedDiceDistribution(
       flattenDicePool(modifiedDice.attacker),
     )
-    const defenderDist = getCombinedDiceDistribution(
+    let defenderDist = getCombinedDiceDistribution(
       flattenDicePool(modifiedDice.defender),
     )
 
     const metaPhase = innerMeta(phase)
+    const attackerHitTarget = routing?.attacker ?? 'defender'
+    const defenderHitTarget = routing?.defender ?? 'attacker'
+
+    if (metaPhase === 'AFB') {
+      if (
+        isFighterOnlyTargets(validTargets[attackerHitTarget]) &&
+        !hasAfbAfterRollInvokes(this._invokes, 'attacker')
+      ) {
+        attackerDist = clampDistribution(
+          attackerDist,
+          countParticipatingFighters(this.data[attackerHitTarget]),
+        )
+      }
+      if (
+        isFighterOnlyTargets(validTargets[defenderHitTarget]) &&
+        !hasAfbAfterRollInvokes(this._invokes, 'defender')
+      ) {
+        defenderDist = clampDistribution(
+          defenderDist,
+          countParticipatingFighters(this.data[defenderHitTarget]),
+        )
+      }
+    }
+
     const results: StateWithProbability[] = []
     const baseInvokes = this._invokes
     const baseAllInvokes = this._allInvokes
     const baseData = this.data
     const basePendingSteps = this.pendingSteps
-
-    const attackerHitTarget = routing?.attacker ?? 'defender'
-    const defenderHitTarget = routing?.defender ?? 'attacker'
 
     for (const attOutcome of attackerDist) {
       for (const defOutcome of defenderDist) {
