@@ -109,9 +109,9 @@ function DetailedOutcomes({
               key={i}
               className={clsx(
                 styles.outcomeRow,
-                outcome.winner === 'attacker' && styles.outcomeRowAttacker,
-                outcome.winner === 'defender' && styles.outcomeRowDefender,
-                outcome.winner === 'draw' && styles.outcomeRowDraw,
+                outcome.winner === 'attacker' && styles.outcomeRow_attacker,
+                outcome.winner === 'defender' && styles.outcomeRow_defender,
+                outcome.winner === 'draw' && styles.outcomeRow_draw,
               )}
             >
               <td className={styles.outcomeSide}>
@@ -126,7 +126,9 @@ function DetailedOutcomes({
               >
                 {formatProbability(outcome.probability)}
               </td>
-              <td className={clsx(styles.outcomeSide, styles.outcomeSideRight)}>
+              <td
+                className={clsx(styles.outcomeSide, styles.outcomeSide_right)}
+              >
                 <SurvivorList
                   side={outcome.defender}
                   priority={unitPriority.defender}
@@ -296,19 +298,19 @@ function buildSegments(result: CombatResult) {
       key: 'attacker',
       percent: attackerPct,
       label: 'Attacker',
-      segmentClass: styles.segmentAttacker,
+      segmentClass: styles.segment_attacker,
     },
     {
       key: 'draw',
       percent: drawPct,
       label: 'Draw',
-      segmentClass: styles.segmentDraw,
+      segmentClass: styles.segment_draw,
     },
     {
       key: 'defender',
       percent: defenderPct,
       label: 'Defender',
-      segmentClass: styles.segmentDefender,
+      segmentClass: styles.segment_defender,
     },
   ]
 }

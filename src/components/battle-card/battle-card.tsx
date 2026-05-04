@@ -180,10 +180,10 @@ export function BattleCard({
       <div className={styles.combatResult}>
         <div className={styles.combatModeDivider}>
           <div
-            className={clsx(styles.combatModeLine, styles.combatModeLineOuter)}
+            className={clsx(styles.combatModeLine, styles.combatModeLine_outer)}
           />
           <IconButton
-            className={clsx(styles.clearButton, styles.clearButtonAttacker)}
+            className={clsx(styles.clearButton, styles.clearButton_attacker)}
             onClick={() => onResetUnits('attacker')}
             title="Reset attacker units"
           >
@@ -195,7 +195,7 @@ export function BattleCard({
               type="button"
               className={clsx(
                 styles.combatModeOption,
-                combatMode === 'SPACE' && styles.combatModeOptionActive,
+                combatMode === 'SPACE' && styles.combatModeOption_active,
               )}
               onClick={() => onCombatModeChange('SPACE')}
             >
@@ -205,7 +205,7 @@ export function BattleCard({
               type="button"
               className={clsx(
                 styles.combatModeOption,
-                combatMode === 'GROUND' && styles.combatModeOptionActive,
+                combatMode === 'GROUND' && styles.combatModeOption_active,
               )}
               onClick={() => onCombatModeChange('GROUND')}
             >
@@ -214,14 +214,14 @@ export function BattleCard({
           </div>
           <div className={styles.combatModeLine} />
           <IconButton
-            className={clsx(styles.clearButton, styles.clearButtonDefender)}
+            className={clsx(styles.clearButton, styles.clearButton_defender)}
             onClick={() => onResetUnits('defender')}
             title="Reset defender units"
           >
             <TrashIcon className={styles.clearIcon} />
           </IconButton>
           <div
-            className={clsx(styles.combatModeLine, styles.combatModeLineOuter)}
+            className={clsx(styles.combatModeLine, styles.combatModeLine_outer)}
           />
         </div>
         <CombatResultBar

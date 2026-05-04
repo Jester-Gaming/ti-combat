@@ -49,6 +49,12 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  css: {
+    modules: {
+      generateScopedName: (name, filename) =>
+        `${path.basename(filename, '.module.css')}__${name}`,
+    },
+  },
   test: {
     globals: true,
     css: true,

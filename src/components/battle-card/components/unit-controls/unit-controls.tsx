@@ -44,7 +44,7 @@ export function UnitControls({
         >
           <ArrowUpIcon
             className={
-              upgraded ? styles.upgradeIcon : styles.upgradeIconInactive
+              upgraded ? styles.upgradeIcon : styles.upgradeIcon_inactive
             }
           />
         </button>
@@ -52,7 +52,7 @@ export function UnitControls({
         <div className={styles.upgradePlaceholder} />
       )}
       <button
-        className={clsx(styles.button, count === 0 && styles.buttonDisabled)}
+        className={clsx(styles.button, count === 0 && styles.button_disabled)}
         onClick={() => onCountChange(Math.max(0, count - 1))}
         disabled={count === 0}
         tabIndex={-1}
@@ -70,7 +70,7 @@ export function UnitControls({
         className={styles.countInput}
       />
       <button
-        className={clsx(styles.button, atLimit && styles.buttonDisabled)}
+        className={clsx(styles.button, atLimit && styles.button_disabled)}
         onClick={() => onCountChange(count + 1)}
         disabled={atLimit}
         tabIndex={-1}

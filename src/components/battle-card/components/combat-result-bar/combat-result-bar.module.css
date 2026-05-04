@@ -34,7 +34,7 @@
   transition: all 0.5s;
 }
 
-.segmentAttacker {
+.segment_attacker {
   background: linear-gradient(
     to bottom,
     hsl(var(--attacker) / 25%),
@@ -50,7 +50,7 @@
   }
 }
 
-.segmentDraw {
+.segment_draw {
   background: linear-gradient(
     to bottom,
     hsl(var(--foreground) / 8%),
@@ -66,7 +66,7 @@
   }
 }
 
-.segmentDefender {
+.segment_defender {
   background: linear-gradient(
     to bottom,
     hsl(var(--defender) / 25%),
@@ -236,15 +236,15 @@
   border-bottom: none;
 }
 
-.outcomeRowAttacker {
+.outcomeRow_attacker {
   background: hsl(var(--attacker) / 5%);
 }
 
-.outcomeRowDefender {
+.outcomeRow_defender {
   background: hsl(var(--defender) / 5%);
 }
 
-.outcomeRowDraw {
+.outcomeRow_draw {
   background: hsl(var(--foreground) / 2%);
 }
 
@@ -252,7 +252,7 @@
   color: hsl(var(--foreground));
 }
 
-.outcomeSideRight {
+.outcomeSide_right {
   text-align: right;
 }
 

@@ -133,7 +133,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
       {/* Left panel: Attacker abilities */}
       <GlassCard
         as="aside"
-        className={clsx(styles.sidePanel, styles.sidePanelAttacker)}
+        className={clsx(styles.sidePanel, styles.sidePanel_attacker)}
       >
         <div className={styles.sidePanelHeader}>
           <GlowText
@@ -147,7 +147,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
             type="button"
             className={clsx(
               styles.resetAbilitiesButton,
-              styles.resetAbilitiesButtonAttacker,
+              styles.resetAbilitiesButton_attacker,
             )}
             onClick={() => resetAbilities('attacker')}
             title="Reset attacker abilities to defaults"
@@ -189,7 +189,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           attackerActions={
             <button
               type="button"
-              className={clsx(styles.gearButton, styles.gearButtonAttacker)}
+              className={clsx(styles.gearButton, styles.gearButton_attacker)}
               onClick={() => setAttackerSheetOpen(true)}
               title="Attacker abilities"
             >
@@ -199,7 +199,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           defenderActions={
             <button
               type="button"
-              className={clsx(styles.gearButton, styles.gearButtonDefender)}
+              className={clsx(styles.gearButton, styles.gearButton_defender)}
               onClick={() => setDefenderSheetOpen(true)}
               title="Defender abilities"
             >
@@ -225,7 +225,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
               type="button"
               className={clsx(
                 styles.resetAbilitiesButton,
-                styles.resetAbilitiesButtonAttacker,
+                styles.resetAbilitiesButton_attacker,
               )}
               onClick={() => resetAbilities('attacker')}
               title="Reset attacker abilities to defaults"
@@ -264,7 +264,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
               type="button"
               className={clsx(
                 styles.resetAbilitiesButton,
-                styles.resetAbilitiesButtonDefender,
+                styles.resetAbilitiesButton_defender,
               )}
               onClick={() => resetAbilities('defender')}
               title="Reset defender abilities to defaults"
@@ -290,7 +290,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
       {/* Right panel: Defender abilities */}
       <GlassCard
         as="aside"
-        className={clsx(styles.sidePanel, styles.sidePanelDefender)}
+        className={clsx(styles.sidePanel, styles.sidePanel_defender)}
       >
         <div className={styles.sidePanelHeader}>
           <GlowText
@@ -304,7 +304,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
             type="button"
             className={clsx(
               styles.resetAbilitiesButton,
-              styles.resetAbilitiesButtonDefender,
+              styles.resetAbilitiesButton_defender,
             )}
             onClick={() => resetAbilities('defender')}
             title="Reset defender abilities to defaults"

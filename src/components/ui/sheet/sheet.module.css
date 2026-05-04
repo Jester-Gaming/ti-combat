@@ -28,29 +28,29 @@
   box-shadow: 0 8px 32px rgb(0 0 0 / 30%);
 }
 
-.contentLeft {
+.content_left {
   left: 0;
   border-right: 1px solid hsl(var(--border));
 }
 
-.contentRight {
+.content_right {
   right: 0;
   border-left: 1px solid hsl(var(--border));
 }
 
-.contentLeft[data-state='open'] {
+.content_left[data-state='open'] {
   animation: slideInLeft 0.25s ease-out;
 }
 
-.contentLeft[data-state='closed'] {
+.content_left[data-state='closed'] {
   animation: slideOutLeft 0.25s ease-in;
 }
 
-.contentRight[data-state='open'] {
+.content_right[data-state='open'] {
   animation: slideInRight 0.25s ease-out;
 }
 
-.contentRight[data-state='closed'] {
+.content_right[data-state='closed'] {
   animation: slideOutRight 0.25s ease-in;
 }
 

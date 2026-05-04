@@ -39,7 +39,7 @@ const SheetContent = React.forwardRef<
       ref={ref}
       className={clsx(
         styles.content,
-        side === 'left' ? styles.contentLeft : styles.contentRight,
+        side === 'left' ? styles.content_left : styles.content_right,
         className,
       )}
       {...props}

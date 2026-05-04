@@ -33,7 +33,10 @@ export function UnitRowDual({
   return (
     <div className={styles.row}>
       <div
-        className={clsx(unitControlStyles.side, unitControlStyles.sideAttacker)}
+        className={clsx(
+          unitControlStyles.side,
+          unitControlStyles.side_attacker,
+        )}
       >
         <UnitControls
           count={attacker.count}
@@ -49,7 +52,10 @@ export function UnitRowDual({
         <span className={styles.shortName}>{shortName}</span>
       </span>
       <div
-        className={clsx(unitControlStyles.side, unitControlStyles.sideDefender)}
+        className={clsx(
+          unitControlStyles.side,
+          unitControlStyles.side_defender,
+        )}
       >
         <UnitControls
           count={defender.count}

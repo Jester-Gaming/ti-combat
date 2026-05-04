@@ -26,11 +26,11 @@
   }
 }
 
-.sidePanelAttacker {
+.sidePanel_attacker {
   --side-color: var(--attacker);
 }
 
-.sidePanelDefender {
+.sidePanel_defender {
   --side-color: var(--defender);
 }
 
@@ -80,11 +80,11 @@
   height: var(--space-3-5);
 }
 
-.resetAbilitiesButtonAttacker:hover {
+.resetAbilitiesButton_attacker:hover {
   color: hsl(var(--attacker));
 }
 
-.resetAbilitiesButtonDefender:hover {
+.resetAbilitiesButton_defender:hover {
   color: hsl(var(--defender));
 }
 
@@ -143,11 +143,11 @@
   height: var(--space-3-5);
 }
 
-.gearButtonAttacker:hover {
+.gearButton_attacker:hover {
   border-color: hsl(var(--attacker) / 50%);
 }
 
-.gearButtonDefender:hover {
+.gearButton_defender:hover {
   border-color: hsl(var(--defender) / 50%);
 }
 

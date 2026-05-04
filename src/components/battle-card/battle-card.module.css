@@ -154,11 +154,11 @@
   border-radius: 0.25rem;
 }
 
-.clearButtonAttacker {
+.clearButton_attacker {
   --btn-color: var(--attacker);
 }
 
-.clearButtonDefender {
+.clearButton_defender {
   --btn-color: var(--defender);
 }
 
@@ -169,12 +169,12 @@
   }
 }
 
-.combatModeLineOuter {
+.combatModeLine_outer {
   min-width: 1.5rem;
 }
 
 @media (width >= 640px) {
-  .combatModeLineOuter {
+  .combatModeLine_outer {
     min-width: 1.75rem;
   }
 }
@@ -240,12 +240,12 @@
   border-left: 1px solid hsl(var(--muted-foreground) / 15%);
 }
 
-.combatModeOption:hover:not(.combatModeOptionActive) {
+.combatModeOption:hover:not(.combatModeOption_active) {
   color: hsl(var(--muted-foreground) / 75%);
   background: hsl(var(--muted-foreground) / 5%);
 }
 
-.combatModeOptionActive {
+.combatModeOption_active {
   color: hsl(var(--foreground));
   background: hsl(var(--muted-foreground) / 12%);
   box-shadow:
