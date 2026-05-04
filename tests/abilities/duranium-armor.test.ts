@@ -24,7 +24,7 @@ describe.forEachSide('DURANIUM_ARMOR', () => {
 
     // Round 2: 0 hits — Dreadnought didn't sustain, Duranium repairs it
     t.advanceRound({ attacker: 0 })
-    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(false)
+    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
   })
 
   it('does not repair a unit that used sustain this round', () => {
@@ -42,16 +42,20 @@ describe.forEachSide('DURANIUM_ARMOR', () => {
     })
 
     t.advanceTo('SPACE_COMBAT')
-    // Round 1: 1 hit, first Dreadnought sustains
+    // Round 1: 1 hit, one Dreadnought sustains. The sustainer's
+    // `usedSustainThisRound` flag triggers a resort that places it at the
+    // tail (destroyed-first slot) — so the view shows the healthy peer at
+    // index 0 and the damaged sustainer at index 1.
     t.advanceRound({ attacker: 1 })
-    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
-    expect(t.attacker.units.DREADNOUGHT![1].isDamaged).toBeFalsy()
+    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
+    expect(t.attacker.units.DREADNOUGHT![1].isDamaged).toBe(true)
 
-    // Round 2: 1 hit, second Dreadnought sustains — first is eligible for repair
+    // Round 2: 1 hit, the still-healthy Dreadnought sustains; the damaged
+    // peer (didn't sustain this round) is repaired by Duranium.
     t.advanceRound({ attacker: 1 })
-    // First Dreadnought was damaged from round 1, didn't sustain → repaired
-    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(false)
-    // Second Dreadnought sustained this round → not repaired
+    // Repaired peer ends up at the head after the new sustainer's resort.
+    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
+    // Newly-sustained dreadnought sits at the tail — not repaired.
     expect(t.attacker.units.DREADNOUGHT![1].isDamaged).toBe(true)
   })
 
@@ -75,7 +79,7 @@ describe.forEachSide('DURANIUM_ARMOR', () => {
 
     // Round 1: 0 hits — sustain was during SCO, not this round → Duranium repairs
     t.advanceRound({ attacker: 0 })
-    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(false)
+    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
   })
 
   it('does not fire when no damaged units exist', () => {
@@ -95,7 +99,10 @@ describe.forEachSide('DURANIUM_ARMOR', () => {
     t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 0 })
 
-    expect(t.abilityLog('DURANIUM_ARMOR')).toHaveLength(0)
+    const repairs = t
+      .abilityLog('DURANIUM_ARMOR')
+      .filter(e => !e.path.includes('CLEANUP_ROUND'))
+    expect(repairs).toHaveLength(0)
   })
 
   it('works in ground combat', () => {
@@ -119,6 +126,6 @@ describe.forEachSide('DURANIUM_ARMOR', () => {
 
     // Round 2: 0 hits — Mech repaired
     t.advanceRound({ attacker: 0 })
-    expect(t.attacker.units.MECH![0].isDamaged).toBe(false)
+    expect(t.attacker.units.MECH![0].isDamaged).toBeFalsy()
   })
 })

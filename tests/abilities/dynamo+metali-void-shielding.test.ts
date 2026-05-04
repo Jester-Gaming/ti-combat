@@ -27,7 +27,7 @@ describe.forEachSide('DYNAMO + METALI_VOID_SHIELDING', () => {
 
     // Cruiser sustained via MVS then repaired by Dynamo
     expect(t.attacker.units.CRUISER).toHaveLength(1)
-    expect(t.attacker.units.CRUISER![0].isDamaged).toBe(false)
+    expect(t.attacker.units.CRUISER![0].isDamaged).toBeFalsy()
     expect(t.abilityLog('METALI_VOID_SHIELDING')).not.toHaveLength(0)
     expect(t.abilityLog('DYNAMO')).not.toHaveLength(0)
   })

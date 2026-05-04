@@ -28,6 +28,7 @@ export const eidolon: Ability = {
         ctx.api.own.modifyUnitType('MECH', {
           COMBAT: [8, 2],
           UNIT_ABILITIES: {},
+          ABILITIES: [eidolon],
         })
       },
     },

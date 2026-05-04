@@ -22,7 +22,7 @@ describe.forEachSide('DYNAMO', () => {
 
     // Dreadnought sustained then got repaired by Dynamo
     expect(t.attacker.units.DREADNOUGHT).toHaveLength(1)
-    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(false)
+    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
     expect(t.abilityLog('DYNAMO')).not.toHaveLength(0)
   })
 
@@ -91,7 +91,7 @@ describe.forEachSide('DYNAMO', () => {
     t.advanceRound({ attacker: 2 })
 
     expect(t.attacker.units.DREADNOUGHT).toHaveLength(1)
-    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(false)
+    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
     expect(t.attacker.units.CRUISER).toBeUndefined()
     // Only 1 Dynamo use consumed (not 2)
     expect(t.abilityLog('DYNAMO')).not.toHaveLength(0)

@@ -29,6 +29,7 @@ import type {
   UnitAbilityRestrictions,
 } from '../combat-state/types'
 import { isDiceRollContext } from '../combat-state/types'
+import { canonicalizeUnitState } from '../utils/canonicalize-unit-state'
 import { resolveUnitStats } from '../utils/resolve-unit-stats'
 import { nextUnitIds } from '../utils/unit-id'
 import {
@@ -324,11 +325,6 @@ function _removeOne(
     s.nonParticipatingUnits = (s.nonParticipatingUnits.slice(0, nIdx) +
       s.nonParticipatingUnits.slice(nIdx + 1)) as UnitList
   }
-
-  if (s.unitState[unitId] !== undefined) {
-    ensureUnitStateOwned(s)
-    delete s.unitState[unitId]
-  }
 }
 
 function addRestrictionEntry(
@@ -426,9 +422,40 @@ export class CombatSideState {
   // ==========================================================================
 
   /** Hash this side's units (participating, non-participating, and
-   *  per-unit mutable state) for state deduplication. */
+   *  per-unit mutable state) for state deduplication.
+   *
+   *  `unitState` is canonicalized: falsy field values are dropped (so
+   *  `{ isDamaged: false }` is equivalent to no entry at all — important
+   *  because CLEANUP_ROUND resets `usedSustainThisRound` to `false`
+   *  rather than deleting it, and we don't want that residual to fork
+   *  the cache from the never-touched starting state). Keys are sorted
+   *  so the same truthy state hashes identically regardless of which
+   *  ability happened to touch each unit first.
+   *
+   *  Phantom entries (a `unitState` key whose UnitId is no longer in
+   *  `participatingUnits` or `nonParticipatingUnits`) are skipped —
+   *  they belong to destroyed units and don't affect future combat.
+   *
+   *  Convergence across equivalent states ("A damaged" vs "B damaged")
+   *  relies on `canonicalizeUnitState` having run. Natural sustain
+   *  order keeps the bijection (lowest pool-ID ↔ worst state) stable;
+   *  Duranium's WHEN_SUSTAIN and AFTER_ASSIGN repair both call
+   *  `SideApi.resortUnits()` to mark `_needsCanonicalize`. The flush
+   *  here catches state read at round-start (cache-key time), where
+   *  the BEFORE_ASSIGN_HITS script step hasn't run yet. */
   static getUnitsHash(s: SideStateData): string {
-    return `${s.participatingUnits}!${s.nonParticipatingUnits}|${JSON.stringify(s.unitState)}`
+    const dirty = s._needsCanonicalize
+    if (dirty) {
+      canonicalizeUnitState(s, dirty)
+    }
+    const ids = Object.keys(s.unitState).sort()
+    let body = ''
+    for (const id of ids) {
+      const entry = s.unitState[id as UnitId]
+      const inner = `isDamaged=${entry.isDamaged ?? false}`
+      body += `${id}:${inner},`
+    }
+    return `${s.participatingUnits}!${s.nonParticipatingUnits}|${body}`
   }
 
   /** Hash this side's `liveAbilities`. The initial `abilities` config is
@@ -1217,7 +1244,15 @@ export class CombatSideState {
   /** Modify per-unit mutable state. Replaces the entry (rather than
    *  mutating in place) because entry refs may be shared across branches
    *  under CoW — the outer record clone from `ensureUnitStateOwned`
-   *  is shallow. */
+   *  is shallow.
+   *
+   *  Does NOT mark `_needsCanonicalize` — most state mutations either
+   *  (a) preserve the bijection (e.g. SUSTAIN damages the tail unit,
+   *  which is already the lowest pool-ID), or (b) happen mid-step where
+   *  the in-flight identity matters more than the canonical layout.
+   *  Abilities that genuinely need re-canonicalization (currently only
+   *  Duranium) call `SideApi.resortUnits()` explicitly, mirroring the
+   *  prior `_needsResort` callsite. */
   static modifyUnitState(
     s: SideStateData,
     unitId: UnitId,
@@ -1225,9 +1260,13 @@ export class CombatSideState {
   ): void {
     ensureUnitStateOwned(s)
     const existing = s.unitState[unitId]
-    s.unitState[unitId] = existing
-      ? { ...existing, ...updates }
-      : { ...updates }
+    if (updates.isDamaged === false && !existing?.usedSustainThisRound) {
+      delete s.unitState[unitId]
+    } else {
+      s.unitState[unitId] = existing
+        ? { ...existing, ...updates }
+        : { ...updates }
+    }
   }
 
   /** Move one unit to a new variant with an added subtype. */

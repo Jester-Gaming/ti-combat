@@ -18,8 +18,10 @@ describe.forEachSide('PRE_DAMAGED', () => {
 
     t.advanceTo('SPACE_COMBAT')
 
-    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(true)
-    expect(t.attacker.units.DREADNOUGHT![1].isDamaged).toBeUndefined()
+    // Damaged peers sort to the tail (destroyed first), so the view shows
+    // the healthy dreadnought at index 0 and the pre-damaged one at index 1.
+    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBeUndefined()
+    expect(t.attacker.units.DREADNOUGHT![1].isDamaged).toBe(true)
   })
 
   it('does not damage unconfigured unit types', () => {

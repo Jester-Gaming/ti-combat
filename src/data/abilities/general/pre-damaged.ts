@@ -44,7 +44,6 @@ export const preDamaged: Ability<Params> = {
           const max = Math.min(count ?? 0, ids.length)
           for (let i = 0; i < max; i++) {
             ctx.api.own.modifyUnitState(ids[i], { isDamaged: true })
-            ctx.api.own.disableUnitAbility(ids[i], 'SUSTAIN_DAMAGE')
           }
         }
       },

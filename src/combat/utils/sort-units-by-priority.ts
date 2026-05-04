@@ -69,7 +69,12 @@ export function sortUnitsByPriority(
     const rb = rankOf(side.unitType[b])
     // Highest rank first so the LOWEST rank (priorityList[0], first to
     // be sacrificed) lands at the tail — tail-slice destroys it first.
-    return rb - ra
+    if (ra !== rb) return rb - ra
+    // Within a rank tier: UnitId descending — lower IDs at the tail.
+    // `canonicalizeUnitState` permutes UnitState VALUES so the lowest
+    // pool-ID owns the worst-state value; tail-slice therefore picks
+    // the worst state without a state-aware tie-break here.
+    return a > b ? -1 : a < b ? 1 : 0
   })
 
   side.participatingUnits = participating.join('') as UnitList

@@ -18,6 +18,6 @@ describe.forEachSide('HEAVENS_EYE', () => {
     t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ attacker: 1 })
 
-    expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBe(false)
+    expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBeFalsy()
   })
 })

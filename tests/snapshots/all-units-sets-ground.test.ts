@@ -26,6 +26,12 @@ const sets = buildSets()
 
 describe('ground combat — all units sets', () => {
   it.each(sets.map(set => [set, set]))('%s vs %s', (attacker, defender) => {
-    expect(runScenario('GROUND', attacker, defender)).toMatchSnapshot()
+    expect(
+      runScenario({
+        mode: 'GROUND',
+        attacker: { units: attacker },
+        defender: { units: defender },
+      }),
+    ).toMatchSnapshot()
   })
 })

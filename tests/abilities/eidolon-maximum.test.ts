@@ -84,7 +84,7 @@ describe('EIDOLON_MAXIMUM', () => {
 
     // Round 2: mech repairs at start of round
     t.advanceRound()
-    expect(t.attacker.units.MECH![0].isDamaged).toBe(false)
+    expect(t.attacker.units.MECH![0].isDamaged).toBeFalsy()
   })
 
   it('overrides Z-Grav Eidolon transform', () => {

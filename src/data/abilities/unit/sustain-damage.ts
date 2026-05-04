@@ -64,15 +64,12 @@ export const sustainDamage: Ability<Params> = {
     {
       timing: 'BEFORE_ASSIGN_HITS',
       isCallable: (params, ctx) => {
+        const unitId = ctx.getUnit()
         if (ctx.api.own.getPendingHits() <= 0) return false
 
-        const unitId = ctx.getUnit()
         if (ctx.api.own.getUnitState(unitId)?.isDamaged) {
-          ctx.api.own.disableUnitAbility(unitId, 'SUSTAIN_DAMAGE')
           return false
         }
-        if (!ctx.api.own.getUnitStats(unitId)?.UNIT_ABILITIES?.SUSTAIN_DAMAGE)
-          return false
 
         const unitType = ctx.api.own.getUnitBaseType(unitId)!
         const variantId = ctx.api.own.getVariantKey(unitId)! as UnitType

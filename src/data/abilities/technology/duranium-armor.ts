@@ -28,10 +28,12 @@ export const duraniumArmor: Ability<Params> = {
     spaceRepairPriority: declareParam({
       default: [],
       source: 'nonFighterShips',
+      sort: 'desc',
     }),
     groundRepairPriority: declareParam({
       default: [],
       source: 'groundForces',
+      sort: 'desc',
     }),
   },
   headerUI: 'isEnabled',
@@ -39,8 +41,10 @@ export const duraniumArmor: Ability<Params> = {
     {
       timing: 'WHEN_SUSTAIN_DAMAGE_USE',
       context: ['SPACE_COMBAT', 'GROUND_COMBAT'],
+      isCallable: (_params, ctx, unit) => ctx.api.own.hasUnit(unit),
       call: (ctx, _params, unit) => {
         ctx.api.own.modifyUnitState(unit, { usedSustainThisRound: true })
+        ctx.api.own.resortUnits(unit)
       },
     },
     {
@@ -50,31 +54,19 @@ export const duraniumArmor: Ability<Params> = {
       call: (ctx, params) => {
         const target = findRepairTarget(params, ctx)!
         ctx.api.own.modifyUnitState(target, { isDamaged: false })
-        ctx.api.own.enableUnitAbility(target, 'SUSTAIN_DAMAGE')
+        ctx.api.own.resortUnits(target)
       },
     },
     {
       timing: 'CLEANUP_ROUND',
-      isCallable: (_params, ctx) => {
-        for (const type of ctx.api.own.getParticipatingUnitTypes()) {
-          for (const id of ctx.api.own.getUnits(type, {
-            includeVariants: true,
-          })) {
-            if (ctx.api.own.getUnitState(id)?.usedSustainThisRound) return true
-          }
-        }
-        return false
-      },
       call: ctx => {
-        for (const type of ctx.api.own.getParticipatingUnitTypes()) {
-          for (const id of ctx.api.own.getUnits(type, {
-            includeVariants: true,
-          })) {
-            if (ctx.api.own.getUnitState(id)?.usedSustainThisRound) {
-              ctx.api.own.modifyUnitState(id, {
-                usedSustainThisRound: false,
-              })
-            }
+        for (const key in ctx.state[ctx.side].unitState) {
+          const unitId = key as UnitId
+          const state = ctx.state[ctx.side].unitState[unitId]
+          if (state.usedSustainThisRound) {
+            ctx.api.own.modifyUnitState(unitId, {
+              usedSustainThisRound: false,
+            })
           }
         }
       },

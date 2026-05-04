@@ -53,7 +53,6 @@ self.onmessage = (e: MessageEvent<SimulationInput>) => {
     abilities,
   } = e.data
 
-  console.time('Setup')
   const sideAbilities = prepareSimulationConfig(
     abilities,
     attackerFaction,
@@ -79,7 +78,6 @@ self.onmessage = (e: MessageEvent<SimulationInput>) => {
   )
 
   const engine = new CombatEngine()
-  console.timeEnd('Setup')
   console.time('Simulate')
   const outcomes = engine.simulate(combatState)
   console.timeEnd('Simulate')

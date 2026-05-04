@@ -167,6 +167,11 @@ export interface SideStateData {
    *  with another SideStateData (from a branch clone); mutations must
    *  clone first via `ensureUnitStateOwned`. */
   _unitStateShared?: boolean
+  /** Variant keys whose pool needs `canonicalizeUnitState` re-run.
+   *  Set when a per-unit state mutation may change a unit's destroyScore.
+   *  Flushed at BEFORE_ASSIGN_HITS and on hash reads, scoped to only
+   *  the affected variant pools. Replaces the previous `_needsResort` flag. */
+  _needsCanonicalize?: Set<UnitType>
   /** CoW marker — when true, `hitPools` reference is potentially shared
    *  with another SideStateData; mutations must clone first via
    *  `ensureHitPoolsOwned`. */

@@ -20,7 +20,7 @@ describe('ARC_SECUNDUS', () => {
 
     // Round 2: Arc Secundus repairs flagship at START_OF_COMBAT_ROUND
     t.advanceRound()
-    expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBe(false)
+    expect(t.attacker.units.FLAGSHIP![0].isDamaged).toBeFalsy()
     expect(t.abilityLog('ARC_SECUNDUS')).not.toHaveLength(0)
   })
 })

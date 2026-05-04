@@ -35,6 +35,7 @@ import type {
 import { isDiceRollContext } from '../../combat-state/types'
 import { getDiceOutcomes } from '../../combat-state/utils'
 import type { Logger } from '../../logger'
+import { canonicalizeUnitState } from '../../utils/canonicalize-unit-state'
 import type {
   AbilitiesEngine,
   AbilityCandidate,
@@ -242,6 +243,10 @@ export class SideApi {
    *  returns the UnitIds that would be destroyed, in sacrifice order.
    *  Non-destructive. */
   getAssignHitsTargets(hitPool: HitPool): UnitId[] {
+    const dirty = this._sideData._needsCanonicalize
+    if (dirty) {
+      canonicalizeUnitState(this._sideData, dirty)
+    }
     return CombatSideState.getAssignHitsTargets(this._sideData, hitPool)
   }
 
@@ -384,6 +389,20 @@ export class SideApi {
 
   modifyUnitState(unitId: UnitId, updates: Partial<UnitState>): void {
     CombatSideState.modifyUnitState(this._sideData, unitId, updates)
+  }
+
+  /** Mark the side's unitState as needing canonicalization. The actual
+   *  state-value permutation is deferred — applied just before hits
+   *  resolve, or eagerly when an API consumer (`getAssignHitsTargets`)
+   *  needs current order. Coalesces multiple marks per phase into one
+   *  pass. Currently called by Duranium after marking `usedSustainThisRound`,
+   *  which makes same-variant peers diverge in destroyScore. */
+  resortUnits(unitId: UnitId): void {
+    const type = this._sideData.unitType[unitId]
+    if (!type) return
+    const set = this._sideData._needsCanonicalize ?? new Set<UnitType>()
+    set.add(type)
+    this._sideData._needsCanonicalize = set
   }
 
   reduceHits(amount: number) {

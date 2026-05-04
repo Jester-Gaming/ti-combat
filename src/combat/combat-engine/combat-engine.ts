@@ -9,6 +9,13 @@ import type { CombatOutcome } from '../types'
 import { extractSurvivors } from './utils/extract-survivors'
 import type { OutcomeRecord } from './utils/types'
 
+interface ExpansionResult {
+  outcomes: OutcomeRecord
+  // Probability mass that should be absorbed by an ancestor as a self-loop
+  // when that ancestor finalizes. Keys are the ancestors' cache keys.
+  deferred: Map<string, number>
+}
+
 interface EngineOptions {
   maxRounds?: number
 }
@@ -23,42 +30,57 @@ export class CombatEngine {
   }
 
   simulate(initialState: CombatState): CombatOutcome[] {
-    const subtreeCache = new Map<string, OutcomeRecord>()
+    // Cache: a node's result is `(outcomes, deferred)` where `deferred[k]`
+    // is probability mass that flows back to ancestor key `k` via cycles.
+    // The result is ONLY valid when all `deferred` keys are still in flight
+    // — they will absorb the deferred mass via self-loop redistribution
+    // when each of them finalizes. Cache hit = cached entry's `deferred`
+    // keys are all currently in-progress.
+    const subtreeCache = new Map<string, ExpansionResult>()
     const inProgress = new Set<string>()
+    let counter = 1
 
     const mode = initialState.combatMode
-
-    // Engine owns the active meta — derived from the combat mode's initial
-    // phase. Flow decisions read/write the local `currentMeta` inside
-    // expandNode.
     const initialMeta: MetaPhase = getInitialMetaPhase(mode)
 
     const expandNode = (
       state: CombatState,
       round: number,
       incomingMeta: MetaPhase,
-    ): OutcomeRecord | null => {
+    ): ExpansionResult | { cycleTo: string } => {
       let currentMeta = incomingMeta
       let cacheKey: string | null = null
 
-      // Try to enter a combat-meta round: bump round, check the cache, and
-      // either short-circuit on hit/cycle or register this as in-progress.
-      // Returns `'enter'` when the caller should proceed with loading the
-      // script, a cached outcome to return directly, or `null` for a cycle.
-      const enterCombatRound = (): OutcomeRecord | null | 'enter' => {
+      const enterCombatRound = ():
+        | ExpansionResult
+        | { cycleTo: string }
+        | 'enter' => {
         round++
         const roundFlag = round <= 1 ? '1' : 'N'
         const key = `${roundFlag}|${state.getHash()}`
 
+        // Cache hit only if all deferred-mass dependencies are still
+        // in-progress (so they will absorb the deferred mass at their
+        // finalization step). Otherwise the cached result would leak
+        // probability into a context where no ancestor will resolve it.
         const cached = subtreeCache.get(key)
         if (cached) {
-          if (cacheKey) inProgress.delete(cacheKey)
-          return cached
+          let usable = true
+          for (const dep of cached.deferred.keys()) {
+            if (!inProgress.has(dep)) {
+              usable = false
+              break
+            }
+          }
+          if (usable) {
+            if (cacheKey) inProgress.delete(cacheKey)
+            return cached
+          }
         }
 
         if (inProgress.has(key)) {
           if (cacheKey) inProgress.delete(cacheKey)
-          return null
+          return { cycleTo: key }
         }
 
         if (cacheKey) inProgress.delete(cacheKey)
@@ -67,13 +89,42 @@ export class CombatEngine {
         return 'enter'
       }
 
-      // Initial prime — if pendingSteps is empty on entry, the current
-      // phase's script has not been loaded yet. Load it, doing the round/
-      // cache bookkeeping if it's a combat meta.
+      const finalize = (
+        result: ExpansionResult | { cycleTo: string },
+      ): ExpansionResult | { cycleTo: string } => {
+        if (cacheKey !== null) {
+          // Self-absorb deferred mass routed back to this very node.
+          // Equivalent to expanding the geometric self-loop at this level.
+          if ('outcomes' in result) {
+            const selfMass = result.deferred.get(cacheKey)
+            if (selfMass !== undefined && selfMass < 1) {
+              const scale = 1 / (1 - selfMass)
+              for (const o of result.outcomes.values()) o.probability *= scale
+              result.deferred.delete(cacheKey)
+              if (result.deferred.size > 0) {
+                // Other deferred entries are downstream of this absorption
+                // and must scale with the same factor (they ride the same
+                // probability mass).
+                for (const [k, p] of result.deferred) {
+                  result.deferred.set(k, p * scale)
+                }
+              }
+            } else if (selfMass !== undefined) {
+              // selfMass >= 1 — pathological; treat as a pure cycle.
+              result.deferred.delete(cacheKey)
+            }
+            subtreeCache.set(cacheKey, result)
+          }
+          inProgress.delete(cacheKey)
+          cacheKey = null
+        }
+        return result
+      }
+
       if (!state.isFinished() && state.pendingSteps.length === 0) {
         if (isCombatMeta(currentMeta)) {
           const res = enterCombatRound()
-          if (res !== 'enter') return res
+          if (res !== 'enter') return finalize(res)
         }
         state.loadPhaseScript(currentMeta, round)
       }
@@ -84,129 +135,74 @@ export class CombatEngine {
         }
         if (state.isFinished() || round > this.maxRounds) {
           const leaf = makeLeafOutcome(state)
-          if (cacheKey) {
-            subtreeCache.set(cacheKey, leaf)
-            inProgress.delete(cacheKey)
-          }
-          return leaf
+          return finalize({ outcomes: leaf, deferred: new Map() })
         }
 
-        // Script just drained — transition to the next phase and reload.
         if (state.pendingSteps.length === 0) {
           const nextPhase = resolveNextPhase(currentMeta, mode)
-          // Transitioning to COMPLETE still runs END_OF_COMBAT / CLEANUP_ROUND
-          // / CLEANUP before flipping the phase — ability CLEANUP invokes
-          // (e.g., CAVALRY removing its subtype) need to fire.
           currentMeta = nextPhase
           if (state.isFinished()) continue
           if (isCombatMeta(nextPhase)) {
             const res = enterCombatRound()
-            if (res !== 'enter') return res
+            if (res !== 'enter') return finalize(res)
           }
           state.loadPhaseScript(nextPhase, round)
-          // Empty script (unreachable after the branches above) — loop.
           if (state.pendingSteps.length === 0) continue
         }
 
         const outcomes = state.advance()
 
-        // Deterministic advance — same state reference, same pendingSteps.
-        // Advance ran internally until branching, drain, or completion.
+        counter += outcomes.length
         if (outcomes.length === 1 && outcomes[0].state === state) {
           continue
         }
 
-        // Group children by identical cached record (by reference) to avoid
-        // redundant iteration.
-        const recordGroups = new Map<OutcomeRecord, number>()
-        let cycleProb = 0
+        const merged: OutcomeRecord = new Map()
+        const deferred = new Map<string, number>()
 
         for (const child of outcomes) {
-          const childOutcomes = expandNode(child.state, round, currentMeta)
+          const r = expandNode(child.state, round, currentMeta)
 
-          if (childOutcomes === null) {
-            cycleProb += child.probability
-          } else {
-            const existing = recordGroups.get(childOutcomes)
-            if (existing !== undefined) {
-              recordGroups.set(childOutcomes, existing + child.probability)
-            } else {
-              recordGroups.set(childOutcomes, child.probability)
-            }
-          }
-        }
-
-        // Fast path: single child record with no cycles — return directly
-        if (recordGroups.size === 1 && cycleProb === 0) {
-          const [[childRecord, totalProb]] = recordGroups
-          let merged: OutcomeRecord
-          if (totalProb === 1) {
-            merged = childRecord
-          } else {
-            merged = new Map()
-            for (const [key, outcome] of childRecord) {
-              merged.set(key, {
-                attackerData: outcome.attackerData,
-                defenderData: outcome.defenderData,
-                probability: outcome.probability * totalProb,
-                winnerSide: outcome.winnerSide,
-              })
-            }
+          if ('cycleTo' in r) {
+            deferred.set(
+              r.cycleTo,
+              (deferred.get(r.cycleTo) ?? 0) + child.probability,
+            )
+            continue
           }
 
-          if (cacheKey) {
-            subtreeCache.set(cacheKey, merged)
-            inProgress.delete(cacheKey)
-          }
-
-          return merged
-        }
-
-        // Merge grouped records into final outcome
-        const merged: OutcomeRecord = new Map()
-
-        for (const [childRecord, totalProb] of recordGroups) {
-          for (const [key, outcome] of childRecord) {
-            const adjustedProb = outcome.probability * totalProb
-
+          for (const [key, o] of r.outcomes) {
+            const adjustedProb = o.probability * child.probability
             const existing = merged.get(key)
             if (existing) {
               existing.probability += adjustedProb
             } else {
               merged.set(key, {
-                attackerData: outcome.attackerData,
-                defenderData: outcome.defenderData,
+                attackerData: o.attackerData,
+                defenderData: o.defenderData,
                 probability: adjustedProb,
-                winnerSide: outcome.winnerSide,
+                winnerSide: o.winnerSide,
               })
             }
           }
-        }
 
-        // Redistribute cycle probability
-        if (cycleProb > 0 && cycleProb < 1) {
-          const scale = 1 / (1 - cycleProb)
-          for (const [, o] of merged) {
-            o.probability *= scale
+          for (const [k, p] of r.deferred) {
+            deferred.set(k, (deferred.get(k) ?? 0) + p * child.probability)
           }
         }
 
-        if (cacheKey) {
-          subtreeCache.set(cacheKey, merged)
-          inProgress.delete(cacheKey)
-        }
-
-        return merged
+        return finalize({ outcomes: merged, deferred })
       }
     }
 
-    const outcomes = initialState.isFinished()
-      ? makeLeafOutcome(initialState)
-      : expandNode(initialState, 0, initialMeta)
-
-    if (!outcomes) return []
-    console.log(subtreeCache.size)
-    return outcomeRecordToArray(outcomes)
+    if (initialState.isFinished()) {
+      return outcomeRecordToArray(makeLeafOutcome(initialState))
+    }
+    const result = expandNode(initialState, 0, initialMeta)
+    if ('cycleTo' in result) return []
+    console.log('Unique states =', subtreeCache.size)
+    console.log('Unique nodes =', counter)
+    return outcomeRecordToArray(result.outcomes)
   }
 }
 

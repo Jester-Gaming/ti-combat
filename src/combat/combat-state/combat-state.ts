@@ -25,6 +25,7 @@ import {
   getOpponentSide,
 } from '../combat-side-state/combat-side-state'
 import { type LogEntry, Logger } from '../logger'
+import { canonicalizeUnitState } from '../utils/canonicalize-unit-state'
 import { sortUnitsByPriority } from '../utils/sort-units-by-priority'
 import { parseVariantId } from '../utils/unit-variant'
 import type {
@@ -351,10 +352,30 @@ export class CombatState {
       },
       {
         kind: 'method',
+        fn: CombatState.prototype._flushPendingCanonicalize,
+        phase,
+      },
+      {
+        kind: 'method',
         fn: CombatState.prototype._applyHitAssignmentStep,
         phase,
       },
     ]
+  }
+
+  /** Apply any deferred state-canonicalization marks set by
+   *  `modifyUnitState`. Runs once per side, just before hits resolve.
+   *  Coalesces N marks per phase into at most one canonicalize pass. */
+  private _flushPendingCanonicalize(): void {
+    const d = this.data
+    const a = d.attacker._needsCanonicalize
+    if (a) {
+      canonicalizeUnitState(d.attacker, a)
+    }
+    const f = d.defender._needsCanonicalize
+    if (f) {
+      canonicalizeUnitState(d.defender, f)
+    }
   }
 
   getUnitsHash(): string {

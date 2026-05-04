@@ -35,7 +35,7 @@ describe('ASSIMILATOR_Z + TECHNOLOGICAL_SINGULARITY + DYNAMO', () => {
     t.advanceRound({ attacker: 1 })
 
     expect(t.attacker.units.DREADNOUGHT).toHaveLength(1)
-    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBe(false)
+    expect(t.attacker.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
     expect(t.abilityLog('DYNAMO')).not.toHaveLength(0)
     // Nekro Dynamo did not fire again after flagship destruction
     expect(t.abilityLog('NEKRO_FLAGSHIP_DYNAMO')).toHaveLength(nekroLogAfterR1)

@@ -25,6 +25,6 @@ describe.forEachSide('DURANIUM_ARMOR + RAID_FORMATION', () => {
 
     // Duranium Armor repairs dreadnought since it didn't use sustain
     t.advanceRound(0)
-    expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(false)
+    expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBeFalsy()
   })
 })

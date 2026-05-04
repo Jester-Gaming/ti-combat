@@ -4,10 +4,7 @@ const TYPES: ReadonlyArray<{ short: string; count: number }> = [
   { short: 'Fl', count: 1 },
   { short: 'W', count: 2 },
   { short: 'D', count: 2 },
-  { short: 'Ca', count: 2 },
-  { short: 'Cr', count: 2 },
-  { short: 'De', count: 2 },
-  { short: 'F', count: 2 },
+  { short: 'F', count: 10 },
   { short: 'PDS', count: 2 },
 ]
 
@@ -29,12 +26,15 @@ function buildSets(): string[] {
 
 const sets = buildSets()
 
-describe('space combat — all units sets', () => {
+describe('space combat — duranium units sets', () => {
   it.each(sets.map(set => [set, set]))('%s vs %s', (attacker, defender) => {
     expect(
       runScenario({
         mode: 'SPACE',
-        attacker: { units: attacker },
+        attacker: {
+          units: attacker,
+          abilities: { DURANIUM_ARMOR: true },
+        },
         defender: { units: defender },
       }),
     ).toMatchSnapshot()

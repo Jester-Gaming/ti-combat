@@ -23,7 +23,7 @@ describe.forEachSide('DYNAMO + QUANTUM_MANIPULATOR', () => {
 
     expect(t.defender.units.CRUISER).toHaveLength(1)
     expect(t.defender.units.MECH).toHaveLength(1)
-    expect(t.defender.units.MECH![0].isDamaged).toBe(false)
+    expect(t.defender.units.MECH![0].isDamaged).toBeFalsy()
     expect(t.abilityLog('QUANTUM_MANIPULATOR')).not.toHaveLength(0)
     expect(t.abilityLog('DYNAMO')).not.toHaveLength(0)
   })

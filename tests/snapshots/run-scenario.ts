@@ -82,16 +82,34 @@ interface FormattedOutcome {
   probability: number
 }
 
-export function runScenario(
-  mode: CombatMode,
-  attacker: string,
-  defender: string,
-  faction: FactionKey = 'ARBOREC',
-): FormattedOutcome[] {
+/** Shorthand SideConfig for snapshot tests. `units` is a comma-separated
+ *  short-name list (e.g. `"Fl, 2D, 2PDS"`); other fields mirror combatTest's
+ *  `SideConfig`. */
+export interface ScenarioSideConfig {
+  units: string
+  faction?: FactionKey
+  abilities?: SideConfig['abilities']
+}
+
+export interface ScenarioConfig {
+  mode: CombatMode
+  attacker: ScenarioSideConfig
+  defender: ScenarioSideConfig
+}
+
+function resolveSide(config: ScenarioSideConfig): SideConfig {
+  return {
+    faction: config.faction ?? 'ARBOREC',
+    units: parseUnits(config.units),
+    abilities: config.abilities,
+  }
+}
+
+export function runScenario(config: ScenarioConfig): FormattedOutcome[] {
   const state = buildCombatState({
-    mode,
-    attacker: { faction, units: parseUnits(attacker) },
-    defender: { faction, units: parseUnits(defender) },
+    mode: config.mode,
+    attacker: resolveSide(config.attacker),
+    defender: resolveSide(config.defender),
   })
   const engine = new CombatEngine()
   return engine

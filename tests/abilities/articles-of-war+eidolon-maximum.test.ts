@@ -49,7 +49,7 @@ describe.forEachSide('ARTICLES_OF_WAR + EIDOLON_MAXIMUM', () => {
 
     // Round 2: EM repairs mech at start of round
     t.advanceRound()
-    expect(t.attacker.units.MECH![0].isDamaged).toBe(false)
+    expect(t.attacker.units.MECH![0].isDamaged).toBeFalsy()
   })
 
   it('mech retains Sustain Damage in ground combat', () => {

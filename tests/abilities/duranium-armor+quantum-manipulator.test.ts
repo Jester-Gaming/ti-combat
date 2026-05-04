@@ -19,7 +19,9 @@ describe.forEachSide('DURANIUM_ARMOR + QUANTUM_MANIPULATOR', () => {
 
     t.advanceTo('SPACE_COMBAT')
     t.advanceRound({ defender: 1 })
+    expect(t.defender.units.MECH![0].isDamaged).toBe(true)
 
+    t.advanceRound()
     // Mech sustains via Quantum Manipulator
     // Duranium Armor does not repair the mech — MECH is not in nonFighterShips
     expect(t.defender.units.MECH![0].isDamaged).toBe(true)
