@@ -1,13 +1,15 @@
-@reference "tailwindcss";
-
 .group {
-  @apply inline-flex rounded-md;
+  display: inline-flex;
   border: 1px solid hsl(var(--foreground) / 15%);
+  border-radius: var(--radius-md);
   overflow: hidden;
 }
 
 .button {
-  @apply cursor-pointer px-3 py-1 text-sm;
+  padding: var(--space-1) var(--space-3);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
   background: transparent;
   border: none;
   color: hsl(var(--foreground) / 60%);

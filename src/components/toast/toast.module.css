@@ -1,5 +1,3 @@
-@reference "tailwindcss";
-
 @keyframes slideUp {
   from {
     opacity: 0%;

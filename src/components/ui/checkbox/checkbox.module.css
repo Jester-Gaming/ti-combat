@@ -1,15 +1,23 @@
-@reference "tailwindcss";
-
 .wrapper {
-  @apply inline-flex cursor-pointer;
+  display: inline-flex;
+  cursor: pointer;
 }
 
 .disabled {
-  @apply cursor-default opacity-50;
+  cursor: default;
+  opacity: 50%;
 }
 
 .hiddenInput {
-  @apply sr-only;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }
 
 .hiddenInput:focus-visible + .checkbox {
@@ -18,8 +26,14 @@
 }
 
 .checkbox {
-  @apply flex h-4 w-4 shrink-0 items-center justify-center rounded;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
   border: 1px solid hsl(var(--foreground) / 15%);
+  border-radius: 0.25rem;
   background: hsl(var(--foreground) / 5%);
   user-select: none;
   transition:
@@ -33,6 +47,7 @@
 }
 
 .checkIcon {
-  @apply h-3 w-3;
+  width: 0.75rem;
+  height: 0.75rem;
   color: hsl(var(--checkbox-color, var(--foreground)));
 }

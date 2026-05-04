@@ -1,7 +1,5 @@
-@reference "tailwindcss";
-
 .divider {
-  @apply my-4;
+  margin: var(--space-4) 0;
   height: 1px;
   background: linear-gradient(
     90deg,
@@ -21,12 +19,30 @@
 }
 
 .section {
-  @apply flex items-center justify-between;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .label {
-  @apply text-sm font-medium;
+  font-size: var(--text-sm);
+  font-weight: 500;
   font-family: var(--font-heading);
   color: hsl(var(--muted-foreground));
   letter-spacing: 0.05em;
+}
+
+.button {
+  display: flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  margin-left: var(--space-4);
+  border-radius: 0.25rem;
+}
+
+.icon {
+  width: 1rem;
+  height: 1rem;
 }

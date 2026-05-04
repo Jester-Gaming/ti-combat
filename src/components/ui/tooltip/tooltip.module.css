@@ -1,21 +1,31 @@
-@reference "tailwindcss";
-
 .wrapper {
   display: inline-flex;
   align-items: center;
 }
 
 .tooltip {
-  @apply pointer-events-none z-50 m-0 w-max max-w-56 rounded border-none bg-transparent px-2 py-1 text-xs leading-snug opacity-0 transition-opacity;
   position: fixed;
   inset: auto auto anchor(top) anchor(center);
-  translate: -50% -6px;
+  z-index: 50;
+  width: max-content;
+  max-width: var(--space-56);
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  font-family: inherit;
+  font-size: var(--text-xs);
+  line-height: 1.375;
   background-color: hsl(var(--popover));
   color: hsl(var(--popover-foreground));
+  border: none;
+  border-radius: 0.25rem;
   box-shadow: 0 2px 8px hsl(0deg 0% 0% / 40%);
+  opacity: 0%;
+  pointer-events: none;
+  transition: opacity 0.15s;
+  translate: -50% -6px;
 }
 
 .wrapper:hover .tooltip {
-  @apply opacity-100;
+  opacity: 100%;
   transition-delay: 300ms;
 }

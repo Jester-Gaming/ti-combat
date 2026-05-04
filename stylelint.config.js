@@ -8,14 +8,7 @@ export default {
     'at-rule-no-unknown': [
       true,
       {
-        ignoreAtRules: [
-          'tailwind',
-          'apply',
-          'layer',
-          'config',
-          'theme',
-          'reference',
-        ],
+        ignoreAtRules: ['layer', 'config', 'theme', 'reference'],
       },
     ],
     'function-no-unknown': [

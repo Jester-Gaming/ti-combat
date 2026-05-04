@@ -1,11 +1,14 @@
-@reference "tailwindcss";
-
 .wrapper {
   /* Container for combat result */
 }
 
 .emptyState {
-  @apply flex h-14 items-center justify-center rounded-lg text-sm;
+  display: flex;
+  height: 3.5rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
   color: hsl(var(--muted-foreground));
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
@@ -18,17 +21,23 @@
 }
 
 .emptyStateText {
-  @apply tracking-wide;
+  letter-spacing: 0.025em;
   font-family: var(--font-heading);
 }
 
 .resultBar {
-  @apply flex h-14 overflow-hidden rounded-lg;
+  display: flex;
+  height: 3.5rem;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
   border: 1px solid hsl(var(--border));
 }
 
 .segment {
-  @apply flex items-center justify-center transition-all duration-500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.5s;
 }
 
 .segmentAttacker {
@@ -96,33 +105,41 @@
 }
 
 .segmentContent {
-  @apply flex flex-col items-center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .percentage {
-  @apply text-base font-bold tabular-nums;
+  font-size: var(--text-base);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   font-family: var(--font-heading);
 }
 
 @media (width >= 640px) {
   .percentage {
-    @apply text-lg;
+    font-size: var(--text-lg);
   }
 }
 
 .label {
-  @apply text-[10px] tracking-widest uppercase opacity-70;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  opacity: 70%;
   font-family: var(--font-heading);
 }
 
-/* Loading: existing results → dim + shimmer overlay */
 .loading {
-  @apply relative;
+  position: relative;
   opacity: 60%;
 }
 
 .loading::after {
-  @apply absolute inset-0 rounded-lg;
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-lg);
   content: '';
   background: linear-gradient(
     90deg,
@@ -134,7 +151,6 @@
   animation: shimmer 1.5s ease-in-out infinite;
 }
 
-/* Loading: no results yet → skeleton with spinner */
 .skeleton {
   background: linear-gradient(
     90deg,
@@ -147,15 +163,28 @@
 }
 
 .loader {
-  @apply block h-5 w-5 rounded-full;
+  display: block;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
   border: 2px solid hsl(var(--muted-foreground) / 25%);
   border-top-color: hsl(var(--primary));
   animation: spin 0.7s linear infinite;
 }
 
-/* Detailed button */
 .detailedButton {
-  @apply mt-2 w-full rounded-md py-1.5 text-xs font-semibold tracking-wider uppercase transition-colors;
+  margin-top: var(--space-2);
+  width: 100%;
+  padding: var(--space-1-5) 0;
+  border-radius: var(--radius-md);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  transition:
+    color 0.15s,
+    background-color 0.15s,
+    border-color 0.15s;
   font-family: var(--font-heading);
   color: hsl(var(--muted-foreground));
   background: hsl(var(--card));
@@ -178,9 +207,10 @@
   border-color: hsl(var(--accent) / 30%);
 }
 
-/* Detailed panel */
 .detailedPanel {
-  @apply mt-2 overflow-hidden rounded-lg;
+  margin-top: var(--space-2);
+  overflow: hidden;
+  border-radius: var(--radius-lg);
   border: 1px solid hsl(var(--border));
   background: hsl(var(--card));
 }
@@ -192,46 +222,51 @@
 }
 
 .detailedTable {
-  @apply w-full;
+  width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
 }
 
 .detailedHeader {
-  @apply text-[10px] font-semibold tracking-widest uppercase;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   font-family: var(--font-heading);
   color: hsl(var(--muted-foreground));
 }
 
 .detailedHeader th {
-  @apply px-3 py-1.5 font-semibold;
+  padding: var(--space-1-5) var(--space-3);
+  font-weight: 600;
   border-bottom: 1px solid hsl(var(--border) / 50%);
 }
 
 .detailedHeaderSide {
-  @apply text-left;
+  text-align: left;
 }
 
 .detailedHeaderSide:last-child {
-  @apply text-right;
+  text-align: right;
 }
 
 .detailedHeaderProb {
-  @apply text-center;
+  text-align: center;
   width: 60px;
 }
 
 .detailedList {
-  @apply max-h-64 overflow-y-auto;
+  max-height: 16rem;
+  overflow-y: auto;
 }
 
 .outcomeRow {
-  @apply text-xs;
+  font-size: var(--text-xs);
   font-family: var(--font-heading);
 }
 
 .outcomeRow td {
-  @apply px-3 py-1.5;
+  padding: var(--space-1-5) var(--space-3);
   border-bottom: 1px solid hsl(var(--border) / 20%);
 }
 
@@ -268,18 +303,20 @@
 }
 
 .outcomeSideRight {
-  @apply text-right;
+  text-align: right;
 }
 
 .outcomeProb {
-  @apply text-right font-bold tabular-nums;
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
   color: hsl(var(--muted-foreground));
 }
 
 .unitEntry {
-  @apply whitespace-nowrap;
+  white-space: nowrap;
 }
 
 .unitSeparator {

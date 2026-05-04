@@ -1,11 +1,33 @@
-@reference "tailwindcss";
-
 .trigger {
-  --tw-ring-color: hsl(var(--ring));
-  --tw-ring-offset-color: hsl(var(--background));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: var(--space-9);
+  padding: var(--space-2) var(--space-3);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  white-space: nowrap;
+  background: transparent;
+  border: 1px solid hsl(var(--input));
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
 
-  @apply flex h-9 w-full items-center justify-between rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-sm focus:ring-1 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50 [&>span]:line-clamp-1;
-  border-color: hsl(var(--input));
+.trigger:focus {
+  outline: 1px solid hsl(var(--ring));
+}
+
+.trigger:disabled {
+  cursor: not-allowed;
+  opacity: 50%;
+}
+
+.trigger > span {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .trigger[data-placeholder] {
@@ -13,50 +35,100 @@
 }
 
 .triggerIcon {
-  @apply h-4 w-4 opacity-50;
+  width: 1rem;
+  height: 1rem;
+  opacity: 50%;
 }
 
 .scrollButton {
-  @apply absolute right-0 left-0 z-10 flex cursor-default items-center justify-center py-1 backdrop-blur-sm;
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  cursor: default;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1) 0;
+  backdrop-filter: blur(4px);
   background-color: hsl(var(--popover) / 95%);
 }
 
 .scrollUpButton {
-  @apply top-0;
+  top: 0;
 }
 
 .scrollDownButton {
-  @apply bottom-0;
+  bottom: 0;
 }
 
 .scrollButtonIcon {
-  @apply h-4 w-4;
+  width: 1rem;
+  height: 1rem;
 }
 
 .content {
-  @apply relative z-50 max-h-[--radix-select-content-available-height] min-w-[8rem] origin-[--radix-select-content-transform-origin] overflow-x-hidden overflow-y-auto rounded-md border shadow-md;
+  position: relative;
+  z-index: 50;
+  max-height: var(--radix-select-content-available-height);
+  min-width: 8rem;
+  transform-origin: var(--radix-select-content-transform-origin);
+  overflow: hidden auto;
+  border-radius: var(--radius-md);
+  border: 1px solid hsl(var(--border));
+  box-shadow: var(--shadow-md);
   color: hsl(var(--popover-foreground));
   background-color: hsl(var(--popover));
 }
 
-.contentPopper {
-  @apply data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1;
+.contentPopper[data-side='bottom'] {
+  transform: translateY(var(--space-1));
+}
+
+.contentPopper[data-side='top'] {
+  transform: translateY(calc(-1 * var(--space-1)));
+}
+
+.contentPopper[data-side='left'] {
+  transform: translateX(calc(-1 * var(--space-1)));
+}
+
+.contentPopper[data-side='right'] {
+  transform: translateX(var(--space-1));
 }
 
 .viewport {
-  @apply p-1;
+  padding: var(--space-1);
 }
 
 .viewportPopper {
-  @apply h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)];
+  height: var(--radix-select-trigger-height);
+  width: 100%;
+  min-width: var(--radix-select-trigger-width);
 }
 
 .label {
-  @apply px-2 py-1.5 text-sm font-semibold;
+  padding: var(--space-1-5) var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: 600;
 }
 
 .item {
-  @apply relative flex w-full cursor-default items-center rounded-sm py-1.5 pr-8 pl-2 text-sm outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50;
+  position: relative;
+  display: flex;
+  width: 100%;
+  cursor: default;
+  align-items: center;
+  padding: var(--space-1-5) var(--space-8) var(--space-1-5) var(--space-2);
+  font-size: var(--text-sm);
+  outline: none;
+  user-select: none;
+  border-radius: var(--radius-sm);
+}
+
+.item[data-disabled] {
+  pointer-events: none;
+  opacity: 50%;
 }
 
 .item:focus {
@@ -65,14 +137,22 @@
 }
 
 .itemIndicatorWrapper {
-  @apply absolute right-2 flex h-3.5 w-3.5 items-center justify-center;
+  position: absolute;
+  right: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.875rem;
+  height: 0.875rem;
 }
 
 .itemIndicatorIcon {
-  @apply h-4 w-4;
+  width: 1rem;
+  height: 1rem;
 }
 
 .separator {
-  @apply -mx-1 my-1 h-px;
+  margin: var(--space-1) calc(-1 * var(--space-1));
+  height: 1px;
   background-color: hsl(var(--muted));
 }

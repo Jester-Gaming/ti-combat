@@ -1,7 +1,9 @@
-@reference "tailwindcss";
-
 .trigger {
-  @apply w-full min-w-0 text-sm tracking-wide transition-all;
+  width: 100%;
+  min-width: 0;
+  font-size: var(--text-sm);
+  letter-spacing: 0.025em;
+  transition: all 0.15s;
   font-family: var(--font-heading);
   color: hsl(var(--foreground));
   background: hsl(var(--input));
@@ -9,11 +11,16 @@
 }
 
 .trigger > span:first-child {
-  @apply min-w-0 overflow-hidden text-ellipsis whitespace-nowrap;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .itemContent {
-  @apply flex items-center gap-1.5;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
 }
 
 .trigger:focus {
@@ -28,7 +35,7 @@
 }
 
 .content {
-  @apply max-h-60;
+  max-height: 15rem;
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border) / 50%);
 }
@@ -40,7 +47,12 @@
 }
 
 .icon {
-  @apply flex h-4 w-4 shrink-0 items-center justify-center;
+  display: flex;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
 
   & svg {
     width: 100%;
@@ -49,11 +61,18 @@
 }
 
 .iconIndent {
-  @apply w-4 shrink-0;
+  width: 1rem;
+  flex-shrink: 0;
 }
 
 .item {
-  @apply cursor-pointer text-sm tracking-wide transition-colors;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  letter-spacing: 0.025em;
+  transition:
+    color 0.15s,
+    background-color 0.15s,
+    border-color 0.15s;
   font-family: var(--font-heading);
 }
 

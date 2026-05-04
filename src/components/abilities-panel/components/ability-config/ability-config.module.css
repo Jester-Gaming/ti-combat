@@ -1,10 +1,10 @@
-@reference "tailwindcss";
-
 .container {
   --checkbox-color: var(--side-color);
 
-  @apply rounded border p-2 transition-all;
-  border-color: hsl(var(--side-color) / 15%);
+  padding: var(--space-2);
+  border: 1px solid hsl(var(--side-color) / 15%);
+  border-radius: 0.25rem;
+  transition: all 0.15s ease;
 }
 
 .container:hover {
@@ -16,18 +16,33 @@
 }
 
 .header {
-  @apply flex items-center gap-1.5;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
 }
 
 .collapseButton {
-  @apply relative flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded p-0 transition-colors;
+  position: relative;
+  display: flex;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: 0.25rem;
   background: transparent;
   border: none;
   color: hsl(var(--muted-foreground) / 60%);
+  transition:
+    color 0.15s,
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
 .collapseButton::before {
-  @apply absolute;
+  position: absolute;
   content: '';
   inset: -8px;
 }
@@ -37,7 +52,8 @@
 }
 
 .collapseIndent {
-  @apply w-4 shrink-0;
+  width: 1rem;
+  flex-shrink: 0;
 }
 
 .container.clickable {
@@ -64,9 +80,21 @@
 }
 
 .headerLabel {
-  @apply flex flex-1 cursor-pointer items-center gap-1.5 rounded p-0 text-left transition-colors select-none;
+  display: flex;
+  flex: 1;
+  cursor: pointer;
+  align-items: center;
+  gap: var(--space-1-5);
+  padding: 0;
+  text-align: left;
+  user-select: none;
+  border-radius: 0.25rem;
   background: transparent;
   border: none;
+  transition:
+    color 0.15s,
+    background-color 0.15s,
+    border-color 0.15s;
 }
 
 .headerLabel:disabled {
@@ -80,13 +108,23 @@
 }
 
 .collapseIcon {
-  @apply flex h-4 w-4 shrink-0 items-center justify-center;
+  display: flex;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
   color: hsl(var(--muted-foreground) / 60%);
   transition: color 0.15s;
 }
 
 .icon {
-  @apply flex h-5 w-5 shrink-0 items-center justify-center;
+  display: flex;
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
   margin: -3px 0;
   color: hsl(var(--muted-foreground));
   transition: color 0.15s;
@@ -98,7 +136,9 @@
 }
 
 .title {
-  @apply text-xs font-medium tracking-wide;
+  font-size: var(--text-xs);
+  font-weight: 500;
+  letter-spacing: 0.025em;
   font-family: var(--font-heading);
   color: hsl(var(--muted-foreground));
   transition: color 0.15s;
@@ -109,7 +149,10 @@
 }
 
 .descriptionIcon {
-  @apply h-3 w-3 shrink-0 cursor-help;
+  width: var(--space-3);
+  height: var(--space-3);
+  flex-shrink: 0;
+  cursor: help;
   color: hsl(var(--muted-foreground) / 40%);
   transition: color 0.15s;
 }
@@ -119,8 +162,14 @@
 }
 
 .headerNumberInput {
-  @apply h-4 w-4 shrink-0 rounded border text-center text-[10px];
-  border-color: hsl(var(--foreground) / 15%);
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  border-radius: 0.25rem;
+  border: 1px solid hsl(var(--foreground) / 15%);
+  text-align: center;
+  font-family: inherit;
+  font-size: 10px;
   background-color: hsl(var(--foreground) / 5%);
   color: hsl(var(--foreground));
   padding: 0;
@@ -143,19 +192,30 @@
 }
 
 .configItems {
-  @apply mt-2 space-y-2;
+  margin-top: var(--space-2);
+}
+
+.configItems > * + * {
+  margin-top: var(--space-2);
 }
 
 .configItemLabel {
-  @apply flex cursor-pointer items-center justify-between gap-2 select-none;
+  display: flex;
+  cursor: pointer;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  user-select: none;
 }
 
 .configItemGroup {
-  @apply flex flex-col gap-1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 .configItemText {
-  @apply text-[12px];
+  font-size: 12px;
   color: hsl(var(--muted-foreground));
   white-space: nowrap;
   min-width: 0;
@@ -164,8 +224,13 @@
 }
 
 .numberInput {
-  @apply w-9 rounded border px-1.5 py-1 text-center text-[12px];
-  border-color: hsl(var(--side-color) / 25%);
+  width: var(--space-9);
+  padding: var(--space-1) var(--space-1-5);
+  text-align: center;
+  font-family: inherit;
+  font-size: 12px;
+  border: 1px solid hsl(var(--side-color) / 25%);
+  border-radius: 0.25rem;
   background-color: hsl(var(--side-color) / 5%);
   color: hsl(var(--foreground));
   outline: none;
@@ -187,8 +252,15 @@
 }
 
 .selectTrigger {
-  @apply h-7 w-auto gap-1 rounded border px-1.5 text-[12px] shadow-none;
-  border-color: hsl(var(--side-color) / 25%);
+  height: 1.75rem;
+  width: auto;
+  gap: var(--space-1);
+  padding: 0 var(--space-1-5);
+  font-family: inherit;
+  font-size: 12px;
+  border: 1px solid hsl(var(--side-color) / 25%);
+  border-radius: 0.25rem;
+  box-shadow: none;
   background-color: hsl(var(--side-color) / 5%);
   color: hsl(var(--foreground));
   transition:
@@ -202,14 +274,19 @@
 }
 
 .selectContent {
-  @apply max-h-60 min-w-0 border-0;
+  max-height: 15rem;
+  min-width: 0;
+  border-width: 0;
 }
 
 .selectItem {
-  @apply py-1 pr-6 pl-4 text-[12px];
+  padding: var(--space-1) var(--space-6) var(--space-1) var(--space-4);
+  font-size: 12px;
 }
 
 .selectLabel {
-  @apply px-1.5 py-1 text-xs font-semibold;
+  padding: var(--space-1) var(--space-1-5);
+  font-size: var(--text-xs);
+  font-weight: 600;
   color: hsl(var(--muted-foreground));
 }

@@ -1,5 +1,3 @@
-@reference "tailwindcss";
-
 .text {
   color: hsl(var(--glow-color, var(--foreground)));
 }

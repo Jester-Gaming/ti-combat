@@ -31,11 +31,8 @@ export function SettingsPanel({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <IconButton
-          className="ml-4 flex h-8 w-8 items-center justify-center rounded"
-          title="Settings"
-        >
-          <GearIcon className="h-4 w-4" />
+        <IconButton className={styles.button} title="Settings">
+          <GearIcon className={styles.icon} />
         </IconButton>
       </DialogTrigger>
       <DialogContent>

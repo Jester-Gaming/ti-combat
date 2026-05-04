@@ -1,7 +1,7 @@
-@reference "tailwindcss";
-
 .overlay {
-  @apply fixed inset-0 z-50;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
   background: rgb(0 0 0 / 50%);
 }
 
@@ -14,19 +14,33 @@
 }
 
 .contentWrapper {
-  @apply pointer-events-none fixed inset-0 z-50 flex items-center justify-center px-4;
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 var(--space-4);
+  pointer-events: none;
 }
 
 .content {
-  @apply pointer-events-auto relative flex w-full max-w-sm flex-col overflow-y-auto rounded-lg p-6;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 24rem;
+  padding: var(--space-6);
+  overflow-y: auto;
+  pointer-events: auto;
   background: hsl(var(--card));
   border: 1px solid hsl(var(--border));
+  border-radius: var(--radius-lg);
   box-shadow:
     0 4px 24px rgb(0 0 0 / 15%),
     0 1px 3px rgb(0 0 0 / 10%);
 }
 
-/* Top accent edge */
 .content::before {
   content: '';
   position: absolute;
@@ -69,7 +83,11 @@
 }
 
 .title {
-  @apply text-sm font-semibold tracking-widest uppercase;
+  margin: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   font-family: var(--font-heading);
   color: hsl(var(--foreground));
 }
@@ -79,7 +97,19 @@
 }
 
 .close {
-  @apply absolute top-4 right-4 flex h-6 w-6 cursor-pointer items-center justify-center rounded;
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: 0.25rem;
   color: hsl(var(--muted-foreground));
   transition: all 0.15s ease;
 }
@@ -90,7 +120,8 @@
 }
 
 .closeIcon {
-  @apply h-4 w-4;
+  width: 1rem;
+  height: 1rem;
 }
 
 @keyframes fadeIn {

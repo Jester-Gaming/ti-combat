@@ -1,5 +1,3 @@
-@reference "tailwindcss";
-
 .button {
   position: relative;
   color: hsl(var(--foreground));

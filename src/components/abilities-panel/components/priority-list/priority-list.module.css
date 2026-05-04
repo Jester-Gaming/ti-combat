@@ -1,14 +1,21 @@
-@reference "tailwindcss";
-
 .list {
-  @apply flex flex-col gap-1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
 }
 
 .item {
   --checkbox-color: var(--side-color);
 
-  @apply flex cursor-grab items-center gap-2 rounded border px-2 py-1 text-[12px] select-none;
-  border-color: hsl(var(--side-color) / 15%);
+  display: flex;
+  cursor: grab;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  font-size: 12px;
+  user-select: none;
+  border: 1px solid hsl(var(--side-color) / 15%);
+  border-radius: 0.25rem;
   background-color: hsl(var(--side-color) / 5%);
   color: hsl(var(--muted-foreground));
   transition:
@@ -27,7 +34,11 @@
 }
 
 .dragging {
-  @apply z-10 opacity-90 shadow-lg;
+  z-index: 10;
+  opacity: 90%;
+  box-shadow:
+    0 10px 15px -3px rgb(0 0 0 / 10%),
+    0 4px 6px -4px rgb(0 0 0 / 10%);
   border-color: hsl(var(--side-color) / 50%);
   background-color: hsl(var(--side-color) / 15%);
 }
@@ -37,18 +48,29 @@
 }
 
 .checkboxWrapper {
-  @apply flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center;
+  display: flex;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
 }
 
 .label {
-  @apply flex-1;
+  flex: 1;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .dragHandle {
-  @apply flex h-4 w-4 shrink-0 items-center justify-center;
+  display: flex;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
   color: hsl(var(--foreground) / 25%);
 }
 

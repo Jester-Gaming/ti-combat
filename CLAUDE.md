@@ -45,7 +45,6 @@ npm run preview
 - **React 19.2**: Latest React with compiler optimization enabled
 - **TypeScript 5.9**: Strict mode enabled with comprehensive linting rules
 - **Vite 7**: Build tool with Fast Refresh via @vitejs/plugin-react
-- **Tailwind CSS 4**: Latest utility-first CSS framework with CSS-first configuration and automatic class sorting via Prettier plugin
 - **ESLint 10**: Using flat config format with `defineConfig`/`globalIgnores` API
 - **Prettier 3**: Code formatting with single quotes, 80 char width, no semicolons
 
@@ -79,17 +78,15 @@ npm run preview
 - 2 space indentation
 - LF line endings
 - Arrow function parens: avoid
-- prettier-plugin-tailwindcss for automatic class sorting
 
-### Tailwind CSS
+### Styling
 
-- **Tailwind v4**: Uses CSS-first configuration with `@import 'tailwindcss'` in CSS files
-- **PostCSS Plugin**: Uses `@tailwindcss/postcss`
-- **Theme Customization**: Uses `@theme` block for Tailwind theme tokens, with CSS custom properties in `@layer base`
-- **Dark Mode**: Class-based dark mode support (.dark class)
+- **Plain CSS Modules**: Each component has a `*.module.css` co-located with its TSX file; classes are imported as `import styles from './x.module.css'`
+- **Design tokens**: All colors, fonts, spacing, font sizes, radii, and shadows are declared as CSS custom properties in `src/index.css` (`:root` for light theme, `.dark` for dark theme)
+- **Dark Mode**: Class-based dark mode support (`.dark` class on `<html>`)
 - **Path Aliases**: `@/` points to `src/` for clean imports
 - **UI Components**: Custom components in `src/components/ui/` (select, sheet, and dialog use Radix primitives)
-- **Styling**: Uses `clsx` directly for conditional class merging
+- **Conditional classes**: `clsx` is used directly for conditional class merging
 
 ## Code Conventions
 

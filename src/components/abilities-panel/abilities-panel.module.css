@@ -1,21 +1,28 @@
-@reference "tailwindcss";
-
-.container {
-  @apply space-y-4;
+.container > * + * {
+  margin-top: var(--space-4);
 }
 
 .categoryLabel {
-  @apply mb-2 text-[10px] font-semibold tracking-widest uppercase;
+  margin: 0 0 var(--space-2);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   font-family: var(--font-heading);
   color: hsl(var(--muted-foreground));
 }
 
 .subcategoryLabel {
-  @apply mt-2 mb-1.5 text-[9px] font-medium tracking-wider uppercase;
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-1-5);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   font-family: var(--font-heading);
   color: hsl(var(--muted-foreground) / 70%);
 }
 
-.abilitiesList {
-  @apply space-y-2;
+.abilitiesList > * + * {
+  margin-top: var(--space-2);
 }

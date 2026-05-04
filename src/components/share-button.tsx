@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useToast } from '@/components/toast'
 import { IconButton } from '@/components/ui/icon-button'
 
+import styles from './share-button.module.css'
+
 export function ShareButton() {
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
@@ -35,12 +37,12 @@ export function ShareButton() {
 
   return (
     <IconButton
-      className="ml-2 flex h-8 w-8 items-center justify-center rounded"
+      className={styles.button}
       title="Share"
       onClick={handleShare}
       isLoading={loading}
     >
-      <Share2Icon className="h-4 w-4" />
+      <Share2Icon className={styles.icon} />
     </IconButton>
   )
 }
