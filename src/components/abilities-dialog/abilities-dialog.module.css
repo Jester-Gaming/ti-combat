@@ -51,11 +51,6 @@
   background: hsl(var(--primary) / 5%);
 }
 
-:global(.dark) .trigger:hover {
-  border-color: hsl(186deg 100% 50% / 30%);
-  box-shadow: 0 0 8px hsl(186deg 100% 50% / 10%);
-}
-
 .triggerIcon {
   width: var(--space-3-5);
   height: var(--space-3-5);
@@ -174,10 +169,6 @@
   letter-spacing: 0.04em;
   color: hsl(var(--muted-foreground));
   background: hsl(var(--muted));
-}
-
-:global(.dark) .type {
-  background: hsl(222deg 30% 18%);
 }
 
 /* Description — spans full width below */

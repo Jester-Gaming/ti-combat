@@ -62,12 +62,7 @@
   position: fixed;
   inset: 0;
   z-index: 0;
-  display: none;
   pointer-events: none;
-}
-
-:global(.dark) .nebulaOverlay {
-  display: block;
   background:
     radial-gradient(
       ellipse 80% 50% at 20% 80%,

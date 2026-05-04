@@ -60,6 +60,25 @@
   /* Shadows */
   --shadow-sm: 0 1px 2px rgb(0 0 0 / 5%);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -2px rgb(0 0 0 / 10%);
+
+  /* Surface (cards, dialogs, sheets, panels) */
+  --surface-bg: hsl(var(--card));
+  --surface-border: hsl(var(--border));
+
+  /* Buttons */
+  --btn-bg: hsl(var(--secondary));
+  --btn-border: hsl(var(--border));
+
+  /* Inputs */
+  --input-bg: hsl(var(--input));
+  --input-border: hsl(var(--border));
+
+  /* Settings divider gradient */
+  --divider-from: hsl(var(--border));
+  --divider-to: hsl(var(--border) / 40%);
+
+  /* Unit-row hover glow middle stop */
+  --row-hover-mid: hsl(var(--muted));
 }
 
 .dark {
@@ -88,6 +107,25 @@
 
   /* Defender - Amber/Orange warmth */
   --defender: 32 95% 55%;
+
+  /* Surface — translucent for glassmorphism over starfield */
+  --surface-bg: hsl(var(--card) / 90%);
+  --surface-border: hsl(var(--foreground) / 10%);
+
+  /* Buttons */
+  --btn-bg: hsl(222deg 30% 15% / 80%);
+  --btn-border: hsl(var(--foreground) / 15%);
+
+  /* Inputs */
+  --input-bg: hsl(222deg 30% 10% / 80%);
+  --input-border: hsl(var(--foreground) / 15%);
+
+  /* Settings divider — light foreground at low alpha */
+  --divider-from: hsl(var(--foreground) / 12%);
+  --divider-to: hsl(var(--foreground) / 4%);
+
+  /* Unit-row hover glow — primary tint instead of muted */
+  --row-hover-mid: hsl(var(--primary) / 5%);
 }
 
 * {

@@ -24,8 +24,8 @@
   transition: all 0.15s;
   position: relative;
   color: hsl(var(--foreground));
-  background: hsl(var(--secondary));
-  border: 1px solid hsl(var(--border));
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
 }
 
 .button:hover {
@@ -36,15 +36,6 @@
   transform: scale(0.98);
 }
 
-:global(.dark) .button {
-  background: hsl(222deg 30% 15% / 80%);
-  border: 1px solid hsl(210deg 40% 96% / 15%);
-}
-
-:global(.dark) .button:hover {
-  background: hsl(222deg 30% 20% / 90%);
-}
-
 .sideAttacker .button:hover,
 .sideAttacker .upgradeButton:hover {
   border-color: hsl(var(--attacker) / 50%);
@@ -53,18 +44,6 @@
 .sideDefender .button:hover,
 .sideDefender .upgradeButton:hover {
   border-color: hsl(var(--defender) / 50%);
-}
-
-:global(.dark) .sideAttacker .button:hover,
-:global(.dark) .sideAttacker .upgradeButton:hover {
-  border-color: hsl(186deg 100% 50% / 40%);
-  box-shadow: 0 0 10px hsl(186deg 100% 50% / 20%);
-}
-
-:global(.dark) .sideDefender .button:hover,
-:global(.dark) .sideDefender .upgradeButton:hover {
-  border-color: hsl(32deg 95% 55% / 40%);
-  box-shadow: 0 0 10px hsl(32deg 95% 55% / 20%);
 }
 
 .buttonDisabled {
@@ -83,8 +62,8 @@
   transition: all 0.15s;
   position: relative;
   color: hsl(var(--foreground));
-  background: hsl(var(--secondary));
-  border: 1px solid hsl(var(--border));
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
 }
 
 .upgradeButton:hover {
@@ -93,15 +72,6 @@
 
 .upgradeButton:active {
   transform: scale(0.98);
-}
-
-:global(.dark) .upgradeButton {
-  background: hsl(222deg 30% 15% / 80%);
-  border: 1px solid hsl(210deg 40% 96% / 15%);
-}
-
-:global(.dark) .upgradeButton:hover {
-  background: hsl(222deg 30% 20% / 90%);
 }
 
 .sideAttacker .upgradeActive {
@@ -145,8 +115,8 @@
   border-radius: 0.25rem;
   font-family: var(--font-heading);
   color: hsl(var(--foreground));
-  background: hsl(var(--input));
-  border: 1px solid hsl(var(--border));
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   transition: all 0.15s ease;
   appearance: textfield;
 }
@@ -159,11 +129,6 @@
 
 .countInput:focus {
   outline: none;
-}
-
-:global(.dark) .countInput {
-  background: hsl(222deg 30% 10% / 80%);
-  border: 1px solid hsl(210deg 40% 96% / 15%);
 }
 
 .sideAttacker .countInput:focus {

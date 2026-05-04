@@ -24,7 +24,7 @@
   background: linear-gradient(
     90deg,
     hsl(var(--attacker) / 0%) 0%,
-    hsl(var(--muted)) 50%,
+    var(--row-hover-mid) 50%,
     hsl(var(--defender) / 0%) 100%
   );
   border-radius: inherit;
@@ -34,19 +34,6 @@
 
 .row:hover::before {
   opacity: 50%;
-}
-
-:global(.dark) .row::before {
-  background: linear-gradient(
-    90deg,
-    hsl(186deg 100% 50% / 0%) 0%,
-    hsl(186deg 100% 50% / 3%) 50%,
-    hsl(32deg 95% 55% / 0%) 100%
-  );
-}
-
-:global(.dark) .row:hover::before {
-  opacity: 100%;
 }
 
 .unitName {

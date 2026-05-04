@@ -23,15 +23,9 @@
   padding: var(--space-4);
   overflow-y: auto;
   width: min(85vw, 320px);
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
+  background: var(--surface-bg);
+  border: 1px solid var(--surface-border);
   box-shadow: 0 8px 32px rgb(0 0 0 / 30%);
-}
-
-:global(.dark) .content {
-  background: hsl(222deg 47% 9% / 85%);
-  border: 1px solid hsl(210deg 40% 96% / 10%);
-  backdrop-filter: blur(12px);
 }
 
 .contentLeft {

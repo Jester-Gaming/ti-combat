@@ -6,8 +6,8 @@
   transition: all 0.15s;
   font-family: var(--font-heading);
   color: hsl(var(--foreground));
-  background: hsl(var(--input));
-  border: 1px solid hsl(var(--border));
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
 }
 
 .trigger > span:first-child {
@@ -29,21 +29,10 @@
   box-shadow: 0 0 10px hsl(var(--select-color, var(--foreground)) / 20%);
 }
 
-:global(.dark) .trigger {
-  background: hsl(222deg 30% 10% / 80%);
-  border: 1px solid hsl(210deg 40% 96% / 15%);
-}
-
 .content {
   max-height: 15rem;
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border) / 50%);
-}
-
-:global(.dark) .content {
-  background: hsl(222deg 47% 9% / 85%);
-  border: 1px solid hsl(210deg 40% 96% / 10%);
-  backdrop-filter: blur(12px);
+  background: var(--surface-bg);
+  border: 1px solid var(--surface-border);
 }
 
 .icon {

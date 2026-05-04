@@ -3,17 +3,8 @@
   height: 1px;
   background: linear-gradient(
     90deg,
-    hsl(var(--border)),
-    hsl(var(--border) / 40%),
-    transparent
-  );
-}
-
-:global(.dark) .divider {
-  background: linear-gradient(
-    90deg,
-    hsl(210deg 40% 96% / 12%),
-    hsl(210deg 40% 96% / 4%),
+    var(--divider-from),
+    var(--divider-to),
     transparent
   );
 }

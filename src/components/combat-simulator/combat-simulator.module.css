@@ -28,12 +28,10 @@
 
 .sidePanelAttacker {
   --side-color: var(--attacker);
-  border-color: hsl(var(--attacker) / 30%);
 }
 
 .sidePanelDefender {
   --side-color: var(--defender);
-  border-color: hsl(var(--defender) / 30%);
 }
 
 .sidePanelHeader {
@@ -131,13 +129,8 @@
   justify-content: center;
   border-radius: var(--radius-md);
   color: hsl(var(--muted-foreground) / 60%);
-  border: 1px solid hsl(var(--border));
-  background: hsl(var(--secondary));
-}
-
-:global(.dark) .gearButton {
-  background: hsl(222deg 30% 15% / 80%);
-  border: 1px solid hsl(210deg 40% 96% / 15%);
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
 }
 
 .gearButton:hover {
@@ -158,16 +151,6 @@
   border-color: hsl(var(--defender) / 50%);
 }
 
-:global(.dark) .gearButtonAttacker:hover {
-  border-color: hsl(186deg 100% 50% / 40%);
-  box-shadow: 0 0 10px hsl(186deg 100% 50% / 20%);
-}
-
-:global(.dark) .gearButtonDefender:hover {
-  border-color: hsl(32deg 95% 55% / 40%);
-  box-shadow: 0 0 10px hsl(32deg 95% 55% / 20%);
-}
-
 @media (width >= 1024px) {
   .gearButton {
     display: none;
@@ -176,12 +159,10 @@
 
 .sheetAttacker {
   --side-color: var(--attacker);
-  border-color: hsl(var(--attacker) / 30%);
 }
 
 .sheetDefender {
   --side-color: var(--defender);
-  border-color: hsl(var(--defender) / 30%);
 }
 
 .sheetHeader {

@@ -1,7 +1,3 @@
 .text {
   color: hsl(var(--glow-color, var(--foreground)));
 }
-
-:global(.dark) .text {
-  text-shadow: 0 0 10px hsl(var(--glow-color, var(--foreground)) / 50%);
-}

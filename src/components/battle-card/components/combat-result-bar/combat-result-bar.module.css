@@ -10,14 +10,8 @@
   border-radius: var(--radius-lg);
   font-size: var(--text-sm);
   color: hsl(var(--muted-foreground));
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
-}
-
-:global(.dark) .emptyState {
-  background: hsl(222deg 47% 9% / 85%);
-  border: 1px solid hsl(210deg 40% 96% / 10%);
-  backdrop-filter: blur(12px);
+  background: var(--surface-bg);
+  border: 1px solid var(--surface-border);
 }
 
 .emptyStateText {
@@ -56,14 +50,6 @@
   }
 }
 
-:global(.dark) .segmentAttacker {
-  background: linear-gradient(
-    to bottom,
-    hsl(var(--attacker) / 30%),
-    hsl(var(--attacker) / 20%)
-  );
-}
-
 .segmentDraw {
   background: linear-gradient(
     to bottom,
@@ -94,14 +80,6 @@
   .label {
     color: hsl(var(--defender));
   }
-}
-
-:global(.dark) .segmentDefender {
-  background: linear-gradient(
-    to bottom,
-    hsl(var(--defender) / 30%),
-    hsl(var(--defender) / 20%)
-  );
 }
 
 .segmentContent {
@@ -187,8 +165,8 @@
     border-color 0.15s;
   font-family: var(--font-heading);
   color: hsl(var(--muted-foreground));
-  background: hsl(var(--card));
-  border: 1px solid hsl(var(--border));
+  background: var(--surface-bg);
+  border: 1px solid var(--surface-border);
 }
 
 .detailedButton:hover {
@@ -197,28 +175,12 @@
   border-color: hsl(var(--accent) / 30%);
 }
 
-:global(.dark) .detailedButton {
-  background: hsl(222deg 47% 9% / 85%);
-  border-color: hsl(210deg 40% 96% / 10%);
-}
-
-:global(.dark) .detailedButton:hover {
-  background: hsl(222deg 47% 12% / 90%);
-  border-color: hsl(var(--accent) / 30%);
-}
-
 .detailedPanel {
   margin-top: var(--space-2);
   overflow: hidden;
   border-radius: var(--radius-lg);
-  border: 1px solid hsl(var(--border));
-  background: hsl(var(--card));
-}
-
-:global(.dark) .detailedPanel {
-  background: hsl(222deg 47% 9% / 85%);
-  border-color: hsl(210deg 40% 96% / 10%);
-  backdrop-filter: blur(12px);
+  border: 1px solid var(--surface-border);
+  background: var(--surface-bg);
 }
 
 .detailedTable {
@@ -284,18 +246,6 @@
 
 .outcomeRowDraw {
   background: hsl(var(--foreground) / 2%);
-}
-
-:global(.dark) .outcomeRowAttacker {
-  background: hsl(var(--attacker) / 8%);
-}
-
-:global(.dark) .outcomeRowDefender {
-  background: hsl(var(--defender) / 8%);
-}
-
-:global(.dark) .outcomeRowDraw {
-  background: hsl(var(--foreground) / 3%);
 }
 
 .outcomeSide {
