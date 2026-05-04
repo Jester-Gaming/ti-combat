@@ -23,13 +23,13 @@
   font-weight: 500;
   transition: all 0.15s;
   position: relative;
-  color: hsl(var(--foreground));
-  background: var(--btn-bg);
-  border: 1px solid var(--btn-border);
+  color: var(--color-text-main);
+  background: var(--color-background-button);
+  border: 1px solid var(--color-border-button);
 }
 
 .button:hover {
-  background: hsl(var(--muted));
+  background: var(--color-background-muted);
 }
 
 .button:active {
@@ -38,12 +38,12 @@
 
 .side_attacker .button:hover,
 .side_attacker .upgradeButton:hover {
-  border-color: hsl(var(--attacker) / 50%);
+  border-color: var(--color-accent-attacker-border-strong);
 }
 
 .side_defender .button:hover,
 .side_defender .upgradeButton:hover {
-  border-color: hsl(var(--defender) / 50%);
+  border-color: var(--color-accent-defender-border-strong);
 }
 
 .button_disabled {
@@ -61,13 +61,13 @@
   font-size: var(--text-xs);
   transition: all 0.15s;
   position: relative;
-  color: hsl(var(--foreground));
-  background: var(--btn-bg);
-  border: 1px solid var(--btn-border);
+  color: var(--color-text-main);
+  background: var(--color-background-button);
+  border: 1px solid var(--color-border-button);
 }
 
 .upgradeButton:hover {
-  background: hsl(var(--muted));
+  background: var(--color-background-muted);
 }
 
 .upgradeButton:active {
@@ -75,12 +75,12 @@
 }
 
 .side_attacker .upgradeActive {
-  color: hsl(var(--attacker));
+  color: var(--color-accent-attacker);
   border-color: hsl(186deg 100% 50% / 50%);
 }
 
 .side_defender .upgradeActive {
-  color: hsl(var(--defender));
+  color: var(--color-accent-defender);
   border-color: hsl(32deg 95% 55% / 50%);
 }
 
@@ -114,9 +114,9 @@
   font-variant-numeric: tabular-nums;
   border-radius: 0.25rem;
   font-family: var(--font-heading);
-  color: hsl(var(--foreground));
-  background: var(--input-bg);
-  border: 1px solid var(--input-border);
+  color: var(--color-text-main);
+  background: var(--color-background-input-field);
+  border: 1px solid var(--color-border-input);
   transition: all 0.15s ease;
   appearance: textfield;
 }

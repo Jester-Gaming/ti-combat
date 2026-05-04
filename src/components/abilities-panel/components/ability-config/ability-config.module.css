@@ -34,7 +34,7 @@
   border-radius: 0.25rem;
   background: transparent;
   border: none;
-  color: hsl(var(--muted-foreground) / 60%);
+  color: var(--color-text-muted-soft);
   transition:
     color 0.15s,
     background-color 0.15s,
@@ -72,7 +72,7 @@
 
 .container.readOnly:hover .title,
 .container.readOnly:hover .icon {
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
 }
 
 .container.hasHeaderControl .title {
@@ -114,7 +114,7 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  color: hsl(var(--muted-foreground) / 60%);
+  color: var(--color-text-muted-soft);
   transition: color 0.15s;
 }
 
@@ -126,7 +126,7 @@
   align-items: center;
   justify-content: center;
   margin: -3px 0;
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
   transition: color 0.15s;
 
   & svg {
@@ -140,7 +140,7 @@
   font-weight: 500;
   letter-spacing: 0.025em;
   font-family: var(--font-heading);
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
   transition: color 0.15s;
   white-space: nowrap;
   min-width: 0;
@@ -153,12 +153,12 @@
   height: var(--space-3);
   flex-shrink: 0;
   cursor: help;
-  color: hsl(var(--muted-foreground) / 40%);
+  color: var(--color-text-muted-faint);
   transition: color 0.15s;
 }
 
 .descriptionIcon:hover {
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
 }
 
 .headerNumberInput {
@@ -166,12 +166,12 @@
   height: 1rem;
   flex-shrink: 0;
   border-radius: 0.25rem;
-  border: 1px solid hsl(var(--foreground) / 15%);
+  border: 1px solid var(--color-overlay-emphasis);
   text-align: center;
   font-family: inherit;
   font-size: 10px;
-  background-color: hsl(var(--foreground) / 5%);
-  color: hsl(var(--foreground));
+  background-color: var(--color-overlay-light);
+  color: var(--color-text-main);
   padding: 0;
   outline: none;
   appearance: textfield;
@@ -187,8 +187,10 @@
 }
 
 .headerNumberInput:focus {
-  border-color: hsl(var(--checkbox-color, var(--foreground)));
-  background-color: hsl(var(--checkbox-color, var(--foreground)) / 20%);
+  border-color: hsl(var(--checkbox-color, var(--color-text-main-raw)));
+  background-color: hsl(
+    var(--checkbox-color, var(--color-text-main-raw)) / 20%
+  );
 }
 
 .configItems {
@@ -216,7 +218,7 @@
 
 .configItemText {
   font-size: 12px;
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
   white-space: nowrap;
   min-width: 0;
   overflow: hidden;
@@ -232,7 +234,7 @@
   border: 1px solid hsl(var(--side-color) / 25%);
   border-radius: 0.25rem;
   background-color: hsl(var(--side-color) / 5%);
-  color: hsl(var(--foreground));
+  color: var(--color-text-main);
   outline: none;
   appearance: textfield;
   transition:
@@ -262,7 +264,7 @@
   border-radius: 0.25rem;
   box-shadow: none;
   background-color: hsl(var(--side-color) / 5%);
-  color: hsl(var(--foreground));
+  color: var(--color-text-main);
   transition:
     border-color 0.15s,
     background-color 0.15s;
@@ -288,5 +290,5 @@
   padding: var(--space-1) var(--space-1-5);
   font-size: var(--text-xs);
   font-weight: 600;
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
 }

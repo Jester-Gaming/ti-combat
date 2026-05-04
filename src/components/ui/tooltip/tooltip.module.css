@@ -14,8 +14,8 @@
   font-family: inherit;
   font-size: var(--text-xs);
   line-height: 1.375;
-  background-color: hsl(var(--popover));
-  color: hsl(var(--popover-foreground));
+  background-color: var(--color-background-popover);
+  color: var(--color-text-main);
   border: none;
   border-radius: 0.25rem;
   box-shadow: 0 2px 8px hsl(0deg 0% 0% / 40%);

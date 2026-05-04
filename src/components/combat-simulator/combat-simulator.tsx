@@ -139,7 +139,11 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           <GlowText
             as="h2"
             className={styles.sidePanelTitle}
-            style={{ '--glow-color': 'var(--attacker)' } as CSSProperties}
+            style={
+              {
+                '--glow-color': 'var(--color-accent-attacker-raw)',
+              } as CSSProperties
+            }
           >
             Attacker Abilities
           </GlowText>
@@ -217,7 +221,11 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
             <GlowText
               as="h2"
               className={styles.sidePanelTitle}
-              style={{ '--glow-color': 'var(--attacker)' } as CSSProperties}
+              style={
+                {
+                  '--glow-color': 'var(--color-accent-attacker-raw)',
+                } as CSSProperties
+              }
             >
               Attacker Abilities
             </GlowText>
@@ -256,7 +264,11 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
             <GlowText
               as="h2"
               className={styles.sidePanelTitle}
-              style={{ '--glow-color': 'var(--defender)' } as CSSProperties}
+              style={
+                {
+                  '--glow-color': 'var(--color-accent-defender-raw)',
+                } as CSSProperties
+              }
             >
               Defender Abilities
             </GlowText>
@@ -296,7 +308,11 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           <GlowText
             as="h2"
             className={styles.sidePanelTitle}
-            style={{ '--glow-color': 'var(--defender)' } as CSSProperties}
+            style={
+              {
+                '--glow-color': 'var(--color-accent-defender-raw)',
+              } as CSSProperties
+            }
           >
             Defender Abilities
           </GlowText>

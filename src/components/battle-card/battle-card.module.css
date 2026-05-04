@@ -54,7 +54,7 @@
   background: transparent;
   border: 0;
   border-radius: var(--radius-md);
-  color: hsl(var(--muted-foreground) / 50%);
+  color: var(--color-text-muted-soft);
   transition:
     color 0.15s,
     background-color 0.15s,
@@ -62,8 +62,8 @@
 }
 
 .swapButton:hover {
-  color: hsl(var(--foreground));
-  background: hsl(var(--muted-foreground) / 10%);
+  color: var(--color-text-main);
+  background: var(--color-overlay-strong);
 }
 
 .factionLabel {
@@ -111,7 +111,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-family: var(--font-heading);
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
 }
 
 .unitRows > * + * {
@@ -130,9 +130,9 @@
   flex: 1;
   background: linear-gradient(
     90deg,
-    hsl(var(--muted-foreground) / 0%) 0%,
-    hsl(var(--muted-foreground) / 30%) 50%,
-    hsl(var(--muted-foreground) / 0%) 100%
+    transparent 0%,
+    var(--color-overlay-bold) 50%,
+    transparent 100%
   );
 }
 
@@ -141,7 +141,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-family: var(--font-heading);
-  color: hsl(var(--muted-foreground) / 60%);
+  color: var(--color-text-muted-soft);
 }
 
 .clearButton {
@@ -155,11 +155,11 @@
 }
 
 .clearButton_attacker {
-  --btn-color: var(--attacker);
+  --btn-color: var(--color-accent-attacker-raw);
 }
 
 .clearButton_defender {
-  --btn-color: var(--defender);
+  --btn-color: var(--color-accent-defender-raw);
 }
 
 @media (width >= 640px) {
@@ -208,7 +208,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    hsl(var(--foreground) / 10%),
+    var(--color-overlay-strong),
     transparent
   );
 }
@@ -217,8 +217,8 @@
   display: inline-flex;
   overflow: hidden;
   border-radius: var(--radius-md);
-  border: 1px solid hsl(var(--muted-foreground) / 15%);
-  background: hsl(var(--background) / 40%);
+  border: 1px solid var(--color-overlay-emphasis);
+  background: var(--color-background-main-translucent);
 }
 
 .combatModeOption {
@@ -230,25 +230,25 @@
   text-transform: uppercase;
   transition: all 0.2s;
   font-family: var(--font-heading);
-  color: hsl(var(--muted-foreground) / 65%);
+  color: var(--color-text-muted-strong);
   background: transparent;
   border: 0;
   position: relative;
 }
 
 .combatModeOption + .combatModeOption {
-  border-left: 1px solid hsl(var(--muted-foreground) / 15%);
+  border-left: 1px solid var(--color-overlay-emphasis);
 }
 
 .combatModeOption:hover:not(.combatModeOption_active) {
-  color: hsl(var(--muted-foreground) / 75%);
-  background: hsl(var(--muted-foreground) / 5%);
+  color: var(--color-text-muted-strong);
+  background: var(--color-overlay-light);
 }
 
 .combatModeOption_active {
-  color: hsl(var(--foreground));
-  background: hsl(var(--muted-foreground) / 12%);
+  color: var(--color-text-main);
+  background: var(--color-overlay-strong);
   box-shadow:
-    inset 0 1px 0 hsl(var(--foreground) / 6%),
-    0 0 16px hsl(var(--foreground) / 4%);
+    inset 0 1px 0 var(--color-overlay-light),
+    0 0 16px var(--color-overlay-soft);
 }

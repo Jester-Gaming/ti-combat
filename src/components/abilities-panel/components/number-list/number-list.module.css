@@ -15,7 +15,7 @@
   border: 1px solid hsl(var(--side-color) / 15%);
   border-radius: 0.25rem;
   background-color: hsl(var(--side-color) / 5%);
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
   transition:
     border-color 0.15s,
     background-color 0.15s;

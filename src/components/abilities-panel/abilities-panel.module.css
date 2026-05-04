@@ -9,7 +9,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-family: var(--font-heading);
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
 }
 
 .subcategoryLabel {
@@ -20,7 +20,7 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   font-family: var(--font-heading);
-  color: hsl(var(--muted-foreground) / 70%);
+  color: var(--color-text-muted-strong);
 }
 
 .abilitiesList > * + * {

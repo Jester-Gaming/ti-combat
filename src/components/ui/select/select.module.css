@@ -9,13 +9,13 @@
   font-size: var(--text-sm);
   white-space: nowrap;
   background: transparent;
-  border: 1px solid hsl(var(--input));
+  border: 1px solid var(--color-background-input);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-sm);
 }
 
 .trigger:focus {
-  outline: 1px solid hsl(var(--ring));
+  outline: 1px solid var(--color-focus-ring);
 }
 
 .trigger:disabled {
@@ -31,7 +31,7 @@
 }
 
 .trigger[data-placeholder] {
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
 }
 
 .triggerIcon {
@@ -51,7 +51,7 @@
   justify-content: center;
   padding: var(--space-1) 0;
   backdrop-filter: blur(4px);
-  background-color: hsl(var(--popover) / 95%);
+  background-color: var(--color-background-popover-translucent);
 }
 
 .scrollUpButton {
@@ -75,10 +75,10 @@
   transform-origin: var(--radix-select-content-transform-origin);
   overflow: hidden auto;
   border-radius: var(--radius-md);
-  border: 1px solid hsl(var(--border));
+  border: 1px solid var(--color-border-main);
   box-shadow: var(--shadow-md);
-  color: hsl(var(--popover-foreground));
-  background-color: hsl(var(--popover));
+  color: var(--color-text-main);
+  background-color: var(--color-background-popover);
 }
 
 .content_popper[data-side='bottom'] {
@@ -132,8 +132,8 @@
 }
 
 .item:focus {
-  color: hsl(var(--accent-foreground));
-  background-color: hsl(var(--accent));
+  color: var(--color-text-main);
+  background-color: var(--color-background-secondary);
 }
 
 .itemIndicatorWrapper {
@@ -154,5 +154,5 @@
 .separator {
   margin: var(--space-1) calc(-1 * var(--space-1));
   height: 1px;
-  background-color: hsl(var(--muted));
+  background-color: var(--color-background-muted);
 }

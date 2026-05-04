@@ -82,12 +82,20 @@ export function BattleCard({
         )}
         <div
           className={styles.factionSelector}
-          style={{ '--select-color': 'var(--attacker)' } as CSSProperties}
+          style={
+            {
+              '--select-color': 'var(--color-accent-attacker-raw)',
+            } as CSSProperties
+          }
         >
           <GlowText
             as="label"
             className={styles.factionLabel}
-            style={{ '--glow-color': 'var(--attacker)' } as CSSProperties}
+            style={
+              {
+                '--glow-color': 'var(--color-accent-attacker-raw)',
+              } as CSSProperties
+            }
           >
             Attacker Fleet
           </GlowText>
@@ -106,12 +114,20 @@ export function BattleCard({
         </button>
         <div
           className={styles.factionSelector}
-          style={{ '--select-color': 'var(--defender)' } as CSSProperties}
+          style={
+            {
+              '--select-color': 'var(--color-accent-defender-raw)',
+            } as CSSProperties
+          }
         >
           <GlowText
             as="label"
             className={styles.factionLabel}
-            style={{ '--glow-color': 'var(--defender)' } as CSSProperties}
+            style={
+              {
+                '--glow-color': 'var(--color-accent-defender-raw)',
+              } as CSSProperties
+            }
           >
             Defender Fleet
           </GlowText>

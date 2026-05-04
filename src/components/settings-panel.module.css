@@ -3,8 +3,8 @@
   height: 1px;
   background: linear-gradient(
     90deg,
-    var(--divider-from),
-    var(--divider-to),
+    var(--color-divider-strong),
+    var(--color-divider-soft),
     transparent
   );
 }
@@ -19,7 +19,7 @@
   font-size: var(--text-sm);
   font-weight: 500;
   font-family: var(--font-heading);
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
   letter-spacing: 0.05em;
 }
 

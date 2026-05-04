@@ -27,11 +27,11 @@
 }
 
 .sidePanel_attacker {
-  --side-color: var(--attacker);
+  --side-color: var(--color-accent-attacker-raw);
 }
 
 .sidePanel_defender {
-  --side-color: var(--defender);
+  --side-color: var(--color-accent-defender-raw);
 }
 
 .sidePanelHeader {
@@ -67,12 +67,12 @@
   background: transparent;
   border: 0;
   border-radius: 0.25rem;
-  color: hsl(var(--muted-foreground) / 35%);
+  color: var(--color-text-muted-faint);
   transition: all 0.15s ease;
 }
 
 .resetAbilitiesButton:hover {
-  background: hsl(var(--muted-foreground) / 10%);
+  background: var(--color-overlay-strong);
 }
 
 .resetAbilitiesButton svg {
@@ -81,11 +81,11 @@
 }
 
 .resetAbilitiesButton_attacker:hover {
-  color: hsl(var(--attacker));
+  color: var(--color-accent-attacker);
 }
 
 .resetAbilitiesButton_defender:hover {
-  color: hsl(var(--defender));
+  color: var(--color-accent-defender);
 }
 
 .sidePanel::-webkit-scrollbar {
@@ -97,12 +97,12 @@
 }
 
 .sidePanel::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted-foreground) / 15%);
+  background: var(--color-overlay-emphasis);
   border-radius: 2px;
 }
 
 .sidePanel::-webkit-scrollbar-thumb:hover {
-  background: hsl(var(--muted-foreground) / 30%);
+  background: var(--color-overlay-bold);
 }
 
 .centerColumn {
@@ -128,14 +128,14 @@
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-md);
-  color: hsl(var(--muted-foreground) / 60%);
-  border: 1px solid var(--btn-border);
-  background: var(--btn-bg);
+  color: var(--color-text-muted-soft);
+  border: 1px solid var(--color-border-button);
+  background: var(--color-background-button);
 }
 
 .gearButton:hover {
-  color: hsl(var(--foreground));
-  background: hsl(var(--muted));
+  color: var(--color-text-main);
+  background: var(--color-background-muted);
 }
 
 .gearButtonIcon {
@@ -144,11 +144,11 @@
 }
 
 .gearButton_attacker:hover {
-  border-color: hsl(var(--attacker) / 50%);
+  border-color: var(--color-accent-attacker-border-strong);
 }
 
 .gearButton_defender:hover {
-  border-color: hsl(var(--defender) / 50%);
+  border-color: var(--color-accent-defender-border-strong);
 }
 
 @media (width >= 1024px) {
@@ -158,11 +158,11 @@
 }
 
 .sheetAttacker {
-  --side-color: var(--attacker);
+  --side-color: var(--color-accent-attacker-raw);
 }
 
 .sheetDefender {
-  --side-color: var(--defender);
+  --side-color: var(--color-accent-defender-raw);
 }
 
 .sheetHeader {
@@ -174,9 +174,9 @@
 }
 
 .sheetAttacker .sheetHeader {
-  border-color: hsl(var(--attacker) / 30%);
+  border-color: var(--color-accent-attacker-border-soft);
 }
 
 .sheetDefender .sheetHeader {
-  border-color: hsl(var(--defender) / 30%);
+  border-color: var(--color-accent-defender-border-soft);
 }

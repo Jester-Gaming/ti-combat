@@ -17,7 +17,7 @@
   border: 1px solid hsl(var(--side-color) / 15%);
   border-radius: 0.25rem;
   background-color: hsl(var(--side-color) / 5%);
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
   transition:
     border-color 0.15s,
     background-color 0.15s;
@@ -71,7 +71,7 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  color: hsl(var(--foreground) / 25%);
+  color: var(--color-text-main-faint);
 }
 
 .item:hover .dragHandle {

@@ -9,9 +9,9 @@
   justify-content: center;
   border-radius: var(--radius-lg);
   font-size: var(--text-sm);
-  color: hsl(var(--muted-foreground));
-  background: var(--surface-bg);
-  border: 1px solid var(--surface-border);
+  color: var(--color-text-muted);
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border-surface);
 }
 
 .emptyStateText {
@@ -24,7 +24,7 @@
   height: 3.5rem;
   overflow: hidden;
   border-radius: var(--radius-lg);
-  border: 1px solid hsl(var(--border));
+  border: 1px solid var(--color-border-main);
 }
 
 .segment {
@@ -37,48 +37,48 @@
 .segment_attacker {
   background: linear-gradient(
     to bottom,
-    hsl(var(--attacker) / 25%),
-    hsl(var(--attacker) / 15%)
+    var(--color-accent-attacker-fill-medium),
+    var(--color-accent-attacker-fill-light)
   );
 
   .percentage {
-    color: hsl(var(--attacker));
+    color: var(--color-accent-attacker);
   }
 
   .label {
-    color: hsl(var(--attacker));
+    color: var(--color-accent-attacker);
   }
 }
 
 .segment_draw {
   background: linear-gradient(
     to bottom,
-    hsl(var(--foreground) / 8%),
-    hsl(var(--foreground) / 4%)
+    var(--color-overlay-medium),
+    var(--color-overlay-soft)
   );
 
   .label {
-    color: hsl(var(--muted-foreground));
+    color: var(--color-text-muted);
   }
 
   .percentage {
-    color: hsl(var(--muted-foreground));
+    color: var(--color-text-muted);
   }
 }
 
 .segment_defender {
   background: linear-gradient(
     to bottom,
-    hsl(var(--defender) / 25%),
-    hsl(var(--defender) / 15%)
+    var(--color-accent-defender-fill-medium),
+    var(--color-accent-defender-fill-light)
   );
 
   .percentage {
-    color: hsl(var(--defender));
+    color: var(--color-accent-defender);
   }
 
   .label {
-    color: hsl(var(--defender));
+    color: var(--color-accent-defender);
   }
 }
 
@@ -122,7 +122,7 @@
   background: linear-gradient(
     90deg,
     transparent 25%,
-    hsl(var(--foreground) / 6%) 50%,
+    var(--color-overlay-light) 50%,
     transparent 75%
   );
   background-size: 200% 100%;
@@ -132,9 +132,9 @@
 .skeleton {
   background: linear-gradient(
     90deg,
-    hsl(var(--muted) / 30%) 25%,
-    hsl(var(--muted) / 50%) 50%,
-    hsl(var(--muted) / 30%) 75%
+    var(--color-background-skeleton-light) 25%,
+    var(--color-background-skeleton-medium) 50%,
+    var(--color-background-skeleton-light) 75%
   );
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
@@ -145,8 +145,8 @@
   width: 1.25rem;
   height: 1.25rem;
   border-radius: 9999px;
-  border: 2px solid hsl(var(--muted-foreground) / 25%);
-  border-top-color: hsl(var(--primary));
+  border: 2px solid var(--color-overlay-bold);
+  border-top-color: var(--color-text-main);
   animation: spin 0.7s linear infinite;
 }
 
@@ -164,23 +164,23 @@
     background-color 0.15s,
     border-color 0.15s;
   font-family: var(--font-heading);
-  color: hsl(var(--muted-foreground));
-  background: var(--surface-bg);
-  border: 1px solid var(--surface-border);
+  color: var(--color-text-muted);
+  background: var(--color-background-surface);
+  border: 1px solid var(--color-border-surface);
 }
 
 .detailedButton:hover {
-  color: hsl(var(--foreground));
-  background: hsl(var(--accent) / 10%);
-  border-color: hsl(var(--accent) / 30%);
+  color: var(--color-text-main);
+  background: var(--color-overlay-strong);
+  border-color: var(--color-border-main-soft);
 }
 
 .detailedPanel {
   margin-top: var(--space-2);
   overflow: hidden;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--surface-border);
-  background: var(--surface-bg);
+  border: 1px solid var(--color-border-surface);
+  background: var(--color-background-surface);
 }
 
 .detailedTable {
@@ -195,13 +195,13 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-family: var(--font-heading);
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
 }
 
 .detailedHeader th {
   padding: var(--space-1-5) var(--space-3);
   font-weight: 600;
-  border-bottom: 1px solid hsl(var(--border) / 50%);
+  border-bottom: 1px solid var(--color-border-main-soft);
 }
 
 .detailedHeaderSide {
@@ -229,7 +229,7 @@
 
 .outcomeRow td {
   padding: var(--space-1-5) var(--space-3);
-  border-bottom: 1px solid hsl(var(--border) / 20%);
+  border-bottom: 1px solid var(--color-border-main-faint);
 }
 
 .outcomeRow:last-child td {
@@ -237,19 +237,19 @@
 }
 
 .outcomeRow_attacker {
-  background: hsl(var(--attacker) / 5%);
+  background: var(--color-accent-attacker-bg-soft);
 }
 
 .outcomeRow_defender {
-  background: hsl(var(--defender) / 5%);
+  background: var(--color-accent-defender-bg-soft);
 }
 
 .outcomeRow_draw {
-  background: hsl(var(--foreground) / 2%);
+  background: var(--color-overlay-faint);
 }
 
 .outcomeSide {
-  color: hsl(var(--foreground));
+  color: var(--color-text-main);
 }
 
 .outcomeSide_right {
@@ -262,7 +262,7 @@
   font-variant-numeric: tabular-nums;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 11px;
-  color: hsl(var(--muted-foreground));
+  color: var(--color-text-muted);
 }
 
 .unitEntry {
@@ -270,11 +270,11 @@
 }
 
 .unitSeparator {
-  color: hsl(var(--muted-foreground) / 50%);
+  color: var(--color-text-muted-soft);
 }
 
 .noSurvivors {
-  color: hsl(var(--muted-foreground) / 40%);
+  color: var(--color-text-muted-faint);
 }
 
 @keyframes shimmer {
