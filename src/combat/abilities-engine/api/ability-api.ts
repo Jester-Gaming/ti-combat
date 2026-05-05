@@ -482,7 +482,19 @@ export class SideApi {
     subtype: UnitVariantId,
     statsFactory?: (parentStats: UnitStats) => UnitStats,
   ) {
-    CombatSideState.addSubtype(this._sideData, variantId, subtype, statsFactory)
+    const moved = CombatSideState.addSubtype(
+      this._sideData,
+      variantId,
+      subtype,
+      statsFactory,
+    )
+    if (!moved) return
+    // Re-register invokes for the new variant so the unit's ABILITIES set
+    // matches its variant stats and per-ability `sort` runs against the
+    // current variant key. Mirrors `modifyUnitType` / `placeUnits`.
+    this._abilitiesParams?.addUnitInvokes(this._side, moved.newKey, [
+      moved.unitId,
+    ])
   }
 
   removeSubtype(variantId: UnitType, subtype: UnitVariantId) {

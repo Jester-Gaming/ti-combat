@@ -1269,13 +1269,15 @@ export class CombatSideState {
     }
   }
 
-  /** Move one unit to a new variant with an added subtype. */
+  /** Move one unit to a new variant with an added subtype. Returns the moved
+   *  unit id and its new variant key so callers can refresh engine bindings
+   *  (invoke buckets, sort order) for the variant change. */
   static addSubtype(
     s: SideStateData,
     variantId: UnitType,
     subtype: UnitVariantId,
     statsFactory?: (parentStats: UnitStats) => UnitStats,
-  ): void {
+  ): { unitId: UnitId; newKey: UnitType } | undefined {
     const { type, subtypes: currentSubtypes } = parseVariantId(variantId)
 
     const pickFrom = (
@@ -1295,12 +1297,12 @@ export class CombatSideState {
       pickFrom(s.nonParticipatingUnits, true) ??
       pickFrom(s.participatingUnits, false) ??
       pickFrom(s.nonParticipatingUnits, false)
-    if (pickedId === undefined) return
+    if (pickedId === undefined) return undefined
 
     const sourceKey = s.unitType[pickedId]
     const newSubtypes = [...currentSubtypes, subtype].sort()
     const newKey = makeVariantId(type, newSubtypes as UnitVariantId[])
-    if (newKey === sourceKey) return
+    if (newKey === sourceKey) return undefined
 
     s.unitType = { ...s.unitType, [pickedId]: newKey }
     s._resolvedRestrictions = undefined
@@ -1319,6 +1321,8 @@ export class CombatSideState {
         s.unitStats = { ...s.unitStats, [newKey]: value }
       }
     }
+
+    return { unitId: pickedId, newKey }
   }
 
   /** Move one unit to a variant with a subtype removed. */
