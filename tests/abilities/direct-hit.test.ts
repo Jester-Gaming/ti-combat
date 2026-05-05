@@ -156,4 +156,49 @@ describe.forEachSide('DIRECT_HIT', () => {
     expect(t.attacker.units.DREADNOUGHT).toBeUndefined()
     expect(t.defender.units.DREADNOUGHT).toBeUndefined()
   })
+
+  it('does not trigger when sustaining variant is excluded from targets', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 1 },
+        abilities: { DIRECT_HIT: { uses: 1, targets: ['CRUISER'] } },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { DREADNOUGHT: 1 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound({ defender: 1 })
+
+    expect(t.defender.units.DREADNOUGHT).toHaveLength(1)
+    expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
+    expect(t.state.attacker.abilities.DIRECT_HIT.uses).toBe(1)
+  })
+
+  it('fires only on variants present in targets', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+        abilities: { DIRECT_HIT: { uses: 2, targets: ['DREADNOUGHT'] } },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { DREADNOUGHT: 1, WAR_SUN: 1 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound({ defender: 2 })
+
+    expect(t.defender.units.DREADNOUGHT).toBeUndefined()
+    expect(t.defender.units.WAR_SUN).toHaveLength(1)
+    expect(t.defender.units.WAR_SUN![0].isDamaged).toBe(true)
+    expect(t.state.attacker.abilities.DIRECT_HIT.uses).toBe(1)
+  })
 })
