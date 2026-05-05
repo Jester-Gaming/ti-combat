@@ -1121,7 +1121,9 @@ export function buildDestroyGroup(
  *  engine's perspective and can be shared by reference. */
 export function clonePendingSteps(steps: PendingStep[]): PendingStep[] {
   return steps.map(s =>
-    s.kind === 'group' ? { ...s, steps: s.steps.map(cloneStep) } : cloneStep(s),
+    s.kind === 'group'
+      ? { ...s, data: { ...(s.data as object) }, steps: s.steps.map(cloneStep) }
+      : cloneStep(s),
   )
 }
 
