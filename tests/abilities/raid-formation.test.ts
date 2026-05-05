@@ -49,7 +49,10 @@ describe.forEachSide('RAID_FORMATION', () => {
     expect(t.defender.units.CRUISER![2].isDamaged).toBeFalsy()
   })
 
-  it('??? does not damage ships with lost sustain', () => {
+  // NO_EXPLICIT_RULLING
+  // Lost sustain is treated as "no sustain"
+  // So it doesn't damage units
+  it('Does not damage ships with lost sustain', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {

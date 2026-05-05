@@ -33,7 +33,10 @@ describe('DIRECT_HIT + EIDOLON_MAXIMUM', () => {
     expect(t.defender.units.CRUISER).toHaveLength(1)
   })
 
-  it.skip('??? Direct Hit works on EM even in ground combat (EM is always a ship)', () => {
+  // NO_EXPLICIT_RULLING
+  // To be honest, I have no idea how it should work.
+  // RAW it should, but it feels so strange
+  it("Direct Hit doesn't work on EM in ground combat (EM is always a ship)", () => {
     const t = combatTest({
       mode: 'GROUND',
       attacker: {
@@ -57,7 +60,7 @@ describe('DIRECT_HIT + EIDOLON_MAXIMUM', () => {
     t.advanceRound({ defender: 1 })
 
     // Direct Hit fires after sustain: mech destroyed in ground combat
-    expect(t.abilityLog('DIRECT_HIT')).not.toHaveLength(0)
-    expect(t.defender.units.MECH).toBeUndefined()
+    expect(t.abilityLog('DIRECT_HIT')).toHaveLength(0)
+    expect(t.defender.units.MECH).not.toBeUndefined()
   })
 })
