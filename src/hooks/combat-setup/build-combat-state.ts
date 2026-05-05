@@ -35,6 +35,13 @@ export interface CombatStateConfig {
   attacker: SideConfig
   defender: SideConfig
   customAbilities?: import('../../combat/abilities-engine/types').Ability[]
+  /** Hook invoked after `prepareSimulationConfig` and before
+   *  `forSimulation`, with mutable per-side ability arrays. Test harnesses
+   *  use it to shuffle iteration order; production leaves it unset. */
+  prepareAbilities?: (abilities: {
+    attacker: import('../../combat/abilities-engine/types').Ability[]
+    defender: import('../../combat/abilities-engine/types').Ability[]
+  }) => void
 }
 
 // ============================================================================
@@ -131,6 +138,11 @@ export function buildCombatState(config: CombatStateConfig): CombatState {
 
   const attackerSide = buildSideState(config.attacker, abilitiesConfig.attacker)
   const defenderSide = buildSideState(config.defender, abilitiesConfig.defender)
+
+  config.prepareAbilities?.({
+    attacker: sideAbilities.attacker.abilities,
+    defender: sideAbilities.defender.abilities,
+  })
 
   return CombatState.forSimulation(
     attackerSide,

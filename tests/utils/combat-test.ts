@@ -1,5 +1,4 @@
 import {
-  type Ability,
   type AbilityTiming,
   CombatState,
   type CombatStateData,
@@ -161,8 +160,6 @@ export function unitsByBaseType(
 export class CombatTest {
   private _cs: CombatState
   private _state: CombatStateData
-  private _abilities: Record<CombatSide, Ability[]>
-  private _unitAbilityKeys: Record<CombatSide, ReadonlySet<string>>
   private _log: LogEntry[] = []
   /** Rounds start at 0 (no combat-meta round entered yet) and bump to 1
    *  the first time we load a SPACE_COMBAT / GROUND_COMBAT script. */
@@ -177,28 +174,8 @@ export class CombatTest {
 
   constructor(combatState: CombatState, reversed = false) {
     this._state = combatState.data
-    this._abilities = {
-      attacker: [...combatState.params.getAbilities('attacker')],
-      defender: [...combatState.params.getAbilities('defender')],
-    }
-
-    // Shuffle ability resolution order for order-independence testing.
-    // Only shuffle _abilities (buildInvokes iteration order).
-    // ABILITY_ORDER arrays are NOT shuffled — they represent intentional
-    // ordering set by tests to control resolution priority within a timing.
-    shuffleInPlace(this._abilities.attacker)
-    shuffleInPlace(this._abilities.defender)
-
-    this._unitAbilityKeys = combatState.params.unitAbilityKeys
     this._reversed = reversed
-    // Persist the CombatState instance across steps — `pendingSteps` lives
-    // on the instance, so recreating it between advance() calls would wipe
-    // the in-flight script.
-    this._cs = CombatState.fromDataStandalone(
-      this._state,
-      this._abilities,
-      this._unitAbilityKeys,
-    )
+    this._cs = combatState
     this._currentMeta = getInitialMetaPhase(this._state.combatMode)
   }
 
@@ -632,5 +609,20 @@ export function combatTest(config: CombatTestConfig): CombatTest {
   const effectiveConfig = reversed
     ? { ...config, attacker: config.defender, defender: config.attacker }
     : config
-  return new CombatTest(buildCombatState(effectiveConfig), reversed)
+  // Shuffle iteration order for order-independence testing. Must happen
+  // before forSimulation so `buildInvokes` (and the subsequent PREPARE
+  // pass) sees the shuffled order — matching the production setup path
+  // exactly. ABILITY_ORDER arrays are NOT shuffled — they represent
+  // intentional ordering set by tests to control resolution priority
+  // within a timing.
+  return new CombatTest(
+    buildCombatState({
+      ...effectiveConfig,
+      prepareAbilities: ({ attacker, defender }) => {
+        shuffleInPlace(attacker)
+        shuffleInPlace(defender)
+      },
+    }),
+    reversed,
+  )
 }
