@@ -2,7 +2,7 @@ import { Share2Icon } from '@radix-ui/react-icons'
 import { useState } from 'react'
 
 import { useToast } from '@/components/toast'
-import { IconButton } from '@/components/ui/icon-button'
+import { ButtonIcon } from '@/components/ui/button-icon'
 
 import styles from './share-button.module.css'
 
@@ -36,13 +36,13 @@ export function ShareButton() {
   }
 
   return (
-    <IconButton
+    <ButtonIcon
       className={styles.button}
       title="Share"
       onClick={handleShare}
       isLoading={loading}
     >
-      <Share2Icon className={styles.icon} />
-    </IconButton>
+      <Share2Icon />
+    </ButtonIcon>
   )
 }

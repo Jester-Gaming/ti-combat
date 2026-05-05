@@ -30,19 +30,21 @@ interface FactionSelectProps {
   value: FactionKey
   onValueChange: (value: FactionKey) => void
   className?: string
+  align?: 'start' | 'center' | 'end'
 }
 
 export function FactionSelect({
   value,
   onValueChange,
   className,
+  align,
 }: FactionSelectProps) {
   return (
     <Select value={value} onValueChange={onValueChange}>
       <SelectTrigger className={clsx(styles.trigger, className)}>
         <SelectValue placeholder="Select faction" />
       </SelectTrigger>
-      <SelectContent className={styles.content}>
+      <SelectContent className={styles.content} align={align}>
         {FACTION_ENTRIES.map(([key, faction]) => (
           <SelectItem key={key} value={key} className={styles.item}>
             <span className={styles.itemContent}>
@@ -51,7 +53,7 @@ export function FactionSelect({
               ) : (
                 <span className={styles.iconIndent} />
               )}
-              {faction.name}
+              <span className={styles.itemName}>{faction.name}</span>
             </span>
           </SelectItem>
         ))}

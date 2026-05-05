@@ -120,39 +120,17 @@
   }
 }
 
-.gearButton {
-  display: flex;
-  width: var(--space-9);
-  height: var(--space-9);
-  cursor: pointer;
-  align-items: center;
-  justify-content: center;
-  border-radius: var(--radius-md);
-  color: var(--color-text-muted-soft);
-  border: 1px solid var(--color-border-button);
-  background: var(--color-background-button);
+.gearButton_attacker {
+  --accent-color: var(--color-accent-attacker-raw);
 }
 
-.gearButton:hover {
-  color: var(--color-text-main);
-  background: var(--color-background-muted);
-}
-
-.gearButtonIcon {
-  width: var(--space-3-5);
-  height: var(--space-3-5);
-}
-
-.gearButton_attacker:hover {
-  border-color: var(--color-accent-attacker-border-strong);
-}
-
-.gearButton_defender:hover {
-  border-color: var(--color-accent-defender-border-strong);
+.gearButton_defender {
+  --accent-color: var(--color-accent-defender-raw);
 }
 
 @media (width >= 1024px) {
-  .gearButton {
+  .gearButton_attacker,
+  .gearButton_defender {
     display: none;
   }
 }

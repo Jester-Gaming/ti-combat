@@ -144,12 +144,7 @@ body {
 }
 
 .root {
-  position: relative;
-  min-height: 100vh;
   overflow-x: clip;
-}
-
-.mainContent {
   position: relative;
   z-index: 10;
   display: flex;
@@ -160,7 +155,7 @@ body {
 }
 
 @media (width >= 640px) {
-  .mainContent {
+  .root {
     gap: var(--space-6);
     padding: var(--space-6) var(--space-4);
   }

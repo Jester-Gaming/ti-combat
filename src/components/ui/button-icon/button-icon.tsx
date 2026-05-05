@@ -1,20 +1,20 @@
 import { clsx } from 'clsx'
 
-import styles from './icon-button.module.css'
+import styles from './button-icon.module.css'
 
-interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonIconProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode
   isLoading?: boolean
 }
 
-export function IconButton({
+export function ButtonIcon({
   children,
   className,
   type = 'button',
   isLoading,
   disabled,
   ...props
-}: IconButtonProps): React.ReactElement {
+}: ButtonIconProps): React.ReactElement {
   return (
     <button
       type={type}

@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react'
 import { AbilitiesPanel } from '@/components/abilities-panel'
 import { BattleCard } from '@/components/battle-card'
 import { useToast } from '@/components/toast'
+import { ButtonIcon } from '@/components/ui/button-icon'
 import { GlassCard } from '@/components/ui/glass-card'
 import { GlowText } from '@/components/ui/glow-text'
 import {
@@ -129,7 +130,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
   }
 
   return (
-    <div className={clsx(styles.layout, className)}>
+    <main className={clsx(styles.layout, className)}>
       {/* Left panel: Attacker abilities */}
       <GlassCard
         as="aside"
@@ -191,24 +192,22 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           onUpgradeToggle={handleUpgradeToggle}
           onResetUnits={resetUnits}
           attackerActions={
-            <button
-              type="button"
+            <ButtonIcon
               className={clsx(styles.gearButton, styles.gearButton_attacker)}
               onClick={() => setAttackerSheetOpen(true)}
               title="Attacker abilities"
             >
-              <GearIcon className={styles.gearButtonIcon} />
-            </button>
+              <GearIcon />
+            </ButtonIcon>
           }
           defenderActions={
-            <button
-              type="button"
+            <ButtonIcon
               className={clsx(styles.gearButton, styles.gearButton_defender)}
               onClick={() => setDefenderSheetOpen(true)}
               title="Defender abilities"
             >
-              <GearIcon className={styles.gearButtonIcon} />
-            </button>
+              <GearIcon />
+            </ButtonIcon>
           }
         />
       </div>
@@ -340,6 +339,6 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           />
         </div>
       </GlassCard>
-    </div>
+    </main>
   )
 }

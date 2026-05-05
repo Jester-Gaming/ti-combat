@@ -1,6 +1,8 @@
 import { ArrowUpIcon, MinusIcon, PlusIcon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
 
+import { ButtonIcon } from '@/components/ui/button-icon'
+
 import styles from './unit-controls.module.css'
 
 interface UnitControlsProps {
@@ -8,6 +10,7 @@ interface UnitControlsProps {
   upgraded: boolean
   hasUpgrade: boolean
   limit: number
+  flipped?: boolean
   onCountChange: (count: number) => void
   onUpgradeToggle: () => void
 }
@@ -17,6 +20,7 @@ export function UnitControls({
   upgraded,
   hasUpgrade,
   limit,
+  flipped,
   onCountChange,
   onUpgradeToggle,
 }: UnitControlsProps) {
@@ -32,33 +36,28 @@ export function UnitControls({
   }
 
   return (
-    <div className={styles.controls}>
-      {hasUpgrade ? (
-        <button
-          className={clsx(
-            styles.upgradeButton,
-            upgraded && styles.upgradeActive,
-          )}
-          onClick={onUpgradeToggle}
-          title={upgraded ? 'Upgraded' : 'Click to upgrade'}
-        >
-          <ArrowUpIcon
-            className={
-              upgraded ? styles.upgradeIcon : styles.upgradeIcon_inactive
-            }
-          />
-        </button>
-      ) : (
-        <div className={styles.upgradePlaceholder} />
-      )}
-      <button
-        className={clsx(styles.button, count === 0 && styles.button_disabled)}
+    <div className={clsx(styles.controls, flipped && styles.controls_flipped)}>
+      <div className={styles.upgrade}>
+        {hasUpgrade && (
+          <ButtonIcon
+            className={clsx(
+              styles.upgradeButton,
+              upgraded && styles.upgradeButton_active,
+            )}
+            onClick={onUpgradeToggle}
+            title={upgraded ? 'Upgraded' : 'Click to upgrade'}
+          >
+            <ArrowUpIcon className={styles.upgradeIcon} />
+          </ButtonIcon>
+        )}
+      </div>
+      <ButtonIcon
         onClick={() => onCountChange(Math.max(0, count - 1))}
         disabled={count === 0}
         tabIndex={-1}
       >
-        <MinusIcon className={styles.buttonIcon} />
-      </button>
+        <MinusIcon />
+      </ButtonIcon>
 
       <input
         type="number"
@@ -69,14 +68,13 @@ export function UnitControls({
         onChange={handleInputChange}
         className={styles.countInput}
       />
-      <button
-        className={clsx(styles.button, atLimit && styles.button_disabled)}
+      <ButtonIcon
         onClick={() => onCountChange(count + 1)}
         disabled={atLimit}
         tabIndex={-1}
       >
-        <PlusIcon className={styles.buttonIcon} />
-      </button>
+        <PlusIcon />
+      </ButtonIcon>
     </div>
   )
 }

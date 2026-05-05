@@ -1,118 +1,31 @@
-.side {
-  display: contents;
-}
-
 .controls {
   display: flex;
   align-items: center;
   gap: var(--space-1);
 }
 
-.side_defender .controls {
+.controls_flipped {
   flex-direction: row-reverse;
 }
 
-.button {
-  display: flex;
-  width: 1.5rem;
-  height: 1.5rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.25rem;
-  font-size: var(--text-sm);
-  font-weight: 500;
-  transition: all 0.15s;
-  position: relative;
-  color: var(--color-text-main);
-  background: var(--color-background-button);
-  border: 1px solid var(--color-border-button);
+.upgrade {
+  width: var(--control-size);
+  height: var(--control-size);
 }
 
-.button:hover {
-  background: var(--color-background-muted);
-}
-
-.button:active {
-  transform: scale(0.98);
-}
-
-.side_attacker .button:hover,
-.side_attacker .upgradeButton:hover {
-  border-color: var(--color-accent-attacker-border-strong);
-}
-
-.side_defender .button:hover,
-.side_defender .upgradeButton:hover {
-  border-color: var(--color-accent-defender-border-strong);
-}
-
-.button_disabled {
-  cursor: not-allowed;
-  opacity: 30%;
-}
-
-.upgradeButton {
-  display: flex;
-  width: 1.5rem;
-  height: 1.5rem;
-  align-items: center;
-  justify-content: center;
-  border-radius: 0.25rem;
-  font-size: var(--text-xs);
-  transition: all 0.15s;
-  position: relative;
-  color: var(--color-text-main);
-  background: var(--color-background-button);
-  border: 1px solid var(--color-border-button);
-}
-
-.upgradeButton:hover {
-  background: var(--color-background-muted);
-}
-
-.upgradeButton:active {
-  transform: scale(0.98);
-}
-
-.side_attacker .upgradeActive {
-  color: var(--color-accent-attacker);
-  border-color: hsl(186deg 100% 50% / 50%);
-}
-
-.side_defender .upgradeActive {
-  color: var(--color-accent-defender);
-  border-color: hsl(32deg 95% 55% / 50%);
-}
-
-.upgradePlaceholder {
-  width: 1.5rem;
-  height: 1.5rem;
-}
-
-.buttonIcon {
-  width: var(--space-3);
-  height: var(--space-3);
-}
-
-.upgradeIcon {
-  width: 1rem;
-  height: 1rem;
-}
-
-.upgradeIcon_inactive {
-  width: 1rem;
-  height: 1rem;
-  opacity: 40%;
+.upgradeButton_active {
+  color: hsl(var(--accent-color));
+  border-color: hsl(var(--accent-color) / 50%);
 }
 
 .countInput {
-  width: 2rem;
-  height: 1.5rem;
+  width: calc(var(--control-size) * 1.25);
+  height: var(--control-size);
   padding: 0 var(--space-1);
   text-align: center;
-  font-size: var(--text-sm);
+  font-size: var(--text-base);
   font-variant-numeric: tabular-nums;
-  border-radius: 0.25rem;
+  border-radius: var(--radius-md);
   font-family: var(--font-heading);
   color: var(--color-text-main);
   background: var(--color-background-input-field);
@@ -129,36 +42,6 @@
 
 .countInput:focus {
   outline: none;
-}
-
-.side_attacker .countInput:focus {
-  border-color: hsl(186deg 100% 50% / 50%);
-  box-shadow: 0 0 0 2px hsl(186deg 100% 50% / 15%);
-}
-
-.side_defender .countInput:focus {
-  border-color: hsl(32deg 95% 55% / 50%);
-  box-shadow: 0 0 0 2px hsl(32deg 95% 55% / 15%);
-}
-
-@media (width >= 640px) {
-  .button {
-    width: 1.75rem;
-    height: 1.75rem;
-  }
-
-  .upgradeButton {
-    width: 1.75rem;
-    height: 1.75rem;
-  }
-
-  .upgradePlaceholder {
-    width: 1.75rem;
-    height: 1.75rem;
-  }
-
-  .countInput {
-    width: 2.5rem;
-    height: 1.75rem;
-  }
+  border-color: hsl(var(--accent-color) / 50%);
+  box-shadow: 0 0 0 2px hsl(var(--accent-color) / 15%);
 }

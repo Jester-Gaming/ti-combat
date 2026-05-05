@@ -1,5 +1,6 @@
 .trigger {
   width: 100%;
+  height: var(--control-size);
   min-width: 0;
   font-size: var(--text-sm);
   letter-spacing: 0.025em;
@@ -19,8 +20,15 @@
 
 .itemContent {
   display: flex;
+  min-width: 0;
   align-items: center;
-  gap: var(--space-1-5);
+  gap: var(--space-2);
+}
+
+.itemName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .trigger:focus {
@@ -67,5 +75,5 @@
 }
 
 .item:hover {
-  background: var(--color-overlay-light);
+  background: hsl(var(--select-color, var(--color-text-main-raw)) / 15%);
 }

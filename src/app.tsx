@@ -38,24 +38,21 @@ function App() {
         <div className={styles.starfield} />
         <div className={styles.nebulaOverlay} />
 
-        {/* Main content */}
-        <div className={styles.mainContent}>
-          {/* Header */}
-          <header className={clsx(styles.header, styles.animateFadeUp)}>
-            <h1 className={styles.title}>
-              <a href="/" className={styles.titleLink}>
-                Twilight Imperium Combat Calculator
-              </a>
-            </h1>
-            <SettingsPanel settings={settings} onSettingsChange={setSettings} />
-            <ShareButton />
-          </header>
+        {/* Header */}
+        <header className={clsx(styles.header, styles.animateFadeUp)}>
+          <h1 className={styles.title}>
+            <a href="/" className={styles.titleLink}>
+              Twilight Imperium Combat Calculator
+            </a>
+          </h1>
+          <SettingsPanel settings={settings} onSettingsChange={setSettings} />
+          <ShareButton />
+        </header>
 
-          {/* Combat simulator */}
-          <CombatSimulator
-            className={clsx(styles.animateFadeUp, styles.animateDelay100)}
-          />
-        </div>
+        {/* Combat simulator */}
+        <CombatSimulator
+          className={clsx(styles.animateFadeUp, styles.animateDelay100)}
+        />
       </div>
     </ToastProvider>
   )

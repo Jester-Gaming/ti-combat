@@ -1,6 +1,4 @@
-import { clsx } from 'clsx'
-
-import { UnitControls, unitControlStyles } from '../unit-controls'
+import { UnitControls } from '../unit-controls'
 import styles from './unit-row-dual.module.css'
 
 interface UnitRowDualProps {
@@ -32,12 +30,7 @@ export function UnitRowDual({
 }: UnitRowDualProps) {
   return (
     <div className={styles.row}>
-      <div
-        className={clsx(
-          unitControlStyles.side,
-          unitControlStyles.side_attacker,
-        )}
-      >
+      <div className={styles.sideAttacker}>
         <UnitControls
           count={attacker.count}
           upgraded={attacker.upgraded}
@@ -51,17 +44,13 @@ export function UnitRowDual({
         <span className={styles.fullName}>{name}</span>
         <span className={styles.shortName}>{shortName}</span>
       </span>
-      <div
-        className={clsx(
-          unitControlStyles.side,
-          unitControlStyles.side_defender,
-        )}
-      >
+      <div className={styles.sideDefender}>
         <UnitControls
           count={defender.count}
           upgraded={defender.upgraded}
           hasUpgrade={defenderHasUpgrade}
           limit={limit}
+          flipped
           onCountChange={onDefenderCountChange}
           onUpgradeToggle={onDefenderUpgradeToggle}
         />

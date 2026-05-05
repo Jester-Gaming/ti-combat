@@ -1,13 +1,13 @@
 import { GearIcon } from '@radix-ui/react-icons'
 
 import { AbilitiesDialog } from '@/components/abilities-dialog'
+import { ButtonIcon } from '@/components/ui/button-icon'
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { IconButton } from '@/components/ui/icon-button'
 import { ToggleGroup } from '@/components/ui/toggle-group'
 import type { Settings, Theme } from '@/hooks/use-settings'
 
@@ -31,9 +31,9 @@ export function SettingsPanel({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <IconButton className={styles.button} title="Settings">
-          <GearIcon className={styles.icon} />
-        </IconButton>
+        <ButtonIcon className={styles.button} title="Settings">
+          <GearIcon />
+        </ButtonIcon>
       </DialogTrigger>
       <DialogContent>
         <DialogTitle>Settings</DialogTitle>

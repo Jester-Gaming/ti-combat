@@ -1,13 +1,18 @@
 import { LoopIcon, TrashIcon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
-import type { CSSProperties, ReactNode } from 'react'
-import { Fragment } from 'react'
+import type { ReactNode } from 'react'
 
 import type { CombatMode, CombatOutcome } from '@/combat'
+import { ButtonIcon } from '@/components/ui/button-icon'
+import { ButtonIconPlain } from '@/components/ui/button-icon-plain'
 import { GlassCard } from '@/components/ui/glass-card'
-import { GlowText } from '@/components/ui/glow-text'
-import { IconButton } from '@/components/ui/icon-button'
-import { UNIT_LIMITS, UNIT_TYPES } from '@/constants/units'
+import { ToggleGroup } from '@/components/ui/toggle-group'
+import {
+  GROUND_FORCES,
+  SHIPS,
+  STRUCTURES,
+  UNIT_LIMITS,
+} from '@/constants/units'
 import type {
   CombatSide,
   FactionKey,
@@ -23,6 +28,26 @@ import {
 } from './components/combat-result-bar'
 import { FactionSelect } from './components/faction-select'
 import { UnitRowDual } from './components/unit-row-dual'
+
+const UNITS = [
+  {
+    label: 'Ships',
+    items: SHIPS,
+  },
+  {
+    label: 'Ground Forces',
+    items: GROUND_FORCES,
+  },
+  {
+    label: 'Structures',
+    items: STRUCTURES,
+  },
+]
+
+const COMBAT_MODE_OPTIONS = [
+  { value: 'SPACE' as const, label: 'Space Combat' },
+  { value: 'GROUND' as const, label: 'Ground Combat' },
+]
 
 interface BattleCardProps {
   attackerFaction: FactionKey
@@ -74,179 +99,140 @@ export function BattleCard({
   className,
 }: BattleCardProps) {
   return (
-    <GlassCard as="main" className={clsx(styles.battleCard, className)}>
-      {/* Faction selectors */}
-      <div className={styles.factionSelectors}>
+    <GlassCard as="section" className={clsx(styles.battleCard, className)}>
+      <header className={styles.header}>
         {attackerActions && (
           <div className={styles.factionAction}>{attackerActions}</div>
         )}
         <div
-          className={styles.factionSelector}
-          style={
-            {
-              '--select-color': 'var(--color-accent-attacker-raw)',
-            } as CSSProperties
-          }
+          className={clsx(
+            styles.factionSelector,
+            styles.factionSelector_attacker,
+          )}
         >
-          <GlowText
-            as="label"
-            className={styles.factionLabel}
-            style={
-              {
-                '--glow-color': 'var(--color-accent-attacker-raw)',
-              } as CSSProperties
-            }
-          >
-            Attacker Fleet
-          </GlowText>
           <FactionSelect
             value={attackerFaction}
             onValueChange={faction => onFactionChange('attacker', faction)}
           />
         </div>
-        <button
-          type="button"
-          className={styles.swapButton}
-          onClick={onSwap}
-          title="Swap attacker and defender"
-        >
+        <ButtonIconPlain onClick={onSwap} title="Swap attacker and defender">
           <LoopIcon />
-        </button>
+        </ButtonIconPlain>
         <div
-          className={styles.factionSelector}
-          style={
-            {
-              '--select-color': 'var(--color-accent-defender-raw)',
-            } as CSSProperties
-          }
+          className={clsx(
+            styles.factionSelector,
+            styles.factionSelector_defender,
+          )}
         >
-          <GlowText
-            as="label"
-            className={styles.factionLabel}
-            style={
-              {
-                '--glow-color': 'var(--color-accent-defender-raw)',
-              } as CSSProperties
-            }
-          >
-            Defender Fleet
-          </GlowText>
           <FactionSelect
             value={defenderFaction}
             onValueChange={faction => onFactionChange('defender', faction)}
+            align="end"
           />
         </div>
         {defenderActions && (
           <div className={styles.factionAction}>{defenderActions}</div>
         )}
-      </div>
-
-      {/* Divider */}
-      <div className={styles.divider}>
-        <div className={styles.dividerLineAttacker} />
-        <span className={styles.dividerLabel}>Units</span>
-        <div className={styles.dividerLineDefender} />
-      </div>
+      </header>
 
       {/* Unit rows */}
       <div className={styles.unitRows}>
-        {UNIT_TYPES.map(unitKey => (
-          <Fragment key={unitKey}>
-            {unitKey === 'MECH' && (
-              <div className={styles.sectionDivider}>
-                <div className={styles.sectionDividerLine} />
-                <span className={styles.sectionDividerLabel}>
-                  Ground Forces
-                </span>
-                <div className={styles.sectionDividerLine} />
-              </div>
-            )}
-            {unitKey === 'PDS' && (
-              <div className={styles.sectionDivider}>
-                <div className={styles.sectionDividerLine} />
-                <span className={styles.sectionDividerLabel}>Structures</span>
-                <div className={styles.sectionDividerLine} />
-              </div>
-            )}
-            <UnitRowDual
-              name={attackerConfig[unitKey].name}
-              shortName={attackerConfig[unitKey].shortName}
-              limit={UNIT_LIMITS[unitKey]}
-              attackerHasUpgrade={attackerConfig[unitKey].hasUpgrade}
-              defenderHasUpgrade={defenderConfig[unitKey].hasUpgrade}
-              attacker={attackerSelections[unitKey]}
-              defender={defenderSelections[unitKey]}
-              onAttackerCountChange={count =>
-                onUnitCountChange('attacker', unitKey, count)
-              }
-              onAttackerUpgradeToggle={() =>
-                onUpgradeToggle('attacker', unitKey)
-              }
-              onDefenderCountChange={count =>
-                onUnitCountChange('defender', unitKey, count)
-              }
-              onDefenderUpgradeToggle={() =>
-                onUpgradeToggle('defender', unitKey)
-              }
-            />
-          </Fragment>
+        {UNITS.map(({ label, items }) => (
+          <section className={styles.unitGroup} key={label}>
+            <header className={styles.unitGroupHeader}>
+              <div
+                className={clsx(
+                  styles.combatModeLine,
+                  styles.combatModeLine_attacker,
+                )}
+              />
+              <span className={styles.unitGroupTitle}>{label}</span>
+              <div
+                className={clsx(
+                  styles.combatModeLine,
+                  styles.combatModeLine_defender,
+                )}
+              />
+            </header>
+            {items.map(unitKey => (
+              <UnitRowDual
+                name={attackerConfig[unitKey].name}
+                shortName={attackerConfig[unitKey].shortName}
+                limit={UNIT_LIMITS[unitKey]}
+                attackerHasUpgrade={attackerConfig[unitKey].hasUpgrade}
+                defenderHasUpgrade={defenderConfig[unitKey].hasUpgrade}
+                attacker={attackerSelections[unitKey]}
+                defender={defenderSelections[unitKey]}
+                onAttackerCountChange={count =>
+                  onUnitCountChange('attacker', unitKey, count)
+                }
+                onAttackerUpgradeToggle={() =>
+                  onUpgradeToggle('attacker', unitKey)
+                }
+                onDefenderCountChange={count =>
+                  onUnitCountChange('defender', unitKey, count)
+                }
+                onDefenderUpgradeToggle={() =>
+                  onUpgradeToggle('defender', unitKey)
+                }
+              />
+            ))}
+          </section>
         ))}
       </div>
 
-      <div className={styles.combatResult}>
-        <div className={styles.combatModeDivider}>
-          <div
-            className={clsx(styles.combatModeLine, styles.combatModeLine_outer)}
-          />
-          <IconButton
-            className={clsx(styles.clearButton, styles.clearButton_attacker)}
-            onClick={() => onResetUnits('attacker')}
-            title="Reset attacker units"
-          >
-            <TrashIcon className={styles.clearIcon} />
-          </IconButton>
-          <div className={styles.combatModeLine} />
-          <div className={styles.combatModeToggle}>
-            <button
-              type="button"
-              className={clsx(
-                styles.combatModeOption,
-                combatMode === 'SPACE' && styles.combatModeOption_active,
-              )}
-              onClick={() => onCombatModeChange('SPACE')}
-            >
-              Space Combat
-            </button>
-            <button
-              type="button"
-              className={clsx(
-                styles.combatModeOption,
-                combatMode === 'GROUND' && styles.combatModeOption_active,
-              )}
-              onClick={() => onCombatModeChange('GROUND')}
-            >
-              Ground Combat
-            </button>
-          </div>
-          <div className={styles.combatModeLine} />
-          <IconButton
-            className={clsx(styles.clearButton, styles.clearButton_defender)}
-            onClick={() => onResetUnits('defender')}
-            title="Reset defender units"
-          >
-            <TrashIcon className={styles.clearIcon} />
-          </IconButton>
-          <div
-            className={clsx(styles.combatModeLine, styles.combatModeLine_outer)}
-          />
-        </div>
-        <CombatResultBar
-          result={combatResult}
-          outcomes={outcomes}
-          unitPriority={unitPriority}
-          isComputing={isComputing}
+      <div className={styles.combatModeDivider}>
+        <div
+          className={clsx(
+            styles.combatModeLine,
+            styles.combatModeLine_attacker,
+          )}
+        />
+        <ButtonIcon
+          className={styles.clearButton_attacker}
+          onClick={() => onResetUnits('attacker')}
+          title="Reset attacker units"
+        >
+          <TrashIcon />
+        </ButtonIcon>
+        <div
+          className={clsx(
+            styles.combatModeLine,
+            styles.combatModeLine_attacker,
+          )}
+        />
+        <ToggleGroup<CombatMode>
+          options={COMBAT_MODE_OPTIONS}
+          value={combatMode}
+          onChange={onCombatModeChange}
+        />
+        <div
+          className={clsx(
+            styles.combatModeLine,
+            styles.combatModeLine_defender,
+          )}
+        />
+        <ButtonIcon
+          className={styles.clearButton_defender}
+          onClick={() => onResetUnits('defender')}
+          title="Reset defender units"
+        >
+          <TrashIcon />
+        </ButtonIcon>
+        <div
+          className={clsx(
+            styles.combatModeLine,
+            styles.combatModeLine_defender,
+          )}
         />
       </div>
+
+      <CombatResultBar
+        result={combatResult}
+        outcomes={outcomes}
+        unitPriority={unitPriority}
+        isComputing={isComputing}
+      />
     </GlassCard>
   )
 }
