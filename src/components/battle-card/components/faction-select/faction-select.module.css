@@ -8,7 +8,7 @@
   font-family: var(--font-heading);
   color: var(--color-text-main);
   background: var(--color-background-input-field);
-  border: 1px solid var(--color-border-input);
+  border: 1px solid var(--color-border-main);
 }
 
 .trigger > span:first-child {
@@ -33,15 +33,14 @@
 
 .trigger:focus {
   outline: none;
-  border-color: hsl(var(--select-color, var(--color-text-main-raw)) / 50%);
-  box-shadow: 0 0 10px
-    hsl(var(--select-color, var(--color-text-main-raw)) / 20%);
+  border-color: var(--color-accent-color, var(--color-border-main));
+  box-shadow: 0 0 10px var(--color-accent-fill-light);
 }
 
 .content {
   max-height: 15rem;
   background: var(--color-background-surface);
-  border: 1px solid var(--color-border-surface);
+  border: 1px solid var(--color-border-main);
 }
 
 .icon {
@@ -75,5 +74,5 @@
 }
 
 .item:hover {
-  background: hsl(var(--select-color, var(--color-text-main-raw)) / 15%);
+  background: var(--color-accent-color);
 }

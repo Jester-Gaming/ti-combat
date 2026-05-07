@@ -13,6 +13,7 @@ interface UnitControlsProps {
   flipped?: boolean
   onCountChange: (count: number) => void
   onUpgradeToggle: () => void
+  className?: string
 }
 
 export function UnitControls({
@@ -23,6 +24,7 @@ export function UnitControls({
   flipped,
   onCountChange,
   onUpgradeToggle,
+  className,
 }: UnitControlsProps) {
   const atLimit = count >= limit
 
@@ -36,7 +38,13 @@ export function UnitControls({
   }
 
   return (
-    <div className={clsx(styles.controls, flipped && styles.controls_flipped)}>
+    <div
+      className={clsx(
+        styles.controls,
+        flipped && styles.controls_flipped,
+        className,
+      )}
+    >
       <div className={styles.upgrade}>
         {hasUpgrade && (
           <ButtonIcon

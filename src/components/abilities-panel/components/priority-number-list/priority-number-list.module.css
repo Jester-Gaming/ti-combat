@@ -12,9 +12,9 @@
   padding: var(--space-1) var(--space-2);
   font-size: 12px;
   user-select: none;
-  border: 1px solid hsl(var(--side-color) / 15%);
+  border: 1px solid var(--color-accent-fill-light);
   border-radius: 0.25rem;
-  background-color: hsl(var(--side-color) / 5%);
+  background-color: var(--color-accent-light);
   color: var(--color-text-muted);
   transition:
     border-color 0.15s,
@@ -22,13 +22,13 @@
 }
 
 .item:hover {
-  border-color: hsl(var(--side-color) / 30%);
-  background-color: hsl(var(--side-color) / 10%);
+  border-color: var(--color-accent-border-soft);
+  background-color: var(--color-accent-10);
 }
 
 .active {
-  border-color: hsl(var(--side-color) / 40%);
-  background-color: hsl(var(--side-color) / 12%);
+  border-color: var(--color-accent-40);
+  background-color: var(--color-accent-attacker-10);
 }
 
 .dragging {
@@ -37,8 +37,8 @@
   box-shadow:
     0 10px 15px -3px rgb(0 0 0 / 10%),
     0 4px 6px -4px rgb(0 0 0 / 10%);
-  border-color: hsl(var(--side-color) / 50%);
-  background-color: hsl(var(--side-color) / 15%);
+  border-color: var(--color-accent-border-strong);
+  background-color: var(--color-accent-fill-light);
 }
 
 .item:active {
@@ -59,18 +59,18 @@
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-main-faint);
+  color: var(--color-text-muted);
 }
 
 .item:hover .dragHandle {
-  color: hsl(var(--side-color) / 60%);
+  color: var(--color-accent-40);
 }
 
 .input {
   width: 1rem;
   height: 1rem;
   flex-shrink: 0;
-  border: 1px solid hsl(var(--side-color) / 25%);
+  border: 1px solid var(--color-accent-fill-medium);
   border-radius: 0.25rem;
   background: transparent;
   padding: 0;
@@ -89,5 +89,5 @@
 
 .input:focus {
   outline: 0;
-  border-color: hsl(var(--side-color) / 50%);
+  border-color: var(--color-accent-border-strong);
 }

@@ -123,6 +123,7 @@ export function AbilityConfig({
       <Checkbox
         checked={!!params[headerParamKey]}
         disabled={ability.readOnly}
+        className={styles.headerCheckbox}
         onChange={checked => handleCheckboxChange(headerParamKey, checked)}
         onClick={event => event.stopPropagation()}
       />

@@ -20,7 +20,7 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   font-family: var(--font-heading);
-  color: var(--color-text-muted-strong);
+  color: var(--color-text-muted);
 }
 
 .abilitiesList > * + * {

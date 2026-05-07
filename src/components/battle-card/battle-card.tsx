@@ -104,29 +104,21 @@ export function BattleCard({
         {attackerActions && (
           <div className={styles.factionAction}>{attackerActions}</div>
         )}
-        <div
-          className={clsx(
-            styles.factionSelector,
-            styles.factionSelector_attacker,
-          )}
-        >
+        <div className={clsx(styles.factionSelector)}>
           <FactionSelect
             value={attackerFaction}
             onValueChange={faction => onFactionChange('attacker', faction)}
+            className="theme-attacker"
           />
         </div>
         <ButtonIconPlain onClick={onSwap} title="Swap attacker and defender">
           <LoopIcon />
         </ButtonIconPlain>
-        <div
-          className={clsx(
-            styles.factionSelector,
-            styles.factionSelector_defender,
-          )}
-        >
+        <div className={clsx(styles.factionSelector)}>
           <FactionSelect
             value={defenderFaction}
             onValueChange={faction => onFactionChange('defender', faction)}
+            className="theme-defender"
             align="end"
           />
         </div>
@@ -189,7 +181,7 @@ export function BattleCard({
           )}
         />
         <ButtonIcon
-          className={styles.clearButton_attacker}
+          className="theme-attacker"
           onClick={() => onResetUnits('attacker')}
           title="Reset attacker units"
         >
@@ -213,7 +205,7 @@ export function BattleCard({
           )}
         />
         <ButtonIcon
-          className={styles.clearButton_defender}
+          className="theme-defender"
           onClick={() => onResetUnits('defender')}
           title="Reset defender units"
         >

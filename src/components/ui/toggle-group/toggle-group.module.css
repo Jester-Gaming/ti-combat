@@ -17,7 +17,7 @@
   cursor: pointer;
   background: transparent;
   border: none;
-  color: var(--color-text-main-soft);
+  color: var(--color-text-muted);
   transition:
     background-color 0.15s,
     color 0.15s;

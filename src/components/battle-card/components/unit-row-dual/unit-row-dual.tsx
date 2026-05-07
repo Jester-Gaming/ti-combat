@@ -30,31 +30,29 @@ export function UnitRowDual({
 }: UnitRowDualProps) {
   return (
     <div className={styles.row}>
-      <div className={styles.sideAttacker}>
-        <UnitControls
-          count={attacker.count}
-          upgraded={attacker.upgraded}
-          hasUpgrade={attackerHasUpgrade}
-          limit={limit}
-          onCountChange={onAttackerCountChange}
-          onUpgradeToggle={onAttackerUpgradeToggle}
-        />
-      </div>
+      <UnitControls
+        count={attacker.count}
+        upgraded={attacker.upgraded}
+        hasUpgrade={attackerHasUpgrade}
+        limit={limit}
+        onCountChange={onAttackerCountChange}
+        onUpgradeToggle={onAttackerUpgradeToggle}
+        className="theme-attacker"
+      />
       <span className={styles.unitName}>
         <span className={styles.fullName}>{name}</span>
         <span className={styles.shortName}>{shortName}</span>
       </span>
-      <div className={styles.sideDefender}>
-        <UnitControls
-          count={defender.count}
-          upgraded={defender.upgraded}
-          hasUpgrade={defenderHasUpgrade}
-          limit={limit}
-          flipped
-          onCountChange={onDefenderCountChange}
-          onUpgradeToggle={onDefenderUpgradeToggle}
-        />
-      </div>
+      <UnitControls
+        count={defender.count}
+        upgraded={defender.upgraded}
+        hasUpgrade={defenderHasUpgrade}
+        limit={limit}
+        flipped
+        onCountChange={onDefenderCountChange}
+        onUpgradeToggle={onDefenderUpgradeToggle}
+        className="theme-defender"
+      />
     </div>
   )
 }

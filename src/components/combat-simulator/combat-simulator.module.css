@@ -13,8 +13,8 @@
   overflow: hidden auto;
   border-radius: var(--radius-lg);
   padding: var(--space-4);
-  flex: 0 1 240px;
-  max-width: 240px;
+  flex: 0 1 300px;
+  max-width: 300px;
   max-height: calc(100vh - 104px);
   display: none;
   flex-direction: column;
@@ -26,14 +26,6 @@
   }
 }
 
-.sidePanel_attacker {
-  --side-color: var(--color-accent-attacker-raw);
-}
-
-.sidePanel_defender {
-  --side-color: var(--color-accent-defender-raw);
-}
-
 .sidePanelHeader {
   display: flex;
   margin-bottom: var(--space-4);
@@ -41,7 +33,7 @@
   align-items: center;
   border-bottom: 1px solid;
   padding: 0 var(--space-4) var(--space-4);
-  border-color: hsl(var(--side-color) / 30%);
+  border-color: var(--color-accent-border-soft);
 }
 
 .sidePanelTitle {
@@ -53,6 +45,7 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-family: var(--font-heading);
+  color: var(--color-accent-color);
 }
 
 .resetAbilitiesButton {
@@ -67,7 +60,7 @@
   background: transparent;
   border: 0;
   border-radius: 0.25rem;
-  color: var(--color-text-muted-faint);
+  color: var(--color-text-muted);
   transition: all 0.15s ease;
 }
 
@@ -120,27 +113,10 @@
   }
 }
 
-.gearButton_attacker {
-  --accent-color: var(--color-accent-attacker-raw);
-}
-
-.gearButton_defender {
-  --accent-color: var(--color-accent-defender-raw);
-}
-
 @media (width >= 1024px) {
-  .gearButton_attacker,
-  .gearButton_defender {
+  .gearButton {
     display: none;
   }
-}
-
-.sheetAttacker {
-  --side-color: var(--color-accent-attacker-raw);
-}
-
-.sheetDefender {
-  --side-color: var(--color-accent-defender-raw);
 }
 
 .sheetHeader {

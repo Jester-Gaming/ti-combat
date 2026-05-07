@@ -1,22 +1,21 @@
 .container {
-  --checkbox-color: var(--side-color);
-
-  padding: var(--space-2);
-  border: 1px solid hsl(var(--side-color) / 15%);
+  padding: calc(var(--space-2) - 1px);
+  border: 1px solid var(--color-accent-fill-light);
   border-radius: 0.25rem;
   transition: all 0.15s ease;
 }
 
 .container:hover {
-  border-color: hsl(var(--side-color) / 30%);
+  border-color: var(--color-accent-border-soft);
 }
 
 .container.dimmed {
-  opacity: 50%;
+  opacity: 30%;
 }
 
 .header {
   display: flex;
+  min-height: var(--space-6);
   align-items: center;
   gap: var(--space-1-5);
 }
@@ -24,8 +23,8 @@
 .collapseButton {
   position: relative;
   display: flex;
-  width: 1rem;
-  height: 1rem;
+  width: var(--space-6);
+  height: var(--space-6);
   flex-shrink: 0;
   cursor: pointer;
   align-items: center;
@@ -34,7 +33,7 @@
   border-radius: 0.25rem;
   background: transparent;
   border: none;
-  color: var(--color-text-muted-soft);
+  color: var(--color-text-muted);
   transition:
     color 0.15s,
     background-color 0.15s,
@@ -48,11 +47,11 @@
 }
 
 .collapseButton:hover {
-  color: hsl(var(--side-color));
+  color: var(--color-accent-color);
 }
 
 .collapseIndent {
-  width: 1rem;
+  width: var(--space-6);
   flex-shrink: 0;
 }
 
@@ -63,14 +62,17 @@
 
 .container.clickable:hover .title,
 .container.clickable:hover .icon {
-  color: hsl(var(--side-color));
+  color: var(--color-accent-color);
 }
 
 .container.readOnly {
   cursor: default;
 }
 
-.container.readOnly:hover .title,
+.container.readOnly:hover .title {
+  color: var(--color-text-main);
+}
+
 .container.readOnly:hover .icon {
   color: var(--color-text-muted);
 }
@@ -104,17 +106,17 @@
 .headerLabel:not(:disabled):hover .title,
 .headerLabel:not(:disabled):hover .collapseIcon,
 .headerLabel:not(:disabled):hover .icon {
-  color: hsl(var(--side-color));
+  color: var(--color-accent-color);
 }
 
 .collapseIcon {
   display: flex;
-  width: 1rem;
-  height: 1rem;
+  width: var(--space-6);
+  height: var(--space-6);
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  color: var(--color-text-muted-soft);
+  color: var(--color-text-muted);
   transition: color 0.15s;
 }
 
@@ -136,11 +138,11 @@
 }
 
 .title {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   font-weight: 500;
   letter-spacing: 0.025em;
   font-family: var(--font-heading);
-  color: var(--color-text-muted);
+  color: var(--color-text-main);
   transition: color 0.15s;
   white-space: nowrap;
   min-width: 0;
@@ -149,11 +151,9 @@
 }
 
 .descriptionIcon {
-  width: var(--space-3);
-  height: var(--space-3);
   flex-shrink: 0;
   cursor: help;
-  color: var(--color-text-muted-faint);
+  color: var(--color-text-muted);
   transition: color 0.15s;
 }
 
@@ -162,14 +162,14 @@
 }
 
 .headerNumberInput {
-  width: 1rem;
-  height: 1rem;
+  width: var(--space-6);
+  height: var(--space-6);
   flex-shrink: 0;
   border-radius: 0.25rem;
   border: 1px solid var(--color-overlay-emphasis);
   text-align: center;
   font-family: inherit;
-  font-size: 10px;
+  font-size: var(--text-sm);
   background-color: var(--color-overlay-light);
   color: var(--color-text-main);
   padding: 0;
@@ -180,6 +180,11 @@
     background-color 0.15s;
 }
 
+.headerCheckbox > span {
+  width: var(--space-6);
+  height: var(--space-6);
+}
+
 .headerNumberInput::-webkit-outer-spin-button,
 .headerNumberInput::-webkit-inner-spin-button {
   appearance: none;
@@ -187,10 +192,8 @@
 }
 
 .headerNumberInput:focus {
-  border-color: hsl(var(--checkbox-color, var(--color-text-main-raw)));
-  background-color: hsl(
-    var(--checkbox-color, var(--color-text-main-raw)) / 20%
-  );
+  border-color: var(--color-accent-color, var(--color-text-main));
+  background-color: var(--color-accent-fill-medium);
 }
 
 .configItems {
@@ -231,9 +234,9 @@
   text-align: center;
   font-family: inherit;
   font-size: 12px;
-  border: 1px solid hsl(var(--side-color) / 25%);
+  border: 1px solid var(--color-accent-fill-medium);
   border-radius: 0.25rem;
-  background-color: hsl(var(--side-color) / 5%);
+  background-color: var(--color-accent-light);
   color: var(--color-text-main);
   outline: none;
   appearance: textfield;
@@ -249,8 +252,8 @@
 }
 
 .numberInput:focus {
-  border-color: hsl(var(--side-color) / 50%);
-  background-color: hsl(var(--side-color) / 10%);
+  border-color: var(--color-accent-border-strong);
+  background-color: var(--color-accent-10);
 }
 
 .selectTrigger {
@@ -260,10 +263,10 @@
   padding: 0 var(--space-1-5);
   font-family: inherit;
   font-size: 12px;
-  border: 1px solid hsl(var(--side-color) / 25%);
+  border: 1px solid var(--color-accent-fill-medium);
   border-radius: 0.25rem;
   box-shadow: none;
-  background-color: hsl(var(--side-color) / 5%);
+  background-color: var(--color-accent-light);
   color: var(--color-text-main);
   transition:
     border-color 0.15s,
@@ -271,8 +274,8 @@
 }
 
 .selectTrigger:focus {
-  border-color: hsl(var(--side-color) / 50%);
-  background-color: hsl(var(--side-color) / 10%);
+  border-color: var(--color-accent-border-strong);
+  background-color: var(--color-accent-10);
 }
 
 .selectContent {

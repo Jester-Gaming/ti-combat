@@ -144,7 +144,7 @@
   grid-column: 1;
   grid-row: 1;
   margin-top: 2px;
-  color: var(--color-text-muted-faint);
+  color: var(--color-text-muted);
 }
 
 /* Name — column 2 */

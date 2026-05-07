@@ -1,6 +1,5 @@
 import { GearIcon, ResetIcon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
-import type { CSSProperties } from 'react'
 import { useMemo, useState } from 'react'
 
 import { AbilitiesPanel } from '@/components/abilities-panel'
@@ -8,7 +7,6 @@ import { BattleCard } from '@/components/battle-card'
 import { useToast } from '@/components/toast'
 import { ButtonIcon } from '@/components/ui/button-icon'
 import { GlassCard } from '@/components/ui/glass-card'
-import { GlowText } from '@/components/ui/glow-text'
 import {
   Sheet,
   SheetContent,
@@ -134,20 +132,10 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
       {/* Left panel: Attacker abilities */}
       <GlassCard
         as="aside"
-        className={clsx(styles.sidePanel, styles.sidePanel_attacker)}
+        className={clsx(styles.sidePanel, 'theme-attacker')}
       >
         <div className={styles.sidePanelHeader}>
-          <GlowText
-            as="h2"
-            className={styles.sidePanelTitle}
-            style={
-              {
-                '--glow-color': 'var(--color-accent-attacker-raw)',
-              } as CSSProperties
-            }
-          >
-            Attacker Abilities
-          </GlowText>
+          <h2 className={styles.sidePanelTitle}>Attacker Abilities</h2>
           <button
             type="button"
             className={clsx(
@@ -193,7 +181,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           onResetUnits={resetUnits}
           attackerActions={
             <ButtonIcon
-              className={clsx(styles.gearButton, styles.gearButton_attacker)}
+              className={clsx(styles.gearButton, 'theme-attacker')}
               onClick={() => setAttackerSheetOpen(true)}
               title="Attacker abilities"
             >
@@ -202,7 +190,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           }
           defenderActions={
             <ButtonIcon
-              className={clsx(styles.gearButton, styles.gearButton_defender)}
+              className={clsx(styles.gearButton, 'theme-defender')}
               onClick={() => setDefenderSheetOpen(true)}
               title="Defender abilities"
             >
@@ -214,20 +202,10 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
 
       {/* Attacker abilities sheet (mobile) */}
       <Sheet open={attackerSheetOpen} onOpenChange={setAttackerSheetOpen}>
-        <SheetContent side="left" className={styles.sheetAttacker}>
+        <SheetContent side="left" className="theme-attacker">
           <SheetTitle className="sr-only">Attacker Abilities</SheetTitle>
           <div className={styles.sheetHeader}>
-            <GlowText
-              as="h2"
-              className={styles.sidePanelTitle}
-              style={
-                {
-                  '--glow-color': 'var(--color-accent-attacker-raw)',
-                } as CSSProperties
-              }
-            >
-              Attacker Abilities
-            </GlowText>
+            <h2 className={styles.sidePanelTitle}>Attacker Abilities</h2>
             <button
               type="button"
               className={clsx(
@@ -257,20 +235,10 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
 
       {/* Defender abilities sheet (mobile) */}
       <Sheet open={defenderSheetOpen} onOpenChange={setDefenderSheetOpen}>
-        <SheetContent side="right" className={styles.sheetDefender}>
+        <SheetContent side="right" className="theme-defender">
           <SheetTitle className="sr-only">Defender Abilities</SheetTitle>
           <div className={styles.sheetHeader}>
-            <GlowText
-              as="h2"
-              className={styles.sidePanelTitle}
-              style={
-                {
-                  '--glow-color': 'var(--color-accent-defender-raw)',
-                } as CSSProperties
-              }
-            >
-              Defender Abilities
-            </GlowText>
+            <h2 className={styles.sidePanelTitle}>Defender Abilities</h2>
             <button
               type="button"
               className={clsx(
@@ -301,20 +269,10 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
       {/* Right panel: Defender abilities */}
       <GlassCard
         as="aside"
-        className={clsx(styles.sidePanel, styles.sidePanel_defender)}
+        className={clsx(styles.sidePanel, 'theme-defender')}
       >
         <div className={styles.sidePanelHeader}>
-          <GlowText
-            as="h2"
-            className={styles.sidePanelTitle}
-            style={
-              {
-                '--glow-color': 'var(--color-accent-defender-raw)',
-              } as CSSProperties
-            }
-          >
-            Defender Abilities
-          </GlowText>
+          <h2 className={styles.sidePanelTitle}>Defender Abilities</h2>
           <button
             type="button"
             className={clsx(

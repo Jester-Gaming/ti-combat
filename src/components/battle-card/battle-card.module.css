@@ -33,14 +33,6 @@
   min-width: 0;
 }
 
-.factionSelector_attacker {
-  --select-color: var(--color-accent-attacker-raw);
-}
-
-.factionSelector_defender {
-  --select-color: var(--color-accent-defender-raw);
-}
-
 .factionAction {
   display: flex;
   align-items: end;
@@ -89,14 +81,6 @@
   text-transform: uppercase;
   font-family: var(--font-heading);
   color: var(--color-text-muted);
-}
-
-.clearButton_attacker {
-  --accent-color: var(--color-accent-attacker-raw);
-}
-
-.clearButton_defender {
-  --accent-color: var(--color-accent-defender-raw);
 }
 
 .combatModeLine_outer {

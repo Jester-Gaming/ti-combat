@@ -3,8 +3,8 @@
   height: 1px;
   background: linear-gradient(
     90deg,
-    var(--color-divider-strong),
-    var(--color-divider-soft),
+    transparent,
+    var(--color-border-main),
     transparent
   );
 }

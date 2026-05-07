@@ -62,12 +62,7 @@
 
   /* === Layer 2: text === */
   --color-text-main: hsl(var(--color-slate-100));
-  --color-text-main-soft: hsl(var(--color-slate-100) / 60%);
-  --color-text-main-faint: hsl(var(--color-slate-100) / 25%);
   --color-text-muted: hsl(var(--color-slate-400));
-  --color-text-muted-strong: hsl(var(--color-slate-400) / 70%);
-  --color-text-muted-soft: hsl(var(--color-slate-400) / 50%);
-  --color-text-muted-faint: hsl(var(--color-slate-400) / 35%);
 
   /* === Layer 2: backgrounds (solid surfaces) === */
   --color-background-main: hsl(var(--color-slate-800));
@@ -86,8 +81,6 @@
   --color-background-skeleton-medium: hsl(var(--color-slate-700) / 50%);
 
   /* === Layer 2: overlays (foreground tints for hovers, subtle bgs, shadows) === */
-  --color-overlay-faint: hsl(var(--color-slate-100) / 2%);
-  --color-overlay-soft: hsl(var(--color-slate-100) / 4%);
   --color-overlay-light: hsl(var(--color-slate-100) / 5%);
   --color-overlay-medium: hsl(var(--color-slate-100) / 8%);
   --color-overlay-strong: hsl(var(--color-slate-100) / 10%);
@@ -96,46 +89,81 @@
 
   /* === Layer 2: borders === */
   --color-border-main: hsl(var(--color-slate-600));
-  --color-border-main-soft: hsl(var(--color-slate-600) / 50%);
-  --color-border-input: hsl(var(--color-slate-600));
-  --color-border-button: hsl(var(--color-slate-600));
   --color-border-surface: hsl(var(--color-slate-600));
 
   /* === Layer 2: side accents (attacker/defender only) === */
-  --accent-attacker: var(--color-cyan-300);
-  --color-accent-attacker: hsl(var(--accent-attacker));
-  --color-accent-attacker-fill-light: hsl(var(--accent-attacker) / 15%);
-  --color-accent-attacker-fill-medium: hsl(var(--accent-attacker) / 25%);
-  --color-accent-attacker-border-soft: hsl(var(--accent-attacker) / 30%);
-  --color-accent-attacker-border-strong: hsl(var(--accent-attacker) / 50%);
-  --accent-defender: var(--color-amber-300);
-  --color-accent-defender: hsl(var(--accent-defender));
-  --color-accent-defender-fill-light: hsl(var(--accent-defender) / 15%);
-  --color-accent-defender-fill-medium: hsl(var(--accent-defender) / 25%);
-  --color-accent-defender-border-soft: hsl(var(--accent-defender) / 30%);
-  --color-accent-defender-border-strong: hsl(var(--accent-defender) / 50%);
+  --color-accent-attacker: hsl(var(--color-accent-attacker-raw));
+  --color-accent-attacker-light: hsl(var(--color-accent-attacker-raw) / 5%);
+  --color-accent-attacker-10: hsl(var(--color-accent-attacker-raw) / 10%);
+  --color-accent-attacker-40: hsl(var(--color-accent-attacker-raw) / 40%);
+  --color-accent-attacker-60: hsl(var(--color-accent-attacker-raw) / 60%);
+  --color-accent-attacker-fill-light: hsl(
+    var(--color-accent-attacker-raw) / 15%
+  );
+  --color-accent-attacker-fill-medium: hsl(
+    var(--color-accent-attacker-raw) / 25%
+  );
+  --color-accent-attacker-border-soft: hsl(
+    var(--color-accent-attacker-raw) / 30%
+  );
+  --color-accent-attacker-border-strong: hsl(
+    var(--color-accent-attacker-raw) / 50%
+  );
+  --color-accent-defender: hsl(var(--color-accent-defender-raw));
+  --color-accent-defender-light: hsl(var(--color-accent-defender-raw) / 5%);
+  --color-accent-defender-10: hsl(var(--color-accent-defender-raw) / 10%);
+  --color-accent-defender-40: hsl(var(--color-accent-defender-raw) / 40%);
+  --color-accent-defender-60: hsl(var(--color-accent-defender-raw) / 60%);
+  --color-accent-defender-fill-light: hsl(
+    var(--color-accent-defender-raw) / 15%
+  );
+  --color-accent-defender-fill-medium: hsl(
+    var(--color-accent-defender-raw) / 25%
+  );
+  --color-accent-defender-border-soft: hsl(
+    var(--color-accent-defender-raw) / 30%
+  );
+  --color-accent-defender-border-strong: hsl(
+    var(--color-accent-defender-raw) / 50%
+  );
 
   /* === Layer 2: divider, focus === */
-  --color-divider-strong: hsl(var(--color-slate-600));
-  --color-divider-soft: hsl(var(--color-slate-600) / 40%);
   --color-focus-ring: hsl(var(--color-slate-100));
 
   /* === Layer 2: raw channel pairs (dynamic theming only — side-color, btn-color, checkbox-color, select-color, glow-color) === */
   --color-accent-attacker-raw: var(--color-cyan-300);
   --color-accent-defender-raw: var(--color-amber-300);
   --color-text-main-raw: var(--color-slate-100);
-  --color-border-main-raw: var(--color-slate-600);
+}
+
+.theme-attacker {
+  --color-accent-color: var(--color-accent-attacker);
+  --color-accent-light: var(--color-accent-attacker-light);
+  --color-accent-10: var(--color-accent-attacker-10);
+  --color-accent-40: var(--color-accent-attacker-40);
+  --color-accent-60: var(--color-accent-attacker-60);
+  --color-accent-fill-light: var(--color-accent-attacker-fill-light);
+  --color-accent-fill-medium: var(--color-accent-attacker-fill-medium);
+  --color-accent-border-soft: var(--color-accent-attacker-border-soft);
+  --color-accent-border-strong: var(--color-accent-attacker-border-strong);
+}
+
+.theme-defender {
+  --color-accent-color: var(--color-accent-defender);
+  --color-accent-light: var(--color-accent-defender-light);
+  --color-accent-10: var(--color-accent-defender-10);
+  --color-accent-40: var(--color-accent-defender-40);
+  --color-accent-60: var(--color-accent-defender-60);
+  --color-accent-fill-light: var(--color-accent-defender-fill-light);
+  --color-accent-fill-medium: var(--color-accent-defender-fill-medium);
+  --color-accent-border-soft: var(--color-accent-defender-border-soft);
+  --color-accent-border-strong: var(--color-accent-defender-border-strong);
 }
 
 .dark {
   /* Text */
   --color-text-main: hsl(var(--color-slate-900));
-  --color-text-main-soft: hsl(var(--color-slate-900) / 60%);
-  --color-text-main-faint: hsl(var(--color-slate-900) / 25%);
   --color-text-muted: hsl(var(--color-slate-500));
-  --color-text-muted-strong: hsl(var(--color-slate-500) / 70%);
-  --color-text-muted-soft: hsl(var(--color-slate-500) / 50%);
-  --color-text-muted-faint: hsl(var(--color-slate-500) / 35%);
 
   /* Backgrounds */
   --color-background-main: hsl(var(--color-slate-50));
@@ -154,8 +182,6 @@
   --color-background-skeleton-medium: hsl(var(--color-slate-200) / 50%);
 
   /* Overlays */
-  --color-overlay-faint: hsl(var(--color-slate-950) / 2%);
-  --color-overlay-soft: hsl(var(--color-slate-950) / 4%);
   --color-overlay-light: hsl(var(--color-slate-950) / 5%);
   --color-overlay-medium: hsl(var(--color-slate-950) / 8%);
   --color-overlay-strong: hsl(var(--color-slate-950) / 10%);
@@ -163,26 +189,16 @@
   --color-overlay-bold: hsl(var(--color-slate-950) / 25%);
 
   /* Borders */
-  --color-border-main: hsl(var(--color-slate-300));
-  --color-border-main-soft: hsl(var(--color-slate-300) / 50%);
-  --color-border-input: hsl(var(--color-slate-950) / 15%);
-  --color-border-button: hsl(var(--color-slate-950) / 15%);
+  --color-border-main: hsl(var(--color-slate-950) / 15%);
   --color-border-surface: hsl(var(--color-slate-200));
 
-  /* Side accents */
-  --accent-attacker: var(--color-cyan-500);
-  --accent-defender: var(--color-amber-500);
-
   /* Divider, Focus */
-  --color-divider-strong: hsl(var(--color-slate-950) / 12%);
-  --color-divider-soft: hsl(var(--color-slate-950) / 4%);
   --color-focus-ring: hsl(var(--color-slate-950));
 
   /* Raw channel pairs for dynamic theming */
   --color-accent-attacker-raw: var(--color-cyan-500);
   --color-accent-defender-raw: var(--color-amber-500);
   --color-text-main-raw: var(--color-slate-950);
-  --color-border-main-raw: var(--color-slate-300);
 }
 
 @media (width < 500px) {

@@ -9,16 +9,6 @@
   transition: all 0.15s;
 }
 
-.sideAttacker {
-  --accent-color: var(--color-accent-attacker-raw);
-  display: contents;
-}
-
-.sideDefender {
-  --accent-color: var(--color-accent-defender-raw);
-  display: contents;
-}
-
 .unitName {
   min-width: 0;
   flex-shrink: 0;

@@ -11,7 +11,7 @@
   font-size: var(--text-sm);
   color: var(--color-text-muted);
   background: var(--color-background-surface);
-  border: 1px solid var(--color-border-surface);
+  border: 1px solid var(--color-border-main);
 }
 
 .emptyStateText {
@@ -24,7 +24,6 @@
   height: 3.5rem;
   overflow: hidden;
   border-radius: var(--radius-lg);
-  border: 1px solid var(--color-border-main);
 }
 
 .segment {
@@ -57,7 +56,7 @@
   background: linear-gradient(
     to bottom,
     var(--color-overlay-medium),
-    var(--color-overlay-soft)
+    var(--color-overlay-light)
   );
   color: var(--color-text-muted);
 }
@@ -155,14 +154,13 @@
   font-family: var(--font-heading);
   color: var(--color-text-muted);
   background: var(--color-background-surface);
-  border: 1px solid var(--color-border-surface);
+  border: 1px solid var(--color-border-main);
 }
 
 .detailedButton:not(:disabled):hover {
   cursor: pointer;
   color: var(--color-text-main);
   background: var(--color-overlay-strong);
-  border-color: var(--color-border-main-soft);
 }
 
 @keyframes shimmer {

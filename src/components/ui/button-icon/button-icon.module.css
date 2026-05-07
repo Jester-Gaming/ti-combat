@@ -8,14 +8,14 @@
   border-radius: var(--radius-md);
   color: var(--color-text-main);
   background: var(--color-background-button);
-  border: 1px solid var(--color-border-button);
+  border: 1px solid var(--color-border-main);
   transition: all 0.15s ease;
   cursor: pointer;
 }
 
 .button:hover {
   background: var(--color-background-muted);
-  border-color: hsl(var(--accent-color, var(--color-border-main-raw)) / 50%);
+  border-color: var(--color-accent-border-soft, var(--color-border-main));
 }
 
 .button:active {

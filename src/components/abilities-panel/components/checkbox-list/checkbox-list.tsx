@@ -91,7 +91,7 @@ export function CheckboxList({
         return (
           <div
             key={val}
-            className={clsx(styles.item, isSelected && styles.selected)}
+            className={clsx(styles.item, isSelected && styles.item_selected)}
             onClick={() => handleToggle(val)}
           >
             <span className={styles.label} title={labelMap.get(val) ?? val}>

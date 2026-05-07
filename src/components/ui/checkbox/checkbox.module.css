@@ -21,8 +21,7 @@
 }
 
 .hiddenInput:focus-visible + .checkbox {
-  outline: 2px solid
-    hsl(var(--checkbox-color, var(--color-text-main-raw)) / 50%);
+  outline: 2px solid var(--color-text-main);
   outline-offset: 2px;
 }
 
@@ -43,14 +42,12 @@
 }
 
 .checked {
-  background-color: hsl(
-    var(--checkbox-color, var(--color-text-main-raw)) / 20%
-  );
-  border-color: hsl(var(--checkbox-color, var(--color-text-main-raw)));
+  background-color: var(--color-accent-fill-medium);
+  border-color: var(--color-accent-color, var(--color-text-main));
 }
 
 .checkIcon {
   width: 0.75rem;
   height: 0.75rem;
-  color: hsl(var(--checkbox-color, var(--color-text-main-raw)));
+  color: var(--color-accent-color, var(--color-text-main));
 }
