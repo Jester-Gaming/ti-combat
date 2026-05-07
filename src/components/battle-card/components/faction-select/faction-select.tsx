@@ -44,7 +44,7 @@ export function FactionSelect({
       <SelectTrigger className={clsx(styles.trigger, className)}>
         <SelectValue placeholder="Select faction" />
       </SelectTrigger>
-      <SelectContent className={styles.content} align={align}>
+      <SelectContent className={clsx(styles.content, className)} align={align}>
         {FACTION_ENTRIES.map(([key, faction]) => (
           <SelectItem key={key} value={key} className={styles.item}>
             <span className={styles.itemContent}>

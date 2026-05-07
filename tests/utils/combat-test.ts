@@ -24,7 +24,7 @@ import type {
   CombatSide,
   UnitBaseType,
   UnitId,
-  UnitList,
+  UnitIdList,
   UnitState,
 } from '@/types'
 
@@ -117,7 +117,7 @@ function buildSideView(data: SideStateData): SideView {
   void unitStats
   const result: Partial<Record<UnitBaseType, TestUnit[]>> = {}
 
-  const collect = (pool: UnitList) => {
+  const collect = (pool: UnitIdList) => {
     for (const id of pool) {
       const key = unitType[id]
       if (!key) continue
@@ -139,7 +139,7 @@ export function unitsByBaseType(
   sideData: SideStateData,
 ): Partial<Record<UnitBaseType, UnitId[]>> {
   const result: Partial<Record<UnitBaseType, UnitId[]>> = {}
-  const collect = (pool: UnitList) => {
+  const collect = (pool: UnitIdList) => {
     for (const id of pool) {
       const key = sideData.unitType[id]
       if (!key) continue

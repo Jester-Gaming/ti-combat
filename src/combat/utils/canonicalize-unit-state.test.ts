@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 
-import type { UnitId, UnitList, UnitType } from '@/types'
+import type { UnitId, UnitIdList, UnitType } from '@/types'
 
 import type { SideStateData } from '../combat-state/types'
 import { canonicalizeUnitState } from './canonicalize-unit-state'
@@ -20,8 +20,8 @@ function buildSide(
 ): SideStateData {
   return {
     faction: 'ARBOREC',
-    participatingUnits: participating.join('') as UnitList,
-    nonParticipatingUnits: '' as UnitList,
+    participatingUnits: participating.join('') as UnitIdList,
+    nonParticipatingUnits: '' as UnitIdList,
     unitType,
     unitState,
     unitStats: {} as SideStateData['unitStats'],
@@ -126,8 +126,8 @@ describe('canonicalizeUnitState', () => {
   test('non-participating units share the variant pool', () => {
     const side: SideStateData = {
       faction: 'ARBOREC',
-      participatingUnits: [A].join('') as UnitList,
-      nonParticipatingUnits: [B].join('') as UnitList,
+      participatingUnits: [A].join('') as UnitIdList,
+      nonParticipatingUnits: [B].join('') as UnitIdList,
       unitType: { [A]: T, [B]: T },
       unitState: { [B]: { isDamaged: true } },
       unitStats: {} as SideStateData['unitStats'],

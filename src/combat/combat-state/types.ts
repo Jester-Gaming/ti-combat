@@ -5,7 +5,7 @@ import type {
   UnitAbility,
   UnitBaseType,
   UnitId,
-  UnitList,
+  UnitIdList,
   UnitState,
   UnitStats,
   UnitType,
@@ -131,18 +131,18 @@ export type SideAbilitiesConfig = Record<string, Record<string, unknown>>
 /** State data for one side of combat */
 export interface SideStateData {
   faction: FactionKey
-  /** Participating UnitIds packed into a `UnitList` (one UTF-16 char
+  /** Participating UnitIds packed into a `UnitIdList` (one UTF-16 char
    *  per UnitId), pre-sorted by combat-mode priority. Highest priority
    *  first, lowest last. `slice(0, -N)` keeps the N highest-priority
    *  units (the lowest-priority ones die first under tail-slice
    *  assign-hits). Stored as a packed string so it can be concatenated
    *  directly into the state-identity hash without conversion. */
-  participatingUnits: UnitList
-  /** Non-participating UnitIds packed into a `UnitList` (one UTF-16
+  participatingUnits: UnitIdList
+  /** Non-participating UnitIds packed into a `UnitIdList` (one UTF-16
    *  char per UnitId), for the current combat mode (e.g. ships during
    *  ground combat). They can still fire unit abilities (bombardment,
    *  SCO/SCD) but are never targeted by normal combat hits. Unsorted. */
-  nonParticipatingUnits: UnitList
+  nonParticipatingUnits: UnitIdList
   /** UnitId → variant key. Populated at setup. Stale entries for
    *  destroyed units are NEVER cleaned — do not use as an "alive" set.
    *  Typed as `Record<string, UnitType>` so callers iterating a packed

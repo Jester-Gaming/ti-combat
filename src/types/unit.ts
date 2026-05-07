@@ -60,7 +60,15 @@ export type UnitId = string & { readonly __brand: 'UnitId' }
 /** A packed list of UnitIds, stored as a string with one UTF-16 char
  *  per UnitId. Same runtime shape as `string`, but brand-distinct so a
  *  general string can't be passed where a unit-list is expected. Use
- *  `as UnitList` at construction sites (`arr.join('')`, slicing,
+ *  `as UnitIdList` at construction sites (`arr.join('')`, slicing,
  *  concatenation) and iterate with `for (const c of list)` (each char
  *  is a UnitId — cast `as UnitId` when needed). */
-export type UnitList = string & { readonly __brand: 'UnitList' }
+export type UnitIdList = string & { readonly __brand: 'UnitIdList' }
+
+/** Unified shape for ability list params that the `<List>` UI component edits.
+ *  - `UnitList` (V = never)        → `[UnitType][]`        (order-list)
+ *  - `UnitList<boolean>`           → `[UnitType, boolean][]` (checkbox-list)
+ *  - `UnitList<number>`            → `[UnitType, number][]`  (number-list) */
+export type UnitList<V = never> = [V] extends [never]
+  ? [UnitType][]
+  : [UnitType, V][]

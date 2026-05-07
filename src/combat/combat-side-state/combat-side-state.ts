@@ -5,7 +5,7 @@ import type {
   UnitAbility,
   UnitBaseType,
   UnitId,
-  UnitList,
+  UnitIdList,
   UnitState,
   UnitStats,
   UnitType,
@@ -107,7 +107,7 @@ function matchesValidTargets(
  *  the slow path in `assignHits`). */
 function pickTargetsForPool(
   s: SideStateData,
-  pool: UnitList | readonly UnitId[],
+  pool: UnitIdList | readonly UnitId[],
   hitPool: HitPool,
   priorityList?: readonly UnitType[],
 ): UnitId[] {
@@ -318,12 +318,12 @@ function _removeOne(
   const pIdx = s.participatingUnits.indexOf(unitId)
   if (pIdx !== -1) {
     s.participatingUnits = (s.participatingUnits.slice(0, pIdx) +
-      s.participatingUnits.slice(pIdx + 1)) as UnitList
+      s.participatingUnits.slice(pIdx + 1)) as UnitIdList
   } else {
     const nIdx = s.nonParticipatingUnits.indexOf(unitId)
     if (nIdx === -1) return
     s.nonParticipatingUnits = (s.nonParticipatingUnits.slice(0, nIdx) +
-      s.nonParticipatingUnits.slice(nIdx + 1)) as UnitList
+      s.nonParticipatingUnits.slice(nIdx + 1)) as UnitIdList
   }
 }
 
@@ -1045,7 +1045,7 @@ export class CombatSideState {
     >()
     const restrictionChecked = new Map<UnitBaseType, boolean>()
 
-    const walk = (pool: UnitList, skipParticipatingCheck: boolean) => {
+    const walk = (pool: UnitIdList, skipParticipatingCheck: boolean) => {
       for (const id of pool) {
         const key = s.unitType[id]
         const { type } = parseVariantId(key)
@@ -1136,7 +1136,7 @@ export class CombatSideState {
     if (allFast) {
       const take = Math.min(total, oldUnits.length)
       const kept = oldUnits.length - take
-      s.participatingUnits = oldUnits.slice(0, kept) as UnitList
+      s.participatingUnits = oldUnits.slice(0, kept) as UnitIdList
       if (trackDestroyed) {
         for (let i = kept; i < oldUnits.length; i++)
           destroyedIds.push(oldUnits[i] as UnitId)
@@ -1152,7 +1152,7 @@ export class CombatSideState {
           if (trackDestroyed) destroyedIds.push(id)
         }
       }
-      s.participatingUnits = working.join('') as UnitList
+      s.participatingUnits = working.join('') as UnitIdList
     }
 
     s.hitPools = []
@@ -1281,7 +1281,7 @@ export class CombatSideState {
     const { type, subtypes: currentSubtypes } = parseVariantId(variantId)
 
     const pickFrom = (
-      pool: UnitList,
+      pool: UnitIdList,
       matchExact: boolean,
     ): UnitId | undefined => {
       for (let i = pool.length - 1; i >= 0; i--) {
@@ -1333,7 +1333,7 @@ export class CombatSideState {
   ): void {
     const { type, subtypes: requiredSubtypes } = parseVariantId(variantId)
 
-    const findIn = (pool: UnitList): UnitId | undefined => {
+    const findIn = (pool: UnitIdList): UnitId | undefined => {
       for (let i = pool.length - 1; i >= 0; i--) {
         const id = pool[i] as UnitId
         const key = s.unitType[id]
@@ -1393,7 +1393,7 @@ export class CombatSideState {
     if (!hasAbilitiesUpdate) return { keysWithAbilitiesChange: [] }
 
     const buckets = new Map<UnitType, UnitId[]>()
-    const bucketize = (pool: UnitList) => {
+    const bucketize = (pool: UnitIdList) => {
       for (const id of pool) {
         const unitId = id as UnitId
         const vKey = s.unitType[unitId]
@@ -1455,9 +1455,9 @@ export class CombatSideState {
 
       const newIds = nextUnitIds(allowed)
       if (participatingTypes.has(unitType_)) {
-        nextPart = (nextPart + newIds.join('')) as UnitList
+        nextPart = (nextPart + newIds.join('')) as UnitIdList
       } else {
-        nextNon = (nextNon + newIds.join('')) as UnitList
+        nextNon = (nextNon + newIds.join('')) as UnitIdList
       }
       const typeMapAdditions: Record<UnitId, UnitType> = {}
       for (const id of newIds) typeMapAdditions[id] = unitType_

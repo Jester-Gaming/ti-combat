@@ -104,21 +104,20 @@ function buildSegments(result: CombatResult | null) {
       percentRound: attackerPct,
       percent: values.attackerWin * 100,
       label: 'Attacker',
-      segmentClass: styles.segment_attacker,
+      segmentClass: 'theme-attacker',
     },
     {
       key: 'draw',
       percentRound: drawPct,
       percent: values.draw * 100,
       label: 'Draw',
-      segmentClass: styles.segment_draw,
     },
     {
       key: 'defender',
       percentRound: defenderPct,
       percent: values.defenderWin * 100,
       label: 'Defender',
-      segmentClass: styles.segment_defender,
+      segmentClass: 'theme-defender',
     },
   ]
 }

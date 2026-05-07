@@ -41,6 +41,6 @@ export default {
     'import-notation': null,
     'no-descending-specificity': null,
 
-    'order/order': ['custom-properties', 'at-rules', 'declarations'],
+    'order/order': ['custom-properties', 'declarations', 'at-rules'],
   },
 }

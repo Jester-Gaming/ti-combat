@@ -21,6 +21,7 @@ import type {
 } from '@/types'
 import type { UnitConfig } from '@/utils/get-unit-config'
 
+import { Divider } from '../ui/divider'
 import styles from './battle-card.module.css'
 import {
   type CombatResult,
@@ -132,19 +133,9 @@ export function BattleCard({
         {UNITS.map(({ label, items }) => (
           <section className={styles.unitGroup} key={label}>
             <header className={styles.unitGroupHeader}>
-              <div
-                className={clsx(
-                  styles.combatModeLine,
-                  styles.combatModeLine_attacker,
-                )}
-              />
+              <Divider className="theme-attacker" />
               <span className={styles.unitGroupTitle}>{label}</span>
-              <div
-                className={clsx(
-                  styles.combatModeLine,
-                  styles.combatModeLine_defender,
-                )}
-              />
+              <Divider className="theme-defender" />
             </header>
             {items.map(unitKey => (
               <UnitRowDual
@@ -174,12 +165,7 @@ export function BattleCard({
       </div>
 
       <div className={styles.combatModeDivider}>
-        <div
-          className={clsx(
-            styles.combatModeLine,
-            styles.combatModeLine_attacker,
-          )}
-        />
+        <Divider className="theme-attacker" />
         <ButtonIcon
           className="theme-attacker"
           onClick={() => onResetUnits('attacker')}
@@ -187,23 +173,13 @@ export function BattleCard({
         >
           <TrashIcon />
         </ButtonIcon>
-        <div
-          className={clsx(
-            styles.combatModeLine,
-            styles.combatModeLine_attacker,
-          )}
-        />
+        <Divider className="theme-attacker" />
         <ToggleGroup<CombatMode>
           options={COMBAT_MODE_OPTIONS}
           value={combatMode}
           onChange={onCombatModeChange}
         />
-        <div
-          className={clsx(
-            styles.combatModeLine,
-            styles.combatModeLine_defender,
-          )}
-        />
+        <Divider className="theme-defender" />
         <ButtonIcon
           className="theme-defender"
           onClick={() => onResetUnits('defender')}
@@ -211,12 +187,7 @@ export function BattleCard({
         >
           <TrashIcon />
         </ButtonIcon>
-        <div
-          className={clsx(
-            styles.combatModeLine,
-            styles.combatModeLine_defender,
-          )}
-        />
+        <Divider className="theme-defender" />
       </div>
 
       <CombatResultBar

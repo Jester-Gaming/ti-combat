@@ -7,18 +7,15 @@ import { BattleCard } from '@/components/battle-card'
 import { useToast } from '@/components/toast'
 import { ButtonIcon } from '@/components/ui/button-icon'
 import { GlassCard } from '@/components/ui/glass-card'
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetTitle,
-} from '@/components/ui/sheet'
+import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { useCombatSetup } from '@/hooks/use-combat-setup'
 import { useSimulation } from '@/hooks/use-simulation'
 import { useUrlSync } from '@/hooks/use-url-sync'
 import type { CombatSide, UnitBaseType } from '@/types'
 import { getUnitConfig } from '@/utils/get-unit-config'
 
+import { ButtonIconPlain } from '../ui/button-icon-plain'
+import { Divider } from '../ui/divider'
 import styles from './combat-simulator.module.css'
 
 interface CombatSimulatorProps {
@@ -127,36 +124,67 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     setUpgraded(side, unit, !isUpgraded(side, unit))
   }
 
-  return (
-    <main className={clsx(styles.layout, className)}>
-      {/* Left panel: Attacker abilities */}
-      <GlassCard
-        as="aside"
-        className={clsx(styles.sidePanel, 'theme-attacker')}
-      >
-        <div className={styles.sidePanelHeader}>
-          <h2 className={styles.sidePanelTitle}>Attacker Abilities</h2>
-          <button
+  const attackerAbilitiesElement = (
+    <div className={clsx(styles.abilities, 'theme-attacker')}>
+      <div className={styles.header}>
+        <h2 className={styles.title}>
+          Attacker Abilities
+          <ButtonIconPlain
             type="button"
-            className={clsx(
-              styles.resetAbilitiesButton,
-              styles.resetAbilitiesButton_attacker,
-            )}
+            className={clsx(styles.resetAbilitiesButton)}
             onClick={() => resetAbilities('attacker')}
             title="Reset attacker abilities to defaults"
           >
             <ResetIcon />
-          </button>
-        </div>
-        <AbilitiesPanel
-          abilities={attackerAbilities}
-          readContext={attackerReadContext}
-          combatMode={combatMode}
-          params={abilities.attacker}
-          onParamsChange={(abilityName, params) =>
-            setAbilityParam('attacker', abilityName, params)
-          }
-        />
+          </ButtonIconPlain>
+        </h2>
+        <Divider />
+      </div>
+      <AbilitiesPanel
+        abilities={attackerAbilities}
+        readContext={attackerReadContext}
+        combatMode={combatMode}
+        params={abilities.attacker}
+        onParamsChange={(abilityName, params) =>
+          setAbilityParam('attacker', abilityName, params)
+        }
+      />
+    </div>
+  )
+
+  const defenderAbilitiesElement = (
+    <div className={clsx(styles.abilities, 'theme-defender')}>
+      <div className={styles.header}>
+        <h2 className={styles.title}>
+          Defender Abilities
+          <ButtonIconPlain
+            className={clsx(styles.resetAbilitiesButton)}
+            onClick={() => resetAbilities('defender')}
+            title="Reset defender abilities to defaults"
+          >
+            <ResetIcon />
+          </ButtonIconPlain>
+        </h2>
+
+        <Divider />
+      </div>
+      <AbilitiesPanel
+        abilities={defenderAbilities}
+        readContext={defenderReadContext}
+        combatMode={combatMode}
+        params={abilities.defender}
+        onParamsChange={(abilityName, params) =>
+          setAbilityParam('defender', abilityName, params)
+        }
+      />
+    </div>
+  )
+
+  return (
+    <main className={clsx(styles.layout, className)}>
+      {/* Left panel: Attacker abilities */}
+      <GlassCard as="aside" className={clsx(styles.sidePanel)}>
+        {attackerAbilitiesElement}
       </GlassCard>
 
       {/* Center column: Battle card */}
@@ -200,103 +228,20 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
         />
       </div>
 
+      {/* Right panel: Defender abilities */}
+      <GlassCard as="aside" className={clsx(styles.sidePanel)}>
+        {defenderAbilitiesElement}
+      </GlassCard>
+
       {/* Attacker abilities sheet (mobile) */}
       <Sheet open={attackerSheetOpen} onOpenChange={setAttackerSheetOpen}>
-        <SheetContent side="left" className="theme-attacker">
-          <SheetTitle className="sr-only">Attacker Abilities</SheetTitle>
-          <div className={styles.sheetHeader}>
-            <h2 className={styles.sidePanelTitle}>Attacker Abilities</h2>
-            <button
-              type="button"
-              className={clsx(
-                styles.resetAbilitiesButton,
-                styles.resetAbilitiesButton_attacker,
-              )}
-              onClick={() => resetAbilities('attacker')}
-              title="Reset attacker abilities to defaults"
-            >
-              <ResetIcon />
-            </button>
-          </div>
-          <SheetDescription className="sr-only">
-            Configure attacker abilities
-          </SheetDescription>
-          <AbilitiesPanel
-            abilities={attackerAbilities}
-            readContext={attackerReadContext}
-            combatMode={combatMode}
-            params={abilities.attacker}
-            onParamsChange={(abilityName, params) =>
-              setAbilityParam('attacker', abilityName, params)
-            }
-          />
-        </SheetContent>
+        <SheetContent side="left">{attackerAbilitiesElement}</SheetContent>
       </Sheet>
 
       {/* Defender abilities sheet (mobile) */}
       <Sheet open={defenderSheetOpen} onOpenChange={setDefenderSheetOpen}>
-        <SheetContent side="right" className="theme-defender">
-          <SheetTitle className="sr-only">Defender Abilities</SheetTitle>
-          <div className={styles.sheetHeader}>
-            <h2 className={styles.sidePanelTitle}>Defender Abilities</h2>
-            <button
-              type="button"
-              className={clsx(
-                styles.resetAbilitiesButton,
-                styles.resetAbilitiesButton_defender,
-              )}
-              onClick={() => resetAbilities('defender')}
-              title="Reset defender abilities to defaults"
-            >
-              <ResetIcon />
-            </button>
-          </div>
-          <SheetDescription className="sr-only">
-            Configure defender abilities
-          </SheetDescription>
-          <AbilitiesPanel
-            abilities={defenderAbilities}
-            readContext={defenderReadContext}
-            combatMode={combatMode}
-            params={abilities.defender}
-            onParamsChange={(abilityName, params) =>
-              setAbilityParam('defender', abilityName, params)
-            }
-          />
-        </SheetContent>
+        <SheetContent side="right">{defenderAbilitiesElement}</SheetContent>
       </Sheet>
-
-      {/* Right panel: Defender abilities */}
-      <GlassCard
-        as="aside"
-        className={clsx(styles.sidePanel, 'theme-defender')}
-      >
-        <div className={styles.sidePanelHeader}>
-          <h2 className={styles.sidePanelTitle}>Defender Abilities</h2>
-          <button
-            type="button"
-            className={clsx(
-              styles.resetAbilitiesButton,
-              styles.resetAbilitiesButton_defender,
-            )}
-            onClick={() => resetAbilities('defender')}
-            title="Reset defender abilities to defaults"
-          >
-            <ResetIcon />
-          </button>
-        </div>
-        <div className={styles.sidePanelScroll}>
-          <AbilitiesPanel
-            abilities={defenderAbilities}
-            readContext={defenderReadContext}
-            combatMode={combatMode}
-            params={abilities.defender}
-            onParamsChange={(abilityName, params) =>
-              setAbilityParam('defender', abilityName, params)
-            }
-          />
-        </div>
-      </GlassCard>
     </main>
   )
 }

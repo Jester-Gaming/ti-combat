@@ -1,7 +1,7 @@
 .group {
   display: inline-flex;
   height: var(--control-size);
-  border: 1px solid var(--color-overlay-emphasis);
+  border: 1px solid var(--color-border-main);
   border-radius: var(--radius-md);
   overflow: hidden;
 }

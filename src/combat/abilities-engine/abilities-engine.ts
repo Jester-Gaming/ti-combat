@@ -3,7 +3,7 @@ import type {
   FactionKey,
   UnitBaseType,
   UnitId,
-  UnitList,
+  UnitIdList,
   UnitType,
 } from '@/types'
 
@@ -640,7 +640,7 @@ export class AbilitiesEngine {
 
     const entries: UnitAbilityEntry[] = []
 
-    const collect = (pool: UnitList) => {
+    const collect = (pool: UnitIdList) => {
       for (const id of pool) {
         const key = sideState.unitType[id]
         if (!key) continue

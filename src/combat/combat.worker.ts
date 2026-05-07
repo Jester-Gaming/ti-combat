@@ -1,6 +1,11 @@
 import { prepareSimulationConfig } from '@/hooks/combat-setup'
 import type { SimulationInput } from '@/hooks/combat-setup/types'
-import type { FactionKey, UnitBaseType, UnitList, UnitSelection } from '@/types'
+import type {
+  FactionKey,
+  UnitBaseType,
+  UnitIdList,
+  UnitSelection,
+} from '@/types'
 import {
   buildUnitStatsMap,
   getSimulationUnits,
@@ -30,7 +35,7 @@ function buildSideState(
   return {
     faction,
     participatingUnits: units,
-    nonParticipatingUnits: '' as UnitList,
+    nonParticipatingUnits: '' as UnitIdList,
     unitType,
     unitState,
     unitStats: {

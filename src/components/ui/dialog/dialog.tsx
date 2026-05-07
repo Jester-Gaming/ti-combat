@@ -33,10 +33,10 @@ const DialogContent = React.forwardRef<
         className={clsx(styles.content, className)}
         {...props}
       >
-        {children}
         <DialogPrimitive.Close className={styles.close}>
           <Cross1Icon className={styles.closeIcon} />
         </DialogPrimitive.Close>
+        {children}
       </DialogPrimitive.Content>
     </div>
   </DialogPrimitive.Portal>

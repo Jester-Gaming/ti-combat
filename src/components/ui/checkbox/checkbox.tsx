@@ -1,6 +1,6 @@
 import { CheckIcon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
-import type { MouseEventHandler } from 'react'
+import { forwardRef, type MouseEventHandler } from 'react'
 
 import styles from './checkbox.module.css'
 
@@ -10,30 +10,32 @@ interface CheckboxProps {
   disabled?: boolean
   className?: string
   onClick?: MouseEventHandler<HTMLLabelElement>
+  onPointerDown?: MouseEventHandler<HTMLLabelElement>
 }
 
-export function Checkbox({
-  checked,
-  onChange,
-  disabled,
-  className,
-  onClick,
-}: CheckboxProps): React.ReactElement {
-  return (
-    <label
-      className={clsx(styles.wrapper, disabled && styles.disabled, className)}
-      onClick={onClick}
-    >
-      <input
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        onChange={e => onChange(e.target.checked)}
-        className={styles.hiddenInput}
-      />
-      <span className={clsx(styles.checkbox, checked && styles.checked)}>
-        {checked && <CheckIcon className={styles.checkIcon} />}
-      </span>
-    </label>
-  )
-}
+export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
+  (
+    { checked, onChange, disabled, className, onClick, onPointerDown },
+    ref,
+  ): React.ReactElement => {
+    return (
+      <label
+        className={clsx(styles.wrapper, className)}
+        onClick={onClick}
+        onPointerDown={onPointerDown}
+      >
+        <input
+          type="checkbox"
+          checked={checked}
+          disabled={disabled}
+          onChange={e => onChange(e.target.checked)}
+          className={styles.hiddenInput}
+          ref={ref}
+        />
+        <span className={clsx(styles.checkbox)}>
+          <CheckIcon className={styles.checkIcon} />
+        </span>
+      </label>
+    )
+  },
+)

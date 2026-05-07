@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { UnitBaseType, UnitId, UnitList, UnitStats } from '@/types'
+import type { UnitBaseType, UnitId, UnitIdList, UnitStats } from '@/types'
 
 import { CombatState } from '../combat-state/combat-state'
 import type { CombatStateData, SideStateData } from '../combat-state/types'
@@ -28,8 +28,8 @@ function buildSide(
   }
   return {
     faction,
-    participatingUnits: participatingUnits as UnitList,
-    nonParticipatingUnits: '' as UnitList,
+    participatingUnits: participatingUnits as UnitIdList,
+    nonParticipatingUnits: '' as UnitIdList,
     unitType,
     unitState: {},
     unitStats,
@@ -43,8 +43,8 @@ const emptySide = (
   faction: SideStateData['faction'] = 'FEDERATION_OF_SOL',
 ): SideStateData => ({
   faction,
-  participatingUnits: '' as UnitList,
-  nonParticipatingUnits: '' as UnitList,
+  participatingUnits: '' as UnitIdList,
+  nonParticipatingUnits: '' as UnitIdList,
   unitType: {},
   unitState: {},
   unitStats: {} as SideStateData['unitStats'],
@@ -57,7 +57,7 @@ function unitsByBaseType(
   sideData: SideStateData,
 ): Partial<Record<UnitBaseType, UnitId[]>> {
   const result: Partial<Record<UnitBaseType, UnitId[]>> = {}
-  const collect = (pool: UnitList) => {
+  const collect = (pool: UnitIdList) => {
     for (const id of pool) {
       const key = sideData.unitType[id]
       if (!key) continue

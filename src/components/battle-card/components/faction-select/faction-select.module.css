@@ -9,6 +9,11 @@
   color: var(--color-text-main);
   background: var(--color-background-input-field);
   border: 1px solid var(--color-border-main);
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-accent-70, var(--color-border-main));
+  }
 }
 
 .trigger > span:first-child {
@@ -29,12 +34,6 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.trigger:focus {
-  outline: none;
-  border-color: var(--color-accent-color, var(--color-border-main));
-  box-shadow: 0 0 10px var(--color-accent-fill-light);
 }
 
 .content {
@@ -71,8 +70,8 @@
     background-color 0.15s,
     border-color 0.15s;
   font-family: var(--font-heading);
-}
 
-.item:hover {
-  background: var(--color-accent-color);
+  &:hover {
+    background: var(--color-accent-20);
+  }
 }

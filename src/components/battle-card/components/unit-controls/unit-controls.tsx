@@ -2,6 +2,7 @@ import { ArrowUpIcon, MinusIcon, PlusIcon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
 
 import { ButtonIcon } from '@/components/ui/button-icon'
+import { Input } from '@/components/ui/input'
 
 import styles from './unit-controls.module.css'
 
@@ -27,15 +28,6 @@ export function UnitControls({
   className,
 }: UnitControlsProps) {
   const atLimit = count >= limit
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.valueAsNumber
-    if (isNaN(value)) {
-      onCountChange(0)
-      return
-    }
-    onCountChange(Math.min(limit, Math.max(0, Math.trunc(value))))
-  }
 
   return (
     <div
@@ -67,15 +59,10 @@ export function UnitControls({
         <MinusIcon />
       </ButtonIcon>
 
-      <input
-        type="number"
-        min={0}
-        max={limit}
-        step={1}
-        value={count}
-        onChange={handleInputChange}
-        className={styles.countInput}
-      />
+      <div className={clsx('theme-reset', styles.input)}>
+        <Input value={count} min={0} max={limit} onChange={onCountChange} />
+      </div>
+
       <ButtonIcon
         onClick={() => onCountChange(count + 1)}
         disabled={atLimit}

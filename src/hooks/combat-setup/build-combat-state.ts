@@ -1,7 +1,7 @@
 import type {
   FactionKey,
   UnitBaseType,
-  UnitList,
+  UnitIdList,
   UnitState,
   UnitStats,
   UnitType,
@@ -90,8 +90,8 @@ function buildSideState(
 
   return {
     faction: config.faction,
-    participatingUnits: participatingUnits as UnitList,
-    nonParticipatingUnits: '' as UnitList,
+    participatingUnits: participatingUnits as UnitIdList,
+    nonParticipatingUnits: '' as UnitIdList,
     unitType,
     unitState,
     unitStats: {

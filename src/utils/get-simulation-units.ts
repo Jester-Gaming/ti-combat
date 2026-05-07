@@ -3,7 +3,7 @@ import { UNIT_TYPES } from '@/constants/units'
 import type {
   FactionKey,
   UnitBaseType,
-  UnitList,
+  UnitIdList,
   UnitSelection,
   UnitState,
   UnitStats,
@@ -14,13 +14,13 @@ import { getFactionUnitConfig } from './get-faction-unit-config'
 
 /**
  * Converts faction + unit selections into compact unit data for combat simulation.
- * Returns a packed UnitList and stats maps keyed by variant key (base type only at creation).
+ * Returns a packed UnitIdList and stats maps keyed by variant key (base type only at creation).
  */
 export function getSimulationUnits(
   faction: FactionKey,
   selections: Record<UnitBaseType, UnitSelection>,
 ): {
-  units: UnitList
+  units: UnitIdList
   unitType: Record<string, UnitType>
   unitState: Record<string, UnitState>
   unitStats: Record<string, UnitStats>
@@ -56,10 +56,10 @@ export function getSimulationUnits(
     unitStats[baseType] = effectiveStats
   }
 
-  // Returns a packed UnitList — the caller places it into
+  // Returns a packed UnitIdList — the caller places it into
   // `participatingUnits` and lets `sortUnitsAtSetup` split out the
   // non-participating tail.
-  return { units: units as UnitList, unitType, unitState, unitStats }
+  return { units: units as UnitIdList, unitType, unitState, unitStats }
 }
 
 /**

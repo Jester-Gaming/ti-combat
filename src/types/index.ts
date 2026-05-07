@@ -13,6 +13,7 @@ export type {
   UnitBaseType,
   UnitDefinition,
   UnitId,
+  UnitIdList,
   UnitList,
   UnitState,
   UnitStats,

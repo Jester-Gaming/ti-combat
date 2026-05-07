@@ -1,5 +1,5 @@
 import { clsx } from 'clsx'
-import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useRef } from 'react'
 
 import styles from './tooltip.module.css'
 
@@ -18,19 +18,14 @@ export function Tooltip({
 }: TooltipProps): React.ReactElement {
   const popoverRef = useRef<HTMLSpanElement>(null)
   const delayRef = useRef<ReturnType<typeof setTimeout>>(undefined)
-  const [open, setOpen] = useState(false)
 
   const show = useCallback(() => {
-    delayRef.current = setTimeout(() => {
-      popoverRef.current?.showPopover()
-      setOpen(true)
-    }, 300)
+    popoverRef.current?.showPopover()
   }, [])
 
   const hide = useCallback(() => {
     clearTimeout(delayRef.current)
     popoverRef.current?.hidePopover()
-    setOpen(false)
   }, [])
 
   const onPointerEnter = useCallback(
@@ -49,44 +44,18 @@ export function Tooltip({
     [hide],
   )
 
-  const toggle = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation()
-      if (open) {
-        hide()
-      } else {
-        clearTimeout(delayRef.current)
-        popoverRef.current?.showPopover()
-        setOpen(true)
-      }
-    },
-    [open, hide],
-  )
-
-  useEffect(() => {
-    if (!open) return
-    const dismiss = (e: MouseEvent) => {
-      if (!(e.target instanceof Node)) return
-      if (popoverRef.current?.contains(e.target)) return
-      hide()
-    }
-    document.addEventListener('pointerdown', dismiss)
-    return () => document.removeEventListener('pointerdown', dismiss)
-  }, [open, hide])
-
   return (
     <span
       className={clsx(styles.wrapper, className)}
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
-      onClick={toggle}
     >
       {children}
       <span
         ref={popoverRef}
         className={styles.tooltip}
         role="tooltip"
-        popover="manual"
+        popover="auto"
         style={
           anchor
             ? ({ positionAnchor: anchor } as React.CSSProperties)

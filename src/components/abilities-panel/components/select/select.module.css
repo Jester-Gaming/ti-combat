@@ -1,0 +1,39 @@
+.trigger {
+  height: 1.75rem;
+  width: auto;
+  gap: var(--space-1);
+  padding: 0 var(--space-1-5);
+  font-family: inherit;
+  font-size: 12px;
+  border: 1px solid var(--color-accent-20);
+  border-radius: 0.25rem;
+  box-shadow: none;
+  background-color: var(--color-accent-10);
+  color: var(--color-text-main);
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
+
+  &:focus {
+    border-color: var(--color-accent-70);
+    background-color: var(--color-accent-10);
+  }
+}
+
+.content {
+  max-height: 15rem;
+  min-width: 0;
+  border-width: 0;
+}
+
+.item {
+  padding: var(--space-1) var(--space-6) var(--space-1) var(--space-4);
+  font-size: 12px;
+}
+
+.label {
+  padding: var(--space-1) var(--space-1-5);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--color-text-muted);
+}

@@ -3,7 +3,8 @@ import {
   ChevronRightIcon,
   QuestionMarkCircledIcon,
 } from '@radix-ui/react-icons'
-import { useId, useMemo, useState } from 'react'
+import clsx from 'clsx'
+import { useId, useMemo, useRef, useState } from 'react'
 
 import {
   type Ability,
@@ -12,18 +13,11 @@ import {
   extractDefaults,
 } from '@/combat'
 import { Checkbox } from '@/components/ui/checkbox'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 import { Tooltip } from '@/components/ui/tooltip'
 
 import { List } from '../list'
+import { Select } from '../select'
 import styles from './ability-config.module.css'
 
 interface AbilityConfigProps {
@@ -44,6 +38,7 @@ export function AbilityConfig({
   const id = useId()
   const anchorName = `--a${id.replaceAll(':', '')}`
   const defaults = useMemo(() => extractDefaults(ability), [ability])
+  const headerUiRef = useRef<HTMLInputElement>(null)
 
   const uiConfigItems = useMemo(() => {
     if (typeof ability.uiConfig !== 'function') {
@@ -99,13 +94,22 @@ export function AbilityConfig({
   const headerParamValue = headerParamKey
     ? (params[headerParamKey] ?? defaults?.[headerParamKey])
     : undefined
+  const headerParamType = typeof headerParamValue as 'boolean' | 'number'
   const isHeaderBoolean = typeof headerParamValue === 'boolean'
-  const isHeaderNumber = typeof headerParamValue === 'number'
 
   function handleContainerClick(e: React.MouseEvent): void {
-    if (headerParamKey && isHeaderBoolean && !ability.readOnly) {
+    if (ability.readOnly || !headerParamKey) {
+      return
+    }
+
+    if (headerParamType === 'boolean') {
       e.stopPropagation()
       handleCheckboxChange(headerParamKey, !params[headerParamKey])
+    }
+
+    if (headerParamType === 'number') {
+      e.stopPropagation()
+      headerUiRef.current?.focus()
     }
   }
 
@@ -114,101 +118,80 @@ export function AbilityConfig({
     toggleCollapsed()
   }
 
-  const headerControl = headerParamKey ? (
-    isHeaderBoolean ? (
-      <Checkbox
-        checked={!!params[headerParamKey]}
-        disabled={ability.readOnly}
-        className={styles.headerCheckbox}
-        onChange={checked => handleCheckboxChange(headerParamKey, checked)}
-        onClick={event => event.stopPropagation()}
-      />
-    ) : isHeaderNumber ? (
-      <input
-        type="number"
-        className={styles.headerNumberInput}
-        value={
-          (params[headerParamKey] ?? defaults?.[headerParamKey] ?? 0) as number
-        }
-        min={0}
-        disabled={ability.readOnly}
-        onChange={e => {
-          e.stopPropagation()
-          handleNumberChange(headerParamKey, Number(e.target.value))
-        }}
-        onFocus={e => e.target.select()}
-        onClick={e => e.stopPropagation()}
-      />
-    ) : null
-  ) : null
+  const headerControl =
+    !!headerParamKey &&
+    {
+      boolean: (
+        <Checkbox
+          checked={!!params[headerParamKey]}
+          disabled={ability.readOnly}
+          className={styles.headerCheckbox}
+          onChange={checked => handleCheckboxChange(headerParamKey, checked)}
+          onClick={event => event.stopPropagation()}
+          ref={headerUiRef}
+        />
+      ),
+      number: (
+        <Input
+          square
+          value={
+            (params[headerParamKey] ??
+              defaults?.[headerParamKey] ??
+              0) as number
+          }
+          min={0}
+          disabled={ability.readOnly}
+          onChange={value => handleNumberChange(headerParamKey, value)}
+          onClick={e => e.stopPropagation()}
+          ref={headerUiRef}
+          active={!!params[headerParamKey]}
+        />
+      ),
+    }[headerParamType]
 
   const header = (
     <div className={styles.header}>
-      {headerParamKey ? (
-        <>
-          {isCollapsible ? (
-            <button
-              type="button"
-              className={styles.collapseButton}
-              onClick={handleCollapseClick}
-              aria-expanded={!isCollapsed}
-              aria-label={isCollapsed ? 'Expand' : 'Collapse'}
-            >
-              {isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
-            </button>
-          ) : (
-            <span className={styles.collapseIndent} />
-          )}
-          {ability.icon && (
-            <span
-              className={styles.icon}
-              dangerouslySetInnerHTML={{ __html: ability.icon }}
-            />
-          )}
-          <span className={styles.title}>{ability.name}</span>
-          {descriptionIcon}
-          {headerControl}
-        </>
-      ) : (
+      {isCollapsible ? (
         <button
           type="button"
-          className={styles.headerLabel}
-          onClick={isCollapsible ? toggleCollapsed : undefined}
-          disabled={!isCollapsible}
+          className={styles.collapseButton}
+          onClick={handleCollapseClick}
+          aria-expanded={!isCollapsed}
+          aria-label={isCollapsed ? 'Expand' : 'Collapse'}
         >
-          {isCollapsible ? (
-            <span className={styles.collapseIcon}>
-              {isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
-            </span>
-          ) : (
-            <span className={styles.collapseIndent} />
-          )}
-          {ability.icon && (
-            <span
-              className={styles.icon}
-              dangerouslySetInnerHTML={{ __html: ability.icon }}
-            />
-          )}
-          <span className={styles.title}>{ability.name}</span>
-          {descriptionIcon}
+          {isCollapsed ? <ChevronRightIcon /> : <ChevronDownIcon />}
         </button>
+      ) : (
+        <span className={styles.collapseIndent} />
       )}
+      {ability.icon && (
+        <span
+          className={styles.icon}
+          dangerouslySetInnerHTML={{ __html: ability.icon }}
+        />
+      )}
+      <span className={styles.title}>{ability.name}</span>
+      {descriptionIcon}
+      {headerControl}
     </div>
   )
 
   return (
     <div
-      className={`${styles.container} ${headerParamKey ? styles.hasHeaderControl : ''} ${headerParamKey && isHeaderBoolean ? styles.clickable : ''} ${ability.readOnly ? styles.readOnly : ''} ${ability.context && ability.context !== combatMode ? styles.dimmed : ''}`}
+      className={clsx({
+        [styles.container]: true,
+        [styles.container_clickable]: headerParamKey && isHeaderBoolean,
+        [styles.container_readOnly]: ability.readOnly,
+        [styles.container_active]: !!headerParamValue,
+        [styles.container_dimmed]:
+          ability.context && ability.context !== combatMode,
+      })}
       style={
         ability.description
           ? ({ anchorName } as React.CSSProperties)
           : undefined
       }
-      onClick={
-        headerParamKey && isHeaderBoolean && !ability.readOnly
-          ? handleContainerClick
-          : undefined
-      }
+      onClick={handleContainerClick}
     >
       {header}
       {hasConfigItems && !isCollapsed && (
@@ -235,16 +218,11 @@ export function AbilityConfig({
               return (
                 <label key={key} className={styles.configItemLabel}>
                   <span className={styles.configItemText}>{config.label}</span>
-                  <input
-                    type="number"
-                    className={styles.numberInput}
+                  <Input
                     value={value}
                     min={config.min}
                     max={config.max}
-                    onChange={e =>
-                      handleNumberChange(key, Number(e.target.value))
-                    }
-                    onFocus={e => e.target.select()}
+                    onChange={v => handleNumberChange(key, v)}
                   />
                 </label>
               )
@@ -256,41 +234,10 @@ export function AbilityConfig({
                 <div key={key} className={styles.configItemLabel}>
                   <span className={styles.configItemText}>{config.label}</span>
                   <Select
+                    items={config.items}
                     value={value}
-                    onValueChange={v => handleSelectChange(key, v)}
-                  >
-                    <SelectTrigger className={styles.selectTrigger}>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className={styles.selectContent}>
-                      {config.items.map(item =>
-                        'group' in item ? (
-                          <SelectGroup key={item.group}>
-                            <SelectLabel className={styles.selectLabel}>
-                              {item.group}
-                            </SelectLabel>
-                            {item.items.map(gi => (
-                              <SelectItem
-                                key={gi.value}
-                                value={gi.value}
-                                className={styles.selectItem}
-                              >
-                                {gi.label}
-                              </SelectItem>
-                            ))}
-                          </SelectGroup>
-                        ) : (
-                          <SelectItem
-                            key={item.value}
-                            value={item.value}
-                            className={styles.selectItem}
-                          >
-                            {item.label}
-                          </SelectItem>
-                        ),
-                      )}
-                    </SelectContent>
-                  </Select>
+                    onChange={v => handleSelectChange(key, v)}
+                  />
                 </div>
               )
             }

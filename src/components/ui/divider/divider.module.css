@@ -1,0 +1,9 @@
+.divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--color-accent-50, var(--color-overlay-bold)),
+    transparent
+  );
+}

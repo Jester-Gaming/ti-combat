@@ -15,7 +15,7 @@ import type {
   CombatSide,
   FactionKey,
   UnitBaseType,
-  UnitList,
+  UnitIdList,
   UnitSelection,
 } from '@/types'
 import {
@@ -104,8 +104,8 @@ export class CombatSetup {
     this._stateData = {
       attacker: {
         faction: defaultFaction,
-        participatingUnits: '' as UnitList,
-        nonParticipatingUnits: '' as UnitList,
+        participatingUnits: '' as UnitIdList,
+        nonParticipatingUnits: '' as UnitIdList,
         unitType: {},
         unitState: {},
         unitStats: defaultUnitStats,
@@ -115,8 +115,8 @@ export class CombatSetup {
       },
       defender: {
         faction: defaultFaction,
-        participatingUnits: '' as UnitList,
-        nonParticipatingUnits: '' as UnitList,
+        participatingUnits: '' as UnitIdList,
+        nonParticipatingUnits: '' as UnitIdList,
         unitType: {},
         unitState: {},
         unitStats: defaultUnitStats,

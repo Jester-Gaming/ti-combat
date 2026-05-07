@@ -1,11 +1,27 @@
 .wrapper {
   display: inline-flex;
   cursor: pointer;
-}
 
-.disabled {
-  cursor: default;
-  opacity: 50%;
+  &:has(input:disabled) {
+    cursor: default;
+    opacity: 50%;
+  }
+
+  &:has(:focus-visible) .checkbox {
+    outline: 2px solid var(--color-text-main);
+    outline-offset: 2px;
+  }
+
+  &:has(input:checked) {
+    .checkbox {
+      background-color: var(--color-accent-30);
+      border-color: var(--color-accent-70, var(--color-text-main));
+    }
+
+    .checkIcon {
+      opacity: 100%;
+    }
+  }
 }
 
 .hiddenInput {
@@ -20,19 +36,14 @@
   border: 0;
 }
 
-.hiddenInput:focus-visible + .checkbox {
-  outline: 2px solid var(--color-text-main);
-  outline-offset: 2px;
-}
-
 .checkbox {
   display: flex;
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  width: 1rem;
-  height: 1rem;
-  border: 1px solid var(--color-overlay-emphasis);
+  width: var(--control-size);
+  height: var(--control-size);
+  border: 1px solid var(--color-border-main);
   border-radius: 0.25rem;
   background: var(--color-overlay-light);
   user-select: none;
@@ -41,13 +52,8 @@
     background-color 0.15s;
 }
 
-.checked {
-  background-color: var(--color-accent-fill-medium);
-  border-color: var(--color-accent-color, var(--color-text-main));
-}
-
 .checkIcon {
-  width: 0.75rem;
-  height: 0.75rem;
-  color: var(--color-accent-color, var(--color-text-main));
+  color: var(--color-accent, var(--color-text-main));
+  opacity: 0%;
+  transition: opacity 0.15s;
 }

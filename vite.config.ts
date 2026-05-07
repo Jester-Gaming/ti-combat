@@ -51,8 +51,14 @@ export default defineConfig({
   },
   css: {
     modules: {
-      generateScopedName: (name, filename) =>
-        `${path.basename(filename, '.module.css')}__${name}`,
+      generateScopedName: (name, filename) => {
+        const srcDir = path.resolve(__dirname, 'src')
+        const rel = path
+          .relative(srcDir, filename)
+          .replace(/\.module\.css$/, '')
+          .replace(/[\\/]/g, '-')
+        return `${rel}__${name}`
+      },
     },
   },
   test: {

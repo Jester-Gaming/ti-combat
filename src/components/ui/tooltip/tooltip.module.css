@@ -8,24 +8,15 @@
   inset: auto auto anchor(top) anchor(center);
   z-index: 50;
   width: max-content;
-  max-width: var(--space-56);
+  max-width: calc(300px - 16px);
   margin: 0;
   padding: var(--space-1) var(--space-2);
-  font-family: inherit;
-  font-size: var(--text-xs);
-  line-height: 1.375;
+  font-size: var(--text-sm);
   background-color: var(--color-background-popover);
   color: var(--color-text-main);
-  border: none;
   border-radius: 0.25rem;
-  box-shadow: 0 2px 8px hsl(0deg 0% 0% / 40%);
-  opacity: 0%;
-  pointer-events: none;
+  box-shadow: var(--shadow-sm);
   transition: opacity 0.15s;
   translate: -50% -6px;
-}
-
-.wrapper:hover .tooltip {
-  opacity: 100%;
-  transition-delay: 300ms;
+  border: 1px solid var(--color-border-surface);
 }

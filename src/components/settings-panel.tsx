@@ -12,6 +12,7 @@ import { ToggleGroup } from '@/components/ui/toggle-group'
 import type { Settings, Theme } from '@/hooks/use-settings'
 
 import styles from './settings-panel.module.css'
+import { Divider } from './ui/divider'
 
 const themeOptions = [
   { value: 'system' as const, label: 'System' },
@@ -36,8 +37,8 @@ export function SettingsPanel({
         </ButtonIcon>
       </DialogTrigger>
       <DialogContent>
-        <DialogTitle>Settings</DialogTitle>
-        <div className={styles.divider} />
+        <DialogTitle className={styles.title}>Settings</DialogTitle>
+        <Divider />
         <div className={styles.section}>
           <span className={styles.label}>Theme</span>
           <ToggleGroup<Theme>
@@ -46,8 +47,10 @@ export function SettingsPanel({
             onChange={theme => onSettingsChange({ ...settings, theme })}
           />
         </div>
-        <div className={styles.divider} />
-        <AbilitiesDialog />
+        <Divider />
+        <div className={styles.section}>
+          <AbilitiesDialog />
+        </div>
       </DialogContent>
     </Dialog>
   )

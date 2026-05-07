@@ -1,16 +1,46 @@
 .container {
   padding: calc(var(--space-2) - 1px);
-  border: 1px solid var(--color-accent-fill-light);
+  border: 1px solid var(--color-accent-20);
   border-radius: 0.25rem;
   transition: all 0.15s ease;
+
+  &:hover {
+    border-color: var(--color-accent-50);
+  }
 }
 
-.container:hover {
-  border-color: var(--color-accent-border-soft);
+.container_active:not(.container_dimmed) {
+  border-color: var(--color-accent-50);
 }
 
-.container.dimmed {
-  opacity: 30%;
+.container_dimmed {
+  opacity: 20%;
+}
+
+.container_clickable {
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    .title,
+    .icon {
+      color: var(--color-accent);
+    }
+  }
+}
+
+.container_readOnly {
+  cursor: default;
+
+  &:hover {
+    .title {
+      color: var(--color-text-main);
+    }
+
+    .icon {
+      color: var(--color-text-muted);
+    }
+  }
 }
 
 .header {
@@ -23,8 +53,8 @@
 .collapseButton {
   position: relative;
   display: flex;
-  width: var(--space-6);
-  height: var(--space-6);
+  width: var(--control-size);
+  height: var(--control-size);
   flex-shrink: 0;
   cursor: pointer;
   align-items: center;
@@ -38,81 +68,28 @@
     color 0.15s,
     background-color 0.15s,
     border-color 0.15s;
-}
 
-.collapseButton::before {
-  position: absolute;
-  content: '';
-  inset: -8px;
-}
+  &::before {
+    position: absolute;
+    content: '';
+    inset: -8px;
+  }
 
-.collapseButton:hover {
-  color: var(--color-accent-color);
+  &:hover {
+    color: var(--color-accent);
+  }
 }
 
 .collapseIndent {
-  width: var(--space-6);
+  width: var(--control-size);
+  height: var(--control-size);
   flex-shrink: 0;
-}
-
-.container.clickable {
-  cursor: pointer;
-  user-select: none;
-}
-
-.container.clickable:hover .title,
-.container.clickable:hover .icon {
-  color: var(--color-accent-color);
-}
-
-.container.readOnly {
-  cursor: default;
-}
-
-.container.readOnly:hover .title {
-  color: var(--color-text-main);
-}
-
-.container.readOnly:hover .icon {
-  color: var(--color-text-muted);
-}
-
-.container.hasHeaderControl .title {
-  flex: 1;
-}
-
-.headerLabel {
-  display: flex;
-  flex: 1;
-  cursor: pointer;
-  align-items: center;
-  gap: var(--space-1-5);
-  padding: 0;
-  text-align: left;
-  user-select: none;
-  border-radius: 0.25rem;
-  background: transparent;
-  border: none;
-  transition:
-    color 0.15s,
-    background-color 0.15s,
-    border-color 0.15s;
-}
-
-.headerLabel:disabled {
-  cursor: default;
-}
-
-.headerLabel:not(:disabled):hover .title,
-.headerLabel:not(:disabled):hover .collapseIcon,
-.headerLabel:not(:disabled):hover .icon {
-  color: var(--color-accent-color);
 }
 
 .collapseIcon {
   display: flex;
-  width: var(--space-6);
-  height: var(--space-6);
+  width: var(--control-size);
+  height: var(--control-size);
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
@@ -148,6 +125,7 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  flex-grow: 1;
 }
 
 .descriptionIcon {
@@ -155,45 +133,10 @@
   cursor: help;
   color: var(--color-text-muted);
   transition: color 0.15s;
-}
 
-.descriptionIcon:hover {
-  color: var(--color-text-muted);
-}
-
-.headerNumberInput {
-  width: var(--space-6);
-  height: var(--space-6);
-  flex-shrink: 0;
-  border-radius: 0.25rem;
-  border: 1px solid var(--color-overlay-emphasis);
-  text-align: center;
-  font-family: inherit;
-  font-size: var(--text-sm);
-  background-color: var(--color-overlay-light);
-  color: var(--color-text-main);
-  padding: 0;
-  outline: none;
-  appearance: textfield;
-  transition:
-    border-color 0.15s,
-    background-color 0.15s;
-}
-
-.headerCheckbox > span {
-  width: var(--space-6);
-  height: var(--space-6);
-}
-
-.headerNumberInput::-webkit-outer-spin-button,
-.headerNumberInput::-webkit-inner-spin-button {
-  appearance: none;
-  margin: 0;
-}
-
-.headerNumberInput:focus {
-  border-color: var(--color-accent-color, var(--color-text-main));
-  background-color: var(--color-accent-fill-medium);
+  &:hover {
+    color: var(--color-text-main);
+  }
 }
 
 .configItems {
@@ -220,78 +163,10 @@
 }
 
 .configItemText {
-  font-size: 12px;
+  font-size: var(--text-sm);
   color: var(--color-text-muted);
   white-space: nowrap;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-}
-
-.numberInput {
-  width: var(--space-9);
-  padding: var(--space-1) var(--space-1-5);
-  text-align: center;
-  font-family: inherit;
-  font-size: 12px;
-  border: 1px solid var(--color-accent-fill-medium);
-  border-radius: 0.25rem;
-  background-color: var(--color-accent-light);
-  color: var(--color-text-main);
-  outline: none;
-  appearance: textfield;
-  transition:
-    border-color 0.15s,
-    background-color 0.15s;
-}
-
-.numberInput::-webkit-outer-spin-button,
-.numberInput::-webkit-inner-spin-button {
-  appearance: none;
-  margin: 0;
-}
-
-.numberInput:focus {
-  border-color: var(--color-accent-border-strong);
-  background-color: var(--color-accent-10);
-}
-
-.selectTrigger {
-  height: 1.75rem;
-  width: auto;
-  gap: var(--space-1);
-  padding: 0 var(--space-1-5);
-  font-family: inherit;
-  font-size: 12px;
-  border: 1px solid var(--color-accent-fill-medium);
-  border-radius: 0.25rem;
-  box-shadow: none;
-  background-color: var(--color-accent-light);
-  color: var(--color-text-main);
-  transition:
-    border-color 0.15s,
-    background-color 0.15s;
-}
-
-.selectTrigger:focus {
-  border-color: var(--color-accent-border-strong);
-  background-color: var(--color-accent-10);
-}
-
-.selectContent {
-  max-height: 15rem;
-  min-width: 0;
-  border-width: 0;
-}
-
-.selectItem {
-  padding: var(--space-1) var(--space-6) var(--space-1) var(--space-4);
-  font-size: 12px;
-}
-
-.selectLabel {
-  padding: var(--space-1) var(--space-1-5);
-  font-size: var(--text-xs);
-  font-weight: 600;
-  color: var(--color-text-muted);
 }

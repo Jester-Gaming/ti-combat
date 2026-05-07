@@ -154,13 +154,6 @@ body {
   padding: var(--space-4) var(--space-2);
 }
 
-@media (width >= 640px) {
-  .root {
-    gap: var(--space-6);
-    padding: var(--space-6) var(--space-4);
-  }
-}
-
 .header {
   display: flex;
   flex-shrink: 0;
@@ -169,8 +162,11 @@ body {
 }
 
 .title {
+  @media (width < 500px) {
+    font-size: var(--text-sm);
+  }
   margin: 0;
-  font-size: var(--text-sm);
+  font-size: var(--text-lg);
   font-weight: 400;
   letter-spacing: 0.025em;
   font-family: var(--font-heading);
@@ -181,10 +177,4 @@ body {
   color: inherit;
   text-decoration: none;
   cursor: pointer;
-}
-
-@media (width >= 640px) {
-  .title {
-    font-size: var(--text-lg);
-  }
 }

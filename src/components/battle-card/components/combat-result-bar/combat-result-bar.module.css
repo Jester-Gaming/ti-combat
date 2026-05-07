@@ -33,6 +33,12 @@
   overflow: hidden;
   transition: all 0.5s;
   container-type: inline-size;
+  background: linear-gradient(
+    to bottom,
+    var(--color-accent-30, var(--color-overlay-medium)),
+    var(--color-accent-20, var(--color-overlay-light))
+  );
+  color: var(--color-accent, var(--color-text-muted));
 }
 
 @container (width < 50px) {
@@ -42,34 +48,6 @@
   }
 }
 
-.segment_attacker {
-  background: linear-gradient(
-    to bottom,
-    var(--color-accent-attacker-fill-medium),
-    var(--color-accent-attacker-fill-light)
-  );
-
-  color: var(--color-accent-attacker);
-}
-
-.segment_draw {
-  background: linear-gradient(
-    to bottom,
-    var(--color-overlay-medium),
-    var(--color-overlay-light)
-  );
-  color: var(--color-text-muted);
-}
-
-.segment_defender {
-  background: linear-gradient(
-    to bottom,
-    var(--color-accent-defender-fill-medium),
-    var(--color-accent-defender-fill-light)
-  );
-  color: var(--color-accent-defender);
-}
-
 .segmentContent {
   display: flex;
   flex-direction: column;
@@ -77,16 +55,10 @@
 }
 
 .percentage {
-  font-size: var(--text-base);
+  font-size: var(--text-lg);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   font-family: var(--font-heading);
-}
-
-@media (width >= 640px) {
-  .percentage {
-    font-size: var(--text-lg);
-  }
 }
 
 .label {

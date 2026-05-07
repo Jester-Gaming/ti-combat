@@ -60,11 +60,11 @@
 }
 
 .outcomeRow_attacker {
-  background: var(--color-accent-attacker-fill-light);
+  background: var(--color-accent-attacker-10);
 }
 
 .outcomeRow_defender {
-  background: var(--color-accent-defender-fill-light);
+  background: var(--color-accent-defender-10);
 }
 
 .outcomeRow_draw {

@@ -59,7 +59,7 @@ export const proximaTargetingVi: Ability<Params> = {
 function countGalvanizedUnits(ctx: AbilityReadContext): number {
   const sideState = ctx.state[ctx.side]
   let count = 0
-  const walk = (pool: import('@/types').UnitList) => {
+  const walk = (pool: import('@/types').UnitIdList) => {
     for (const id of pool) {
       const key = sideState.unitType[id]
       if (!key) continue

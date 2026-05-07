@@ -15,6 +15,6 @@
 }
 
 .button:hover {
-  color: var(--color-text-main);
+  color: var(--color-accent, var(--color-text-main));
   background: var(--color-overlay-strong);
 }

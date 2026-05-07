@@ -1,4 +1,10 @@
-import type { CombatSide, UnitId, UnitList, UnitState, UnitType } from '@/types'
+import type {
+  CombatSide,
+  UnitId,
+  UnitIdList,
+  UnitState,
+  UnitType,
+} from '@/types'
 
 import type {
   Ability,
@@ -93,7 +99,7 @@ export function restoreRetreatedUnits(
   // CoW: append restored ids back onto participating units (they were
   // participating when retreat saved them) and merge type lookups.
   sideState.participatingUnits = (sideState.participatingUnits +
-    restoredIds) as UnitList
+    restoredIds) as UnitIdList
   sideState.unitType = { ...sideState.unitType, ...restoredTypes }
 
   sideState.unitState = { ...sideState.unitState }

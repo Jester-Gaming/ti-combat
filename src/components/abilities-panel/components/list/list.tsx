@@ -18,6 +18,7 @@ import { clsx } from 'clsx'
 import { useMemo, useState } from 'react'
 
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
 
 import styles from './list.module.css'
 
@@ -122,35 +123,33 @@ export function List(props: ListProps): React.ReactElement {
   function isActive(id: string): boolean {
     if (props.mode === 'checkbox') return props.value.includes(id)
     if (props.mode === 'number') return (props.value[id] ?? 0) > 0
-    return false
+    return true
   }
 
   function renderRight(id: string, index: number): React.ReactElement {
     if (props.mode === 'checkbox') {
       const checked = props.value.includes(id)
       return (
-        <span
-          className={styles.checkboxWrapper}
+        <Checkbox
           onPointerDown={e => e.stopPropagation()}
           onClick={e => e.stopPropagation()}
-        >
-          <Checkbox checked={checked} onChange={() => handleToggle(id)} />
-        </span>
+          checked={checked}
+          onChange={() => handleToggle(id)}
+        />
       )
     }
     if (props.mode === 'number') {
       const item = props.items.find(i => i.value === id)
       const count = props.value[id] ?? 0
       return (
-        <input
-          type="number"
-          className={styles.input}
+        <Input
+          square
           value={count}
+          active={!!count}
           min={0}
           max={item?.max}
           onPointerDown={e => e.stopPropagation()}
-          onChange={e => handleCountChange(id, Number(e.target.value))}
-          onFocus={e => e.target.select()}
+          onChange={value => handleCountChange(id, value)}
         />
       )
     }
@@ -206,7 +205,7 @@ export function List(props: ListProps): React.ReactElement {
             <span className={styles.label} title={label}>
               {label}
             </span>
-            {renderRight(id, index)}
+            <div className={styles.right}>{renderRight(id, index)}</div>
           </div>
         )
       })}
@@ -263,7 +262,7 @@ function SortableRow({
       <span className={styles.dragHandle}>
         <DragHandleDots2Icon />
       </span>
-      {children}
+      <div className={styles.right}>{children}</div>
     </div>
   )
 }

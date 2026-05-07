@@ -57,7 +57,6 @@ export const unitPriority: Ability<Params> = {
       return [
         {
           key: 'groundUnitPriority' as const,
-          label: 'Unit Priority',
           type: 'order-list' as const,
           items: ctx.api.own.getUnitVariantsOptions(),
         },
@@ -69,7 +68,6 @@ export const unitPriority: Ability<Params> = {
     return [
       {
         key: 'spaceUnitPriority' as const,
-        label: 'Unit Priority',
         type: 'order-list' as const,
         items: unitItems,
       },
