@@ -6,7 +6,7 @@
 
 .item {
   display: flex;
-  cursor: grab;
+  cursor: default;
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-1) var(--space-2);
@@ -26,11 +26,24 @@
   background-color: var(--color-accent-10);
 }
 
-.item:active {
+.item_active {
+  border-color: var(--color-accent-40);
+  background-color: var(--color-accent-attacker-10);
+}
+
+.item_clickable {
+  cursor: pointer;
+}
+
+.item_sortable {
+  cursor: grab;
+}
+
+.item_sortable:active {
   cursor: grabbing;
 }
 
-.dragging {
+.item_dragging {
   z-index: 10;
   opacity: 90%;
   box-shadow:
@@ -38,6 +51,13 @@
     0 4px 6px -4px rgb(0 0 0 / 10%);
   border-color: var(--color-accent-border-strong);
   background-color: var(--color-accent-fill-light);
+}
+
+.label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dragHandle {
@@ -50,15 +70,43 @@
   color: var(--color-text-muted);
 }
 
-.item:hover .dragHandle {
+.item_sortable:hover .dragHandle {
   color: var(--color-accent-40);
 }
 
-.label {
-  flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.checkboxWrapper {
+  display: flex;
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+.input {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+  border: 1px solid var(--color-accent-fill-medium);
+  border-radius: 0.25rem;
+  background: transparent;
+  padding: 0;
+  text-align: center;
+  font-family: inherit;
+  font-size: 12px;
+  color: inherit;
+  appearance: textfield;
+}
+
+.input::-webkit-inner-spin-button,
+.input::-webkit-outer-spin-button {
+  appearance: none;
+  margin: 0;
+}
+
+.input:focus {
+  outline: 0;
+  border-color: var(--color-accent-border-strong);
 }
 
 .priorityNumber {

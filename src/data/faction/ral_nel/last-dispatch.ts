@@ -60,7 +60,7 @@ export const lastDispatch: Ability<Params> = {
   uiConfig: ctx => [
     {
       key: 'targetPriority' as const,
-      type: 'priority-list' as const,
+      type: 'checkbox-list-sortable' as const,
       items: ctx.api.opponent.getUnitVariantsOptions(),
     },
   ],

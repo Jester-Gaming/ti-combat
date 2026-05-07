@@ -38,7 +38,7 @@ export const revealPrototype: Ability<Params> = {
     return [
       {
         key,
-        type: 'priority-list' as const,
+        type: 'checkbox-list-sortable' as const,
         items: ctx.api.own
           .getUnitVariantsOptions()
           .filter(opt => !opt.value.includes(':')),

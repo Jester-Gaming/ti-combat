@@ -27,7 +27,7 @@ export const watchfulOjz: Ability<Params> = {
     {
       key: 'shipConfig',
       label: 'Ships',
-      type: 'priority-number-list',
+      type: 'number-list-sortable',
       items: ctx.api.own.getUnitVariantsOptions(),
     },
   ],

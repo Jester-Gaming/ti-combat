@@ -75,7 +75,6 @@
   --color-background-surface: hsl(var(--color-slate-900));
   --color-background-button: hsl(var(--color-slate-700));
   --color-background-input-field: hsl(var(--color-slate-700));
-  --color-row-hover-mid: hsl(var(--color-slate-700));
   --color-background-toast: hsl(var(--color-slate-900) / 90%);
   --color-background-skeleton-light: hsl(var(--color-slate-700) / 30%);
   --color-background-skeleton-medium: hsl(var(--color-slate-700) / 50%);
@@ -96,7 +95,6 @@
   --color-accent-attacker-light: hsl(var(--color-accent-attacker-raw) / 5%);
   --color-accent-attacker-10: hsl(var(--color-accent-attacker-raw) / 10%);
   --color-accent-attacker-40: hsl(var(--color-accent-attacker-raw) / 40%);
-  --color-accent-attacker-60: hsl(var(--color-accent-attacker-raw) / 60%);
   --color-accent-attacker-fill-light: hsl(
     var(--color-accent-attacker-raw) / 15%
   );
@@ -113,7 +111,6 @@
   --color-accent-defender-light: hsl(var(--color-accent-defender-raw) / 5%);
   --color-accent-defender-10: hsl(var(--color-accent-defender-raw) / 10%);
   --color-accent-defender-40: hsl(var(--color-accent-defender-raw) / 40%);
-  --color-accent-defender-60: hsl(var(--color-accent-defender-raw) / 60%);
   --color-accent-defender-fill-light: hsl(
     var(--color-accent-defender-raw) / 15%
   );
@@ -141,7 +138,6 @@
   --color-accent-light: var(--color-accent-attacker-light);
   --color-accent-10: var(--color-accent-attacker-10);
   --color-accent-40: var(--color-accent-attacker-40);
-  --color-accent-60: var(--color-accent-attacker-60);
   --color-accent-fill-light: var(--color-accent-attacker-fill-light);
   --color-accent-fill-medium: var(--color-accent-attacker-fill-medium);
   --color-accent-border-soft: var(--color-accent-attacker-border-soft);
@@ -153,7 +149,6 @@
   --color-accent-light: var(--color-accent-defender-light);
   --color-accent-10: var(--color-accent-defender-10);
   --color-accent-40: var(--color-accent-defender-40);
-  --color-accent-60: var(--color-accent-defender-60);
   --color-accent-fill-light: var(--color-accent-defender-fill-light);
   --color-accent-fill-medium: var(--color-accent-defender-fill-medium);
   --color-accent-border-soft: var(--color-accent-defender-border-soft);
@@ -176,7 +171,6 @@
   --color-background-surface: hsl(var(--color-slate-100));
   --color-background-button: hsl(var(--color-slate-200) / 80%);
   --color-background-input-field: hsl(var(--color-slate-100) / 80%);
-  --color-row-hover-mid: hsl(var(--color-slate-950) / 5%);
   --color-background-toast: hsl(var(--color-slate-100) / 85%);
   --color-background-skeleton-light: hsl(var(--color-slate-200) / 30%);
   --color-background-skeleton-medium: hsl(var(--color-slate-200) / 50%);

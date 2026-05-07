@@ -74,7 +74,7 @@ export const ambush: Ability<Params> = {
     {
       key: 'attackerPriority' as const,
       label: 'Ship Priority',
-      type: 'priority-list' as const,
+      type: 'checkbox-list-sortable' as const,
       items: ctx.api.own.getUnitVariantsOptions({
         include: ['CRUISER', 'DESTROYER'] as UnitBaseType[],
         combatMode: 'SPACE',

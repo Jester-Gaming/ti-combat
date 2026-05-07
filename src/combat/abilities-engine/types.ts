@@ -306,10 +306,10 @@ interface UIConfigCheckboxList<
   }[]
 }
 
-interface UIConfigPriorityList<
+interface UIConfigCheckboxListSortable<
   TParams = Record<string, unknown>,
 > extends UIConfigItemBase<TParams> {
-  type: 'priority-list'
+  type: 'checkbox-list-sortable'
   items: {
     label: string
     value: string
@@ -348,10 +348,10 @@ interface UIConfigNumberList<
   }[]
 }
 
-interface UIConfigPriorityNumberList<
+interface UIConfigNumberListSortable<
   TParams = Record<string, unknown>,
 > extends UIConfigItemBase<TParams> {
-  type: 'priority-number-list'
+  type: 'number-list-sortable'
   items: {
     label: string
     value: string
@@ -363,11 +363,11 @@ export type UIConfigItem<TParams = Record<string, unknown>> =
   | UIConfigCheckbox<TParams>
   | UIConfigOrderList<TParams>
   | UIConfigCheckboxList<TParams>
-  | UIConfigPriorityList<TParams>
+  | UIConfigCheckboxListSortable<TParams>
   | UIConfigNumber<TParams>
   | UIConfigSelect<TParams>
   | UIConfigNumberList<TParams>
-  | UIConfigPriorityNumberList<TParams>
+  | UIConfigNumberListSortable<TParams>
 
 type UIConfig<Params = Record<string, unknown>> =
   | UIConfigItem<Params>[]

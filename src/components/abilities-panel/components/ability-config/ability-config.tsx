@@ -23,11 +23,7 @@ import {
 } from '@/components/ui/select'
 import { Tooltip } from '@/components/ui/tooltip'
 
-import { CheckboxList } from '../checkbox-list'
-import { NumberList } from '../number-list'
-import { OrderList } from '../order-list'
-import { PriorityList } from '../priority-list'
-import { PriorityNumberList } from '../priority-number-list'
+import { List } from '../list'
 import styles from './ability-config.module.css'
 
 interface AbilityConfigProps {
@@ -302,16 +298,10 @@ export function AbilityConfig({
             if (
               config.type === 'order-list' ||
               config.type === 'checkbox-list' ||
-              config.type === 'priority-list'
+              config.type === 'checkbox-list-sortable'
             ) {
               const value = (params[key] ?? defaultValue ?? []) as string[]
-              const ListComponent =
-                config.type === 'order-list'
-                  ? OrderList
-                  : config.type === 'priority-list'
-                    ? PriorityList
-                    : CheckboxList
-
+              const mode = config.type === 'order-list' ? 'order' : 'checkbox'
               return (
                 <div key={key} className={styles.configItemGroup}>
                   {config.label && (
@@ -319,7 +309,9 @@ export function AbilityConfig({
                       {config.label}
                     </span>
                   )}
-                  <ListComponent
+                  <List
+                    mode={mode}
+                    sortable={config.type === 'checkbox-list-sortable'}
                     items={config.items}
                     value={value}
                     onChange={items => handleListChange(key, items)}
@@ -330,16 +322,12 @@ export function AbilityConfig({
 
             if (
               config.type === 'number-list' ||
-              config.type === 'priority-number-list'
+              config.type === 'number-list-sortable'
             ) {
               const value = (params[key] ?? defaultValue ?? {}) as Record<
                 string,
                 number
               >
-              const ListComp =
-                config.type === 'priority-number-list'
-                  ? PriorityNumberList
-                  : NumberList
               return (
                 <div key={key} className={styles.configItemGroup}>
                   {config.label && (
@@ -347,7 +335,9 @@ export function AbilityConfig({
                       {config.label}
                     </span>
                   )}
-                  <ListComp
+                  <List
+                    mode="number"
+                    sortable={config.type === 'number-list-sortable'}
                     items={config.items}
                     value={value}
                     onChange={record => handleRecordNumberChange(key, record)}

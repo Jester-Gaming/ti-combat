@@ -76,7 +76,7 @@ export const exotrireme: Ability<Params> = {
     {
       key: 'sacrificePriority' as const,
       label: 'Sacrifice Priority',
-      type: 'priority-list' as const,
+      type: 'checkbox-list-sortable' as const,
       items: ctx.api.own.getUnitVariantsOptions({
         include: ['DREADNOUGHT'],
         combatMode: 'SPACE',
@@ -85,7 +85,7 @@ export const exotrireme: Ability<Params> = {
     {
       key: 'targetPriority' as const,
       label: 'Target Priority',
-      type: 'priority-list' as const,
+      type: 'checkbox-list-sortable' as const,
       items: ctx.api.opponent.getUnitVariantsOptions({
         combatMode: 'SPACE',
       }),

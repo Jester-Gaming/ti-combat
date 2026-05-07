@@ -114,7 +114,7 @@ export const sustainDamage: Ability<Params> = {
     return [
       {
         key,
-        type: 'priority-list' as const,
+        type: 'checkbox-list-sortable' as const,
         items: ctx.api.own.getUnitVariantsOptions({
           exclude: ['FIGHTER'],
         }),
