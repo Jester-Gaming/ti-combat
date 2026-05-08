@@ -21,8 +21,7 @@ import {
   expandWithSubtypes,
   reconcileStringParam,
   reconcileUnitListParam,
-  sortByPrice,
-  sortByUnitTypeIndex,
+  sortBaseTypes,
 } from './reconcile-helpers'
 
 type AbilitiesConfig = Record<CombatSide, SideAbilitiesConfig>
@@ -57,8 +56,7 @@ function buildValidList(
   const settings = config.side === 'own' ? ownSettings : opponentSettings
   const subtypes = config.side === 'own' ? ownSubtypes : opponentSubtypes
   const group = settings[config.group] as UnitBaseType[]
-  const sorter = config.group === 'units' ? sortByUnitTypeIndex : sortByPrice
-  const sorted = sorter(group, config.sort)
+  const sorted = sortBaseTypes(group, config.sort)
   return expandWithSubtypes(sorted, subtypes, config.sort)
 }
 

@@ -14,6 +14,7 @@ export {
   type SettingsParams,
   SLOT_DISPLAY,
   SLOT_ORDER,
+  type SyncSortSpec,
   type SyncSourceConfig,
   type UnitListMode,
 } from './abilities-engine'

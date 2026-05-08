@@ -38,7 +38,7 @@ export const exotrireme: Ability<Params> = {
       default: [],
       source: 'ships',
       side: 'opponent',
-      sort: 'desc',
+      sort: 'price-desc',
       defaultItemValue: true,
     }),
   },

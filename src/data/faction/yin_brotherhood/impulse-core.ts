@@ -1,6 +1,7 @@
 import { z } from 'zod/mini'
 
 import { type Ability, declareParam, parseVariantId } from '@/combat'
+import { UNIT_PRICE } from '@/constants/units'
 import type { UnitList } from '@/types'
 import { UnitListBooleanSchema } from '@/types'
 
@@ -24,7 +25,7 @@ export const impulseCore: Ability<Params> = {
     uses: Infinity,
     sacrificePriority: declareParam({
       default: [] as UnitList<boolean>,
-      source: 'ships',
+      source: 'nonFighterShips',
       side: 'own',
       defaultItemValue: true,
       filter: id => {
@@ -34,9 +35,14 @@ export const impulseCore: Ability<Params> = {
     }),
     targetPriority: declareParam<UnitList<boolean>>({
       default: [],
-      source: 'nonFighterShips',
+      source: 'ships',
       side: 'opponent',
       defaultItemValue: true,
+      sort: (a, b) => {
+        if (a === 'FIGHTER') return 1
+        if (b === 'FIGHTER') return -1
+        return UNIT_PRICE[a] - UNIT_PRICE[b]
+      },
     }),
   },
   headerUI: 'isEnabled',
@@ -69,6 +75,20 @@ export const impulseCore: Ability<Params> = {
     },
   ],
   uiConfig: ctx => {
+    const nonFighter = ctx.api.opponent.getUnitVariantsOptions({
+      exclude: ['FIGHTER'],
+      combatMode: 'SPACE',
+    })
+    const fighters = ctx.api.opponent
+      .getUnitVariantsOptions({
+        include: ['FIGHTER'],
+        combatMode: 'SPACE',
+      })
+      .map(item => ({
+        ...item,
+        stable: true,
+      }))
+
     return [
       {
         key: 'sacrificePriority' as const,
@@ -87,10 +107,7 @@ export const impulseCore: Ability<Params> = {
         type: 'unit-list' as const,
         mode: 'checkbox' as const,
         sortable: true,
-        items: ctx.api.opponent.getUnitVariantsOptions({
-          exclude: ['FIGHTER'],
-          combatMode: 'SPACE',
-        }),
+        items: [...nonFighter, ...fighters],
       },
     ]
   },

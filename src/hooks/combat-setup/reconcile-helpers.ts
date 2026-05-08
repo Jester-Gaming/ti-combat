@@ -1,32 +1,41 @@
-import { type DeclaredSubtype, makeVariantId, parseVariantId } from '@/combat'
+import {
+  type DeclaredSubtype,
+  makeVariantId,
+  parseVariantId,
+  type SyncSortSpec,
+} from '@/combat'
 import { UNIT_PRICE, UNIT_TYPES } from '@/constants/units'
 import type { UnitBaseType, UnitVariantId } from '@/types'
 
-export function sortByPrice(
+export function sortBaseTypes(
   types: UnitBaseType[],
-  direction: 'asc' | 'desc',
+  sort: SyncSortSpec,
 ): UnitBaseType[] {
-  const sorted = [...types].sort((a, b) => UNIT_PRICE[a] - UNIT_PRICE[b])
-  return direction === 'desc' ? sorted.reverse() : sorted
-}
-
-/** Sort by position in `UNIT_TYPES` (the canonical SHIPS+GROUND+STRUCTURES
- *  order). Used by the `units` SETTINGS source so consumers see ships,
- *  ground forces, then structures in their declared sequence. */
-export function sortByUnitTypeIndex(
-  types: UnitBaseType[],
-  direction: 'asc' | 'desc',
-): UnitBaseType[] {
-  const rank = (t: UnitBaseType) => UNIT_TYPES.indexOf(t)
-  const sorted = [...types].sort((a, b) => rank(a) - rank(b))
-  return direction === 'desc' ? sorted.reverse() : sorted
+  if (typeof sort === 'function') return [...types].sort(sort)
+  const compare =
+    sort === 'price-asc' || sort === 'price-desc'
+      ? (a: UnitBaseType, b: UnitBaseType) => UNIT_PRICE[a] - UNIT_PRICE[b]
+      : (a: UnitBaseType, b: UnitBaseType) =>
+          UNIT_TYPES.indexOf(a) - UNIT_TYPES.indexOf(b)
+  const sorted = [...types].sort(compare)
+  return sort === 'price-desc' || sort === 'normal-desc'
+    ? sorted.reverse()
+    : sorted
 }
 
 export function expandWithSubtypes(
   sortedTypes: UnitBaseType[],
   subtypes: DeclaredSubtype[],
-  direction: 'asc' | 'desc' = 'asc',
+  sort: SyncSortSpec = 'price-asc',
 ): string[] {
+  // Custom comparators don't carry direction info — treat as ascending so
+  // subtype variants follow their parent.
+  const direction =
+    typeof sort === 'function'
+      ? 'asc'
+      : sort === 'price-desc' || sort === 'normal-desc'
+        ? 'desc'
+        : 'asc'
   const simpleByType = new Map<UnitBaseType, DeclaredSubtype[]>()
   const compound: DeclaredSubtype[] = []
 

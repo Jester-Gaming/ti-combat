@@ -29,12 +29,12 @@ export const duraniumArmor: Ability<Params> = {
     spaceRepairPriority: declareParam<UnitList>({
       default: [],
       source: 'nonFighterShips',
-      sort: 'desc',
+      sort: 'price-desc',
     }),
     groundRepairPriority: declareParam<UnitList>({
       default: [],
       source: 'groundForces',
-      sort: 'desc',
+      sort: 'price-desc',
     }),
   },
   headerUI: 'isEnabled',

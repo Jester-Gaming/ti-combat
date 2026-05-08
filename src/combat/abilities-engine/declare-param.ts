@@ -1,4 +1,9 @@
-import type { Ability, SettingsParams, SyncSourceConfig } from './types'
+import type {
+  Ability,
+  SettingsParams,
+  SyncSortSpec,
+  SyncSourceConfig,
+} from './types'
 
 const DECLARED_PARAM = Symbol('declaredParam')
 
@@ -9,7 +14,7 @@ interface DeclaredParamOptions<
   default: T
   source?: K
   side?: 'own' | 'opponent'
-  sort?: 'asc' | 'desc'
+  sort?: SyncSortSpec
   /** For `UnitList<V>` params, the value used when reconcile adds a new
    *  entry that has no parent in the current list (e.g. `false` for
    *  checkbox lists, `0` for number lists). Subtype variants
@@ -26,7 +31,7 @@ interface DeclaredParamValue<T> {
   default: T
   source?: keyof SettingsParams
   side: 'own' | 'opponent'
-  sort: 'asc' | 'desc'
+  sort: SyncSortSpec
   defaultItemValue?: unknown
   compute?: (value: SettingsParams[keyof SettingsParams]) => T
   filter?: (value: string) => boolean
@@ -45,7 +50,7 @@ export function declareParam<
     default: options.default,
     source: options.source,
     side: options.side ?? 'own',
-    sort: options.sort ?? 'asc',
+    sort: options.sort ?? 'price-asc',
     defaultItemValue: options.defaultItemValue,
     compute: options.compute,
     filter: options.filter,

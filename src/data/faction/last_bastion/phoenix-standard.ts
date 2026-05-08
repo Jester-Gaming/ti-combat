@@ -30,13 +30,13 @@ export const phoenixStandard: Ability<Params> = {
     spaceUnitPriority: declareParam({
       default: [] as UnitList,
       source: 'spaceCombatParticipating',
-      sort: 'desc',
+      sort: 'price-desc',
       filter: v => !parseVariantId(v as UnitType).subtypes.includes(GALVANIZED),
     }),
     groundUnitPriority: declareParam({
       default: [] as UnitList,
       source: 'groundCombatParticipating',
-      sort: 'desc',
+      sort: 'price-desc',
       filter: v => !parseVariantId(v as UnitType).subtypes.includes(GALVANIZED),
     }),
   },

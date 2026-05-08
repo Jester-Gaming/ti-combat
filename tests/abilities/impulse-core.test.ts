@@ -49,7 +49,7 @@ describe.forEachSide('IMPULSE_CORE', () => {
     expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
   })
 
-  it('does not fire when only fighters available (no checked targets)', () => {
+  it('destroys a fighter when no other ship types are available', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {
@@ -67,10 +67,9 @@ describe.forEachSide('IMPULSE_CORE', () => {
 
     t.advanceRound()
 
-    // No non-fighter ships to target — ability does not fire
-    expect(t.attacker.units.DESTROYER).toHaveLength(1)
-    expect(t.defender.units.FIGHTER).toHaveLength(3)
-    expect(t.abilityLog('IMPULSE_CORE')).toHaveLength(0)
+    expect(t.attacker.units.DESTROYER).toBeUndefined()
+    expect(t.defender.units.FIGHTER).toHaveLength(2)
+    expect(t.abilityLog('IMPULSE_CORE').length).toBeGreaterThan(0)
   })
 
   it('does not fire when disabled', () => {

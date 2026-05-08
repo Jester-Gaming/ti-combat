@@ -7,25 +7,26 @@ import {
   useSensors,
 } from '@dnd-kit/core'
 import {
-  arrayMove,
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { DragHandleDots2Icon } from '@radix-ui/react-icons'
+import { DragHandleDots2Icon, LockClosedIcon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
 import { useMemo } from 'react'
 
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 
+import { applyDragMove } from './apply-drag-move'
 import styles from './list.module.css'
 
 export interface ListItem {
   label: string
   value: string
   max?: number
+  stable?: boolean
 }
 
 interface CommonProps {
@@ -81,6 +82,11 @@ export function List(props: ListProps): React.ReactElement {
     )
   }, [props.items, props.value, sortable])
 
+  const stableIds = useMemo(
+    () => new Set(orderedItems.filter(i => i.stable).map(i => i.value)),
+    [orderedItems],
+  )
+
   const ids = orderedItems.map(i => i.value)
 
   function handleToggle(id: string): void {
@@ -107,10 +113,13 @@ export function List(props: ListProps): React.ReactElement {
   function handleDragEnd(event: DragEndEvent): void {
     const { active, over } = event
     if (!over || active.id === over.id) return
-    const oldIndex = ids.indexOf(active.id as string)
-    const newIndex = ids.indexOf(over.id as string)
-    if (oldIndex === -1 || newIndex === -1) return
-    const newIds = arrayMove(ids, oldIndex, newIndex)
+    const newIds = applyDragMove(
+      ids,
+      active.id as string,
+      over.id as string,
+      stableIds,
+    )
+    if (newIds == null) return
     if (props.mode === 'order') {
       props.onChange(newIds.map(id => [id]))
     } else if (props.mode === 'checkbox') {
@@ -173,6 +182,7 @@ export function List(props: ListProps): React.ReactElement {
                 id={item.value}
                 label={item.label}
                 active={isActive(item.value)}
+                stable={item.stable === true}
                 onRowClick={
                   props.mode === 'checkbox'
                     ? () => handleToggle(item.value)
@@ -215,6 +225,7 @@ interface SortableRowProps {
   id: string
   label: string
   active: boolean
+  stable: boolean
   onRowClick?: () => void
   children: React.ReactNode
 }
@@ -223,6 +234,7 @@ function SortableRow({
   id,
   label,
   active,
+  stable,
   onRowClick,
   children,
 }: SortableRowProps): React.ReactElement {
@@ -233,12 +245,14 @@ function SortableRow({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id })
+  } = useSortable({ id, disabled: { draggable: stable } })
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition: isDragging ? undefined : transition,
   }
+
+  const dragProps = stable ? {} : { ...attributes, ...listeners }
 
   return (
     <div
@@ -251,14 +265,17 @@ function SortableRow({
         isDragging && styles.item_dragging,
       )}
       onClick={onRowClick}
-      {...attributes}
-      {...listeners}
+      {...dragProps}
     >
       <span className={styles.label} title={label}>
         {label}
       </span>
       <span className={styles.dragHandle}>
-        <DragHandleDots2Icon />
+        {stable ? (
+          <LockClosedIcon aria-label="Fixed position" />
+        ) : (
+          <DragHandleDots2Icon />
+        )}
       </span>
       <div className={styles.right}>{children}</div>
     </div>

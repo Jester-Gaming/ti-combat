@@ -29,6 +29,7 @@ export type {
   RuntimeAbilityList,
   SettingsParams,
   SidedDiceData,
+  SyncSortSpec,
   SyncSourceConfig,
   UnitListMode,
 } from './types'

@@ -52,6 +52,7 @@ export const preGalvanized: Ability<Params> = {
       default: [] as UnitList<number>,
       defaultItemValue: 0,
       source: 'units',
+      sort: 'normal-desc',
       filter: v => !parseVariantId(v as UnitType).subtypes.includes(GALVANIZED),
     }),
     reinforcementTokens: 7,

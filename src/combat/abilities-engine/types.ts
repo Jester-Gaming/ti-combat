@@ -20,13 +20,20 @@ import type { SideApi } from './api/ability-api'
 
 export type { AbilitySlot }
 
+export type SyncSortSpec =
+  | 'price-asc'
+  | 'price-desc'
+  | 'normal-asc'
+  | 'normal-desc'
+  | ((a: UnitBaseType, b: UnitBaseType) => number)
+
 export interface SyncSourceConfig<
   K extends keyof SettingsParams = keyof SettingsParams,
 > {
   key: string
   group: K
   side: 'own' | 'opponent'
-  sort: 'asc' | 'desc'
+  sort: SyncSortSpec
   /** Default for the value slot when reconcile adds a new tuple entry to a
    *  `UnitList<V>` param. Inheritance from a parent variant (e.g. base
    *  `DREADNOUGHT` for `DREADNOUGHT:Galvanized`) takes precedence; this
@@ -341,6 +348,7 @@ interface UIConfigUnitList<
     label: string
     value: string
     max?: number
+    stable?: boolean
   }[]
 }
 

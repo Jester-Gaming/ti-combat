@@ -28,7 +28,7 @@ export const fleetPool: Ability<Params> = {
       default: [],
       source: 'spaceCombatParticipating',
       side: 'own',
-      sort: 'desc',
+      sort: 'price-desc',
     }),
   },
   headerUI: 'isEnabled',
