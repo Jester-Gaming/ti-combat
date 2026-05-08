@@ -62,6 +62,11 @@ export const preGalvanized: Ability<Params> = {
       if (count <= 0) continue
       changes.push(declareGalvanizeUnits(unitType as UnitType))
     }
+
+    // Always declare structures for Linkship
+    changes.push(declareGalvanizeUnits('PDS'))
+    changes.push(declareGalvanizeUnits('SPACE_DOCK'))
+
     return changes
   },
   uiConfig: ctx => {
