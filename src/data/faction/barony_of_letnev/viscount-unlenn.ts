@@ -22,8 +22,8 @@ export const viscountUnlenn: Ability<Params> = {
     isEnabled: false,
     uses: 1,
     unitType: declareParam<UnitType>({
-      default: 'DESTROYER',
-      source: 'nonFighterShips',
+      default: 'FIGHTER',
+      source: 'ships',
     }),
   },
   declareParamChange: params => [
@@ -38,7 +38,6 @@ export const viscountUnlenn: Ability<Params> = {
         type: 'select' as const,
         items: ctx.api.own
           .getUnitVariantsOptions({
-            exclude: ['FIGHTER'],
             excludeSubtypeSource: [ctx.this.key],
             combatMode: 'SPACE',
           })
