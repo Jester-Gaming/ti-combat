@@ -27,6 +27,7 @@ export const settings: Ability<SettingsParams> = {
     nonFighterShips: NON_FIGHTER_SHIPS,
     groundForces: GROUND_FORCES,
     structures: STRUCTURES,
+    units: [...SHIPS, ...GROUND_FORCES, ...STRUCTURES],
     spaceCombatParticipating: [],
     groundCombatParticipating: [],
     validTargetsSpaceCannonOffense: SHIPS,
@@ -46,9 +47,14 @@ export const settings: Ability<SettingsParams> = {
       params.groundCombatParticipating = params.groundForces
       params.validTargetsBombardment = params.groundForces
       params.validTargetsSpaceCannonDefense = params.groundForces
-    } else {
+    } else if (key !== 'structures') {
       return
     }
+    params.units = [
+      ...(params.ships as UnitBaseType[]),
+      ...(params.groundForces as UnitBaseType[]),
+      ...(params.structures as UnitBaseType[]),
+    ]
     return params
   },
   invoke: [],

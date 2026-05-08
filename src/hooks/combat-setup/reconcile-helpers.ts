@@ -1,5 +1,5 @@
 import { type DeclaredSubtype, makeVariantId, parseVariantId } from '@/combat'
-import { UNIT_PRICE } from '@/constants/units'
+import { UNIT_PRICE, UNIT_TYPES } from '@/constants/units'
 import type { UnitBaseType, UnitVariantId } from '@/types'
 
 export function sortByPrice(
@@ -7,6 +7,18 @@ export function sortByPrice(
   direction: 'asc' | 'desc',
 ): UnitBaseType[] {
   const sorted = [...types].sort((a, b) => UNIT_PRICE[a] - UNIT_PRICE[b])
+  return direction === 'desc' ? sorted.reverse() : sorted
+}
+
+/** Sort by position in `UNIT_TYPES` (the canonical SHIPS+GROUND+STRUCTURES
+ *  order). Used by the `units` SETTINGS source so consumers see ships,
+ *  ground forces, then structures in their declared sequence. */
+export function sortByUnitTypeIndex(
+  types: UnitBaseType[],
+  direction: 'asc' | 'desc',
+): UnitBaseType[] {
+  const rank = (t: UnitBaseType) => UNIT_TYPES.indexOf(t)
+  const sorted = [...types].sort((a, b) => rank(a) - rank(b))
   return direction === 'desc' ? sorted.reverse() : sorted
 }
 

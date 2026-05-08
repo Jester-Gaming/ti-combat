@@ -51,8 +51,7 @@ export const preGalvanized: Ability<Params> = {
     galvanizedUnits: declareParam({
       default: [] as UnitList<number>,
       defaultItemValue: 0,
-      source: 'ships',
-      sort: 'desc',
+      source: 'units',
       filter: v => !parseVariantId(v as UnitType).subtypes.includes(GALVANIZED),
     }),
     reinforcementTokens: 7,
@@ -68,6 +67,7 @@ export const preGalvanized: Ability<Params> = {
   uiConfig: ctx => {
     const items = ctx.api.own.getUnitVariantsOptions({
       excludeSubtypes: [GALVANIZED],
+      includeNonParticipating: true,
     })
 
     const tokens = {
@@ -122,6 +122,7 @@ export function galvanizeStats(stats: UnitStats): UnitStats {
         SPACE_CANNON: bumpDice(abilities.SPACE_CANNON),
       }
     : abilities
+
   return { ...stats, COMBAT: combat, UNIT_ABILITIES: nextAbilities }
 }
 

@@ -52,6 +52,7 @@ export type SettingsParams = {
   ships: UnitBaseType[]
   groundForces: UnitBaseType[]
   structures: UnitBaseType[]
+  units: UnitBaseType[]
   spaceCombatParticipating: UnitBaseType[]
   groundCombatParticipating: UnitBaseType[]
   validTargetsSpaceCannonOffense: UnitBaseType[]

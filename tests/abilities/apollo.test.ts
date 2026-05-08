@@ -101,77 +101,74 @@ describe('APOLLO', () => {
     expect(byRemaining[0]).toBeCloseTo(0.4) // 1 hit destroys defender cruiser
   })
 
-  it.fails(
-    'per-variant destruction: a hit on DREADNOUGHT group does not destroy DREADNOUGHT:Cavalry and vice versa',
-    () => {
-      // Attacker: Hero galvanized cruiser (combat 7). Defender: 1 DREADNOUGHT
-      // + 1 DREADNOUGHT via Cavalry variant. Attacker takes 1 hit → Hero dies
-      // → Apollo rolls 2 dice groups: [7,1] for 'DREADNOUGHT', [7,1] for
-      // 'DREADNOUGHT:Cavalry'. Total 4 outcomes (0/0, 0/1, 1/0, 1/1).
-      const t = combatTest({
-        mode: 'SPACE',
-        attacker: {
-          faction: 'LAST_BASTION',
-          units: { CRUISER: 2 },
-          abilities: {
-            PRE_GALVANIZED: {
-              isEnabled: true,
-              galvanizedUnits: [['CRUISER', 1]],
-            },
-            UNIT_PRIORITY: {
-              spaceUnitPriority: [['CRUISER:Galvanized,Hero'], ['CRUISER']],
-            },
-            APOLLO: { isEnabled: true, heroUnit: 'CRUISER:Galvanized' },
+  it('per-variant destruction: a hit on DREADNOUGHT group does not destroy DREADNOUGHT:Cavalry and vice versa', () => {
+    // Attacker: Hero galvanized cruiser (combat 7). Defender: 1 DREADNOUGHT
+    // + 1 DREADNOUGHT via Cavalry variant. Attacker takes 1 hit → Hero dies
+    // → Apollo rolls 2 dice groups: [7,1] for 'DREADNOUGHT', [7,1] for
+    // 'DREADNOUGHT:Cavalry'. Total 4 outcomes (0/0, 0/1, 1/0, 1/1).
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'LAST_BASTION',
+        units: { CRUISER: 2 },
+        abilities: {
+          PRE_GALVANIZED: {
+            isEnabled: true,
+            galvanizedUnits: [['CRUISER', 1]],
           },
-        },
-        defender: {
-          faction: 'ARBOREC',
-          units: { DREADNOUGHT: 2 },
-          abilities: {
-            CAVALRY: { isEnabled: true, unitType: 'DREADNOUGHT' },
+          UNIT_PRIORITY: {
+            spaceUnitPriority: [['CRUISER:Galvanized,Hero'], ['CRUISER']],
           },
+          APOLLO: { isEnabled: true, heroUnit: 'CRUISER:Galvanized' },
         },
-      })
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { DREADNOUGHT: 2 },
+        abilities: {
+          CAVALRY: { isEnabled: true, unitType: 'DREADNOUGHT' },
+        },
+      },
+    })
 
-      t.advanceToTiming(
-        'BEFORE_ASSIGN_HITS',
-        { attacker: 1, defender: 0 },
-        'SPACE_COMBAT',
-      )
-      const branches = t.step()
+    t.advanceToTiming(
+      'BEFORE_ASSIGN_HITS',
+      { attacker: 1, defender: 0 },
+      'SPACE_COMBAT',
+    )
+    const branches = t.step()
 
-      // 2 independent d7 rolls → 2 groups × 2 outcomes = 4 branches.
-      expect(branches).toHaveLength(4)
+    // 2 independent d7 rolls → 2 groups × 2 outcomes = 4 branches.
+    expect(branches).toHaveLength(4)
 
-      // Verify: across all branches, the variant-split holds — hit on Cavalry
-      // group destroys the Cavalry DN, hit on base group destroys base DN.
-      // Check the branch where both groups hit (cavalry destroyed + base destroyed).
-      const countByVariant = (
-        data: (typeof branches)[number]['state']['data']['defender'],
-        key: string,
-      ) => {
-        const match = (id: string) => data.unitType[id] === key
-        let total = 0
-        for (const id of data.participatingUnits) if (match(id)) total++
-        for (const id of data.nonParticipatingUnits) if (match(id)) total++
-        return total
-      }
-      const bothDead = branches.find(
-        b =>
-          countByVariant(b.state.data.defender, 'DREADNOUGHT') === 0 &&
-          countByVariant(b.state.data.defender, 'DREADNOUGHT:Cavalry') === 0,
-      )
-      expect(bothDead).toBeDefined()
-      expect(bothDead!.probability).toBeCloseTo(0.4 * 0.4) // both hit
+    // Verify: across all branches, the variant-split holds — hit on Cavalry
+    // group destroys the Cavalry DN, hit on base group destroys base DN.
+    // Check the branch where both groups hit (cavalry destroyed + base destroyed).
+    const countByVariant = (
+      data: (typeof branches)[number]['state']['data']['defender'],
+      key: string,
+    ) => {
+      const match = (id: string) => data.unitType[id] === key
+      let total = 0
+      for (const id of data.participatingUnits) if (match(id)) total++
+      for (const id of data.nonParticipatingUnits) if (match(id)) total++
+      return total
+    }
+    const bothDead = branches.find(
+      b =>
+        countByVariant(b.state.data.defender, 'DREADNOUGHT') === 0 &&
+        countByVariant(b.state.data.defender, 'DREADNOUGHT:Cavalry') === 0,
+    )
+    expect(bothDead).toBeDefined()
+    expect(bothDead!.probability).toBeCloseTo(0.4 * 0.4) // both hit
 
-      // Branch where base hit but cavalry survived
-      const baseDeadCavalryAlive = branches.find(
-        b =>
-          countByVariant(b.state.data.defender, 'DREADNOUGHT') === 0 &&
-          countByVariant(b.state.data.defender, 'DREADNOUGHT:Cavalry') === 1,
-      )
-      expect(baseDeadCavalryAlive).toBeDefined()
-      expect(baseDeadCavalryAlive!.probability).toBeCloseTo(0.4 * 0.6)
-    },
-  )
+    // Branch where base hit but cavalry survived
+    const baseDeadCavalryAlive = branches.find(
+      b =>
+        countByVariant(b.state.data.defender, 'DREADNOUGHT') === 0 &&
+        countByVariant(b.state.data.defender, 'DREADNOUGHT:Cavalry') === 1,
+    )
+    expect(baseDeadCavalryAlive).toBeDefined()
+    expect(baseDeadCavalryAlive!.probability).toBeCloseTo(0.4 * 0.6)
+  })
 })

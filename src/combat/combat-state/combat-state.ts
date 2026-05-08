@@ -294,8 +294,11 @@ export class CombatState {
       factionOwnedKeys ?? emptyKeys,
     )
 
-    // PREPARE abilities mutate baseData in-place
+    // PREPARE abilities mutate baseData in-place. Drain any timing triggers
+    // they pushed (e.g. galvanizeUnit's WHEN_GALVANIZE) so they don't leak
+    // into the simulation flow as bogus pending steps for the initial meta.
     instance._params.runAbilities('PREPARE')
+    if (instance.pendingSteps.length > 0) instance.advance()
 
     // One-time sort: filter `units[]` to participating-only and order by
     // combat-mode priority rank. Never re-sorted during combat in iteration 1.
