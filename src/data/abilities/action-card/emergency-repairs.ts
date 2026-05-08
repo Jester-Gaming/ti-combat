@@ -10,7 +10,6 @@ export const emergencyRepairs: Ability = {
   name: 'Emergency Repairs',
   description:
     'At the start or end of a combat round: Repair all of your units that have Sustain Damage in the active system.',
-  category: 'ACTION_CARD',
   params: { isEnabled: false, uses: 1 },
   headerUI: 'isEnabled',
   invoke: [

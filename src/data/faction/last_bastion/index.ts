@@ -1,5 +1,5 @@
 import lastBastionIcon from '@/assets/faction/last_bastion.svg?raw'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
 import { a3Valiance } from './a3-valiance'

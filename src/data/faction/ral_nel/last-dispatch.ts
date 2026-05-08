@@ -10,8 +10,6 @@ export const lastDispatch: Ability<Params> = {
   name: 'Last Dispatch',
   description:
     'When this unit retreats, you may destroy 1 ship in the active system that does not have Sustain Damage.',
-  category: 'FACTION',
-  subcategory: 'FLAGSHIP',
   context: 'SPACE',
   params: {
     isEnabled: true,

@@ -6,8 +6,6 @@ export const eidolonMaximum: Ability = {
   name: 'Eidolon Maximum',
   description:
     'This unit is both a ship and a ground force. It cannot be assigned hits from unit abilities. Repair it at the start of every combat round.',
-  category: 'FACTION',
-  subcategory: 'BREAKTHROUGH',
   params: {
     isEnabled: false,
     uses: Infinity,

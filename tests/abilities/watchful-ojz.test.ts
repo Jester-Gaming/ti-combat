@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import type { SavedRetreatData } from '../../src/data/abilities/general/retreat'
+import type { SavedRetreatData } from '../../src/data/abilities/advanced/retreat'
 import { combatTest } from '../utils/combat-test'
 
 describe.forEachSide('WATCHFUL_OJZ', () => {

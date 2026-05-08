@@ -11,7 +11,6 @@ type Params = {
 export const preDamaged: Ability<Params> = {
   key: 'PRE_DAMAGED',
   name: 'Damaged Units',
-  category: 'GENERAL',
   paramsSchema: z.object({
     damagedUnits: z.record(z.string(), z.optional(z.number())),
   }),

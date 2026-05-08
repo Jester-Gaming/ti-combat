@@ -1,5 +1,5 @@
 import naazRokhaAllianceIcon from '@/assets/faction/naaz_rokha_alliance.svg?raw'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
 import { eidolon } from './eidolon'

@@ -13,8 +13,6 @@ export const sleeperCell: Ability<Params> = {
   name: 'Sleeper Cell',
   description:
     "At the start of a space combat that you are participating in: You may purge this card; if you do, for each other player's ship that is destroyed during this combat, place 1 ship of that type from your reinforcements in the active system.",
-  category: 'FACTION',
-  subcategory: 'HERO',
   context: 'SPACE',
   paramsSchema: z.object({
     isActive: z.boolean(),

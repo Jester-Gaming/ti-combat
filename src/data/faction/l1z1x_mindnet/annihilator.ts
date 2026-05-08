@@ -5,8 +5,6 @@ export const annihilator: Ability = {
   name: 'Annihilator',
   description:
     'While not participating in ground combat, this unit can use its Bombardment ability on planets in its system as if it were a ship.',
-  category: 'FACTION',
-  subcategory: 'MECH',
   params: {
     isEnabled: true,
     uses: Infinity,

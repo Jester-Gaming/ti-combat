@@ -26,6 +26,7 @@ interface AbilityConfigProps {
   combatMode: CombatMode
   params: Record<string, unknown>
   onParamsChange: (params: Record<string, unknown>) => void
+  hideIcon?: boolean
 }
 
 export function AbilityConfig({
@@ -34,6 +35,7 @@ export function AbilityConfig({
   combatMode,
   params,
   onParamsChange,
+  hideIcon,
 }: AbilityConfigProps): React.ReactElement {
   const id = useId()
   const anchorName = `--a${id.replaceAll(':', '')}`
@@ -164,7 +166,7 @@ export function AbilityConfig({
       ) : (
         <span className={styles.collapseIndent} />
       )}
-      {ability.icon && (
+      {ability.icon && !hideIcon && (
         <span
           className={styles.icon}
           dangerouslySetInnerHTML={{ __html: ability.icon }}

@@ -5,7 +5,6 @@ export const shieldsHolding: Ability = {
   name: 'Shields Holding',
   description:
     'Before you assign hits to your ships during a space combat: Cancel up to 2 hits.',
-  category: 'ACTION_CARD',
   context: 'SPACE',
   params: {
     isEnabled: true,

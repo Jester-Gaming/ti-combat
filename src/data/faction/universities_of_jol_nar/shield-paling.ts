@@ -7,8 +7,6 @@ export const shieldPaling: Ability = {
   name: 'Shield Paling',
   description:
     'Your infantry on this planet are not affected by your Fragile faction ability.',
-  category: 'FACTION',
-  subcategory: 'MECH',
   context: 'GROUND',
   params: {
     isEnabled: true,

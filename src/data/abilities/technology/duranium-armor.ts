@@ -17,7 +17,6 @@ export const duraniumArmor: Ability<Params> = {
   name: 'Duranium Armor',
   description:
     'During each combat round, after you assign hits to your units, repair 1 of your damaged units that did not use Sustain Damage during this combat round.',
-  category: 'TECHNOLOGY',
   paramsSchema: z.object({
     spaceRepairPriority: z.array(z.string()),
     groundRepairPriority: z.array(z.string()),

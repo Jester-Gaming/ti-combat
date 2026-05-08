@@ -32,7 +32,6 @@ export const GALVANIZED = 'Galvanized' as UnitVariantId
 export const preGalvanized: Ability<Params> = {
   key: 'PRE_GALVANIZED',
   name: 'Galvanized Units',
-  category: 'GENERAL',
   paramsSchema: z.object({
     galvanizedUnits: z.record(z.string(), z.optional(z.number())),
     reinforcementTokens: z.number(),

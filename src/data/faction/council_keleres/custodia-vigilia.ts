@@ -6,8 +6,6 @@ export const custodiaVigilia: Ability = {
   name: 'Custodia Vigilia',
   description:
     'While you control Mecatol Rex, it gains Space Cannon 5 and Production 3.',
-  category: 'FACTION',
-  subcategory: 'ABILITY',
   params: {
     isEnabled: false,
   },

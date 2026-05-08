@@ -7,7 +7,6 @@ export const metaliVoidArmaments: Ability = {
   name: 'Metali Void Armaments',
   description:
     "During the Anti-Fighter Barrage step of space combat, you may resolve Anti-Fighter Barrage 6 (x3) against your opponent's units.",
-  category: 'RELIC',
   context: 'SPACE',
   params: {
     isEnabled: false,

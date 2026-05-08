@@ -5,8 +5,6 @@ export const arviconRex: Ability = {
   name: 'Arvicon Rex',
   description:
     "During combat against an opponent whose command token is not in your fleet pool, apply +2 to the results of this unit's combat rolls.",
-  category: 'FACTION',
-  subcategory: 'FLAGSHIP',
   params: {
     isEnabled: false,
     uses: Infinity,

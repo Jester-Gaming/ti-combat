@@ -8,7 +8,6 @@ export const myruVos: Ability = {
   description:
     'When a player moves ships: You may exhaust this card; if you do, Space Cannon cannot be used against those ships.',
   icon: firmamentIcon,
-  category: 'AGENT',
   context: 'SPACE',
   params: {
     isEnabled: false,

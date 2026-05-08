@@ -4,8 +4,6 @@ export const viszElVir: Ability = {
   key: 'VISZ_EL_VIR',
   name: 'Visz El Vir',
   description: 'Your mechs in this system roll 1 additional die during combat.',
-  category: 'FACTION',
-  subcategory: 'FLAGSHIP',
   params: {
     isEnabled: true,
     uses: Infinity,

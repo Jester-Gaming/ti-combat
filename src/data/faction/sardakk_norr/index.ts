@@ -1,5 +1,5 @@
 import sardakkNorrIcon from '@/assets/faction/sardakk_norr.svg?raw'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import { cmorranNorr } from '@/data/faction/sardakk_norr/cmorran-norr'
 import { exotrireme } from '@/data/faction/sardakk_norr/exotrireme'
 import { ghomSekkus } from '@/data/faction/sardakk_norr/ghom-sekkus'

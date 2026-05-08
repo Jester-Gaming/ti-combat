@@ -14,8 +14,6 @@ export const temporalCommandSuite: Ability<Params> = {
   name: 'Temporal Command Suite',
   description:
     "After any player's agent becomes exhausted, you may exhaust this card to ready that agent; if you ready another player's agent, you may perform a transaction with that player.",
-  category: 'FACTION',
-  subcategory: 'TECHNOLOGY',
   allowExternal: true,
   paramsSchema: z.object({ agentKey: z.string() }),
   params: {
@@ -25,7 +23,7 @@ export const temporalCommandSuite: Ability<Params> = {
   },
   headerUI: 'isEnabled',
   uiConfig: ctx => {
-    const ownAgents = ctx.abilities.own.filter(a => a.category === 'AGENT')
+    const ownAgents = ctx.abilities.own.agents
     return [
       {
         key: 'agentKey' as const,
@@ -57,5 +55,5 @@ export const temporalCommandSuite: Ability<Params> = {
 }
 
 function findAgent(ctx: AbilityReadContext, key: string): Ability | undefined {
-  return ctx.abilities.own.find(a => a.key === key && a.category === 'AGENT')
+  return ctx.abilities.own.agents.find(a => a.key === key)
 }

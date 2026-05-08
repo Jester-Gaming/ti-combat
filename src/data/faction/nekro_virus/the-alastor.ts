@@ -7,8 +7,6 @@ export const theAlastor: Ability = {
   name: 'The Alastor',
   description:
     'At the start of a space combat, choose any number of your ground forces in this system to participate in that combat as if they were ships.',
-  category: 'FACTION',
-  subcategory: 'FLAGSHIP',
   context: 'SPACE',
   params: {
     isEnabled: true,

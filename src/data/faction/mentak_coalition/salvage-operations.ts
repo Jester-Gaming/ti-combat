@@ -14,8 +14,6 @@ export const salvageOperations: Ability<Params> = {
   name: 'Salvage Operations',
   description:
     'After you win or lose a space combat, gain 1 trade good; if you won the combat, you may also produce 1 ship in that system of any ship type that was destroyed during the combat.',
-  category: 'FACTION',
-  subcategory: 'TECHNOLOGY',
   context: 'SPACE',
   paramsSchema: z.object({
     shipPriority: z.array(z.string()),

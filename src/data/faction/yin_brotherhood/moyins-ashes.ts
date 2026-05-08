@@ -4,8 +4,6 @@ import { UNIT_LIMITS } from '@/constants/units'
 export const moyinsAshes: Ability = {
   key: 'MOYINS_ASHES',
   name: "Moyin's Ashes",
-  category: 'FACTION',
-  subcategory: 'MECH',
   context: 'GROUND',
   params: {
     isEnabled: false,

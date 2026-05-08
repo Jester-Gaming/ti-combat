@@ -17,7 +17,6 @@ import { combatTest } from '../utils/combat-test'
 const modifyHitValueA: Ability = {
   key: 'TEST_MODIFY_HIT_A',
   name: 'Test Modify Hit A',
-  category: 'TEST',
   params: { isEnabled: false, uses: Infinity },
   invoke: [
     {
@@ -32,7 +31,6 @@ const modifyHitValueA: Ability = {
 const modifyHitValueB: Ability = {
   key: 'TEST_MODIFY_HIT_B',
   name: 'Test Modify Hit B',
-  category: 'TEST',
   params: { isEnabled: false, uses: Infinity },
   invoke: [
     {
@@ -47,7 +45,6 @@ const modifyHitValueB: Ability = {
 const addDiceCountA: Ability = {
   key: 'TEST_ADD_DICE_A',
   name: 'Test Add Dice A',
-  category: 'TEST',
   params: { isEnabled: false, uses: Infinity },
   invoke: [
     {
@@ -63,7 +60,6 @@ const addDiceCountA: Ability = {
 const addDiceCountB: Ability = {
   key: 'TEST_ADD_DICE_B',
   name: 'Test Add Dice B',
-  category: 'TEST',
   params: { isEnabled: false, uses: Infinity },
   invoke: [
     {

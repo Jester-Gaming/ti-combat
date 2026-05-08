@@ -7,7 +7,6 @@ export const tellurian: Ability = {
   description:
     'When a hit is produced against a unit: You may exhaust this card to cancel that hit.',
   icon: titansOfUlIcon,
-  category: 'AGENT',
   headerUI: 'isEnabled',
   params: {
     isEnabled: false,

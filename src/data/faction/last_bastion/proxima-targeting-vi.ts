@@ -12,8 +12,6 @@ export const proximaTargetingVi: Ability<Params> = {
   name: 'Proxima Targeting VI',
   description:
     "Cancel 1 hit produced by Bombardment rolls made against your ground forces for each of your galvanized units present. At the start of a round of ground combat you may resolve Bombardment 8 (x3) against your opponent's ground forces; if you do, make an identical roll against your own ground forces.",
-  category: 'FACTION',
-  subcategory: 'TECHNOLOGY',
   context: 'GROUND',
   paramsSchema: z.object({
     resolveBombardment: z.boolean(),

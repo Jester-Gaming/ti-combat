@@ -10,7 +10,6 @@ export const metaliVoidShielding: Ability = {
   name: 'Metali Void Shielding',
   description:
     'Each time hits are produced against 1 or more of your non-fighter ships, 1 of those ships may use Sustain Damage as if it had that ability.',
-  category: 'RELIC',
   context: 'SPACE',
   params: {
     isEnabled: false,

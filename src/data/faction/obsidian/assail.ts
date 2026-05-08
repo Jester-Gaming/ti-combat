@@ -5,8 +5,6 @@ export const assail: Ability = {
   name: 'Assail',
   description:
     'Apply +1 to the results of each of your combat and unit ability rolls against the puppeted player.',
-  category: 'FACTION',
-  subcategory: 'ABILITY',
   params: {
     isEnabled: false,
     uses: Infinity,

@@ -1,5 +1,5 @@
 import ghostsOfCreussIcon from '@/assets/faction/ghosts_of_creuss.svg?raw'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
 import { dimensionalSplicer } from './dimensional-splicer'

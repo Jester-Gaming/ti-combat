@@ -1,32 +1,58 @@
+import { SHARED_UNIT_ABILITY_KEYS } from '@/data/abilities/general'
 import factions from '@/data/faction'
 import type { CombatSide, Faction, FactionKey, UnitBaseType } from '@/types'
+import { getFactionUnitConfig } from '@/utils/get-faction-unit-config'
 import { getEffectiveStats } from '@/utils/get-simulation-units'
 
-import type { Ability } from '../../combat/abilities-engine/types'
+import type {
+  Ability,
+  AbilitySlot,
+  RegisteredAbility,
+} from '../../combat/abilities-engine/types'
 import actionCard from '../../data/abilities/action-card'
+import advanced from '../../data/abilities/advanced'
 import agenda from '../../data/abilities/agenda'
 import environment from '../../data/abilities/environment'
 import general from '../../data/abilities/general'
 import relic from '../../data/abilities/relic'
 import technology from '../../data/abilities/technology'
 
-// Collect all promissory abilities from every faction (available to all)
+function tag(
+  abilities: readonly Ability[],
+  slot: AbilitySlot,
+): RegisteredAbility[] {
+  return abilities.map(ability => ({ ability, slot }))
+}
+
+const FACTION_KEY_TO_SLOT = {
+  faction: 'FACTION_ABILITY',
+  technology: 'FACTION_TECHNOLOGY',
+  promissory: 'PROMISSORY',
+  agent: 'AGENT',
+  commander: 'COMMANDER',
+  hero: 'FACTION_HERO',
+  breakthrough: 'FACTION_BREAKTHROUGH',
+} as const satisfies Record<string, AbilitySlot>
+
+function unitSlot(baseType: UnitBaseType): AbilitySlot {
+  if (baseType === 'FLAGSHIP') return 'FACTION_FLAGSHIP'
+  if (baseType === 'MECH') return 'FACTION_MECH'
+  return 'FACTION_UNIT'
+}
+
 const allPromissoryAbilities = Object.values(factions).flatMap(
   faction => faction?.abilities?.promissory ?? [],
 ) as Ability[]
 
-// Collect all agent abilities from every faction (available to all)
 const allAgentAbilities = Object.values(factions).flatMap(
   faction => faction?.abilities?.agent ?? [],
 ) as Ability[]
 
-// Collect all commander abilities from every faction (available to all)
 const allCommanderAbilities = Object.values(factions).flatMap(
   faction => faction?.abilities?.commander ?? [],
 ) as Ability[]
 
-// Collect allowExternal abilities from all factions (available to all)
-const allExternalAbilities: Ability[] = []
+const allExternalAbilities: RegisteredAbility[] = []
 {
   const seen = new Set<string>()
   const addIfExternal = (ability: Ability, faction: Faction) => {
@@ -35,8 +61,8 @@ const allExternalAbilities: Ability[] = []
     if (!ability.headerUI && !ability.uiConfig) return
     seen.add(ability.key)
     allExternalAbilities.push({
-      ...ability,
-      icon: faction.icon,
+      ability: { ...ability, icon: faction.icon },
+      slot: 'OTHER',
     })
   }
   for (const faction of Object.values(factions)) {
@@ -60,7 +86,6 @@ const allExternalAbilities: Ability[] = []
   }
 }
 
-// Collect all unique unit abilities with UI from all factions (for validation lookup)
 const allUnitAbilities: Ability[] = []
 {
   const seen = new Set<string>()
@@ -81,27 +106,30 @@ const allUnitAbilities: Ability[] = []
   }
 }
 
-const allAbilities = [
-  ...general,
-  ...environment,
-  ...agenda,
-  ...technology,
-  ...actionCard,
-  ...relic,
-  ...allPromissoryAbilities,
-  ...allAgentAbilities,
-  ...allCommanderAbilities,
+const baseRegistered: RegisteredAbility[] = [
+  ...tag(general, 'GENERAL'),
+  ...tag(advanced, 'ADVANCED'),
+  ...tag(environment, 'ENVIRONMENT'),
+  ...tag(agenda, 'AGENDA'),
+  ...tag(technology, 'TECHNOLOGY'),
+  ...tag(actionCard, 'ACTION_CARD'),
+  ...tag(relic, 'RELIC'),
+  ...tag(allPromissoryAbilities, 'PROMISSORY'),
+  ...tag(allAgentAbilities, 'AGENT'),
+  ...tag(allCommanderAbilities, 'COMMANDER'),
   ...allExternalAbilities,
 ]
 
-// Extended list including faction unit abilities — used for validation lookup only
-const allAbilitiesForLookup = [...allAbilities, ...allUnitAbilities]
+const allAbilitiesForLookup: Ability[] = [
+  ...baseRegistered.map(r => r.ability),
+  ...allUnitAbilities,
+]
 
 export function getAllAbilities(): Ability[] {
   return allAbilitiesForLookup
 }
 
-const NEUTRAL_HIDDEN_CATEGORIES = new Set([
+const NEUTRAL_HIDDEN_SLOTS: ReadonlySet<AbilitySlot> = new Set<AbilitySlot>([
   'AGENDA',
   'TECHNOLOGY',
   'ACTION_CARD',
@@ -110,53 +138,53 @@ const NEUTRAL_HIDDEN_CATEGORIES = new Set([
   'PROMISSORY',
 ])
 
-/** Collect abilities with UI from faction unit definitions */
 function collectUnitAbilities(
   faction: Faction,
   upgradedTypes?: ReadonlySet<UnitBaseType>,
-): Ability[] {
+): RegisteredAbility[] {
   const seen = new Set<string>()
-  const abilities: Ability[] = []
+  const out: RegisteredAbility[] = []
 
-  for (const unitDef of Object.values(faction.units)) {
+  for (const [unitTypeStr, unitDef] of Object.entries(faction.units)) {
     if (!unitDef) continue
+    const baseType = unitTypeStr as UnitBaseType
+    const slot = unitSlot(baseType)
 
-    const allUnitAbilities = [
+    for (const ability of [
       ...(unitDef.BASE.ABILITIES ?? []),
       ...(unitDef.UPGRADED?.ABILITIES ?? []),
-    ]
-
-    for (const ability of allUnitAbilities) {
+    ]) {
+      if (SHARED_UNIT_ABILITY_KEYS.has(ability.key)) continue
       if (seen.has(ability.key)) continue
       if (!ability.headerUI && !ability.uiConfig) continue
       seen.add(ability.key)
-      abilities.push(ability)
+      out.push({ ability, slot })
     }
-  }
 
-  // Collect DEPLOY from effective stats only
-  for (const [unitType, unitDef] of Object.entries(faction.units)) {
-    if (!unitDef) continue
     const effective = getEffectiveStats(
       unitDef.BASE,
       unitDef.UPGRADED,
-      upgradedTypes?.has(unitType as UnitBaseType) ?? false,
+      upgradedTypes?.has(baseType) ?? false,
     )
     const deploy = effective.UNIT_ABILITIES?.DEPLOY
     if (deploy && !seen.has(deploy.key)) {
       if (deploy.headerUI || deploy.uiConfig) {
         seen.add(deploy.key)
-        abilities.push(deploy)
+        out.push({ ability: deploy, slot })
       }
     }
   }
 
-  return abilities
+  return out
 }
 
 const unitDefAbilityKeysCache = new Map<FactionKey, ReadonlySet<string>>()
 
-/** Get keys of all abilities defined on faction units (regardless of unit state) */
+/** Get keys of all abilities defined on faction units (regardless of unit state).
+ *  Uses the merged faction unit config (faction overrides + base units), so
+ *  shared unit abilities like SUSTAIN_DAMAGE / PLANETARY_SHIELD that come
+ *  from base units are included even when the faction doesn't override the
+ *  corresponding unit type. */
 export function getUnitDefinitionAbilityKeys(
   factionKey: FactionKey,
 ): ReadonlySet<string> {
@@ -165,8 +193,9 @@ export function getUnitDefinitionAbilityKeys(
   const keys = new Set<string>()
   const faction = factions[factionKey]
   if (!faction) return keys
-  for (const unitDef of Object.values(faction.units)) {
-    if (!unitDef) continue
+  const mergedUnits = getFactionUnitConfig(factionKey)
+  for (const unitDef of Object.values(mergedUnits)) {
+    if (!unitDef?.BASE) continue
     for (const ability of [
       ...(unitDef.BASE.ABILITIES ?? []),
       ...(unitDef.UPGRADED?.ABILITIES ?? []),
@@ -184,7 +213,6 @@ export function getUnitDefinitionAbilityKeys(
 
 const factionOwnedKeysCache = new Map<FactionKey, ReadonlySet<string>>()
 
-/** Get keys of all faction-owned abilities (unit definitions + faction abilities) */
 export function getFactionOwnedAbilityKeys(
   factionKey: FactionKey,
 ): ReadonlySet<string> {
@@ -208,47 +236,56 @@ export function getAvailableAbilities(
   side: CombatSide,
   factionKey: FactionKey,
   upgradedTypes?: ReadonlySet<UnitBaseType>,
-): Ability[] {
+): RegisteredAbility[] {
   const isNeutral = factionKey === 'NEUTRAL'
 
   const faction = factions[factionKey]
   const ownedKeys = getFactionOwnedAbilityKeys(factionKey)
-  const baseAbilities = allAbilities
-    .filter(ability => {
-      if (ability.side && ability.side !== side) return false
+
+  const base: RegisteredAbility[] = baseRegistered
+    .filter(reg => {
+      const a = reg.ability
+      if (a.side && a.side !== side) return false
       if (isNeutral) {
-        if (NEUTRAL_HIDDEN_CATEGORIES.has(ability.category)) {
-          return false
-        }
-        if (ability.key === 'FLEET_POOL') {
-          return false
-        }
+        if (NEUTRAL_HIDDEN_SLOTS.has(reg.slot)) return false
+        if (a.key === 'FLEET_POOL') return false
         return true
       }
-      if (ability.allowExternal && ownedKeys.has(ability.key)) {
-        return false
-      }
+      if (a.allowExternal && ownedKeys.has(a.key)) return false
       return true
     })
-    .map(ability => {
-      if (ability.allowExternal && !ownedKeys.has(ability.key)) {
-        return { ...ability, category: 'OTHER' }
+    .map(reg => {
+      const a = reg.ability
+      if (a.allowExternal && !ownedKeys.has(a.key)) {
+        return { ability: a, slot: 'OTHER' as const }
       }
-
-      return ability
+      return reg
     })
 
-  // Get faction-specific abilities
-  const abilities = faction?.abilities
-  const factionAbilities = [
-    ...(abilities?.faction ?? []),
-    ...(abilities?.technology ?? []),
-    ...(abilities?.hero ?? []),
-    ...(abilities?.breakthrough ?? []),
-  ]
+  const factionAbilities: RegisteredAbility[] = []
+  if (faction?.abilities) {
+    for (const [key, list] of Object.entries(faction.abilities) as [
+      keyof typeof FACTION_KEY_TO_SLOT,
+      Ability[] | undefined,
+    ][]) {
+      if (!list) continue
+      const slot = FACTION_KEY_TO_SLOT[key]
+      // Promissories live only in the cross-faction PROMISSORY pool above.
+      if (slot === 'PROMISSORY') continue
+      // Own faction's agents/commanders ALSO appear in the FACTION subgroup
+      // (in addition to the cross-faction AGENT/COMMANDER pools). Same Ability
+      // reference → shared params/config; the panel renders both entries.
+      let factionSlot: AbilitySlot = slot
+      if (slot === 'AGENT') factionSlot = 'FACTION_AGENT'
+      else if (slot === 'COMMANDER') factionSlot = 'FACTION_COMMANDER'
+      for (const ability of list)
+        factionAbilities.push({ ability, slot: factionSlot })
+    }
+  }
+
   const unitAbilities = faction
     ? collectUnitAbilities(faction, upgradedTypes)
     : []
 
-  return [...baseAbilities, ...factionAbilities, ...unitAbilities]
+  return [...base, ...factionAbilities, ...unitAbilities]
 }

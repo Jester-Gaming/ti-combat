@@ -15,7 +15,10 @@ import type {
   UnitAbilityMeta,
 } from '../combat-state/types'
 import type { Logger } from '../logger'
+import type { AbilitySlot } from './ability-slot'
 import type { SideApi } from './api/ability-api'
+
+export type { AbilitySlot }
 
 export interface SyncSourceConfig<
   K extends keyof SettingsParams = keyof SettingsParams,
@@ -124,6 +127,17 @@ export type AbilityTiming = keyof TimingContextMap
 // CONTEXT TYPES
 // ============================================================================
 
+export interface RuntimeAbilityList {
+  /** Flat list of all abilities for this side. */
+  readonly all: readonly Ability[]
+  /** Faction agent abilities (slot === 'AGENT'). */
+  readonly agents: readonly Ability[]
+  /** Faction commander abilities (slot === 'COMMANDER'). */
+  readonly commanders: readonly Ability[]
+  /** Faction promissory abilities (slot === 'PROMISSORY'). */
+  readonly promissories: readonly Ability[]
+}
+
 /** Read-only context for isCallable (no Immer, no mutations) */
 export interface AbilityReadContext {
   readonly state: Readonly<CombatStateData>
@@ -138,7 +152,7 @@ export interface AbilityReadContext {
   readonly side: CombatSide
   /** All abilities registered for each side — available regardless of enabled state.
    *  Use for UI generation (e.g., selects listing agents from both sides). */
-  readonly abilities: OwnOpponentContext<readonly Ability[]>
+  readonly abilities: OwnOpponentContext<RuntimeAbilityList>
   /** Reference to the ability that is currently running — set by the engine
    *  before each `isCallable`/`call` invocation and by the UI before `uiConfig`.
    *  Lets helpers like `excludeSubtypeSource: [ctx.this.key]` stay generic. */
@@ -169,7 +183,7 @@ export interface AbilityCallContext {
   /** The absolute CombatSide this ability is currently running on. */
   readonly side: CombatSide
   /** All abilities registered for each side — available regardless of enabled state. */
-  readonly abilities: OwnOpponentContext<readonly Ability[]>
+  readonly abilities: OwnOpponentContext<RuntimeAbilityList>
   /** Reference to the ability that is currently running — set by the engine
    *  before each `isCallable`/`call` invocation. */
   readonly this: Ability
@@ -385,8 +399,6 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   name: string // Display name for UI
   description?: string // Tooltip text describing what the ability does
   icon?: string // Raw SVG string for display next to name
-  category: string
-  subcategory?: string
   params: AbilityBaseParams & Params
   paramsSchema?: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -432,4 +444,9 @@ export interface Ability<Params extends Record<string, unknown> = any> {
     unitIds: UnitId[],
   ) => UnitId[]
   invoke: AbilityInvoke<AbilityBaseParams & Params>[]
+}
+
+export interface RegisteredAbility {
+  readonly ability: Ability
+  readonly slot: AbilitySlot
 }

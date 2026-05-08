@@ -1,5 +1,5 @@
 import l1z1xMindnetIcon from '@/assets/faction/l1z1x_mindnet.svg?raw'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
 import { annihilator } from './annihilator'

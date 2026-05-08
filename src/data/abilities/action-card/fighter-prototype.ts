@@ -5,7 +5,6 @@ export const fighterPrototype: Ability = {
   name: 'Fighter Prototype',
   description:
     "At the start of the first round of a space combat: Apply +2 to the result of each of your fighters' combat rolls during this combat round.",
-  category: 'ACTION_CARD',
   context: 'SPACE',
   params: {
     isEnabled: false,

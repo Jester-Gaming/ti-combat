@@ -14,8 +14,6 @@ export const overwingZeta: Ability<Params> = {
   name: 'Overwing Zeta',
   description:
     'At the start of a round of space combat in a system that contains a planet you control: Place your flagship and up to a total of 2 cruisers or destroyers from your reinforcements in the active system.',
-  category: 'FACTION',
-  subcategory: 'HERO',
   context: 'SPACE',
   paramsSchema: z.object({
     strategy: z.string(),

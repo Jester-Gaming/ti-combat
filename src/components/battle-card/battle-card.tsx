@@ -139,6 +139,7 @@ export function BattleCard({
             </header>
             {items.map(unitKey => (
               <UnitRowDual
+                key={unitKey}
                 name={attackerConfig[unitKey].name}
                 shortName={attackerConfig[unitKey].shortName}
                 limit={UNIT_LIMITS[unitKey]}

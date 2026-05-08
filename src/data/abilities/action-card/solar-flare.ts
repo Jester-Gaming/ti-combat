@@ -5,7 +5,6 @@ export const solarFlare: Ability = {
   name: 'Solar Flare',
   description:
     'After you activate a system: During this movement, other players cannot use Space Cannon against your ships.',
-  category: 'ACTION_CARD',
   context: 'SPACE',
   params: {
     isEnabled: false,

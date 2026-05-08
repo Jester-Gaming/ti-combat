@@ -5,7 +5,6 @@ export const disable: Ability = {
   name: 'Disable',
   description:
     "At the start of an invasion in a system that contains 1 or more of your opponents' PDS units: Your opponents' PDS units lose Planetary Shield and Space Cannon during this invasion.",
-  category: 'ACTION_CARD',
   context: 'GROUND',
   params: {
     isEnabled: false,

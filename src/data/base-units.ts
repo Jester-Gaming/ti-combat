@@ -1,6 +1,6 @@
-import { disablePlanetaryShield } from '@/data/abilities/unit/disable-planetary-shield'
-import { planetaryShield } from '@/data/abilities/unit/planetary-shield'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { disablePlanetaryShield } from '@/data/abilities/general/disable-planetary-shield'
+import { planetaryShield } from '@/data/abilities/general/planetary-shield'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 
 const baseUnits = {
   WAR_SUN: {

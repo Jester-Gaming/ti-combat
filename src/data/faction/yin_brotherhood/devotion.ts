@@ -13,8 +13,6 @@ export const devotion: Ability<Params> = {
   name: 'Devotion',
   description:
     "After each space battle round, you may destroy 1 of your cruisers or destroyers in the active system to produce 1 hit and assign it to 1 of your opponent's ships in that system.",
-  category: 'FACTION',
-  subcategory: 'ABILITY',
   context: 'SPACE',
   paramsSchema: z.object({
     sacrificePriority: z.array(z.string()),

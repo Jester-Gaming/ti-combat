@@ -20,14 +20,23 @@ type TSParams = {
   opponentDestroyed?: boolean
 }
 
+type TaggedAbility = {
+  ability: Ability
+  subcategory: 'FLAGSHIP' | 'TECHNOLOGY' | 'UNIT'
+}
+
 export function createTechnologicalSingularity(
-  enableAbilityList: Ability[],
-  disableAbilityList: Ability[],
+  enableAbilityList: TaggedAbility[],
+  disableAbilityList: TaggedAbility[],
   mordredAbility: Ability,
 ): Ability<TSParams> {
   const NONE = 'none'
-  const enableAbilities = enableAbilityList.map(collectInvokes)
-  const disableAbilities = disableAbilityList.map(collectInvokes)
+  const enableAbilities = enableAbilityList.map(t =>
+    collectInvokes(t.ability, t.subcategory),
+  )
+  const disableAbilities = disableAbilityList.map(t =>
+    collectInvokes(t.ability, t.subcategory),
+  )
 
   const abilityLookup = new Map<string, SingularityAbilityEntry>(
     [...enableAbilities, ...disableAbilities].map(e => [e.key, e]),
@@ -40,8 +49,6 @@ export function createTechnologicalSingularity(
     name: 'Technological Singularity',
     description:
       "Once per combat, after 1 of your opponent's units is destroyed, you may gain 1 technology that is owned by that player.",
-    category: 'FACTION',
-    subcategory: 'ABILITY',
     params: {
       isEnabled: true,
       uses: Infinity,
@@ -156,7 +163,10 @@ export function createTechnologicalSingularity(
   }
 }
 
-function collectInvokes(ability: Ability): SingularityAbilityEntry {
+function collectInvokes(
+  ability: Ability,
+  subcategory?: 'FLAGSHIP' | 'TECHNOLOGY' | 'UNIT' | 'ABILITY',
+): SingularityAbilityEntry {
   const prepareCalls: ((
     ctx: AbilityCallContext,
     ...rest: unknown[]
@@ -170,7 +180,7 @@ function collectInvokes(ability: Ability): SingularityAbilityEntry {
   return {
     key: ability.key,
     name: ability.name,
-    subcategory: ability.subcategory,
+    subcategory,
     prepareCalls,
   }
 }

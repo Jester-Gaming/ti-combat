@@ -4,8 +4,6 @@ export const unrelenting: Ability = {
   key: 'UNRELENTING',
   name: 'Unrelenting',
   description: "Apply +1 to the result of each of your unit's combat rolls.",
-  category: 'FACTION',
-  subcategory: 'ABILITY',
   params: {
     isEnabled: true,
     uses: Infinity,

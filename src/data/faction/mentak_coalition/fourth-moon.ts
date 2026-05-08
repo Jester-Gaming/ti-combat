@@ -4,8 +4,6 @@ export const fourthMoon: Ability = {
   key: 'FOURTH_MOON',
   name: 'Fourth Moon',
   description: "Other players' ships in this system cannot use Sustain Damage.",
-  category: 'FACTION',
-  subcategory: 'FLAGSHIP',
   context: 'SPACE',
   params: {
     isEnabled: true,

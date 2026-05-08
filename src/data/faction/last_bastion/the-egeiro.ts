@@ -11,8 +11,6 @@ export const theEgeiro: Ability<Params> = {
   name: 'The Egeiro',
   description:
     "Apply +1 to the result of each of this unit's combat rolls for each non-home system that contains a planet you control.",
-  category: 'FACTION',
-  subcategory: 'FLAGSHIP',
   context: 'SPACE',
   paramsSchema: z.object({ nonHomeSystems: z.number() }),
   params: {

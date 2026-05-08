@@ -12,8 +12,6 @@ export const a3Valiance: Ability = {
   description:
     'When this unit is destroyed, if it was galvanized, galvanize up to 3 of your infantry in its system.',
   icon: lastBastionIcon,
-  category: 'FACTION',
-  subcategory: 'MECH',
   context: 'GROUND',
   params: {
     isEnabled: true,

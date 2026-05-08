@@ -11,8 +11,6 @@ export const alarum: Ability<Params> = {
   name: 'Alarum',
   description:
     'At the end of a round of ground combat on this planet, you may move up to 2 of your ground forces to this planet from planets in adjacent systems.',
-  category: 'FACTION',
-  subcategory: 'MECH',
   paramsSchema: z.object({ infantryAvailable: z.number() }),
   params: {
     isEnabled: true,

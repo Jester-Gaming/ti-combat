@@ -1,5 +1,5 @@
 import baronyOfLetnevIcon from '@/assets/faction/barony_of_letnev.svg?raw'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
 import { arcSecundus } from './arc-secundus'

@@ -22,7 +22,6 @@ declare global {
 export const capacity: Ability<Params> = {
   key: 'CAPACITY',
   name: 'Enforce Capacity',
-  category: 'ADVANCED',
   context: 'SPACE',
   paramsSchema: z.object({
     removePriority: z.array(z.string()),

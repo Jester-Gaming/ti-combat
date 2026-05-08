@@ -1,5 +1,5 @@
 import mahactGeneSorcerersIcon from '@/assets/faction/mahact_gene_sorcerers.svg?raw'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
 import { arviconRex } from './arvicon-rex'

@@ -17,6 +17,7 @@ import {
   cloneTracker,
   type DicePool,
   type InvokeCollections,
+  type RegisteredAbility,
   type RunAbilitiesOptions,
   type SidedDiceData,
 } from '../abilities-engine'
@@ -247,10 +248,7 @@ export class CombatState {
     attacker: SideStateData,
     defender: SideStateData,
     combatMode: CombatMode,
-    abilities?: Record<
-      import('@/types').CombatSide,
-      import('../abilities-engine').Ability[]
-    >,
+    abilities?: Record<import('@/types').CombatSide, RegisteredAbility[]>,
     unitAbilityKeys?: Record<import('@/types').CombatSide, ReadonlySet<string>>,
     factionOwnedKeys?: Record<
       import('@/types').CombatSide,
@@ -309,10 +307,7 @@ export class CombatState {
 
   public static fromDataStandalone(
     data: CombatStateData,
-    abilities?: Record<
-      import('@/types').CombatSide,
-      import('../abilities-engine').Ability[]
-    >,
+    abilities?: Record<import('@/types').CombatSide, RegisteredAbility[]>,
     unitAbilityKeys?: Record<import('@/types').CombatSide, ReadonlySet<string>>,
     factionOwnedKeys?: Record<
       import('@/types').CombatSide,

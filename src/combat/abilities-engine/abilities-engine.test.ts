@@ -7,7 +7,11 @@ import type { CombatStateData, SideStateData } from '../combat-state/types'
 import { nextUnitIds } from '../utils/unit-id'
 import { parseVariantId } from '../utils/unit-variant'
 import { AbilitiesEngine } from './abilities-engine'
-import type { Ability, AbilityCallContext } from './types'
+import type { Ability, AbilityCallContext, RegisteredAbility } from './types'
+
+function reg(abilities: Ability[]): RegisteredAbility[] {
+  return abilities.map(ability => ({ ability, slot: 'GENERAL' as const }))
+}
 
 /** Helper to build compact SideStateData from unit specs */
 function buildSide(
@@ -87,7 +91,6 @@ describe('collectUnitAbilities', () => {
     const mockAbility: Ability = {
       key: 'TEST_UNIT_ABILITY',
       name: 'Test Unit Ability',
-      category: 'FACTION',
       params: { isEnabled: true, uses: Infinity },
       invoke: [],
     }
@@ -140,14 +143,12 @@ describe('collectUnitAbilities', () => {
     const ability1: Ability = {
       key: 'ABILITY_1',
       name: 'Ability 1',
-      category: 'FACTION',
       params: { isEnabled: true, uses: Infinity },
       invoke: [],
     }
     const ability2: Ability = {
       key: 'ABILITY_2',
       name: 'Ability 2',
-      category: 'FACTION',
       params: { isEnabled: true, uses: Infinity },
       invoke: [],
     }
@@ -181,7 +182,6 @@ describe('unit ability invocation', () => {
     const mockAbility: Ability = {
       key: 'TEST_UNIT_ABILITY',
       name: 'Test',
-      category: 'FACTION',
       params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
@@ -221,7 +221,6 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
     const destroyAbility: Ability = {
       key: 'DESTROY_ABILITY',
       name: 'Destroy',
-      category: 'GENERAL',
       params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
@@ -236,7 +235,6 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
     const afterDestroyAbility: Ability = {
       key: 'AFTER_DESTROY_HANDLER',
       name: 'After Destroy',
-      category: 'GENERAL',
       params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
@@ -292,7 +290,6 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
     const noopAbility: Ability = {
       key: 'NOOP_ABILITY',
       name: 'Noop',
-      category: 'GENERAL',
       params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
@@ -307,7 +304,6 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
     const afterDestroyAbility: Ability = {
       key: 'AFTER_DESTROY_HANDLER',
       name: 'After Destroy',
-      category: 'GENERAL',
       params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
@@ -347,7 +343,6 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
     const destroyAbility: Ability = {
       key: 'DESTROY_ABILITY',
       name: 'Destroy',
-      category: 'GENERAL',
       params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
@@ -363,7 +358,6 @@ describe('AFTER_DESTROY triggered by destroyUnits', () => {
     const afterDestroyAbility: Ability = {
       key: 'CHAIN_DESTROY',
       name: 'Chain Destroy',
-      category: 'GENERAL',
       params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
@@ -420,7 +414,6 @@ describe('merged START_OF_COMBAT bucket', () => {
     const startOfCombatAbility: Ability = {
       key: 'START_COMBAT_ABILITY',
       name: 'Start Combat',
-      category: 'GENERAL',
       params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
@@ -435,7 +428,6 @@ describe('merged START_OF_COMBAT bucket', () => {
     const startOfRoundAbility: Ability = {
       key: 'START_ROUND_ABILITY',
       name: 'Start Round',
-      category: 'GENERAL',
       params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
@@ -475,7 +467,6 @@ describe('merged START_OF_COMBAT bucket', () => {
     const ability: Ability = {
       key: 'SINGLE_TIMING',
       name: 'Single',
-      category: 'GENERAL',
       params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
@@ -511,7 +502,6 @@ describe('disableUnitAbility / enableUnitAbility', () => {
     const testAbility: Ability = {
       key: 'TEST_PER_UNIT',
       name: 'Test Per-Unit Ability',
-      category: 'GENERAL',
       params: { isEnabled: true, uses: Infinity },
       invoke: [
         {
@@ -540,7 +530,7 @@ describe('disableUnitAbility / enableUnitAbility', () => {
     const cs = CombatState.fromDataStandalone(state)
     const engine = AbilitiesEngine.fromConfig(
       cs,
-      { attacker: [], defender: [] },
+      { attacker: reg([]), defender: reg([]) },
       { attacker: new Set(['TEST_PER_UNIT']), defender: new Set() },
       { attacker: new Set(), defender: new Set() },
     )

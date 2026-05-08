@@ -4,12 +4,16 @@ export {
   type AbilityBaseParams,
   type AbilityCallContext,
   type AbilityReadContext,
+  type AbilitySlot,
   type AbilityTiming,
   type DeclaredSubtype,
   declareParam,
   type DicePool,
   type ParamChange,
+  type RegisteredAbility,
   type SettingsParams,
+  SLOT_DISPLAY,
+  SLOT_ORDER,
   type SyncSourceConfig,
 } from './abilities-engine'
 export {

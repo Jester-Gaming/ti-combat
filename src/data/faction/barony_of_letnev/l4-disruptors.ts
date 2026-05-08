@@ -5,8 +5,6 @@ export const l4Disruptors: Ability = {
   name: 'L4 Disruptors',
   description:
     'During an invasion, units cannot use Space Cannon against your units.',
-  category: 'FACTION',
-  subcategory: 'TECHNOLOGY',
   context: 'GROUND',
   params: {
     isEnabled: false,

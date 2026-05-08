@@ -1,5 +1,5 @@
 import naaluCollectiveIcon from '@/assets/faction/naalu_collective.svg?raw'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
 import { matriarch } from './matriarch'

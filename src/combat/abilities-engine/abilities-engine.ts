@@ -20,13 +20,20 @@ import type {
 import { Logger } from '../logger'
 import { resolveUnitStats } from '../utils/resolve-unit-stats'
 import { parseVariantId } from '../utils/unit-variant'
+import type { AbilitySlot } from './ability-slot'
 import {
   type AbilityBranch,
   AbilityBranchInterrupt,
   AbilityContext,
 } from './api/ability-api'
 import { extractDefaults } from './declare-param'
-import type { Ability, AbilityInvoke, AbilityTiming } from './types'
+import type {
+  Ability,
+  AbilityInvoke,
+  AbilityTiming,
+  RegisteredAbility,
+  RuntimeAbilityList,
+} from './types'
 
 export const TIMING_GROUPS: {
   timings: AbilityTiming[]
@@ -75,6 +82,20 @@ const PRE_SORTED_BUCKETS: AbilityTiming[] = [
 ]
 
 // ── Ability execution engine (module-private helpers) ────────────────────
+
+function dedupeRegistered(regs: readonly RegisteredAbility[]): {
+  abilities: Ability[]
+  slots: Map<string, AbilitySlot>
+} {
+  const abilities: Ability[] = []
+  const slots = new Map<string, AbilitySlot>()
+  for (const r of regs) {
+    if (slots.has(r.ability.key)) continue
+    slots.set(r.ability.key, r.slot)
+    abilities.push(r.ability)
+  }
+  return { abilities, slots }
+}
 
 /** Source of an ability - either from config, a deploy ability, or a unit */
 type AbilitySource =
@@ -417,6 +438,7 @@ const GROUND_PHASE: MetaPhase[] = ['GROUND_COMBAT']
 export class AbilitiesEngine {
   private _combatState!: CombatState
   private _abilities!: Record<CombatSide, Ability[]>
+  private _abilitySlots!: Record<CombatSide, ReadonlyMap<string, AbilitySlot>>
   private _unitAbilityKeys!: Record<CombatSide, ReadonlySet<string>>
   private _attackerCtx!: AbilityContext
   private _defenderCtx!: AbilityContext
@@ -487,6 +509,18 @@ export class AbilitiesEngine {
     return this._abilities[side]
   }
 
+  /** Re-emit the per-side abilities as `RegisteredAbility[]`, preserving the
+   *  slot tags captured at engine construction. Used by the test harness when
+   *  building a follow-up CombatState that must accept the same registered
+   *  shape the simulation pipeline produces. */
+  getRegisteredAbilities(side: CombatSide): RegisteredAbility[] {
+    const slots = this._abilitySlots[side]
+    return this._abilities[side].map(ability => ({
+      ability,
+      slot: slots.get(ability.key) ?? 'OTHER',
+    }))
+  }
+
   get unitAbilityKeys(): Record<CombatSide, ReadonlySet<string>> {
     return this._unitAbilityKeys
   }
@@ -546,19 +580,38 @@ export class AbilitiesEngine {
   /**
    * Create from pre-reconciled config data (simulation initialization path).
    *
+   * The `registered` input may contain duplicate ability keys when the same
+   * ability is intentionally surfaced under multiple slots (e.g., the active
+   * faction's agents appear once under AGENT and once under FACTION_AGENT for
+   * panel rendering). The engine deduplicates here so internal lookups,
+   * reconciliation, and runtime accessors see a single entry per key. The
+   * first occurrence wins — order in `registered` determines which slot the
+   * runtime ability list reports.
+   *
    * Expects the caller to have already run reconciliation
    * (via prepareSimulationConfig). This factory just loads abilities
    * and builds invokes from the config as-is.
    */
   static fromConfig(
     combatState: CombatState,
-    abilities: Record<CombatSide, Ability[]>,
+    registered: Record<CombatSide, RegisteredAbility[]>,
     unitAbilityKeys: Record<CombatSide, ReadonlySet<string>>,
     factionOwnedKeys: Record<CombatSide, ReadonlySet<string>>,
   ): AbilitiesEngine {
+    const attackerDedup = dedupeRegistered(registered.attacker)
+    const defenderDedup = dedupeRegistered(registered.defender)
+    const abilities: Record<CombatSide, Ability[]> = {
+      attacker: attackerDedup.abilities,
+      defender: defenderDedup.abilities,
+    }
+    const abilitySlots: Record<CombatSide, Map<string, AbilitySlot>> = {
+      attacker: attackerDedup.slots,
+      defender: defenderDedup.slots,
+    }
     const instance = Object.create(AbilitiesEngine.prototype) as AbilitiesEngine
     instance._combatState = combatState
     instance._abilities = abilities
+    instance._abilitySlots = abilitySlots
     instance._unitAbilityKeys = unitAbilityKeys
     instance._attackerCtx = new AbilityContext('attacker', instance)
     instance._defenderCtx = new AbilityContext('defender', instance)
@@ -590,13 +643,24 @@ export class AbilitiesEngine {
    */
   static wrap(
     combatState: CombatState,
-    abilities: Record<CombatSide, Ability[]>,
+    registered: Record<CombatSide, RegisteredAbility[]>,
     unitAbilityKeys: Record<CombatSide, ReadonlySet<string>>,
     factionOwnedKeys: Record<CombatSide, ReadonlySet<string>>,
   ): AbilitiesEngine {
+    const attackerDedup = dedupeRegistered(registered.attacker)
+    const defenderDedup = dedupeRegistered(registered.defender)
+    const abilities: Record<CombatSide, Ability[]> = {
+      attacker: attackerDedup.abilities,
+      defender: defenderDedup.abilities,
+    }
+    const abilitySlots: Record<CombatSide, Map<string, AbilitySlot>> = {
+      attacker: attackerDedup.slots,
+      defender: defenderDedup.slots,
+    }
     const instance = Object.create(AbilitiesEngine.prototype) as AbilitiesEngine
     instance._combatState = combatState
     instance._abilities = abilities
+    instance._abilitySlots = abilitySlots
     instance._unitAbilityKeys = unitAbilityKeys
     instance._attackerCtx = new AbilityContext('attacker', instance)
     instance._defenderCtx = new AbilityContext('defender', instance)
@@ -619,6 +683,19 @@ export class AbilitiesEngine {
     combatState._allInvokesOwned = true
     instance.buildInvokes()
     return instance
+  }
+
+  runtimeAbilityList(side: CombatSide): RuntimeAbilityList {
+    const all = this._abilities[side]
+    const slots = this._abilitySlots[side]
+    const filterSlot = (slot: AbilitySlot) =>
+      all.filter(a => slots.get(a.key) === slot)
+    return {
+      all,
+      agents: filterSlot('AGENT'),
+      commanders: filterSlot('COMMANDER'),
+      promissories: filterSlot('PROMISSORY'),
+    }
   }
 
   /** Collect unit abilities from units on the field */

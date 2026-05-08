@@ -11,7 +11,6 @@ export const articlesOfWar: Ability<Params> = {
   name: 'Articles of War',
   description:
     'All mechs lose their printed abilities except for Sustain Damage.',
-  category: 'AGENDA',
   params: {
     isEnabled: false,
     uses: Infinity,

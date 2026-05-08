@@ -115,7 +115,6 @@ export function restoreRetreatedUnits(
 export const retreat: Ability<Params> = {
   key: 'RETREAT',
   name: 'Retreat',
-  category: 'GENERAL',
   context: 'SPACE',
   params: {
     isEnabled: false,

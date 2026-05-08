@@ -5,8 +5,6 @@ export const quetzecoatl: Ability = {
   name: 'Quetzecoatl',
   description:
     'Other players cannot use Space Cannon against your ships in this system.',
-  category: 'FACTION',
-  subcategory: 'FLAGSHIP',
   context: 'SPACE',
   params: {
     isEnabled: true,

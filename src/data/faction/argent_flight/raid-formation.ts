@@ -10,8 +10,6 @@ export const raidFormation: Ability<Params> = {
   name: 'Raid Formation',
   description:
     "When 1 or more of your units use Anti-Fighter Barrage, for each hit produced in excess of your opponent's fighters, choose 1 of your opponent's ships that has Sustain Damage to become damaged.",
-  category: 'FACTION',
-  subcategory: 'ABILITY',
   context: 'SPACE',
   params: {
     isEnabled: true,

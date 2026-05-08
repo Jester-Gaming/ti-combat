@@ -5,8 +5,6 @@ export const nonEuclideanShielding: Ability = {
   name: 'Non-Euclidean Shielding',
   description:
     'When 1 of your units uses Sustain Damage, cancel 2 hits instead of 1.',
-  category: 'FACTION',
-  subcategory: 'TECHNOLOGY',
   params: {
     isEnabled: false,
     uses: Infinity,

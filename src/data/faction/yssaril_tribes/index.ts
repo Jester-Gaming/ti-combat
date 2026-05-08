@@ -1,5 +1,5 @@
 import yssarilTribesIcon from '@/assets/faction/yssaril_tribes.svg?raw'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
 import { ssruu } from './ssruu'

@@ -1,5 +1,5 @@
 import clanOfSaarIcon from '@/assets/faction/clan_of_saar.svg?raw'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
 export const clan_of_saar: Faction = {

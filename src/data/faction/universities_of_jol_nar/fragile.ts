@@ -14,8 +14,6 @@ export const fragile: Ability<Params> = {
   key: 'FRAGILE',
   name: 'Fragile',
   description: "Apply -1 to the result of each of your unit's combat rolls.",
-  category: 'FACTION',
-  subcategory: 'ABILITY',
   paramsSchema: z.object({
     excludeUnits: z.array(z.string()),
   }),

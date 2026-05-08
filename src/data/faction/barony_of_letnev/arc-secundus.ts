@@ -5,8 +5,6 @@ export const arcSecundus: Ability = {
   name: 'Arc Secundus',
   description:
     "Other players' units in this system lose Planetary Shield. At the start of each space combat round, repair this ship.",
-  category: 'FACTION',
-  subcategory: 'FLAGSHIP',
   params: {
     isEnabled: true,
     uses: Infinity,

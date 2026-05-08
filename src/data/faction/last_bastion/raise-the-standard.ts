@@ -19,7 +19,6 @@ export const raiseTheStandard: Ability<Params> = {
   description:
     'At the end of a combat: Galvanize 1 of your units that participated. Then, return this card to the Last Bastion player.',
   icon: lastBastionIcon,
-  category: 'PROMISSORY',
   paramsSchema: z.object({
     spaceUnitPriority: z.array(z.string()),
     groundUnitPriority: z.array(z.string()),

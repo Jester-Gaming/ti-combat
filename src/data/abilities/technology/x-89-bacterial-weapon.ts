@@ -5,7 +5,6 @@ export const x89BacterialWeapon: Ability = {
   name: 'X-89 Bacterial Weapon',
   description:
     "Double the hits produced by your units' Bombardment and ground combat rolls. Exhaust each planet you use Bombardment against.",
-  category: 'TECHNOLOGY',
   context: 'GROUND',
   params: {
     isEnabled: false,

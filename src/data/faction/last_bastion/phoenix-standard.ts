@@ -19,8 +19,6 @@ export const phoenixStandard: Ability<Params> = {
   description:
     'At the end of combat, you may galvanize 1 of your units that participated.',
   icon: lastBastionIcon,
-  category: 'FACTION',
-  subcategory: 'ABILITY',
   paramsSchema: z.object({
     spaceUnitPriority: z.array(z.string()),
     groundUnitPriority: z.array(z.string()),

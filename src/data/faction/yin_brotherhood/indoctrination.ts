@@ -13,8 +13,6 @@ export const indoctrination: Ability = {
   name: 'Indoctrination',
   description:
     "At the start of a ground combat, you may spend 2 influence to replace 1 of your opponent's participating infantry with 1 infantry from your reinforcements.",
-  category: 'FACTION',
-  subcategory: 'ABILITY',
   context: 'GROUND',
   params: {
     isEnabled: false,

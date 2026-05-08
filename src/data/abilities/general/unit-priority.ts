@@ -21,7 +21,6 @@ declare global {
 export const unitPriority: Ability<Params> = {
   key: 'UNIT_PRIORITY',
   name: 'Assign Hits Order',
-  category: 'GENERAL',
   paramsSchema: z.object({
     spaceUnitPriority: z.array(z.string()),
     groundUnitPriority: z.array(z.string()),

@@ -5,7 +5,6 @@ export const conventionsOfWar: Ability = {
   name: 'Conventions of War',
   description:
     'Players cannot use Bombardment against units that are on cultural planets.',
-  category: 'AGENDA',
   context: 'GROUND',
   params: {
     isEnabled: false,

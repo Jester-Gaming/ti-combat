@@ -12,7 +12,6 @@ export const directHit: Ability<Params> = {
   name: 'Direct Hit',
   description:
     "After another player's ship uses Sustain Damage to cancel a hit produced by your units or abilities: Destroy that ship.",
-  category: 'ACTION_CARD',
   context: 'SPACE',
   paramsSchema: z.object({ targets: z.array(z.string()) }),
   params: {

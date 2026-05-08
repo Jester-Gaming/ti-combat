@@ -149,8 +149,8 @@ export function buildCombatState(config: CombatStateConfig): CombatState {
     defenderSide,
     config.mode,
     {
-      attacker: sideAbilities.attacker.abilities,
-      defender: sideAbilities.defender.abilities,
+      attacker: sideAbilities.attacker.registered,
+      defender: sideAbilities.defender.registered,
     },
     {
       attacker: sideAbilities.attacker.unitAbilityKeys,

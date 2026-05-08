@@ -7,6 +7,7 @@ import {
   type CombatStateData,
   extractDefaults,
   getOpponentSide,
+  type RegisteredAbility,
   type SideAbilitiesConfig,
 } from '@/combat'
 import { UNIT_LIMITS, UNIT_TYPES } from '@/constants/units'
@@ -40,6 +41,21 @@ import {
 } from './serialization'
 import type { SimulationInput } from './types'
 
+// `RegisteredAbility[]` may contain the same ability under multiple slots
+// (e.g., own faction's agents appear under both AGENT and FACTION_AGENT for
+// panel rendering). The flat `_sideAbilities` list feeds engine reconciliation
+// and must hold each ability once.
+function flattenUnique(regs: readonly RegisteredAbility[]): Ability[] {
+  const seen = new Set<string>()
+  const out: Ability[] = []
+  for (const r of regs) {
+    if (seen.has(r.ability.key)) continue
+    seen.add(r.ability.key)
+    out.push(r.ability)
+  }
+  return out
+}
+
 function createDefaultUnitSelections(): Record<UnitBaseType, UnitSelection> {
   return UNIT_TYPES.reduce(
     (acc, unitType) => {
@@ -63,6 +79,7 @@ export class CombatSetup {
   private _combatMode: CombatMode
   private _abilities: Record<CombatSide, SideAbilitiesConfig>
   private _sideAbilities: Record<CombatSide, Ability[]>
+  private _sideRegistered!: Record<CombatSide, RegisteredAbility[]>
   private _unitAbilityKeys: Record<CombatSide, ReadonlySet<string>>
   private _factionOwnedKeys: Record<CombatSide, ReadonlySet<string>>
   private _stateData: CombatStateData
@@ -80,17 +97,23 @@ export class CombatSetup {
     this._combatMode = 'SPACE'
     this._abilities = { attacker: {}, defender: {} }
 
+    const attackerRegistered = getAvailableAbilities(
+      'attacker',
+      defaultFaction,
+      this.getUpgradedTypes('attacker'),
+    )
+    const defenderRegistered = getAvailableAbilities(
+      'defender',
+      defaultFaction,
+      this.getUpgradedTypes('defender'),
+    )
+    this._sideRegistered = {
+      attacker: attackerRegistered,
+      defender: defenderRegistered,
+    }
     this._sideAbilities = {
-      attacker: getAvailableAbilities(
-        'attacker',
-        defaultFaction,
-        this.getUpgradedTypes('attacker'),
-      ),
-      defender: getAvailableAbilities(
-        'defender',
-        defaultFaction,
-        this.getUpgradedTypes('defender'),
-      ),
+      attacker: flattenUnique(attackerRegistered),
+      defender: flattenUnique(defenderRegistered),
     }
     this._unitAbilityKeys = {
       attacker: getUnitDefinitionAbilityKeys(defaultFaction),
@@ -137,13 +160,13 @@ export class CombatSetup {
 
     const wrapState = CombatState.fromDataStandalone(
       this._stateData,
-      this._sideAbilities,
+      this._sideRegistered,
       this._unitAbilityKeys,
       this._factionOwnedKeys,
     )
     this._engine = AbilitiesEngine.wrap(
       wrapState,
-      this._sideAbilities,
+      this._sideRegistered,
       this._unitAbilityKeys,
       this._factionOwnedKeys,
     )
@@ -179,8 +202,8 @@ export class CombatSetup {
     return this._stateData
   }
 
-  getAvailableAbilities(side: CombatSide): Ability[] {
-    return this._sideAbilities[side]
+  getAvailableAbilities(side: CombatSide): RegisteredAbility[] {
+    return this._sideRegistered[side]
   }
 
   getReadContext(side: CombatSide): AbilityReadContext {
@@ -197,11 +220,13 @@ export class CombatSetup {
     }
 
     // Reload abilities for the changed side
-    this._sideAbilities[side] = getAvailableAbilities(
+    const reg = getAvailableAbilities(
       side,
       faction,
       this.getUpgradedTypes(side),
     )
+    this._sideRegistered[side] = reg
+    this._sideAbilities[side] = flattenUnique(reg)
     this._unitAbilityKeys[side] = getUnitDefinitionAbilityKeys(faction)
     this._factionOwnedKeys[side] = getFactionOwnedAbilityKeys(faction)
 
@@ -305,11 +330,13 @@ export class CombatSetup {
     this.rebuildUnits(side, faction, newSelections)
 
     // Upgrades may have changed — recalculate available abilities
-    this._sideAbilities[side] = getAvailableAbilities(
+    const regReset = getAvailableAbilities(
       side,
       faction,
       this.getUpgradedTypes(side),
     )
+    this._sideRegistered[side] = regReset
+    this._sideAbilities[side] = flattenUnique(regReset)
     reconcileAbilitiesConfig(
       this._abilities,
       this._sideAbilities,
@@ -354,6 +381,10 @@ export class CombatSetup {
     ;[this._sideAbilities.attacker, this._sideAbilities.defender] = [
       this._sideAbilities.defender,
       this._sideAbilities.attacker,
+    ]
+    ;[this._sideRegistered.attacker, this._sideRegistered.defender] = [
+      this._sideRegistered.defender,
+      this._sideRegistered.attacker,
     ]
 
     // Swap abilities config
@@ -458,17 +489,23 @@ export class CombatSetup {
     }
 
     // Rebuild abilities for new factions
+    const attackerReg = getAvailableAbilities(
+      'attacker',
+      af,
+      this.getUpgradedTypes('attacker'),
+    )
+    const defenderReg = getAvailableAbilities(
+      'defender',
+      df,
+      this.getUpgradedTypes('defender'),
+    )
+    this._sideRegistered = {
+      attacker: attackerReg,
+      defender: defenderReg,
+    }
     this._sideAbilities = {
-      attacker: getAvailableAbilities(
-        'attacker',
-        af,
-        this.getUpgradedTypes('attacker'),
-      ),
-      defender: getAvailableAbilities(
-        'defender',
-        df,
-        this.getUpgradedTypes('defender'),
-      ),
+      attacker: flattenUnique(attackerReg),
+      defender: flattenUnique(defenderReg),
     }
     this._unitAbilityKeys = {
       attacker: getUnitDefinitionAbilityKeys(af),
@@ -577,11 +614,13 @@ export class CombatSetup {
     this.rebuildUnits(side, faction, newSelections)
 
     if (upgradeChanged) {
-      this._sideAbilities[side] = getAvailableAbilities(
+      const regUpd = getAvailableAbilities(
         side,
         faction,
         this.getUpgradedTypes(side),
       )
+      this._sideRegistered[side] = regUpd
+      this._sideAbilities[side] = flattenUnique(regUpd)
       reconcileAbilitiesConfig(
         this._abilities,
         this._sideAbilities,
@@ -690,7 +729,7 @@ export class CombatSetup {
     const wrapState = CombatState.fromData(this._stateData, this._engine)
     this._engine = AbilitiesEngine.wrap(
       wrapState,
-      this._sideAbilities,
+      this._sideRegistered,
       this._unitAbilityKeys,
       this._factionOwnedKeys,
     )

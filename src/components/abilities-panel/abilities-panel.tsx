@@ -1,71 +1,43 @@
 import { filter, groupBy, pipe } from 'remeda'
 
-import type { Ability, AbilityReadContext, CombatMode } from '@/combat'
+import type {
+  AbilityReadContext,
+  AbilitySlot,
+  CombatMode,
+  RegisteredAbility,
+} from '@/combat'
+import { SLOT_DISPLAY, SLOT_ORDER } from '@/combat'
 
 import styles from './abilities-panel.module.css'
 import { AbilityConfig } from './components/ability-config'
 
 interface AbilitiesPanelProps {
-  abilities: Ability[]
+  abilities: RegisteredAbility[]
   readContext: AbilityReadContext
   combatMode: CombatMode
   params: Record<string, Record<string, unknown>>
   onParamsChange: (abilityName: string, params: Record<string, unknown>) => void
 }
 
-function hasUI(ability: Ability): boolean {
-  return !!ability.headerUI || (ability.uiConfig?.length ?? 0) > 0
+function hasUI(reg: RegisteredAbility): boolean {
+  const a = reg.ability
+  return !!a.headerUI || (a.uiConfig?.length ?? 0) > 0
 }
 
-const CATEGORY_ORDER = [
-  'GENERAL',
-  'TECHNOLOGY',
-  'FACTION',
-  'ACTION_CARD',
-  'PROMISSORY',
-  'AGENT',
-  'COMMANDER',
-  'AGENDA',
-  'RELIC',
-  'ADVANCED',
-  'OTHER',
-  'ENVIRONMENT',
-]
-
-const SUBCATEGORY_ORDER = [
-  'ABILITY',
-  'TECHNOLOGY',
-  'FLAGSHIP',
-  'HERO',
-  'MECH',
-  'BREAKTHROUGH',
-  'UNIT',
-]
-
-function compareCategories(a: string, b: string): number {
-  const orderA = CATEGORY_ORDER.includes(a)
-    ? CATEGORY_ORDER.indexOf(a)
-    : Infinity
-  const orderB = CATEGORY_ORDER.includes(b)
-    ? CATEGORY_ORDER.indexOf(b)
-    : Infinity
-  if (orderA !== orderB) return orderA - orderB
-  return a.localeCompare(b)
+function slotIndex(slot: AbilitySlot): number {
+  const i = SLOT_ORDER.indexOf(slot)
+  return i === -1 ? Infinity : i
 }
 
-function compareSubcategories(a: string, b: string): number {
-  const orderA = SUBCATEGORY_ORDER.includes(a)
-    ? SUBCATEGORY_ORDER.indexOf(a)
-    : Infinity
-  const orderB = SUBCATEGORY_ORDER.includes(b)
-    ? SUBCATEGORY_ORDER.indexOf(b)
-    : Infinity
-  if (orderA !== orderB) return orderA - orderB
-  return a.localeCompare(b)
-}
+// Slots where the faction icon would just repeat what the FACTION header
+// already says (own faction's agents/commanders surfaced under FACTION).
+const HIDE_ICON_SLOTS: ReadonlySet<AbilitySlot> = new Set<AbilitySlot>([
+  'FACTION_AGENT',
+  'FACTION_COMMANDER',
+])
 
 function renderAbilityConfig(
-  ability: Ability,
+  reg: RegisteredAbility,
   readContext: AbilityReadContext,
   combatMode: CombatMode,
   params: Record<string, Record<string, unknown>>,
@@ -74,6 +46,7 @@ function renderAbilityConfig(
     params: Record<string, unknown>,
   ) => void,
 ): React.ReactElement {
+  const ability = reg.ability
   return (
     <AbilityConfig
       key={ability.key}
@@ -82,6 +55,7 @@ function renderAbilityConfig(
       combatMode={combatMode}
       params={params[ability.key] ?? {}}
       onParamsChange={newParams => onParamsChange(ability.key, newParams)}
+      hideIcon={HIDE_ICON_SLOTS.has(reg.slot)}
     />
   )
 }
@@ -93,37 +67,41 @@ export function AbilitiesPanel({
   params,
   onParamsChange,
 }: AbilitiesPanelProps): React.ReactElement {
-  const groupedAbilities = pipe(
-    abilities,
-    filter(hasUI),
-    groupBy(a => a.category),
-  )
+  const visible = pipe(abilities, filter(hasUI))
 
-  const categories = Object.keys(groupedAbilities).sort(compareCategories)
+  const byCategory = groupBy(visible, reg => SLOT_DISPLAY[reg.slot].category)
+
+  const orderedCategories = Object.keys(byCategory).sort((a, b) => {
+    const minA = Math.min(...byCategory[a]!.map(r => slotIndex(r.slot)))
+    const minB = Math.min(...byCategory[b]!.map(r => slotIndex(r.slot)))
+    return minA - minB
+  })
 
   return (
     <div className={styles.container}>
-      {categories.map(category => {
-        const categoryAbilities = groupedAbilities[category] ?? []
+      {orderedCategories.map(category => {
+        const entries = byCategory[category] ?? []
 
         if (category === 'FACTION') {
-          const bySubcategory = groupBy(
-            categoryAbilities,
-            a => a.subcategory ?? 'ABILITY',
+          // Group by slot (not subcategory string) so SLOT_ORDER governs the
+          // sub-headers — keeps a single source of truth for ordering.
+          const bySlot = groupBy(entries, reg => reg.slot)
+          const slots = (Object.keys(bySlot) as AbilitySlot[]).sort(
+            (a, b) => slotIndex(a) - slotIndex(b),
           )
-          const subcategories =
-            Object.keys(bySubcategory).sort(compareSubcategories)
 
           return (
             <div key={category}>
               <h6 className={styles.categoryLabel}>{category}</h6>
-              {subcategories.map(sub => (
-                <div key={sub}>
-                  <div className={styles.subcategoryLabel}>{sub}</div>
+              {slots.map(slot => (
+                <div key={slot}>
+                  <div className={styles.subcategoryLabel}>
+                    {SLOT_DISPLAY[slot].subcategory ?? 'ABILITY'}
+                  </div>
                   <div className={styles.abilitiesList}>
-                    {bySubcategory[sub]?.map(ability =>
+                    {bySlot[slot]?.map(reg =>
                       renderAbilityConfig(
-                        ability,
+                        reg,
                         readContext,
                         combatMode,
                         params,
@@ -141,9 +119,9 @@ export function AbilitiesPanel({
           <div key={category}>
             <h6 className={styles.categoryLabel}>{category}</h6>
             <div className={styles.abilitiesList}>
-              {categoryAbilities.map(ability =>
+              {entries.map(reg =>
                 renderAbilityConfig(
-                  ability,
+                  reg,
                   readContext,
                   combatMode,
                   params,

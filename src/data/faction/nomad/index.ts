@@ -1,5 +1,5 @@
 import nomadIcon from '@/assets/faction/nomad.svg?raw'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
 import { cavalry } from './cavalry'

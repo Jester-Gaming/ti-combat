@@ -18,7 +18,6 @@ export const revealPrototype: Ability<Params> = {
   name: 'Reveal Prototype',
   description:
     'At the start of a combat: Spend 4 resources to research a unit upgrade technology of the same type as 1 of your units that is participating in this combat.',
-  category: 'ACTION_CARD',
   paramsSchema: z.object({
     spacePriority: z.array(z.string()),
     groundPriority: z.array(z.string()),

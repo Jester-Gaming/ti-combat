@@ -24,7 +24,6 @@ declare global {
 export const sustainDamage: Ability<Params> = {
   key: 'SUSTAIN_DAMAGE',
   name: 'Sustain Damage',
-  category: 'GENERAL',
   paramsSchema: z.object({
     spacePriority: z.array(z.string()),
     groundPriority: z.array(z.string()),

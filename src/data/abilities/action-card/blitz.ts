@@ -5,7 +5,6 @@ export const blitz: Ability = {
   name: 'Blitz',
   description:
     'At the start of an invasion: Each of your non-fighter ships in the active system that do not have Bombardment gain Bombardment 6 until the end of the invasion.',
-  category: 'ACTION_CARD',
   context: 'GROUND',
   params: {
     isEnabled: false,

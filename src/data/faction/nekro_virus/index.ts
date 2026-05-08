@@ -5,7 +5,8 @@ import type {
   ParamChange,
   SettingsParams,
 } from '@/combat/abilities-engine/types'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { SHARED_UNIT_ABILITY_KEYS } from '@/data/abilities/general'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction, UnitBaseType, UnitDefinition } from '@/types'
 import { getEffectiveStats } from '@/utils/get-simulation-units'
 
@@ -20,7 +21,7 @@ import { theAlastor } from './the-alastor'
 
 const flagshipAbilities = Object.values(otherFactions).flatMap(faction =>
   (faction.units.FLAGSHIP?.BASE?.ABILITIES ?? [])
-    .filter(a => a.subcategory === 'FLAGSHIP')
+    .filter(a => !SHARED_UNIT_ABILITY_KEYS.has(a.key))
     .map(ability => ({
       ...ability,
       key: `NEKRO_FLAGSHIP_${ability.key}`,
@@ -39,21 +40,19 @@ const flagshipAbilities = Object.values(otherFactions).flatMap(faction =>
 // ---------------------------------------------------------------------------
 
 const technologyAbilities = Object.values(otherFactions).flatMap(faction =>
-  (faction.abilities?.technology ?? [])
-    .filter(a => a.subcategory === 'TECHNOLOGY')
-    .map(ability => ({
-      ...ability,
-      // External techs keep both the original and Nekro's copy visible.
-      // Rename the copy so the two entries don't dedup, and shallow-clone
-      // the invoke entries so each copy has its own references — the engine
-      // tracks "already invoked" by invoke object identity.
-      key: ability.allowExternal ? `NEKRO_${ability.key}` : ability.key,
-      invoke: ability.allowExternal
-        ? ability.invoke.map(inv => ({ ...inv }))
-        : ability.invoke,
-      name: ability.name,
-      icon: faction.icon,
-    })),
+  (faction.abilities?.technology ?? []).map(ability => ({
+    ...ability,
+    // External techs keep both the original and Nekro's copy visible.
+    // Rename the copy so the two entries don't dedup, and shallow-clone
+    // the invoke entries so each copy has its own references — the engine
+    // tracks "already invoked" by invoke object identity.
+    key: ability.allowExternal ? `NEKRO_${ability.key}` : ability.key,
+    invoke: ability.allowExternal
+      ? ability.invoke.map(inv => ({ ...inv }))
+      : ability.invoke,
+    name: ability.name,
+    icon: faction.icon,
+  })),
 )
 
 // ---------------------------------------------------------------------------
@@ -108,8 +107,6 @@ function createFactionUnitAbility(
     key,
     name: displayName,
     icon: faction.icon,
-    category: 'FACTION',
-    subcategory: 'UNIT',
     exclusiveGroup: unitType,
     description: mainAbility?.description,
     params: {
@@ -157,9 +154,22 @@ const unitAbilities = Object.entries(otherFactions)
       ),
   )
 
+const taggedFlagships = flagshipAbilities.map(a => ({
+  ability: a,
+  subcategory: 'FLAGSHIP' as const,
+}))
+const taggedTechnologies = technologyAbilities.map(a => ({
+  ability: a,
+  subcategory: 'TECHNOLOGY' as const,
+}))
+const taggedUnits = unitAbilities.map(a => ({
+  ability: a,
+  subcategory: 'UNIT' as const,
+}))
+
 const technologicalSingularity = createTechnologicalSingularity(
-  [...flagshipAbilities, ...technologyAbilities, ...unitAbilities],
-  [...technologyAbilities, ...unitAbilities],
+  [...taggedFlagships, ...taggedTechnologies, ...taggedUnits],
+  [...taggedTechnologies, ...taggedUnits],
   mordred,
 )
 

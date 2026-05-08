@@ -1,5 +1,5 @@
 import universitiesOfJolNarIcon from '@/assets/faction/universities_of_jol_nar.svg?raw'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
 import { fragile } from './fragile'

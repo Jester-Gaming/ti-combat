@@ -13,7 +13,6 @@ export const trrakanAunZulok: Ability<Params> = {
   description:
     'When 1 or more of your units make a roll for a unit ability: You may choose 1 of those units to roll 1 additional die.',
   icon: argentFlightIcon,
-  category: 'COMMANDER',
   headerUI: 'isEnabled',
   paramsSchema: z.object({ phases: z.array(z.string()) }),
   params: {

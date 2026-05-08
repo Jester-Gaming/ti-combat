@@ -6,8 +6,6 @@ export const harrow: Ability = {
   name: 'Harrow',
   description:
     'At the end of each round of ground combat, your ships in the active system may use their Bombardment abilities against your opponent’s ground forces on the planet.',
-  category: 'FACTION',
-  subcategory: 'ABILITY',
   context: 'GROUND',
   side: 'attacker',
   params: {

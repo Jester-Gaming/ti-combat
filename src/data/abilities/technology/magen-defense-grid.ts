@@ -12,7 +12,6 @@ export const magenDefenseGrid: Ability<Params> = {
   name: 'Magen Defense Grid',
   description:
     "At the start of ground combat on a planet that contains 1 or more of your structures, produce 1 hit and assign it to 1 of your opponent's ground forces.",
-  category: 'TECHNOLOGY',
   context: 'GROUND',
   side: 'defender',
   paramsSchema: z.object({

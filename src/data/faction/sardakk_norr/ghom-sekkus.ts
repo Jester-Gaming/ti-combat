@@ -20,7 +20,6 @@ export const ghomSekkus: Ability<Params> = {
   description:
     'You can commit up to 1 ground force from each planet in the active system and each planet in adjacent systems that do not contain 1 of your command tokens.',
   icon: sardakkNorrIcon,
-  category: 'COMMANDER',
   context: 'GROUND',
   side: 'attacker',
   paramsSchema: z.object({ units: z.record(z.string(), z.number()) }),

@@ -5,8 +5,6 @@ export const vanHauge: Ability = {
   key: 'VAN_HAUGE',
   name: 'Van Hauge',
   description: 'When this ship is destroyed, destroy all ships in this system.',
-  category: 'FACTION',
-  subcategory: 'FLAGSHIP',
   context: 'SPACE',
   params: {
     isEnabled: true,

@@ -5,8 +5,6 @@ export const supercharge: Ability = {
   name: 'Supercharge',
   description:
     "At the start of a combat round, you may exhaust this card to apply +1 to the result of each of your unit's combat rolls during this combat round.",
-  category: 'FACTION',
-  subcategory: 'TECHNOLOGY',
   params: {
     isEnabled: false,
     uses: 1,

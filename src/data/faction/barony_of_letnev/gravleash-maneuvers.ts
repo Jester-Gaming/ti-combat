@@ -12,8 +12,6 @@ export const gravleashManeuvers: Ability<Params> = {
   name: 'Gravleash Maneuvers',
   description:
     "Before you roll dice during space combat, apply +X to the results of 1 of your ship's rolls, where X is the number of ship types you have in the combat.",
-  category: 'FACTION',
-  subcategory: 'BREAKTHROUGH',
   context: 'SPACE',
   paramsSchema: z.object({
     shipPriority: z.array(z.string()),

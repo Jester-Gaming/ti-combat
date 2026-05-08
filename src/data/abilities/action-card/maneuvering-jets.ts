@@ -5,7 +5,6 @@ export const maneuveringJets: Ability = {
   name: 'Maneuvering Jets',
   description:
     "Before you assign hits produced by another player's Space Cannon roll: Cancel 1 hit.",
-  category: 'ACTION_CARD',
   params: {
     isEnabled: true,
     uses: 0,

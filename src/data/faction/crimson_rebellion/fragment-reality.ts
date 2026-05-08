@@ -17,8 +17,6 @@ export const fragmentReality: Ability<Params> = {
   description:
     'At the start of a space combat, you may purge this card to place all ships from this card into the active system.',
   icon: crimsonRebellionIcon,
-  category: 'FACTION',
-  subcategory: 'HERO',
   context: 'SPACE',
   paramsSchema: z.object({
     ships: z.record(z.string(), z.number()),

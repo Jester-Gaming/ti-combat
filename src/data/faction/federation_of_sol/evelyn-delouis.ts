@@ -16,7 +16,6 @@ export const evelynDelouis: Ability<Params> = {
   description:
     'At the start of a ground combat round: You may exhaust this card to choose 1 ground force in the active system; that ground force rolls 1 additional die during this combat round.',
   icon: federationOfSolIcon,
-  category: 'AGENT',
   context: 'GROUND',
   paramsSchema: z.object({ unitType: z.string() }),
   params: {

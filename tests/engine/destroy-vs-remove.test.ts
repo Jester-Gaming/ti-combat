@@ -14,7 +14,6 @@ let whenDestroyFired = false
 const destroyOpponentCruiser: Ability = {
   key: 'TEST_DESTROY_CRUISER',
   name: 'Test Destroy Cruiser',
-  category: 'TEST',
   params: { isEnabled: false, uses: 1 },
   invoke: [
     {
@@ -30,7 +29,6 @@ const destroyOpponentCruiser: Ability = {
 const removeOpponentCruiser: Ability = {
   key: 'TEST_REMOVE_CRUISER',
   name: 'Test Remove Cruiser',
-  category: 'TEST',
   params: { isEnabled: false, uses: 1 },
   invoke: [
     {
@@ -46,7 +44,6 @@ const removeOpponentCruiser: Ability = {
 const reactToDestroy: Ability = {
   key: 'TEST_REACT_DESTROY',
   name: 'Test React to Destroy',
-  category: 'TEST',
   params: { isEnabled: false, uses: Infinity },
   invoke: [
     {

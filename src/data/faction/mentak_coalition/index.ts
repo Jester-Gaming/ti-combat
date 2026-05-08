@@ -1,5 +1,5 @@
 import mentakCoalitionIcon from '@/assets/faction/mentak_coalition.svg?raw'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
 import { ambush } from './ambush'

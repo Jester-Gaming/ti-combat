@@ -1,5 +1,5 @@
 import type { UnitCategory } from '@/constants/units'
-import { enforceFleetPool } from '@/data/abilities/general/fleet-pool'
+import { enforceFleetPool } from '@/data/abilities/advanced/fleet-pool'
 import type {
   CombatSide,
   DiceGroup,
@@ -47,6 +47,7 @@ import type {
   AbilityTiming,
   DicePool,
   OwnOpponentContext,
+  RuntimeAbilityList,
   SidedDiceData,
 } from '../types'
 
@@ -751,11 +752,11 @@ export class AbilityContext {
     return this._api
   }
 
-  get abilities(): OwnOpponentContext<readonly Ability[]> {
+  get abilities(): OwnOpponentContext<RuntimeAbilityList> {
     const opponent = getOpponentSide(this._side)
     return {
-      own: this._abilitiesParams.getAbilities(this._side),
-      opponent: this._abilitiesParams.getAbilities(opponent),
+      own: this._abilitiesParams.runtimeAbilityList(this._side),
+      opponent: this._abilitiesParams.runtimeAbilityList(opponent),
     }
   }
 

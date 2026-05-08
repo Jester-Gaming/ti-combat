@@ -18,7 +18,6 @@ import { buildCombatState } from '@/hooks/combat-setup/build-combat-state'
 const rollDiceAbility: Ability = {
   key: 'TEST_ROLL_DICE',
   name: 'Test Roll Dice',
-  category: 'TEST',
   params: { isEnabled: false, uses: 1 },
   invoke: [
     {
@@ -39,7 +38,6 @@ const rollDiceAbility: Ability = {
 const rollDiceTwoGroupsAbility: Ability = {
   key: 'TEST_ROLL_DICE_TWO_GROUPS',
   name: 'Test Roll Dice Two Groups',
-  category: 'TEST',
   params: { isEnabled: false, uses: 1 },
   invoke: [
     {
@@ -68,7 +66,6 @@ const rollDiceTwoGroupsAbility: Ability = {
 const chainRollDiceAbility: Ability = {
   key: 'TEST_CHAIN_ROLL_DICE',
   name: 'Test Chain Roll Dice',
-  category: 'TEST',
   params: { isEnabled: false, uses: Infinity },
   invoke: [
     {
@@ -90,7 +87,6 @@ let zeroDiceCallbackCalls = 0
 const zeroDiceFastPathAbility: Ability = {
   key: 'TEST_ZERO_DICE',
   name: 'Test Zero Dice',
-  category: 'TEST',
   params: { isEnabled: false, uses: 1 },
   invoke: [
     {
@@ -109,7 +105,6 @@ const zeroDiceFastPathAbility: Ability = {
 const deterministicHitAbility: Ability = {
   key: 'TEST_DETERMINISTIC_HIT',
   name: 'Test Deterministic Hit',
-  category: 'TEST',
   params: { isEnabled: false, uses: 1 },
   invoke: [
     {

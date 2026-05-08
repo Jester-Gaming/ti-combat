@@ -20,7 +20,6 @@ declare global {
 export const settings: Ability<SettingsParams> = {
   key: 'SETTINGS',
   name: 'Settings',
-  category: 'GENERAL',
   params: {
     isEnabled: true,
     uses: Infinity,

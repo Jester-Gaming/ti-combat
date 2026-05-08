@@ -5,7 +5,6 @@ export const waylay: Ability = {
   name: 'Waylay',
   description:
     'Before you roll dice for Anti-Fighter Barrage: Hits from this roll are produced against all ships (not just fighters).',
-  category: 'ACTION_CARD',
   context: 'SPACE',
   params: {
     isEnabled: false,

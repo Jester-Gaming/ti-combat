@@ -14,8 +14,6 @@ export const linkshipI: Ability<Params> = {
   name: 'Linkship',
   description:
     'This unit can use the Space Cannon ability of one of your structures in its space area; each structure can only be triggered once.',
-  category: 'FACTION',
-  subcategory: 'UNIT',
   context: 'SPACE',
   paramsSchema: z.object({ structures: z.record(z.string(), z.number()) }),
   params: {
@@ -64,8 +62,6 @@ export const linkshipII: Ability<Params> = {
   name: 'Linkship',
   description:
     'This unit can use the Space Cannon ability of one of your structures in its space area; each linkship can trigger the same structure.',
-  category: 'FACTION',
-  subcategory: 'UNIT',
   context: 'SPACE',
   paramsSchema: z.object({ structures: z.record(z.string(), z.number()) }),
   params: {

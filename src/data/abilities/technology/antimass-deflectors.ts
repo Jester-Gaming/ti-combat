@@ -5,7 +5,6 @@ export const antimassDeflectors: Ability = {
   name: 'Antimass Deflectors',
   description:
     "When other players' units use Space Cannon against your units, apply -1 to the result of each die roll.",
-  category: 'TECHNOLOGY',
   params: {
     isEnabled: false,
     uses: Infinity,

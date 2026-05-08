@@ -11,7 +11,6 @@ export const skilledRetreat: Ability<Params> = {
   name: 'Skilled Retreat',
   description:
     'At the start of a combat round: Move all of your ships from the active system into an adjacent system; the space combat ends in a draw.',
-  category: 'ACTION_CARD',
   context: 'SPACE',
   params: {
     isEnabled: false,

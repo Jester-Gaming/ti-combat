@@ -20,7 +20,6 @@ export const dameBriar: Ability<Params> = {
   description:
     "When a player's unit is destroyed: You may exhaust this card to galvanize another of that player's units in the destroyed unit's system.",
   icon: lastBastionIcon,
-  category: 'AGENT',
   paramsSchema: z.object({
     spaceUnitType: z.string(),
     groundUnitType: z.string(),

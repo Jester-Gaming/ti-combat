@@ -7,8 +7,6 @@ export const quietus: Ability = {
   name: 'Quietus',
   description:
     "While this unit is in a system that contains an active breach, other players' units in systems with active breaches lose all of their unit abilities.",
-  category: 'FACTION',
-  subcategory: 'FLAGSHIP',
   allowExternal: true,
   sync: true,
   params: {

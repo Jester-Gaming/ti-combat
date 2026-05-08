@@ -18,7 +18,6 @@ import { combatTest } from '../utils/combat-test'
 const disableSpaceCannon: Ability = {
   key: 'TEST_DISABLE_SC',
   name: 'Test Disable Space Cannon',
-  category: 'TEST',
   params: { isEnabled: false, uses: Infinity },
   invoke: [
     {
@@ -33,7 +32,6 @@ const disableSpaceCannon: Ability = {
 const addCustomDiceAtSC: Ability = {
   key: 'TEST_CUSTOM_SC_DICE',
   name: 'Test Custom SC Dice',
-  category: 'TEST',
   params: { isEnabled: false, uses: Infinity },
   invoke: [
     {

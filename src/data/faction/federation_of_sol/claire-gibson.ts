@@ -8,7 +8,6 @@ export const claireGibson: Ability = {
   description:
     'At the start of a ground combat on a planet you control: You may place 1 infantry from your reinforcements on that planet.',
   icon: federationOfSolIcon,
-  category: 'COMMANDER',
   context: 'GROUND',
   side: 'defender',
   params: {

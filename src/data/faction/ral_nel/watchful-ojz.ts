@@ -2,7 +2,7 @@ import ralNelIcon from '@/assets/faction/ral_nel.svg?raw'
 import type { Ability } from '@/combat'
 import type { UnitType } from '@/types'
 
-import { retreatUnits } from '../../abilities/general/retreat'
+import { retreatUnits } from '../../abilities/advanced/retreat'
 
 type Params = {
   isEnabled: boolean
@@ -15,7 +15,6 @@ export const watchfulOjz: Ability<Params> = {
   description:
     'When you declare a retreat: Immediately retreat up to 2 of your ships from the active system.',
   icon: ralNelIcon,
-  category: 'COMMANDER',
   context: 'SPACE',
   params: {
     isEnabled: false,

@@ -23,7 +23,6 @@ export const ssruu: Ability<Params> = {
   description:
     "This card has the text ability of each other player's agent, even if that agent is exhausted.",
   icon: yssarilTribesIcon,
-  category: 'AGENT',
   paramsSchema: z.object({ agentKey: z.string() }),
   params: {
     isEnabled: false,

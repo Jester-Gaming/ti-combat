@@ -5,8 +5,6 @@ export const salaiSaiCorian: Ability = {
   name: 'Salai Sai Corian',
   description:
     "When this unit makes a combat roll, it rolls a number of dice equal to the number of your opponent's non-fighter ships in this system.",
-  category: 'FACTION',
-  subcategory: 'FLAGSHIP',
   params: {
     isEnabled: true,
     uses: Infinity,

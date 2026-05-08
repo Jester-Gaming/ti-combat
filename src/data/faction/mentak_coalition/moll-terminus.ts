@@ -5,8 +5,6 @@ export const mollTerminus: Ability = {
   name: 'Moll Terminus',
   description:
     "Other players' ground forces on this planet cannot use Sustain Damage.",
-  category: 'FACTION',
-  subcategory: 'MECH',
   context: 'GROUND',
   params: {
     isEnabled: true,

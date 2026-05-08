@@ -5,8 +5,6 @@ export const quantumManipulator: Ability = {
   name: 'Quantum Manipulator',
   description:
     'While this unit is in a space area during combat, you may use its Sustain Damage ability to cancel a hit that is produced against your ships in this system.',
-  category: 'FACTION',
-  subcategory: 'UNIT',
   context: 'SPACE',
   params: {
     isEnabled: true,

@@ -7,8 +7,6 @@ export const geoform: Ability = {
   name: 'Geoform',
   description:
     'Ready Elysium and attach this card to it. It gains the Space Cannon 5 (x3) ability as if it were a unit.',
-  category: 'FACTION',
-  subcategory: 'HERO',
   allowExternal: true,
   params: {
     isEnabled: false,

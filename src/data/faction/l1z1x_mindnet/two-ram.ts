@@ -8,7 +8,6 @@ export const twoRam: Ability = {
   description:
     'Units that have Planetary Shield do not prevent you from using Bombardment.',
   icon: l1z1xMindnetIcon,
-  category: 'COMMANDER',
   context: 'GROUND',
   side: 'attacker',
   params: {

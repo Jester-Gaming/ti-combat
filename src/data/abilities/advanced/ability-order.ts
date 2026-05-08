@@ -15,7 +15,6 @@ type Params = {
 export const abilityOrder: Ability<Params> = {
   key: 'ABILITY_ORDER',
   name: 'Resolve Order',
-  category: 'GENERAL',
   paramsSchema: z.object({
     startOfCombat: z.array(z.string()),
     beforeDiceRoll: z.array(z.string()),

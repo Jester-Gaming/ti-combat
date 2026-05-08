@@ -1,6 +1,6 @@
 import arborecIcon from '@/assets/faction/arborec.svg?raw'
-import { planetaryShield } from '@/data/abilities/unit/planetary-shield'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { planetaryShield } from '@/data/abilities/general/planetary-shield'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
 export const arborec: Faction = {

@@ -7,7 +7,6 @@ export const entropicScar: Ability = {
   name: 'Entropic Scar',
   description:
     'All unit abilities cannot be used by or against units inside of an entropic scar.',
-  category: 'ENVIRONMENT',
   params: {
     isEnabled: false,
     uses: Infinity,

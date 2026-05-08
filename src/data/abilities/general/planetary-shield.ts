@@ -3,7 +3,6 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 export const planetaryShield: Ability = {
   key: 'PLANETARY_SHIELD',
   name: 'Planetary Shield',
-  category: 'GENERAL',
   params: {
     isEnabled: true,
     uses: Infinity,

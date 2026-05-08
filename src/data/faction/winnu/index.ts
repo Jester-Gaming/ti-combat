@@ -1,5 +1,5 @@
 import winnuIcon from '@/assets/faction/winnu.svg?raw'
-import { sustainDamage } from '@/data/abilities/unit/sustain-damage'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
 import { imperator } from './imperator'

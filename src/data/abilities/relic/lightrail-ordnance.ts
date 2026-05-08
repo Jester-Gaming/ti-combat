@@ -5,7 +5,6 @@ export const lightrailOrdnance: Ability = {
   name: 'Lightrail Ordnance',
   description:
     "Your space docks gain Space Cannon 5 (x2). You may use your space dock's Space Cannon against ships that are adjacent to their systems.",
-  category: 'RELIC',
   params: {
     isEnabled: false,
     uses: Infinity,

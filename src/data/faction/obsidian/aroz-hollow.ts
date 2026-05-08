@@ -8,7 +8,6 @@ export const arozHollow: Ability = {
   description:
     "Apply +1 to the result of each of your units' combat rolls in The Fracture.",
   icon: obsidianIcon,
-  category: 'COMMANDER',
   params: {
     isEnabled: false,
     uses: Infinity,
