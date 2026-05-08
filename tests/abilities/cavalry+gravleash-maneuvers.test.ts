@@ -10,7 +10,7 @@ describe.forEachSide('CAVALRY + GRAVLEASH_MANEUVERS', () => {
         faction: 'BARONY_OF_LETNEV',
         units: { DREADNOUGHT: 1, CRUISER: 2, DESTROYER: 1 },
         abilities: {
-          GRAVLEASH_MANEUVERS: { isEnabled: true, shipPriority: ['CRUISER'] },
+          GRAVLEASH_MANEUVERS: { isEnabled: true, shipPriority: [['CRUISER']] },
           CAVALRY: { isEnabled: true, unitType: 'CRUISER' },
         },
       },
@@ -40,7 +40,7 @@ describe.forEachSide('CAVALRY + GRAVLEASH_MANEUVERS', () => {
         abilities: {
           GRAVLEASH_MANEUVERS: {
             isEnabled: true,
-            shipPriority: ['CRUISER:Cavalry', 'CRUISER'],
+            shipPriority: [['CRUISER:Cavalry'], ['CRUISER']],
           },
           CAVALRY: { isEnabled: true, unitType: 'CRUISER' },
         },

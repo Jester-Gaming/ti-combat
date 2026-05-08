@@ -11,7 +11,7 @@ describe('ASSIMILATOR_Z + TECHNOLOGICAL_SINGULARITY + ARC_SECUNDUS', () => {
         units: { FLAGSHIP: 1, CRUISER: 2 },
         abilities: {
           ASSAULT_CANNON: true,
-          PRE_DAMAGED: { isEnabled: true, damagedUnits: { FLAGSHIP: 1 } },
+          PRE_DAMAGED: { isEnabled: true, damagedUnits: [['FLAGSHIP', 1]] },
           TECHNOLOGICAL_SINGULARITY: {
             enableAbilityKey: 'NEKRO_FLAGSHIP_ARC_SECUNDUS',
           },
@@ -42,7 +42,7 @@ describe('ASSIMILATOR_Z + TECHNOLOGICAL_SINGULARITY + ARC_SECUNDUS', () => {
         faction: 'NEKRO_VIRUS',
         units: { FLAGSHIP: 1, CRUISER: 2 },
         abilities: {
-          PRE_DAMAGED: { isEnabled: true, damagedUnits: { FLAGSHIP: 1 } },
+          PRE_DAMAGED: { isEnabled: true, damagedUnits: [['FLAGSHIP', 1]] },
           TECHNOLOGICAL_SINGULARITY: {
             enableAbilityKey: 'NEKRO_FLAGSHIP_ARC_SECUNDUS',
           },

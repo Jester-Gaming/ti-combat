@@ -12,7 +12,7 @@ describe.forEachSide('RAISE_THE_STANDARD', () => {
         abilities: {
           RAISE_THE_STANDARD: {
             isEnabled: true,
-            spaceUnitPriority: ['CRUISER'],
+            spaceUnitPriority: [['CRUISER']],
           },
           PRE_GALVANIZED: { reinforcementTokens: 7 },
         },
@@ -42,7 +42,7 @@ describe.forEachSide('RAISE_THE_STANDARD', () => {
         abilities: {
           RAISE_THE_STANDARD: {
             isEnabled: true,
-            groundUnitPriority: ['INFANTRY'],
+            groundUnitPriority: [['INFANTRY']],
           },
           PRE_GALVANIZED: { reinforcementTokens: 7 },
         },
@@ -71,7 +71,7 @@ describe.forEachSide('RAISE_THE_STANDARD', () => {
         abilities: {
           RAISE_THE_STANDARD: {
             isEnabled: true,
-            spaceUnitPriority: ['DESTROYER', 'CRUISER'],
+            spaceUnitPriority: [['DESTROYER'], ['CRUISER']],
           },
           PRE_GALVANIZED: { reinforcementTokens: 7 },
         },
@@ -98,7 +98,7 @@ describe.forEachSide('RAISE_THE_STANDARD', () => {
         abilities: {
           RAISE_THE_STANDARD: {
             isEnabled: true,
-            spaceUnitPriority: ['CRUISER'],
+            spaceUnitPriority: [['CRUISER']],
           },
           PRE_GALVANIZED: { reinforcementTokens: 0 },
         },
@@ -126,7 +126,7 @@ describe.forEachSide('RAISE_THE_STANDARD', () => {
         abilities: {
           RAISE_THE_STANDARD: {
             isEnabled: true,
-            spaceUnitPriority: ['CRUISER'],
+            spaceUnitPriority: [['CRUISER']],
           },
           PRE_GALVANIZED: { reinforcementTokens: 7 },
         },
@@ -151,7 +151,7 @@ describe.forEachSide('RAISE_THE_STANDARD', () => {
         abilities: {
           RAISE_THE_STANDARD: {
             isEnabled: true,
-            spaceUnitPriority: ['CRUISER'],
+            spaceUnitPriority: [['CRUISER']],
           },
           PRE_GALVANIZED: { reinforcementTokens: 3 },
         },

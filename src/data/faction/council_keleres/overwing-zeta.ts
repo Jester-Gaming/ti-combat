@@ -1,12 +1,13 @@
 import { z } from 'zod/mini'
 
-import { type Ability } from '@/combat'
+import { type Ability, declareParam } from '@/combat'
 import { UNIT_DISPLAY_NAMES } from '@/constants/units'
-import type { UnitBaseType } from '@/types'
+import type { UnitBaseType, UnitList, UnitType } from '@/types'
+import { UnitListNumberSchema } from '@/types'
 
 type Params = {
   strategy: 'IMMEDIATELY' | 'ENOUGH_FLEET_POOL'
-  ships: Record<string, number>
+  ships: UnitList<number>
 }
 
 export const overwingZeta: Ability<Params> = {
@@ -17,20 +18,26 @@ export const overwingZeta: Ability<Params> = {
   context: 'SPACE',
   paramsSchema: z.object({
     strategy: z.string(),
-    ships: z.record(z.string(), z.number()),
+    ships: UnitListNumberSchema,
   }),
   params: {
     isEnabled: false,
     uses: 1,
     strategy: 'IMMEDIATELY',
-    ships: {},
+    ships: declareParam({
+      default: [] as UnitList<number>,
+      source: 'ships',
+      defaultItemValue: 0,
+      filter: t =>
+        (['FLAGSHIP', 'CRUISER', 'DESTROYER'] as UnitBaseType[]).includes(t),
+    }),
   },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'START_OF_COMBAT_ROUND',
       isCallable: (params, ctx) => {
-        const toPlace = getShipsToPlace(params.ships)
+        const toPlace = getShipsToPlace(ctx.utils.getRecord(params.ships))
         if (Object.keys(toPlace).length === 0) return false
 
         if (params.strategy === 'ENOUGH_FLEET_POOL') {
@@ -64,7 +71,7 @@ export const overwingZeta: Ability<Params> = {
         return true
       },
       call: (ctx, params) => {
-        const toPlace = getShipsToPlace(params.ships)
+        const toPlace = getShipsToPlace(ctx.utils.getRecord(params.ships))
         ctx.api.own.placeUnits(toPlace)
       },
     },
@@ -84,7 +91,8 @@ export const overwingZeta: Ability<Params> = {
       {
         key: 'ships' as const,
         label: 'Ships',
-        type: 'number-list' as const,
+        type: 'unit-list' as const,
+        mode: 'number' as const,
         items: ALLOWED_TYPES.map(type => ({
           label: UNIT_DISPLAY_NAMES[type],
           value: type,
@@ -95,13 +103,13 @@ export const overwingZeta: Ability<Params> = {
   },
 }
 
-function getShipsToPlace(ships: Record<string, number>) {
+function getShipsToPlace(counts: Record<UnitType, number>) {
   const toPlace: Partial<Record<UnitBaseType, number>> = {}
-  const flagship = Math.min(ships.FLAGSHIP ?? 0, 1)
+  const flagship = Math.min(counts.FLAGSHIP ?? 0, 1)
   if (flagship > 0) toPlace.FLAGSHIP = flagship
 
-  const cruisers = ships.CRUISER ?? 0
-  const destroyers = ships.DESTROYER ?? 0
+  const cruisers = counts.CRUISER ?? 0
+  const destroyers = counts.DESTROYER ?? 0
   let remaining = 2
   const clampedCruisers = Math.min(cruisers, remaining)
   remaining -= clampedCruisers

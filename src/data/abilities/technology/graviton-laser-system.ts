@@ -21,11 +21,12 @@ export const gravitonLaserSystem: Ability = {
         const priority =
           ctx.api.opponent.getAbilityConfig('UNIT_PRIORITY')?.scoUnitPriority ??
           []
-        const isFighter = (v: UnitType) => parseVariantId(v).type === 'FIGHTER'
+        const isFighter = ([v]: [string]) =>
+          parseVariantId(v as UnitType).type === 'FIGHTER'
         ctx.api.opponent.updateAbilityConfig('UNIT_PRIORITY', {
           scoUnitPriority: [
-            ...priority.filter(v => !isFighter(v)),
-            ...priority.filter(v => isFighter(v)),
+            ...priority.filter(p => !isFighter(p)),
+            ...priority.filter(p => isFighter(p)),
           ],
         })
       },

@@ -18,7 +18,7 @@ describe.forEachSide('CAPACITY + FLEET_POOL', () => {
           FLEET_POOL: {
             isEnabled: true,
             fleetPool: 8,
-            shipPriority: ['CARRIER', 'FIGHTER'],
+            shipPriority: [['CARRIER'], ['FIGHTER']],
           },
         },
       },
@@ -50,7 +50,7 @@ describe.forEachSide('CAPACITY + FLEET_POOL', () => {
           FLEET_POOL: {
             isEnabled: true,
             fleetPool: 3,
-            shipPriority: ['CRUISER', 'FIGHTER'],
+            shipPriority: [['CRUISER'], ['FIGHTER']],
           },
         },
       },
@@ -81,10 +81,10 @@ describe.forEachSide('CAPACITY + FLEET_POOL', () => {
           FLEET_POOL: {
             isEnabled: true,
             fleetPool: 1,
-            shipPriority: ['CARRIER', 'FIGHTER'],
+            shipPriority: [['CARRIER'], ['FIGHTER']],
           },
           UNIT_PRIORITY: {
-            spaceUnitPriority: ['CARRIER', 'FIGHTER'],
+            spaceUnitPriority: [['CARRIER'], ['FIGHTER']],
           },
         },
       },
@@ -118,7 +118,7 @@ describe.forEachSide('CAPACITY + FLEET_POOL', () => {
           FLEET_POOL: {
             isEnabled: true,
             fleetPool: 3,
-            shipPriority: ['CARRIER', 'FIGHTER'],
+            shipPriority: [['CARRIER'], ['FIGHTER']],
           },
         },
       },

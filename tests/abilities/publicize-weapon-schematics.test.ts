@@ -12,7 +12,7 @@ describe.forEachSide('PUBLICIZE_WEAPON_SCHEMATICS', () => {
         abilities: {
           PUBLICIZE_WEAPON_SCHEMATICS: true,
           SUSTAIN_DAMAGE: {
-            spacePriority: ['WAR_SUN'],
+            spacePriority: [['WAR_SUN', true]],
           },
         },
       },
@@ -42,7 +42,7 @@ describe.forEachSide('PUBLICIZE_WEAPON_SCHEMATICS', () => {
         abilities: {
           PUBLICIZE_WEAPON_SCHEMATICS: true,
           SUSTAIN_DAMAGE: {
-            spacePriority: ['DREADNOUGHT'],
+            spacePriority: [['DREADNOUGHT', true]],
           },
         },
       },

@@ -6,11 +6,12 @@ import {
   declareParam,
   parseVariantId,
 } from '@/combat'
-import type { UnitType } from '@/types'
+import type { UnitList } from '@/types'
+import { UnitListBooleanSchema } from '@/types'
 
 type Params = {
-  sacrificePriority: UnitType[]
-  targetPriority: UnitType[]
+  sacrificePriority: UnitList<boolean>
+  targetPriority: UnitList<boolean>
 }
 
 export const exotrireme: Ability<Params> = {
@@ -20,23 +21,25 @@ export const exotrireme: Ability<Params> = {
     'This unit cannot be destroyed by Direct Hit action cards. After a round of space combat, you may destroy this unit to destroy up to 2 ships in this system.',
   context: 'SPACE',
   paramsSchema: z.object({
-    sacrificePriority: z.array(z.string()),
-    targetPriority: z.array(z.string()),
+    sacrificePriority: UnitListBooleanSchema,
+    targetPriority: UnitListBooleanSchema,
   }),
   params: {
     isEnabled: false,
     uses: Infinity,
     sacrificePriority: declareParam({
-      default: [],
+      default: [] as UnitList<boolean>,
       source: 'ships',
       side: 'own',
+      defaultItemValue: true,
       filter: id => parseVariantId(id).type === 'DREADNOUGHT',
     }),
-    targetPriority: declareParam({
+    targetPriority: declareParam<UnitList<boolean>>({
       default: [],
       source: 'ships',
       side: 'opponent',
       sort: 'desc',
+      defaultItemValue: true,
     }),
   },
   headerUI: 'isEnabled',
@@ -45,8 +48,9 @@ export const exotrireme: Ability<Params> = {
       timing: 'AFTER_COMBAT_ROUND',
       isCallable: (params, ctx) => {
         if (
-          ctx.api.opponent.findUnitByPriority(params.targetPriority) ===
-          undefined
+          ctx.api.opponent.findUnitByPriority(
+            ctx.utils.getFlat(params.targetPriority),
+          ) === undefined
         ) {
           return false
         }
@@ -55,7 +59,7 @@ export const exotrireme: Ability<Params> = {
       call: (ctx, params) => {
         const self = ctx.getUnit()
         const targets = ctx.api.opponent.findUnitByPriority(
-          params.targetPriority,
+          ctx.utils.getFlat(params.targetPriority),
           2,
         )
 
@@ -74,7 +78,9 @@ export const exotrireme: Ability<Params> = {
     {
       key: 'sacrificePriority' as const,
       label: 'Sacrifice Priority',
-      type: 'checkbox-list-sortable' as const,
+      type: 'unit-list' as const,
+      mode: 'checkbox' as const,
+      sortable: true,
       items: ctx.api.own.getUnitVariantsOptions({
         include: ['DREADNOUGHT'],
         combatMode: 'SPACE',
@@ -83,7 +89,9 @@ export const exotrireme: Ability<Params> = {
     {
       key: 'targetPriority' as const,
       label: 'Target Priority',
-      type: 'checkbox-list-sortable' as const,
+      type: 'unit-list' as const,
+      mode: 'checkbox' as const,
+      sortable: true,
       items: ctx.api.opponent.getUnitVariantsOptions({
         combatMode: 'SPACE',
       }),
@@ -97,7 +105,7 @@ function isHighestPrioritySacrifice(
 ): boolean {
   const myUnitId = ctx.getUnit()
 
-  for (const variantId of params.sacrificePriority) {
+  for (const variantId of ctx.utils.getFlat(params.sacrificePriority)) {
     const units = ctx.api.own.getUnits(variantId)
     if (units.length === 0) continue
 

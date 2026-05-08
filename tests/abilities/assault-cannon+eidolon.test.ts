@@ -30,7 +30,7 @@ describe('ASSAULT_CANNON + EIDOLON', () => {
         faction: 'NAAZ_ROKHA_ALLIANCE',
         units: { CRUISER: 2, MECH: 1 },
         abilities: {
-          ASSAULT_CANNON: { isEnabled: true, targetPriority: ['CRUISER'] },
+          ASSAULT_CANNON: { isEnabled: true, targetPriority: [['CRUISER']] },
         },
       },
       defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
@@ -54,7 +54,7 @@ describe('ASSAULT_CANNON + EIDOLON', () => {
         faction: 'ARBOREC',
         units: { CRUISER: 3 },
         abilities: {
-          ASSAULT_CANNON: { isEnabled: true, targetPriority: ['MECH'] },
+          ASSAULT_CANNON: { isEnabled: true, targetPriority: [['MECH']] },
         },
       },
       defender: {
@@ -83,7 +83,7 @@ describe('ASSAULT_CANNON + EIDOLON', () => {
         faction: 'ARBOREC',
         units: { CRUISER: 3 },
         abilities: {
-          ASSAULT_CANNON: { isEnabled: true, targetPriority: ['MECH'] },
+          ASSAULT_CANNON: { isEnabled: true, targetPriority: [['MECH']] },
         },
       },
     })

@@ -12,7 +12,7 @@ describe.forEachSide('ARTICLES_OF_WAR + VALKYRIE_EXOSKELETON', () => {
         abilities: {
           ARTICLES_OF_WAR: true,
           SUSTAIN_DAMAGE: {
-            groundPriority: ['MECH'],
+            groundPriority: [['MECH', true]],
           },
         },
       },

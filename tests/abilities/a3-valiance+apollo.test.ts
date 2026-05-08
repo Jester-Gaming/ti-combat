@@ -16,12 +16,12 @@ describe('A3_VALIANCE + APOLLO', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { MECH: 1 },
+            galvanizedUnits: [['MECH', 1]],
             reinforcementTokens: 7,
           },
           APOLLO: { isEnabled: true, heroUnit: 'INFANTRY:Galvanized' },
           UNIT_PRIORITY: {
-            groundUnitPriority: ['MECH:Galvanized', 'INFANTRY'],
+            groundUnitPriority: [['MECH:Galvanized'], ['INFANTRY']],
           },
         },
       },

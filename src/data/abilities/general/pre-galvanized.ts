@@ -3,13 +3,22 @@ import { z } from 'zod/mini'
 import {
   type Ability,
   type AbilityCallContext,
+  declareParam,
   makeVariantId,
   type ParamChange,
+  parseVariantId,
 } from '@/combat'
-import type { UnitId, UnitStats, UnitType, UnitVariantId } from '@/types'
+import type {
+  UnitId,
+  UnitList,
+  UnitStats,
+  UnitType,
+  UnitVariantId,
+} from '@/types'
+import { UnitListNumberSchema } from '@/types'
 
 type Params = {
-  galvanizedUnits: Partial<Record<UnitType, number | undefined>>
+  galvanizedUnits: UnitList<number>
   reinforcementTokens: number
 }
 
@@ -33,19 +42,25 @@ export const preGalvanized: Ability<Params> = {
   key: 'PRE_GALVANIZED',
   name: 'Galvanized Units',
   paramsSchema: z.object({
-    galvanizedUnits: z.record(z.string(), z.optional(z.number())),
+    galvanizedUnits: UnitListNumberSchema,
     reinforcementTokens: z.number(),
   }),
   params: {
     isEnabled: true,
     uses: Infinity,
-    galvanizedUnits: {},
+    galvanizedUnits: declareParam({
+      default: [] as UnitList<number>,
+      defaultItemValue: 0,
+      source: 'ships',
+      sort: 'desc',
+      filter: v => !parseVariantId(v as UnitType).subtypes.includes(GALVANIZED),
+    }),
     reinforcementTokens: 7,
   },
   declareParamChange: params => {
     const changes: ParamChange[] = []
-    for (const [unitType, count] of Object.entries(params.galvanizedUnits)) {
-      if ((count ?? 0) <= 0) continue
+    for (const [unitType, count] of params.galvanizedUnits) {
+      if (count <= 0) continue
       changes.push(declareGalvanizeUnits(unitType as UnitType))
     }
     return changes
@@ -67,7 +82,8 @@ export const preGalvanized: Ability<Params> = {
           tokens,
           {
             key: 'galvanizedUnits' as const,
-            type: 'number-list' as const,
+            type: 'unit-list' as const,
+            mode: 'number' as const,
             items,
           },
         ]
@@ -77,11 +93,10 @@ export const preGalvanized: Ability<Params> = {
     {
       timing: 'PREPARE',
       call: (ctx, params) => {
-        for (const [unitType, count] of Object.entries(
-          params.galvanizedUnits,
-        )) {
+        for (const [unitType, count] of params.galvanizedUnits) {
+          if (count <= 0) continue
           const ids = ctx.api.own.getUnits(unitType as UnitType)
-          const max = Math.min(count ?? 0, ids.length)
+          const max = Math.min(count, ids.length)
           for (let i = 0; i < max; i++) {
             galvanizeUnit(ctx, unitType as UnitType)
           }

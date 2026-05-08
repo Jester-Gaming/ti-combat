@@ -1,7 +1,8 @@
 import { z } from 'zod/mini'
 
 import { UNIT_TYPES } from '@/constants/units'
-import type { UnitBaseType, UnitType } from '@/types'
+import type { UnitBaseType, UnitList, UnitType } from '@/types'
+import { UnitListSchema } from '@/types'
 
 import type {
   Ability,
@@ -10,7 +11,7 @@ import type {
 import { parseVariantId } from '../../../combat/utils'
 
 type Params = {
-  removePriority: UnitType[]
+  removePriority: UnitList
 }
 
 declare global {
@@ -24,33 +25,33 @@ export const capacity: Ability<Params> = {
   name: 'Enforce Capacity',
   context: 'SPACE',
   paramsSchema: z.object({
-    removePriority: z.array(z.string()),
+    removePriority: UnitListSchema,
   }),
   params: {
     isEnabled: false,
     uses: Infinity,
-    removePriority: ['FIGHTER', 'INFANTRY', 'MECH'],
+    removePriority: [['FIGHTER'], ['INFANTRY'], ['MECH']] as UnitList,
   },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'PREPARE',
       call: (ctx, params) => {
-        enforceCapacity(ctx, params.removePriority)
+        enforceCapacity(ctx, ctx.utils.getFlat(params.removePriority))
       },
     },
     {
       timing: 'AFTER_ASSIGN_HITS_STEP',
       context: 'SPACE_CANNON_OFFENSE',
       call: (ctx, params) => {
-        enforceCapacity(ctx, params.removePriority)
+        enforceCapacity(ctx, ctx.utils.getFlat(params.removePriority))
       },
     },
     {
       timing: 'CLEANUP',
       context: 'SPACE_COMBAT',
       call: (ctx, params) => {
-        enforceCapacity(ctx, params.removePriority)
+        enforceCapacity(ctx, ctx.utils.getFlat(params.removePriority))
       },
     },
   ],
@@ -64,7 +65,8 @@ export const capacity: Ability<Params> = {
       {
         key: 'removePriority' as const,
         label: 'Removal Priority',
-        type: 'order-list' as const,
+        type: 'unit-list' as const,
+        mode: 'order' as const,
         items: ctx.api.own.getUnitVariantsOptions({
           include: carriedBaseTypes,
           includeNonParticipating: true,

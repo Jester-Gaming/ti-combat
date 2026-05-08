@@ -35,7 +35,7 @@ describe.forEachSide('CAPACITY', () => {
         abilities: {
           CAPACITY: true,
           UNIT_PRIORITY: {
-            scoUnitPriority: ['CARRIER', 'CRUISER', 'INFANTRY'],
+            scoUnitPriority: [['CARRIER'], ['CRUISER'], ['INFANTRY']],
             customScoPriority: true,
           },
         },
@@ -107,7 +107,7 @@ describe.forEachSide('CAPACITY', () => {
           CAPACITY: true,
           // Sacrifice carrier first so combat hit destroys it
           UNIT_PRIORITY: {
-            spaceUnitPriority: ['CARRIER', 'FIGHTER'],
+            spaceUnitPriority: [['CARRIER'], ['FIGHTER']],
           },
         },
       },
@@ -138,7 +138,7 @@ describe.forEachSide('CAPACITY', () => {
         abilities: {
           CAPACITY: {
             isEnabled: true,
-            removePriority: ['FIGHTER', 'INFANTRY', 'MECH'],
+            removePriority: [['FIGHTER'], ['INFANTRY'], ['MECH']],
           },
         },
       },

@@ -1,23 +1,30 @@
 import { z } from 'zod/mini'
 
-import type { UnitType } from '@/types'
+import type { UnitList, UnitType } from '@/types'
+import { UnitListNumberSchema } from '@/types'
 
+import { declareParam } from '../../../combat/abilities-engine/declare-param'
 import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
-  damagedUnits: Partial<Record<UnitType, number | undefined>>
+  damagedUnits: UnitList<number>
 }
 
 export const preDamaged: Ability<Params> = {
   key: 'PRE_DAMAGED',
   name: 'Damaged Units',
   paramsSchema: z.object({
-    damagedUnits: z.record(z.string(), z.optional(z.number())),
+    damagedUnits: UnitListNumberSchema,
   }),
   params: {
     isEnabled: true,
     uses: Infinity,
-    damagedUnits: {},
+    damagedUnits: declareParam<UnitList<number>>({
+      default: [],
+      source: 'nonFighterShips',
+      sort: 'desc',
+      defaultItemValue: 0,
+    }),
   },
   uiConfig: ctx => {
     const items = ctx.api.own.getUnitVariantsOptions({
@@ -28,7 +35,8 @@ export const preDamaged: Ability<Params> = {
       ? [
           {
             key: 'damagedUnits',
-            type: 'number-list',
+            type: 'unit-list',
+            mode: 'number',
             items,
           },
         ]
@@ -38,9 +46,10 @@ export const preDamaged: Ability<Params> = {
     {
       timing: 'PREPARE',
       call: (ctx, params) => {
-        for (const [unitType, count] of Object.entries(params.damagedUnits)) {
+        for (const [unitType, count] of params.damagedUnits) {
+          if (count <= 0) continue
           const ids = ctx.api.own.getUnits(unitType as UnitType)
-          const max = Math.min(count ?? 0, ids.length)
+          const max = Math.min(count, ids.length)
           for (let i = 0; i < max; i++) {
             ctx.api.own.modifyUnitState(ids[i], { isDamaged: true })
           }

@@ -12,7 +12,7 @@ describe.forEachSide('GRAVLEASH_MANEUVERS', () => {
         abilities: {
           GRAVLEASH_MANEUVERS: {
             isEnabled: true,
-            shipPriority: ['CRUISER'],
+            shipPriority: [['CRUISER']],
           },
         },
       },
@@ -38,7 +38,7 @@ describe.forEachSide('GRAVLEASH_MANEUVERS', () => {
         abilities: {
           GRAVLEASH_MANEUVERS: {
             isEnabled: true,
-            shipPriority: ['CRUISER'],
+            shipPriority: [['CRUISER']],
           },
         },
       },
@@ -67,7 +67,7 @@ describe.forEachSide('GRAVLEASH_MANEUVERS', () => {
         abilities: {
           GRAVLEASH_MANEUVERS: {
             isEnabled: true,
-            shipPriority: ['FIGHTER', 'CRUISER', 'CARRIER'],
+            shipPriority: [['FIGHTER'], ['CRUISER'], ['CARRIER']],
           },
         },
       },
@@ -98,7 +98,7 @@ describe.forEachSide('GRAVLEASH_MANEUVERS', () => {
         abilities: {
           GRAVLEASH_MANEUVERS: {
             isEnabled: true,
-            shipPriority: ['DREADNOUGHT', 'CRUISER'],
+            shipPriority: [['DREADNOUGHT'], ['CRUISER']],
           },
         },
       },

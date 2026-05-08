@@ -1,10 +1,11 @@
 import { z } from 'zod/mini'
 
 import { type Ability, declareParam } from '@/combat'
-import type { UnitType } from '@/types'
+import type { UnitList } from '@/types'
+import { UnitListSchema } from '@/types'
 
 type Params = {
-  targetPriority: UnitType[]
+  targetPriority: UnitList
 }
 
 export const dimensionalSplicer: Ability<Params> = {
@@ -14,12 +15,12 @@ export const dimensionalSplicer: Ability<Params> = {
     "At the start of a space combat in a system that contains a wormhole and 1 or more of your ships, you may produce 1 hit and assign it to 1 of your opponent's ships.",
   context: 'SPACE',
   paramsSchema: z.object({
-    targetPriority: z.array(z.string()),
+    targetPriority: UnitListSchema,
   }),
   params: {
     isEnabled: false,
     uses: Infinity,
-    targetPriority: declareParam({
+    targetPriority: declareParam<UnitList>({
       default: [],
       source: 'ships',
       side: 'opponent',
@@ -31,13 +32,14 @@ export const dimensionalSplicer: Ability<Params> = {
       timing: 'START_OF_COMBAT',
       isCallable: (params, ctx) => {
         return (
-          ctx.api.opponent.findUnitByPriority(params.targetPriority) !==
-          undefined
+          ctx.api.opponent.findUnitByPriority(
+            ctx.utils.getFlat(params.targetPriority),
+          ) !== undefined
         )
       },
       call: (ctx, params) => {
         const target = ctx.api.opponent.findUnitByPriority(
-          params.targetPriority,
+          ctx.utils.getFlat(params.targetPriority),
         )!
         const type = ctx.api.opponent.getUnitBaseType(target)!
 
@@ -49,7 +51,8 @@ export const dimensionalSplicer: Ability<Params> = {
     return [
       {
         key: 'targetPriority' as const,
-        type: 'order-list' as const,
+        type: 'unit-list' as const,
+        mode: 'order' as const,
         items: ctx.api.opponent.getUnitVariantsOptions({
           combatMode: 'SPACE',
         }),

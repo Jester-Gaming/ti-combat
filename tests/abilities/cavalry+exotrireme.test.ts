@@ -16,7 +16,7 @@ describe.forEachSide('CAVALRY + EXOTRIREME', () => {
           CAVALRY: { isEnabled: true, unitType: 'DREADNOUGHT' },
           EXOTRIREME: {
             isEnabled: true,
-            sacrificePriority: ['DREADNOUGHT'],
+            sacrificePriority: [['DREADNOUGHT', true]],
           },
         },
       },
@@ -52,7 +52,10 @@ describe.forEachSide('CAVALRY + EXOTRIREME', () => {
           CAVALRY: { isEnabled: true, unitType: 'DREADNOUGHT' },
           EXOTRIREME: {
             isEnabled: true,
-            sacrificePriority: ['DREADNOUGHT:Cavalry', 'DREADNOUGHT'],
+            sacrificePriority: [
+              ['DREADNOUGHT:Cavalry', true],
+              ['DREADNOUGHT', true],
+            ],
           },
         },
       },
@@ -85,7 +88,10 @@ describe.forEachSide('CAVALRY + EXOTRIREME', () => {
           CAVALRY: { isEnabled: true, unitType: 'DREADNOUGHT' },
           EXOTRIREME: {
             isEnabled: true,
-            sacrificePriority: ['DREADNOUGHT', 'DREADNOUGHT:Cavalry'],
+            sacrificePriority: [
+              ['DREADNOUGHT', true],
+              ['DREADNOUGHT:Cavalry', true],
+            ],
           },
         },
       },

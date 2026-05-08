@@ -54,7 +54,7 @@ describe.forEachSide('DIMENSIONAL_SPLICER', () => {
         faction: 'ARBOREC',
         units: { DREADNOUGHT: 1 },
         abilities: {
-          PRE_DAMAGED: { isEnabled: true, damagedUnits: { DREADNOUGHT: 1 } },
+          PRE_DAMAGED: { isEnabled: true, damagedUnits: [['DREADNOUGHT', 1]] },
         },
       },
       defender: {

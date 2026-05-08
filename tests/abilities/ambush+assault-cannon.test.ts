@@ -28,10 +28,10 @@ describe('AMBUSH + ASSAULT_CANNON', () => {
           AMBUSH: true,
           ASSAULT_CANNON: {
             isEnabled: true,
-            targetPriority: ['CRUISER'],
+            targetPriority: [['CRUISER']],
           },
           ABILITY_ORDER: {
-            startOfCombat: ['AMBUSH', 'ASSAULT_CANNON'],
+            startOfCombat: [['AMBUSH'], ['ASSAULT_CANNON']],
           },
         },
       },
@@ -83,7 +83,7 @@ describe('AMBUSH + ASSAULT_CANNON', () => {
         abilities: {
           ASSAULT_CANNON: {
             isEnabled: true,
-            targetPriority: ['CRUISER'],
+            targetPriority: [['CRUISER']],
           },
         },
       },
@@ -137,10 +137,10 @@ describe('AMBUSH + ASSAULT_CANNON', () => {
           AMBUSH: true,
           ASSAULT_CANNON: {
             isEnabled: true,
-            targetPriority: ['CRUISER'],
+            targetPriority: [['CRUISER']],
           },
           ABILITY_ORDER: {
-            startOfCombat: ['ASSAULT_CANNON', 'AMBUSH'],
+            startOfCombat: [['ASSAULT_CANNON'], ['AMBUSH']],
           },
         },
       },

@@ -10,7 +10,10 @@ describe.forEachSide('REVEAL_PROTOTYPE', () => {
         faction: 'ARBOREC',
         units: { CRUISER: 2 },
         abilities: {
-          REVEAL_PROTOTYPE: { isEnabled: true, spacePriority: ['CRUISER'] },
+          REVEAL_PROTOTYPE: {
+            isEnabled: true,
+            spacePriority: [['CRUISER', true]],
+          },
         },
       },
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
@@ -33,7 +36,10 @@ describe.forEachSide('REVEAL_PROTOTYPE', () => {
         faction: 'ARBOREC',
         units: { INFANTRY: 2 },
         abilities: {
-          REVEAL_PROTOTYPE: { isEnabled: true, groundPriority: ['INFANTRY'] },
+          REVEAL_PROTOTYPE: {
+            isEnabled: true,
+            groundPriority: [['INFANTRY', true]],
+          },
         },
       },
       defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
@@ -55,7 +61,10 @@ describe.forEachSide('REVEAL_PROTOTYPE', () => {
         faction: 'ARBOREC',
         units: { DESTROYER: 1 },
         abilities: {
-          REVEAL_PROTOTYPE: { isEnabled: true, spacePriority: ['DESTROYER'] },
+          REVEAL_PROTOTYPE: {
+            isEnabled: true,
+            spacePriority: [['DESTROYER', true]],
+          },
         },
       },
       defender: { faction: 'ARBOREC', units: { FIGHTER: 2 } },
@@ -82,7 +91,7 @@ describe.forEachSide('REVEAL_PROTOTYPE', () => {
         abilities: {
           REVEAL_PROTOTYPE: {
             isEnabled: true,
-            spacePriority: ['DREADNOUGHT'],
+            spacePriority: [['DREADNOUGHT', true]],
           },
         },
       },
@@ -103,7 +112,10 @@ describe.forEachSide('REVEAL_PROTOTYPE', () => {
         faction: 'ARBOREC',
         units: { WAR_SUN: 1 },
         abilities: {
-          REVEAL_PROTOTYPE: { isEnabled: true, spacePriority: ['WAR_SUN'] },
+          REVEAL_PROTOTYPE: {
+            isEnabled: true,
+            spacePriority: [['WAR_SUN', true]],
+          },
         },
       },
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
@@ -123,7 +135,10 @@ describe.forEachSide('REVEAL_PROTOTYPE', () => {
         units: { CRUISER: 1 },
         upgrades: ['CRUISER'],
         abilities: {
-          REVEAL_PROTOTYPE: { isEnabled: true, spacePriority: ['CRUISER'] },
+          REVEAL_PROTOTYPE: {
+            isEnabled: true,
+            spacePriority: [['CRUISER', true]],
+          },
         },
       },
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
@@ -144,7 +159,11 @@ describe.forEachSide('REVEAL_PROTOTYPE', () => {
         abilities: {
           REVEAL_PROTOTYPE: {
             isEnabled: true,
-            spacePriority: ['CRUISER', 'FIGHTER', 'WAR_SUN'],
+            spacePriority: [
+              ['CRUISER', true],
+              ['FIGHTER', true],
+              ['WAR_SUN', true],
+            ],
           },
         },
       },

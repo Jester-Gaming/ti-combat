@@ -19,8 +19,8 @@ import type { CombatSide, UnitBaseType } from '@/types'
 
 import {
   expandWithSubtypes,
-  reconcileArrayParam,
   reconcileStringParam,
+  reconcileUnitListParam,
   sortByPrice,
 } from './reconcile-helpers'
 
@@ -284,8 +284,12 @@ function reconcileAbilityOrder(
         }
       }
 
-      const currentOrder = (orderConfig[group.paramKey] as string[]) ?? []
-      orderConfig[group.paramKey] = reconcileArrayParam(currentOrder, validKeys)
+      const currentOrder =
+        (orderConfig[group.paramKey] as [string][] | undefined) ?? []
+      orderConfig[group.paramKey] = reconcileUnitListParam(
+        currentOrder,
+        validKeys,
+      )
     }
   }
 }
@@ -370,49 +374,13 @@ function reconcileSyncSources(
       const currentValue = abilityParams[config.key]
 
       if (Array.isArray(currentValue)) {
-        const arr = currentValue as string[]
-        const snapshotKey = `${side}:${ability.key}:${config.key}`
-        const prevPool =
-          arr.length > 0 ? syncSnapshots?.get(snapshotKey) : undefined
-
-        if (prevPool) {
-          // Only add items that are genuinely new (not in previous pool)
-          const prevSet = new Set(prevPool)
-          const genuinelyNew = validList.filter(item => !prevSet.has(item))
-          const validSet = new Set(validList)
-          const kept = arr.filter(item => validSet.has(item))
-          if (genuinelyNew.length > 0) {
-            // Subtypes inherit checked state from their base type
-            const keptSet = new Set(kept)
-            const newBases = new Set(
-              genuinelyNew.filter(item => !item.includes(':')),
-            )
-            const toAdd = genuinelyNew.filter(item => {
-              if (keptSet.has(item)) return false
-              const colonIdx = item.indexOf(':')
-              if (colonIdx === -1) return true
-              const base = item.slice(0, colonIdx)
-              return keptSet.has(base) || newBases.has(base)
-            })
-            if (toAdd.length > 0) {
-              // Place each new item at its natural validList position
-              // (respects the sort direction, including subtype placement).
-              const allowed = new Set([...kept, ...toAdd])
-              abilityParams[config.key] = reconcileArrayParam(
-                kept,
-                validList.filter(item => allowed.has(item)),
-              )
-            } else {
-              abilityParams[config.key] = kept
-            }
-          } else {
-            abilityParams[config.key] = kept
-          }
-        } else {
-          abilityParams[config.key] = reconcileArrayParam(arr, validList)
-        }
-
+        abilityParams[config.key] = reconcileUnitListParam(
+          currentValue as ([string] | [string, unknown])[],
+          validList,
+          config.defaultItemValue,
+        )
         if (syncSnapshots) {
+          const snapshotKey = `${side}:${ability.key}:${config.key}`
           syncSnapshots.set(snapshotKey, validList)
         }
       } else if (typeof currentValue === 'string') {

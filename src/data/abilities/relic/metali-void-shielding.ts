@@ -45,14 +45,14 @@ function findVoidShieldTarget(ctx: AbilityReadContext): UnitId | undefined {
   const validTargets = ctx.api.own.getHitPoolValidTargets()
   const validTargetSet = validTargets ? new Set(validTargets) : null
 
-  for (const variantId of priority) {
-    const { type: unitType } = parseVariantId(variantId)
+  for (const variant of ctx.utils.getFlat(priority)) {
+    const { type: unitType } = parseVariantId(variant)
     if (validTargetSet && !validTargetSet.has(unitType)) continue
     if (ctx.api.own.isUnitAbilityCannotBeUsed('SUSTAIN_DAMAGE', unitType)) {
       continue
     }
 
-    const units = ctx.api.own.getUnits(variantId)
+    const units = ctx.api.own.getUnits(variant)
     if (units.length === 0) continue
 
     // Ignore units that don't have sustain because it lost

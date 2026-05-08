@@ -12,7 +12,7 @@ describe('APOLLO', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { CRUISER: 2 },
+            galvanizedUnits: [['CRUISER', 2]],
           },
           APOLLO: { isEnabled: true, heroUnit: 'CRUISER:Galvanized' },
         },
@@ -43,7 +43,7 @@ describe('APOLLO', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { DESTROYER: 1 },
+            galvanizedUnits: [['DESTROYER', 1]],
           },
           APOLLO: { isEnabled: true, heroUnit: 'CRUISER:Galvanized' },
         },
@@ -74,7 +74,7 @@ describe('APOLLO', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { CRUISER: 1 },
+            galvanizedUnits: [['CRUISER', 1]],
           },
           APOLLO: { isEnabled: true, heroUnit: 'CRUISER:Galvanized' },
         },
@@ -116,10 +116,10 @@ describe('APOLLO', () => {
           abilities: {
             PRE_GALVANIZED: {
               isEnabled: true,
-              galvanizedUnits: { CRUISER: 1 },
+              galvanizedUnits: [['CRUISER', 1]],
             },
             UNIT_PRIORITY: {
-              spaceUnitPriority: ['CRUISER:Galvanized,Hero', 'CRUISER'],
+              spaceUnitPriority: [['CRUISER:Galvanized,Hero'], ['CRUISER']],
             },
             APOLLO: { isEnabled: true, heroUnit: 'CRUISER:Galvanized' },
           },

@@ -25,7 +25,7 @@ describe('AMBUSH + CAVALRY', () => {
             unitType: 'CRUISER',
           },
           ABILITY_ORDER: {
-            startOfCombat: ['CAVALRY', 'AMBUSH'],
+            startOfCombat: [['CAVALRY'], ['AMBUSH']],
           },
         },
       },
@@ -60,7 +60,7 @@ describe('AMBUSH + CAVALRY', () => {
             unitType: 'DESTROYER',
           },
           ABILITY_ORDER: {
-            startOfCombat: ['CAVALRY', 'AMBUSH'],
+            startOfCombat: [['CAVALRY'], ['AMBUSH']],
           },
         },
       },
@@ -96,7 +96,7 @@ describe('AMBUSH + CAVALRY', () => {
             unitType: 'CRUISER',
           },
           ABILITY_ORDER: {
-            startOfCombat: ['AMBUSH', 'CAVALRY'],
+            startOfCombat: [['AMBUSH'], ['CAVALRY']],
           },
         },
       },
@@ -138,7 +138,7 @@ describe('AMBUSH + CAVALRY', () => {
             unitType: 'CRUISER',
           },
           ABILITY_ORDER: {
-            startOfCombat: ['CAVALRY', 'AMBUSH'],
+            startOfCombat: [['CAVALRY'], ['AMBUSH']],
           },
         },
       },

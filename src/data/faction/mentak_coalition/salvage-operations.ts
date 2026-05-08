@@ -2,10 +2,11 @@ import { z } from 'zod/mini'
 
 import { type Ability, declareParam, parseVariantId } from '@/combat'
 import { UNIT_DISPLAY_NAMES } from '@/constants/units'
-import type { UnitBaseType, UnitType } from '@/types'
+import type { UnitBaseType, UnitList, UnitType } from '@/types'
+import { UnitListSchema } from '@/types'
 
 type Params = {
-  shipPriority: UnitBaseType[]
+  shipPriority: UnitList
   _destroyedShipTypes: UnitBaseType[]
 }
 
@@ -16,13 +17,13 @@ export const salvageOperations: Ability<Params> = {
     'After you win or lose a space combat, gain 1 trade good; if you won the combat, you may also produce 1 ship in that system of any ship type that was destroyed during the combat.',
   context: 'SPACE',
   paramsSchema: z.object({
-    shipPriority: z.array(z.string()),
+    shipPriority: UnitListSchema,
     _destroyedShipTypes: z.array(z.string()),
   }),
   params: {
     isEnabled: false,
     uses: Infinity,
-    shipPriority: declareParam({
+    shipPriority: declareParam<UnitList>({
       default: [],
       source: 'ships',
     }),
@@ -35,7 +36,8 @@ export const salvageOperations: Ability<Params> = {
       {
         key: 'shipPriority' as const,
         label: 'Ship Priority',
-        type: 'order-list' as const,
+        type: 'unit-list' as const,
+        mode: 'order' as const,
         items: ships.map(s => ({ label: UNIT_DISPLAY_NAMES[s], value: s })),
       },
     ]
@@ -73,13 +75,16 @@ export const salvageOperations: Ability<Params> = {
           return false
 
         const destroyed = new Set<UnitBaseType>(params._destroyedShipTypes)
-        return params.shipPriority.some(t => destroyed.has(t))
+        return ctx.utils
+          .getFlat(params.shipPriority)
+          .some(t => destroyed.has(t as UnitBaseType))
       },
       call: (ctx, params) => {
         const destroyed = new Set<UnitBaseType>(params._destroyedShipTypes)
-        for (const t of params.shipPriority) {
-          if (destroyed.has(t)) {
-            ctx.api.own.placeUnits({ [t]: 1 })
+        for (const t of ctx.utils.getFlat(params.shipPriority)) {
+          const baseType = t as UnitBaseType
+          if (destroyed.has(baseType)) {
+            ctx.api.own.placeUnits({ [baseType]: 1 })
             return
           }
         }

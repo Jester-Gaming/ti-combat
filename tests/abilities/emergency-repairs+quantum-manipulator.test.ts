@@ -34,7 +34,7 @@ describe.forEachSide('EMERGENCY_REPAIRS + QUANTUM_MANIPULATOR', () => {
         faction: 'NOMAD',
         units: { DREADNOUGHT: 1, CRUISER: 1, MECH: 1 },
         abilities: {
-          PRE_DAMAGED: { isEnabled: true, damagedUnits: { MECH: 1 } },
+          PRE_DAMAGED: { isEnabled: true, damagedUnits: [['MECH', 1]] },
           EMERGENCY_REPAIRS: true,
         },
       },

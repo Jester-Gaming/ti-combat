@@ -1,10 +1,8 @@
-import { z } from 'zod/mini'
-
 import { type Ability, declareParam } from '@/combat'
-import type { UnitType } from '@/types'
+import type { UnitList, UnitType } from '@/types'
 
 type Params = {
-  targets: UnitType[]
+  targets: UnitList<boolean>
 }
 
 export const directHit: Ability<Params> = {
@@ -13,21 +11,22 @@ export const directHit: Ability<Params> = {
   description:
     "After another player's ship uses Sustain Damage to cancel a hit produced by your units or abilities: Destroy that ship.",
   context: 'SPACE',
-  paramsSchema: z.object({ targets: z.array(z.string()) }),
   params: {
     isEnabled: true,
     uses: 0,
-    targets: declareParam({
+    targets: declareParam<UnitList<boolean>>({
       default: [],
       source: 'ships',
       side: 'opponent',
+      defaultItemValue: true,
     }),
   },
   headerUI: 'uses',
   uiConfig: ctx => [
     {
       key: 'targets' as const,
-      type: 'checkbox-list' as const,
+      type: 'unit-list' as const,
+      mode: 'checkbox' as const,
       items: ctx.api.opponent.getUnitVariantsOptions({ combatMode: 'SPACE' }),
     },
   ],
@@ -38,7 +37,8 @@ export const directHit: Ability<Params> = {
         if (!ctx.api.opponent.hasUnit(unitId)) return false
         const variant = ctx.api.opponent.getVariantKey(unitId)
         if (!variant) return false
-        if (!params.targets.includes(variant as UnitType)) return false
+        const targets = ctx.utils.getFlat(params.targets)
+        if (!targets.includes(variant as UnitType)) return false
         const stats = ctx.api.opponent.getUnitStats(unitId)!
         if (stats.DIRECT_HIT_IMMUNE) return false
         return true

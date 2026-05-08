@@ -828,7 +828,16 @@ export class CombatSideState {
         : mode === 'GROUND'
           ? 'groundUnitPriority'
           : 'spaceUnitPriority'
-    return unitPriority[key] as UnitType[] | undefined
+    const raw = unitPriority[key] as unknown
+    if (!Array.isArray(raw)) return undefined
+    if (raw.length === 0) return raw as UnitType[]
+    if (!Array.isArray(raw[0])) return raw as UnitType[]
+    const result: UnitType[] = []
+    for (const entry of raw as readonly [string, ...unknown[]][]) {
+      if (entry.length >= 2 && entry[1] === false) continue
+      result.push(entry[0] as UnitType)
+    }
+    return result
   }
 
   /** Get valid targets from SETTINGS for the given meta. Throws when

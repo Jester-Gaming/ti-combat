@@ -12,7 +12,7 @@ describe.forEachSide('PRE_GALVANIZED + VISCOUNT_UNLENN', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { CRUISER: 1 },
+            galvanizedUnits: [['CRUISER', 1]],
           },
           VISCOUNT_UNLENN: {
             isEnabled: true,

@@ -106,7 +106,12 @@ describe.forEachSide('DYNAMO', () => {
         abilities: {
           DYNAMO: { uses: 10 },
           // Flagship sustains first so Direct Hit targets it
-          SUSTAIN_DAMAGE: { spacePriority: ['FLAGSHIP', 'DREADNOUGHT'] },
+          SUSTAIN_DAMAGE: {
+            spacePriority: [
+              ['FLAGSHIP', true],
+              ['DREADNOUGHT', true],
+            ],
+          },
         },
       },
       defender: {

@@ -12,7 +12,7 @@ describe.forEachSide('WATCHFUL_OJZ', () => {
         units: { CRUISER: 3 },
         abilities: {
           RETREAT: { isEnabled: true, rounds: 1 },
-          WATCHFUL_OJZ: { isEnabled: true, shipConfig: { CRUISER: 2 } },
+          WATCHFUL_OJZ: { isEnabled: true, shipConfig: [['CRUISER', 2]] },
         },
       },
       defender: {
@@ -40,7 +40,7 @@ describe.forEachSide('WATCHFUL_OJZ', () => {
         faction: 'RAL_NEL',
         units: { CRUISER: 3 },
         abilities: {
-          WATCHFUL_OJZ: { isEnabled: true, shipConfig: { CRUISER: 2 } },
+          WATCHFUL_OJZ: { isEnabled: true, shipConfig: [['CRUISER', 2]] },
         },
       },
       defender: {

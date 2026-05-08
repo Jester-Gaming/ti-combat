@@ -10,7 +10,7 @@ describe.forEachSide('TRRAKAN_AUN_ZULOK', () => {
         faction: 'ARBOREC',
         units: { DESTROYER: 1 },
         abilities: {
-          TRRAKAN_AUN_ZULOK: { isEnabled: true, phases: ['AFB'] },
+          TRRAKAN_AUN_ZULOK: { isEnabled: true, phases: [['AFB', true]] },
         },
       },
       defender: {

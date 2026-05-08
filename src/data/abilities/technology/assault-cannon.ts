@@ -1,12 +1,13 @@
 import { z } from 'zod/mini'
 
-import { type UnitType } from '@/types'
+import { UnitListSchema } from '@/types'
+import { type UnitList } from '@/types'
 
 import { declareParam } from '../../../combat/abilities-engine/declare-param'
 import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
-  targetPriority: UnitType[]
+  targetPriority: UnitList
 }
 
 export const assaultCannon: Ability<Params> = {
@@ -16,12 +17,12 @@ export const assaultCannon: Ability<Params> = {
     'At the start of a space combat in a system that contains 3 or more of your non-fighter ships, your opponent must destroy 1 of their non-fighter ships.',
   context: 'SPACE',
   paramsSchema: z.object({
-    targetPriority: z.array(z.string()),
+    targetPriority: UnitListSchema,
   }),
   params: {
     isEnabled: false,
     uses: Infinity,
-    targetPriority: declareParam({
+    targetPriority: declareParam<UnitList>({
       default: [],
       source: 'nonFighterShips',
       side: 'opponent',
@@ -40,7 +41,7 @@ export const assaultCannon: Ability<Params> = {
       },
       call: (ctx, params) => {
         const target = ctx.api.opponent.findUnitByPriority(
-          params.targetPriority,
+          ctx.utils.getFlat(params.targetPriority),
         )!
 
         ctx.api.opponent.destroyUnits(target)
@@ -51,7 +52,8 @@ export const assaultCannon: Ability<Params> = {
     return [
       {
         key: 'targetPriority' as const,
-        type: 'order-list' as const,
+        type: 'unit-list' as const,
+        mode: 'order' as const,
         items: ctx.api.opponent.getUnitVariantsOptions({
           combatMode: 'SPACE',
           exclude: ['FIGHTER'],

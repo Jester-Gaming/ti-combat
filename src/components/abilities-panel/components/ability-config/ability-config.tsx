@@ -16,7 +16,12 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Tooltip } from '@/components/ui/tooltip'
 
-import { List } from '../list'
+import {
+  type CheckboxListValue,
+  List,
+  type NumberListValue,
+  type OrderListValue,
+} from '../list'
 import { Select } from '../select'
 import styles from './ability-config.module.css'
 
@@ -63,8 +68,8 @@ export function AbilityConfig({
     onParamsChange({ ...params, [key]: checked })
   }
 
-  function handleListChange(key: string, items: string[]): void {
-    onParamsChange({ ...params, [key]: items })
+  function handleListChange(key: string, list: unknown): void {
+    onParamsChange({ ...params, [key]: list })
   }
 
   function handleNumberChange(key: string, value: number): void {
@@ -73,13 +78,6 @@ export function AbilityConfig({
 
   function handleSelectChange(key: string, value: string): void {
     onParamsChange({ ...params, [key]: value })
-  }
-
-  function handleRecordNumberChange(
-    key: string,
-    record: Record<string, number>,
-  ): void {
-    onParamsChange({ ...params, [key]: record })
   }
 
   function toggleCollapsed(): void {
@@ -244,13 +242,8 @@ export function AbilityConfig({
               )
             }
 
-            if (
-              config.type === 'order-list' ||
-              config.type === 'checkbox-list' ||
-              config.type === 'checkbox-list-sortable'
-            ) {
-              const value = (params[key] ?? defaultValue ?? []) as string[]
-              const mode = config.type === 'order-list' ? 'order' : 'checkbox'
+            if (config.type === 'unit-list') {
+              const rawValue = (params[key] ?? defaultValue ?? []) as unknown
               return (
                 <div key={key} className={styles.configItemGroup}>
                   {config.label && (
@@ -258,39 +251,31 @@ export function AbilityConfig({
                       {config.label}
                     </span>
                   )}
-                  <List
-                    mode={mode}
-                    sortable={config.type === 'checkbox-list-sortable'}
-                    items={config.items}
-                    value={value}
-                    onChange={items => handleListChange(key, items)}
-                  />
-                </div>
-              )
-            }
-
-            if (
-              config.type === 'number-list' ||
-              config.type === 'number-list-sortable'
-            ) {
-              const value = (params[key] ?? defaultValue ?? {}) as Record<
-                string,
-                number
-              >
-              return (
-                <div key={key} className={styles.configItemGroup}>
-                  {config.label && (
-                    <span className={styles.configItemText}>
-                      {config.label}
-                    </span>
+                  {config.mode === 'order' ? (
+                    <List
+                      mode="order"
+                      sortable={config.sortable}
+                      items={config.items}
+                      value={rawValue as OrderListValue}
+                      onChange={value => handleListChange(key, value)}
+                    />
+                  ) : config.mode === 'checkbox' ? (
+                    <List
+                      mode="checkbox"
+                      sortable={config.sortable}
+                      items={config.items}
+                      value={rawValue as CheckboxListValue}
+                      onChange={value => handleListChange(key, value)}
+                    />
+                  ) : (
+                    <List
+                      mode="number"
+                      sortable={config.sortable}
+                      items={config.items}
+                      value={rawValue as NumberListValue}
+                      onChange={value => handleListChange(key, value)}
+                    />
                   )}
-                  <List
-                    mode="number"
-                    sortable={config.type === 'number-list-sortable'}
-                    items={config.items}
-                    value={value}
-                    onChange={record => handleRecordNumberChange(key, record)}
-                  />
                 </div>
               )
             }

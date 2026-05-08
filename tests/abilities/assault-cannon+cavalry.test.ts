@@ -41,7 +41,7 @@ describe('ASSAULT_CANNON + CAVALRY', () => {
         abilities: {
           ASSAULT_CANNON: {
             isEnabled: true,
-            targetPriority: ['CRUISER:Cavalry', 'CRUISER'],
+            targetPriority: [['CRUISER:Cavalry'], ['CRUISER']],
           },
         },
       },
@@ -81,7 +81,7 @@ describe('ASSAULT_CANNON + CAVALRY', () => {
         abilities: {
           ASSAULT_CANNON: {
             isEnabled: true,
-            targetPriority: ['CRUISER:Cavalry'],
+            targetPriority: [['CRUISER:Cavalry']],
           },
         },
       },

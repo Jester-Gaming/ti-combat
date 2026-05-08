@@ -1,26 +1,27 @@
 import { z } from 'zod/mini'
 
 import { TIMING_GROUPS } from '@/combat/abilities-engine/abilities-engine'
+import { UnitListSchema } from '@/types'
 
 import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
-  startOfCombat: string[]
-  beforeDiceRoll: string[]
-  beforeUnitAbilityRoll: string[]
-  beforeAssignHits: string[]
-  endOfCombat: string[]
+  startOfCombat: [string][]
+  beforeDiceRoll: [string][]
+  beforeUnitAbilityRoll: [string][]
+  beforeAssignHits: [string][]
+  endOfCombat: [string][]
 }
 
 export const abilityOrder: Ability<Params> = {
   key: 'ABILITY_ORDER',
   name: 'Resolve Order',
   paramsSchema: z.object({
-    startOfCombat: z.array(z.string()),
-    beforeDiceRoll: z.array(z.string()),
-    beforeUnitAbilityRoll: z.array(z.string()),
-    beforeAssignHits: z.array(z.string()),
-    endOfCombat: z.array(z.string()),
+    startOfCombat: UnitListSchema,
+    beforeDiceRoll: UnitListSchema,
+    beforeUnitAbilityRoll: UnitListSchema,
+    beforeAssignHits: UnitListSchema,
+    endOfCombat: UnitListSchema,
   }),
   params: {
     isEnabled: true,
@@ -40,7 +41,8 @@ export const abilityOrder: Ability<Params> = {
       items.push({
         key: group.paramKey as keyof Params,
         label: group.label,
-        type: 'order-list' as const,
+        type: 'unit-list' as const,
+        mode: 'order' as const,
         items: abilities.map(a => ({ label: a.name, value: a.key })),
       })
     }

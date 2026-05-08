@@ -7,10 +7,11 @@ import {
   declareParam,
   parseVariantId,
 } from '@/combat'
-import type { UnitBaseType, UnitId, UnitType } from '@/types'
+import type { UnitBaseType, UnitId, UnitList } from '@/types'
+import { UnitListBooleanSchema } from '@/types'
 
 type Params = {
-  targetPriority: UnitType[]
+  targetPriority: UnitList<boolean>
 }
 
 export const vosHollow: Ability<Params> = {
@@ -21,15 +22,16 @@ export const vosHollow: Ability<Params> = {
   icon: obsidianIcon,
   context: 'SPACE',
   paramsSchema: z.object({
-    targetPriority: z.array(z.string()),
+    targetPriority: UnitListBooleanSchema,
   }),
   params: {
     isEnabled: false,
     uses: 1,
-    targetPriority: declareParam({
+    targetPriority: declareParam<UnitList<boolean>>({
       default: [],
       source: 'ships',
       side: 'opponent',
+      defaultItemValue: true,
     }),
   },
   headerUI: 'isEnabled',
@@ -46,7 +48,7 @@ export const vosHollow: Ability<Params> = {
           ownShips,
         )
         const opponentShipsSet = new Set<UnitBaseType>(opponentShips)
-        for (const variantId of params.targetPriority) {
+        for (const variantId of ctx.utils.getFlat(params.targetPriority)) {
           const { type } = parseVariantId(variantId)
           if (
             ownDestroyedShips.has(type) &&
@@ -67,7 +69,7 @@ export const vosHollow: Ability<Params> = {
           ownShips,
         )
         const opponentShipsSet = new Set<UnitBaseType>(opponentShips)
-        for (const variantId of params.targetPriority) {
+        for (const variantId of ctx.utils.getFlat(params.targetPriority)) {
           const { type } = parseVariantId(variantId)
           if (
             ownDestroyedShips.has(type) &&
@@ -85,7 +87,9 @@ export const vosHollow: Ability<Params> = {
     return [
       {
         key: 'targetPriority' as const,
-        type: 'checkbox-list-sortable' as const,
+        type: 'unit-list' as const,
+        mode: 'checkbox' as const,
+        sortable: true,
         items: ctx.api.opponent.getUnitVariantsOptions({
           combatMode: 'SPACE',
         }),

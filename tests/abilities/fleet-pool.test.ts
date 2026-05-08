@@ -14,7 +14,7 @@ describe.forEachSide('FLEET_POOL', () => {
           FLEET_POOL: {
             isEnabled: true,
             fleetPool: 3,
-            shipPriority: ['CRUISER', 'CARRIER'],
+            shipPriority: [['CRUISER'], ['CARRIER']],
           },
         },
       },
@@ -47,7 +47,7 @@ describe.forEachSide('FLEET_POOL', () => {
             isEnabled: true,
             fleetPool: 2,
             // Keep cruisers, remove destroyer and carrier first
-            shipPriority: ['CRUISER', 'DESTROYER', 'CARRIER'],
+            shipPriority: [['CRUISER'], ['DESTROYER'], ['CARRIER']],
           },
         },
       },
@@ -78,7 +78,7 @@ describe.forEachSide('FLEET_POOL', () => {
             isEnabled: true,
             fleetPool: 1,
             // Only cruiser listed — carrier and destroyer are unlisted
-            shipPriority: ['CRUISER'],
+            shipPriority: [['CRUISER']],
           },
         },
       },
@@ -165,7 +165,7 @@ describe.forEachSide('FLEET_POOL', () => {
           FLEET_POOL: {
             isEnabled: true,
             fleetPool: 3,
-            shipPriority: ['CRUISER', 'FIGHTER'],
+            shipPriority: [['CRUISER'], ['FIGHTER']],
           },
         },
       },
@@ -196,7 +196,7 @@ describe.forEachSide('FLEET_POOL', () => {
           FLEET_POOL: {
             isEnabled: true,
             fleetPool: 3,
-            shipPriority: ['CRUISER', 'FIGHTER'],
+            shipPriority: [['CRUISER'], ['FIGHTER']],
           },
         },
       },

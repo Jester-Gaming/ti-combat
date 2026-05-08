@@ -12,9 +12,12 @@ describe.forEachSide('PRE_GALVANIZED + REVEAL_PROTOTYPE', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { CRUISER: 1 },
+            galvanizedUnits: [['CRUISER', 1]],
           },
-          REVEAL_PROTOTYPE: { isEnabled: true, spacePriority: ['CRUISER'] },
+          REVEAL_PROTOTYPE: {
+            isEnabled: true,
+            spacePriority: [['CRUISER', true]],
+          },
         },
       },
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
@@ -38,9 +41,12 @@ describe.forEachSide('PRE_GALVANIZED + REVEAL_PROTOTYPE', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { DESTROYER: 1 },
+            galvanizedUnits: [['DESTROYER', 1]],
           },
-          REVEAL_PROTOTYPE: { isEnabled: true, spacePriority: ['DESTROYER'] },
+          REVEAL_PROTOTYPE: {
+            isEnabled: true,
+            spacePriority: [['DESTROYER', true]],
+          },
         },
       },
       defender: { faction: 'ARBOREC', units: { FIGHTER: 2 } },

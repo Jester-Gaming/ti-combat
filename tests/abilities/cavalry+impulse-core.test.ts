@@ -14,8 +14,8 @@ describe('CAVALRY + IMPULSE_CORE', () => {
           CAVALRY: { isEnabled: true, unitType: 'DESTROYER' },
           IMPULSE_CORE: {
             isEnabled: true,
-            sacrificePriority: ['DESTROYER:Cavalry'],
-            targetPriority: ['CRUISER'],
+            sacrificePriority: [['DESTROYER:Cavalry', true]],
+            targetPriority: [['CRUISER', true]],
           },
         },
       },
@@ -42,8 +42,8 @@ describe('CAVALRY + IMPULSE_CORE', () => {
           CAVALRY: { isEnabled: true, unitType: 'DESTROYER' },
           IMPULSE_CORE: {
             isEnabled: true,
-            sacrificePriority: ['DESTROYER'],
-            targetPriority: ['CRUISER'],
+            sacrificePriority: [['DESTROYER', true]],
+            targetPriority: [['CRUISER', true]],
           },
         },
       },
@@ -75,8 +75,8 @@ describe('CAVALRY + IMPULSE_CORE', () => {
         abilities: {
           IMPULSE_CORE: {
             isEnabled: true,
-            sacrificePriority: ['DESTROYER'],
-            targetPriority: ['CRUISER:Cavalry'],
+            sacrificePriority: [['DESTROYER', true]],
+            targetPriority: [['CRUISER:Cavalry', true]],
           },
         },
       },
@@ -107,8 +107,8 @@ describe('CAVALRY + IMPULSE_CORE', () => {
         abilities: {
           IMPULSE_CORE: {
             isEnabled: true,
-            sacrificePriority: ['DESTROYER'],
-            targetPriority: ['CRUISER'],
+            sacrificePriority: [['DESTROYER', true]],
+            targetPriority: [['CRUISER', true]],
           },
         },
       },

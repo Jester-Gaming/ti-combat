@@ -1,15 +1,17 @@
 import { z } from 'zod/mini'
 
+import { UnitListSchema } from '@/types'
+
 import { declareParam } from '../../../combat/abilities-engine/declare-param'
 import type {
   Ability,
   AbilityReadContext,
 } from '../../../combat/abilities-engine/types'
-import type { UnitId, UnitType } from '../../../types'
+import type { UnitId, UnitList, UnitType } from '../../../types'
 
 type Params = {
-  spaceRepairPriority: UnitType[]
-  groundRepairPriority: UnitType[]
+  spaceRepairPriority: UnitList
+  groundRepairPriority: UnitList
 }
 
 export const duraniumArmor: Ability<Params> = {
@@ -18,18 +20,18 @@ export const duraniumArmor: Ability<Params> = {
   description:
     'During each combat round, after you assign hits to your units, repair 1 of your damaged units that did not use Sustain Damage during this combat round.',
   paramsSchema: z.object({
-    spaceRepairPriority: z.array(z.string()),
-    groundRepairPriority: z.array(z.string()),
+    spaceRepairPriority: UnitListSchema,
+    groundRepairPriority: UnitListSchema,
   }),
   params: {
     isEnabled: false,
     uses: Infinity,
-    spaceRepairPriority: declareParam({
+    spaceRepairPriority: declareParam<UnitList>({
       default: [],
       source: 'nonFighterShips',
       sort: 'desc',
     }),
-    groundRepairPriority: declareParam({
+    groundRepairPriority: declareParam<UnitList>({
       default: [],
       source: 'groundForces',
       sort: 'desc',
@@ -80,7 +82,8 @@ export const duraniumArmor: Ability<Params> = {
     return [
       {
         key,
-        type: 'order-list' as const,
+        type: 'unit-list' as const,
+        mode: 'order' as const,
         items: ctx.api.own.getUnitVariantsOptions({
           exclude: ['FIGHTER'],
         }),
@@ -98,8 +101,8 @@ function findRepairTarget(
     ? params.groundRepairPriority
     : params.spaceRepairPriority
 
-  for (const variantId of priority) {
-    for (const unitId of ctx.api.own.getUnits(variantId)) {
+  for (const [variantId] of priority) {
+    for (const unitId of ctx.api.own.getUnits(variantId as UnitType)) {
       const state = ctx.api.own.getUnitState(unitId)
       if (!state?.isDamaged) continue
       if (state.usedSustainThisRound) continue

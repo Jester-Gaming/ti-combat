@@ -1,12 +1,12 @@
 import ralNelIcon from '@/assets/faction/ral_nel.svg?raw'
-import type { Ability } from '@/combat'
-import type { UnitType } from '@/types'
+import { type Ability, declareParam } from '@/combat'
+import type { UnitList, UnitType } from '@/types'
 
 import { retreatUnits } from '../../abilities/advanced/retreat'
 
 type Params = {
   isEnabled: boolean
-  shipConfig: Record<string, number>
+  shipConfig: UnitList<number>
 }
 
 export const watchfulOjz: Ability<Params> = {
@@ -19,14 +19,20 @@ export const watchfulOjz: Ability<Params> = {
   params: {
     isEnabled: false,
     uses: Infinity,
-    shipConfig: {},
+    shipConfig: declareParam<UnitList<number>>({
+      default: [],
+      source: 'spaceCombatParticipating',
+      defaultItemValue: 0,
+    }),
   },
   headerUI: 'isEnabled',
   uiConfig: ctx => [
     {
       key: 'shipConfig',
       label: 'Ships',
-      type: 'number-list-sortable',
+      type: 'unit-list',
+      mode: 'number',
+      sortable: true,
       items: ctx.api.own.getUnitVariantsOptions(),
     },
   ],
@@ -35,8 +41,9 @@ export const watchfulOjz: Ability<Params> = {
       timing: 'ANNOUNCE_RETREAT',
       call: (ctx, params) => {
         const toRetreat = []
-        for (const [variantId, maxCount] of Object.entries(params.shipConfig)) {
+        for (const [variantId, maxCount] of params.shipConfig) {
           if (toRetreat.length >= 2) break
+          if (maxCount <= 0) continue
           let retreatedForType = 0
           const ids = ctx.api.own.getUnits(variantId as UnitType)
           for (const id of ids) {

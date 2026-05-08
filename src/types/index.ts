@@ -7,6 +7,11 @@ export type CombatSide = 'attacker' | 'defender'
 
 export type { DiceGroup, SourcedDiceGroup } from './die'
 export type { Faction, FactionKey } from './faction'
+export {
+  UnitListBooleanSchema,
+  UnitListNumberSchema,
+  UnitListSchema,
+} from './schemas'
 export type {
   Unit,
   UnitAbility,

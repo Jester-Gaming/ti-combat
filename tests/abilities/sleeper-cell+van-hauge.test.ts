@@ -45,7 +45,7 @@ describe('SLEEPER_CELL + VAN_HAUGE', () => {
         abilities: {
           VAN_HAUGE: true,
           UNIT_PRIORITY: {
-            spaceUnitPriority: ['FLAGSHIP', 'CRUISER'],
+            spaceUnitPriority: [['FLAGSHIP'], ['CRUISER']],
           },
         },
       },

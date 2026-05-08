@@ -49,7 +49,7 @@ describe('EIDOLON_MAXIMUM', () => {
         units: { CRUISER: 1, MECH: 1 },
         abilities: {
           EIDOLON_MAXIMUM: true,
-          SUSTAIN_DAMAGE: { spacePriority: ['MECH'] },
+          SUSTAIN_DAMAGE: { spacePriority: [['MECH', true]] },
         },
       },
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
@@ -71,7 +71,7 @@ describe('EIDOLON_MAXIMUM', () => {
         units: { CRUISER: 1, MECH: 1 },
         abilities: {
           EIDOLON_MAXIMUM: true,
-          SUSTAIN_DAMAGE: { spacePriority: ['MECH'] },
+          SUSTAIN_DAMAGE: { spacePriority: [['MECH', true]] },
         },
       },
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },

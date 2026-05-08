@@ -15,7 +15,7 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import { DragHandleDots2Icon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
@@ -33,102 +33,83 @@ interface CommonProps {
   sortable?: boolean
 }
 
+export type OrderListValue = [string][]
+export type CheckboxListValue = [string, boolean][]
+export type NumberListValue = [string, number][]
+
 export type ListProps = CommonProps &
   (
     | {
+        mode: 'order'
+        value: OrderListValue
+        onChange: (value: OrderListValue) => void
+      }
+    | {
         mode: 'checkbox'
-        value: string[]
-        onChange: (values: string[]) => void
+        value: CheckboxListValue
+        onChange: (value: CheckboxListValue) => void
       }
     | {
         mode: 'number'
-        value: Record<string, number>
-        onChange: (values: Record<string, number>) => void
-      }
-    | {
-        mode: 'order'
-        value: string[]
-        onChange: (values: string[]) => void
+        value: NumberListValue
+        onChange: (value: NumberListValue) => void
       }
   )
 
 export function List(props: ListProps): React.ReactElement {
   const sortable = props.mode === 'order' || props.sortable === true
-  const [displayOrder, setFullOrder] = useDisplayOrder(props)
   const labelMap = useMemo(
     () => new Map(props.items.map(i => [i.value, i.label])),
+    [props.items],
+  )
+  const maxMap = useMemo(
+    () => new Map(props.items.map(i => [i.value, i.max])),
     [props.items],
   )
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
   )
 
+  const ids = props.value.map(([id]) => id)
+
   function handleToggle(id: string): void {
     if (props.mode !== 'checkbox') return
-    const checked = new Set(props.value)
-    if (checked.has(id)) {
-      props.onChange(props.value.filter(v => v !== id))
-    } else {
-      const next: string[] = []
-      for (const v of displayOrder) {
-        if (v === id || checked.has(v)) next.push(v)
-      }
-      props.onChange(next)
-    }
+    props.onChange(props.value.map(([k, v]) => (k === id ? [k, !v] : [k, v])))
   }
 
   function handleCountChange(id: string, count: number): void {
     if (props.mode !== 'number') return
-    const item = props.items.find(i => i.value === id)
-    const max = item?.max
+    const max = maxMap.get(id)
     const clamped = Math.max(0, max != null ? Math.min(count, max) : count)
-    const next = { ...props.value }
-    if (clamped === 0) delete next[id]
-    else next[id] = clamped
-    const result: Record<string, number> = {}
-    for (const key of displayOrder) {
-      if (next[key]) result[key] = next[key]
-    }
-    props.onChange(result)
+    props.onChange(
+      props.value.map(([k, v]) => (k === id ? [k, clamped] : [k, v])),
+    )
   }
 
   function handleDragEnd(event: DragEndEvent): void {
     const { active, over } = event
     if (!over || active.id === over.id) return
-    const oldIndex = displayOrder.indexOf(active.id as string)
-    const newIndex = displayOrder.indexOf(over.id as string)
-    const newOrder = arrayMove(displayOrder, oldIndex, newIndex)
-    setFullOrder(newOrder)
-
+    const oldIndex = ids.indexOf(active.id as string)
+    const newIndex = ids.indexOf(over.id as string)
+    if (oldIndex === -1 || newIndex === -1) return
     if (props.mode === 'order') {
-      props.onChange(newOrder)
-      return
-    }
-    if (props.mode === 'checkbox') {
-      const checked = new Set(props.value)
-      const next = newOrder.filter(v => checked.has(v))
-      if (next.join(',') !== props.value.join(',')) props.onChange(next)
-      return
-    }
-    const result: Record<string, number> = {}
-    for (const key of newOrder) {
-      const c = props.value[key]
-      if (c && c > 0) result[key] = c
-    }
-    if (Object.keys(result).join(',') !== Object.keys(props.value).join(',')) {
-      props.onChange(result)
+      props.onChange(arrayMove(props.value, oldIndex, newIndex))
+    } else if (props.mode === 'checkbox') {
+      props.onChange(arrayMove(props.value, oldIndex, newIndex))
+    } else {
+      props.onChange(arrayMove(props.value, oldIndex, newIndex))
     }
   }
 
-  function isActive(id: string): boolean {
-    if (props.mode === 'checkbox') return props.value.includes(id)
-    if (props.mode === 'number') return (props.value[id] ?? 0) > 0
+  function isActive(index: number): boolean {
+    if (props.mode === 'checkbox') return props.value[index][1] === true
+    if (props.mode === 'number') return (props.value[index][1] ?? 0) > 0
     return true
   }
 
   function renderRight(id: string, index: number): React.ReactElement {
     if (props.mode === 'checkbox') {
-      const checked = props.value.includes(id)
+      const checked = props.value[index][1]
       return (
         <Checkbox
           onPointerDown={e => e.stopPropagation()}
@@ -139,15 +120,14 @@ export function List(props: ListProps): React.ReactElement {
       )
     }
     if (props.mode === 'number') {
-      const item = props.items.find(i => i.value === id)
-      const count = props.value[id] ?? 0
+      const count = props.value[index][1]
       return (
         <Input
           square
           value={count}
           active={!!count}
           min={0}
-          max={item?.max}
+          max={maxMap.get(id)}
           onPointerDown={e => e.stopPropagation()}
           onChange={value => handleCountChange(id, value)}
         />
@@ -163,17 +143,14 @@ export function List(props: ListProps): React.ReactElement {
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext
-          items={displayOrder}
-          strategy={verticalListSortingStrategy}
-        >
+        <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <div className={styles.list}>
-            {displayOrder.map((id, index) => (
+            {ids.map((id, index) => (
               <SortableRow
                 key={id}
                 id={id}
                 label={labelMap.get(id) ?? id}
-                active={isActive(id)}
+                active={isActive(index)}
                 onRowClick={
                   props.mode === 'checkbox' ? () => handleToggle(id) : undefined
                 }
@@ -190,14 +167,14 @@ export function List(props: ListProps): React.ReactElement {
   const isClickable = props.mode === 'checkbox'
   return (
     <div className={styles.list}>
-      {displayOrder.map((id, index) => {
+      {ids.map((id, index) => {
         const label = labelMap.get(id) ?? id
         return (
           <div
             key={id}
             className={clsx(
               styles.item,
-              isActive(id) && styles.item_active,
+              isActive(index) && styles.item_active,
               isClickable && styles.item_clickable,
             )}
             onClick={isClickable ? () => handleToggle(id) : undefined}
@@ -265,64 +242,4 @@ function SortableRow({
       <div className={styles.right}>{children}</div>
     </div>
   )
-}
-
-function useDisplayOrder(
-  props: ListProps,
-): [string[], (next: string[]) => void] {
-  const items = props.items
-  const itemValues = useMemo(() => new Set(items.map(i => i.value)), [items])
-
-  const activeKeys = useMemo(() => {
-    if (props.mode === 'checkbox') return props.value
-    if (props.mode === 'number') {
-      return Object.keys(props.value).filter(k => (props.value[k] ?? 0) > 0)
-    }
-    return [] as string[]
-  }, [props.mode, props.value])
-
-  const [fullOrder, setFullOrder] = useState<string[]>(() => {
-    if (props.mode === 'order') return props.value
-    const activeInOrder = activeKeys.filter(v => itemValues.has(v))
-    const inactive = items
-      .map(i => i.value)
-      .filter(v => !activeInOrder.includes(v))
-    return [...activeInOrder, ...inactive]
-  })
-
-  const displayOrder = useMemo(() => {
-    if (props.mode === 'order') return props.value
-    const kept = fullOrder.filter(v => itemValues.has(v))
-    const keptSet = new Set(kept)
-    const itemsOrder = items.map(i => i.value)
-    const newItems = itemsOrder.filter(v => !keptSet.has(v))
-    if (newItems.length === 0 && kept.length === fullOrder.length) {
-      return fullOrder
-    }
-    if (newItems.length === 0) {
-      return kept
-    }
-    const activeSet = new Set(activeKeys)
-    const result = [...kept]
-    for (const newItem of newItems) {
-      const refOrder = activeSet.has(newItem) ? activeKeys : itemsOrder
-      const naturalIndex = refOrder.indexOf(newItem)
-      let insertAfter = -1
-      for (let i = naturalIndex - 1; i >= 0; i--) {
-        const idx = result.indexOf(refOrder[i])
-        if (idx !== -1) {
-          insertAfter = idx
-          break
-        }
-      }
-      result.splice(insertAfter + 1, 0, newItem)
-    }
-    return result
-  }, [fullOrder, itemValues, items, activeKeys, props.mode, props.value])
-
-  if (props.mode !== 'order' && displayOrder !== fullOrder) {
-    setFullOrder(displayOrder)
-  }
-
-  return [displayOrder, setFullOrder]
 }

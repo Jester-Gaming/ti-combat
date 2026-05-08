@@ -12,7 +12,7 @@ describe('PHOENIX_STANDARD', () => {
         abilities: {
           PHOENIX_STANDARD: {
             isEnabled: true,
-            spaceUnitPriority: ['CRUISER'],
+            spaceUnitPriority: [['CRUISER']],
           },
           PRE_GALVANIZED: { reinforcementTokens: 7 },
         },
@@ -41,7 +41,7 @@ describe('PHOENIX_STANDARD', () => {
         abilities: {
           PHOENIX_STANDARD: {
             isEnabled: true,
-            groundUnitPriority: ['INFANTRY'],
+            groundUnitPriority: [['INFANTRY']],
           },
           PRE_GALVANIZED: { reinforcementTokens: 7 },
         },
@@ -70,7 +70,7 @@ describe('PHOENIX_STANDARD', () => {
         abilities: {
           PHOENIX_STANDARD: {
             isEnabled: true,
-            spaceUnitPriority: ['DESTROYER'],
+            spaceUnitPriority: [['DESTROYER']],
           },
           PRE_GALVANIZED: { reinforcementTokens: 7 },
         },
@@ -101,7 +101,7 @@ describe('PHOENIX_STANDARD', () => {
           PHOENIX_STANDARD: {
             isEnabled: true,
             // DESTROYER never existed — ability falls through to CRUISER
-            spaceUnitPriority: ['DESTROYER', 'CRUISER'],
+            spaceUnitPriority: [['DESTROYER'], ['CRUISER']],
           },
           PRE_GALVANIZED: { reinforcementTokens: 7 },
         },
@@ -128,7 +128,7 @@ describe('PHOENIX_STANDARD', () => {
         abilities: {
           PHOENIX_STANDARD: {
             isEnabled: true,
-            spaceUnitPriority: ['CRUISER'],
+            spaceUnitPriority: [['CRUISER']],
           },
           PRE_GALVANIZED: { reinforcementTokens: 0 },
         },
@@ -156,7 +156,7 @@ describe('PHOENIX_STANDARD', () => {
         abilities: {
           PHOENIX_STANDARD: {
             isEnabled: true,
-            spaceUnitPriority: ['CRUISER'],
+            spaceUnitPriority: [['CRUISER']],
           },
           PRE_GALVANIZED: { reinforcementTokens: 7 },
         },
@@ -182,7 +182,7 @@ describe('PHOENIX_STANDARD', () => {
         abilities: {
           PHOENIX_STANDARD: {
             isEnabled: true,
-            spaceUnitPriority: ['CRUISER'],
+            spaceUnitPriority: [['CRUISER']],
           },
           PRE_GALVANIZED: { reinforcementTokens: 3 },
         },

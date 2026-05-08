@@ -6,11 +6,12 @@ import {
   GALVANIZED,
   galvanizeUnit,
 } from '@/data/abilities/general/pre-galvanized'
-import type { UnitType } from '@/types'
+import type { UnitList, UnitType } from '@/types'
+import { UnitListSchema } from '@/types'
 
 type Params = {
-  spaceUnitPriority: UnitType[]
-  groundUnitPriority: UnitType[]
+  spaceUnitPriority: UnitList
+  groundUnitPriority: UnitList
 }
 
 export const raiseTheStandard: Ability<Params> = {
@@ -20,20 +21,20 @@ export const raiseTheStandard: Ability<Params> = {
     'At the end of a combat: Galvanize 1 of your units that participated. Then, return this card to the Last Bastion player.',
   icon: lastBastionIcon,
   paramsSchema: z.object({
-    spaceUnitPriority: z.array(z.string()),
-    groundUnitPriority: z.array(z.string()),
+    spaceUnitPriority: UnitListSchema,
+    groundUnitPriority: UnitListSchema,
   }),
   params: {
     isEnabled: false,
     uses: 1,
-    spaceUnitPriority: declareParam<UnitType[]>({
-      default: [],
+    spaceUnitPriority: declareParam({
+      default: [] as UnitList,
       source: 'spaceCombatParticipating',
       sort: 'desc',
       filter: v => !parseVariantId(v as UnitType).subtypes.includes(GALVANIZED),
     }),
-    groundUnitPriority: declareParam<UnitType[]>({
-      default: [],
+    groundUnitPriority: declareParam({
+      default: [] as UnitList,
       source: 'groundCombatParticipating',
       sort: 'desc',
       filter: v => !parseVariantId(v as UnitType).subtypes.includes(GALVANIZED),
@@ -49,7 +50,8 @@ export const raiseTheStandard: Ability<Params> = {
       {
         key,
         label: 'Unit Priority',
-        type: 'order-list',
+        type: 'unit-list',
+        mode: 'order',
         items: ctx.api.own.getUnitVariantsOptions({
           excludeSubtypes: [GALVANIZED],
           combatMode: ctx.state.combatMode,
@@ -86,10 +88,12 @@ export const raiseTheStandard: Ability<Params> = {
 
 function findTarget(
   api: { hasUnitType: (t: UnitType) => boolean },
-  priority: UnitType[],
+  priority: UnitList,
 ): UnitType | undefined {
-  return priority.find(t => {
-    if (parseVariantId(t).subtypes.includes(GALVANIZED)) return false
-    return api.hasUnitType(t)
-  })
+  for (const [t] of priority) {
+    const type = t as UnitType
+    if (parseVariantId(type).subtypes.includes(GALVANIZED)) continue
+    if (api.hasUnitType(type)) return type
+  }
+  return undefined
 }

@@ -18,7 +18,7 @@ describe.forEachSide('CAVALRY + PUBLICIZE_WEAPON_SCHEMATICS', () => {
           CAVALRY: { isEnabled: true, unitType: 'WAR_SUN' },
           PUBLICIZE_WEAPON_SCHEMATICS: true,
           SUSTAIN_DAMAGE: {
-            spacePriority: ['WAR_SUN:Cavalry'],
+            spacePriority: [['WAR_SUN:Cavalry', true]],
           },
         },
       },

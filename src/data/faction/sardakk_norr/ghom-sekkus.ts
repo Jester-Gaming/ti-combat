@@ -1,17 +1,18 @@
 import { z } from 'zod/mini'
 
 import sardakkNorrIcon from '@/assets/faction/sardakk_norr.svg?raw'
-import type { Ability } from '@/combat'
+import { type Ability, declareParam } from '@/combat'
 import {
   GROUND_FORCES,
   UNIT_DISPLAY_NAMES,
   UNIT_LIMITS,
 } from '@/constants/units'
-import type { UnitBaseType } from '@/types'
+import type { UnitBaseType, UnitList } from '@/types'
+import { UnitListNumberSchema } from '@/types'
 
 type Params = {
   isEnabled: boolean
-  units: Record<string, number>
+  units: UnitList<number>
 }
 
 export const ghomSekkus: Ability<Params> = {
@@ -22,21 +23,26 @@ export const ghomSekkus: Ability<Params> = {
   icon: sardakkNorrIcon,
   context: 'GROUND',
   side: 'attacker',
-  paramsSchema: z.object({ units: z.record(z.string(), z.number()) }),
+  paramsSchema: z.object({
+    units: UnitListNumberSchema,
+  }),
   params: {
     isEnabled: false,
     uses: Infinity,
-    units: {},
+    units: declareParam<UnitList<number>>({
+      default: [],
+      source: 'groundForces',
+      defaultItemValue: 0,
+    }),
   },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'COMMIT_UNITS',
-      isCallable: params =>
-        Object.values(params.units).some(count => count > 0),
+      isCallable: (params, ctx) => ctx.utils.getFlat(params.units).length > 0,
       call: (ctx, params) => {
         const toPlace: Partial<Record<UnitBaseType, number>> = {}
-        for (const [type, count] of Object.entries(params.units)) {
+        for (const [type, count] of params.units) {
           if (count > 0) toPlace[type as UnitBaseType] = count
         }
         ctx.api.own.placeUnits(toPlace)
@@ -46,7 +52,8 @@ export const ghomSekkus: Ability<Params> = {
   uiConfig: [
     {
       key: 'units' as const,
-      type: 'number-list' as const,
+      type: 'unit-list' as const,
+      mode: 'number' as const,
       items: GROUND_FORCES.map(type => ({
         label: UNIT_DISPLAY_NAMES[type],
         value: type,

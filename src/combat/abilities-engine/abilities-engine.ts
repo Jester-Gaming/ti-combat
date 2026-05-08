@@ -271,10 +271,10 @@ function sortBucket(
   if (!paramKey) return
   const orderConfig = sideConfig['ABILITY_ORDER']
   if (!orderConfig) return
-  const order = orderConfig[paramKey] as string[] | undefined
+  const order = orderConfig[paramKey] as [string][] | undefined
   if (!order || order.length === 0) return
 
-  const orderIndex = new Map(order.map((key, i) => [key, i]))
+  const orderIndex = new Map(order.map(([key], i) => [key, i]))
   let nextSlot = order.length
   const sortKey = new Map<TimingInvokeEntry, number>()
   for (const entry of entries) {

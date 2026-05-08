@@ -12,7 +12,7 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
         abilities: {
           FRAGMENT_REALITY: {
             isEnabled: true,
-            ships: { CRUISER: 2 },
+            ships: [['CRUISER', 2]],
           },
         },
       },
@@ -40,7 +40,10 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
         abilities: {
           FRAGMENT_REALITY: {
             isEnabled: true,
-            ships: { DESTROYER: 2, FIGHTER: 3 },
+            ships: [
+              ['DESTROYER', 2],
+              ['FIGHTER', 3],
+            ],
           },
         },
       },
@@ -93,14 +96,14 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
         abilities: {
           FRAGMENT_REALITY: {
             isEnabled: true,
-            ships: { DESTROYER: 2 },
+            ships: [['DESTROYER', 2]],
           },
           FLEET_POOL: {
             isEnabled: true,
             // 3 existing + 2 placed = 5, pool = 3 → 2 excess
             fleetPool: 3,
             // Keep cruisers first, then destroyers, carriers last
-            shipPriority: ['CRUISER', 'DESTROYER', 'CARRIER'],
+            shipPriority: [['CRUISER'], ['DESTROYER'], ['CARRIER']],
           },
         },
       },
@@ -129,7 +132,10 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
         abilities: {
           FRAGMENT_REALITY: {
             isEnabled: true,
-            ships: { FIGHTER: 5, CRUISER: 1 },
+            ships: [
+              ['FIGHTER', 5],
+              ['CRUISER', 1],
+            ],
           },
           FLEET_POOL: {
             isEnabled: true,
@@ -161,14 +167,14 @@ describe.forEachSide('FRAGMENT_REALITY', () => {
         abilities: {
           FRAGMENT_REALITY: {
             isEnabled: true,
-            ships: { DESTROYER: 1 },
+            ships: [['DESTROYER', 1]],
           },
           FLEET_POOL: {
             isEnabled: true,
             // 3 existing + 1 placed = 4, pool = 2 → 2 excess
             fleetPool: 2,
             // Only cruiser in priority, carrier and destroyer are unlisted
-            shipPriority: ['CRUISER'],
+            shipPriority: [['CRUISER']],
           },
         },
       },

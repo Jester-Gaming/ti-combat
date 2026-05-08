@@ -12,7 +12,7 @@ describe.forEachSide('EVELYN_DELOUIS + PRE_GALVANIZED', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { INFANTRY: 1 },
+            galvanizedUnits: [['INFANTRY', 1]],
           },
           EVELYN_DELOUIS: {
             isEnabled: true,

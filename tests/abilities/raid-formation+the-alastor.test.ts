@@ -12,7 +12,7 @@ describe.forEachSide('RAID_FORMATION + THE_ALASTOR', () => {
         abilities: {
           RAID_FORMATION: {
             // User adds MECH to priority when facing Nekro with Alastor
-            targetPriority: ['MECH', 'FLAGSHIP'],
+            targetPriority: [['MECH'], ['FLAGSHIP']],
           },
         },
       },

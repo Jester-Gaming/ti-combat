@@ -10,7 +10,10 @@ describe.forEachSide('REVEAL_PROTOTYPE + VISCOUNT_UNLENN', () => {
         faction: 'ARBOREC',
         units: { CRUISER: 2 },
         abilities: {
-          REVEAL_PROTOTYPE: { isEnabled: true, spacePriority: ['CRUISER'] },
+          REVEAL_PROTOTYPE: {
+            isEnabled: true,
+            spacePriority: [['CRUISER', true]],
+          },
           VISCOUNT_UNLENN: { isEnabled: true, unitType: 'CRUISER' },
         },
       },

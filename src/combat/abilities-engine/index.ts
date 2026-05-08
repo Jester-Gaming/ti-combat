@@ -30,4 +30,5 @@ export type {
   SettingsParams,
   SidedDiceData,
   SyncSourceConfig,
+  UnitListMode,
 } from './types'

@@ -12,7 +12,7 @@ describe.forEachSide('LIGHTRAIL_ORDNANCE + LINKSHIP', () => {
         units: { DESTROYER: 1 },
         abilities: {
           LIGHTRAIL_ORDNANCE: true,
-          LINKSHIP: { structures: { SPACE_DOCK: 1 } },
+          LINKSHIP: { structures: [['SPACE_DOCK', 1]] },
         },
       },
     })

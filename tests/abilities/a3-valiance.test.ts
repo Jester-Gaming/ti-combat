@@ -12,12 +12,12 @@ describe('A3_VALIANCE', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { MECH: 1 },
+            galvanizedUnits: [['MECH', 1]],
             reinforcementTokens: 3,
           },
-          SUSTAIN_DAMAGE: { groundPriority: ['MECH:Galvanized'] },
+          SUSTAIN_DAMAGE: { groundPriority: [['MECH:Galvanized', true]] },
           UNIT_PRIORITY: {
-            groundUnitPriority: ['MECH:Galvanized', 'INFANTRY'],
+            groundUnitPriority: [['MECH:Galvanized'], ['INFANTRY']],
           },
         },
       },
@@ -50,8 +50,8 @@ describe('A3_VALIANCE', () => {
         faction: 'LAST_BASTION',
         units: { MECH: 1, INFANTRY: 3 },
         abilities: {
-          SUSTAIN_DAMAGE: { groundPriority: ['MECH'] },
-          UNIT_PRIORITY: { groundUnitPriority: ['MECH', 'INFANTRY'] },
+          SUSTAIN_DAMAGE: { groundPriority: [['MECH', true]] },
+          UNIT_PRIORITY: { groundUnitPriority: [['MECH'], ['INFANTRY']] },
         },
       },
       defender: {
@@ -80,12 +80,12 @@ describe('A3_VALIANCE', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { MECH: 1 },
+            galvanizedUnits: [['MECH', 1]],
             reinforcementTokens: 3,
           },
-          SUSTAIN_DAMAGE: { groundPriority: ['MECH:Galvanized'] },
+          SUSTAIN_DAMAGE: { groundPriority: [['MECH:Galvanized', true]] },
           UNIT_PRIORITY: {
-            groundUnitPriority: ['MECH:Galvanized', 'INFANTRY'],
+            groundUnitPriority: [['MECH:Galvanized'], ['INFANTRY']],
           },
         },
       },
@@ -114,15 +114,18 @@ describe('A3_VALIANCE', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { MECH: 1, INFANTRY: 2 },
+            galvanizedUnits: [
+              ['MECH', 1],
+              ['INFANTRY', 2],
+            ],
             reinforcementTokens: 3,
           },
-          SUSTAIN_DAMAGE: { groundPriority: ['MECH:Galvanized'] },
+          SUSTAIN_DAMAGE: { groundPriority: [['MECH:Galvanized', true]] },
           UNIT_PRIORITY: {
             groundUnitPriority: [
-              'MECH:Galvanized',
-              'INFANTRY:Galvanized',
-              'INFANTRY',
+              ['MECH:Galvanized'],
+              ['INFANTRY:Galvanized'],
+              ['INFANTRY'],
             ],
           },
         },
@@ -153,12 +156,12 @@ describe('A3_VALIANCE', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { MECH: 2 },
+            galvanizedUnits: [['MECH', 2]],
             reinforcementTokens: 6,
           },
-          SUSTAIN_DAMAGE: { groundPriority: ['MECH:Galvanized'] },
+          SUSTAIN_DAMAGE: { groundPriority: [['MECH:Galvanized', true]] },
           UNIT_PRIORITY: {
-            groundUnitPriority: ['MECH:Galvanized', 'INFANTRY'],
+            groundUnitPriority: [['MECH:Galvanized'], ['INFANTRY']],
           },
         },
       },
@@ -188,10 +191,10 @@ describe('A3_VALIANCE', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { MECH: 1 },
+            galvanizedUnits: [['MECH', 1]],
             reinforcementTokens: 3,
           },
-          SUSTAIN_DAMAGE: { groundPriority: ['MECH:Galvanized'] },
+          SUSTAIN_DAMAGE: { groundPriority: [['MECH:Galvanized', true]] },
         },
       },
       defender: {
@@ -222,12 +225,12 @@ describe('A3_VALIANCE', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { MECH: 1 },
+            galvanizedUnits: [['MECH', 1]],
             reinforcementTokens: 1,
           },
-          SUSTAIN_DAMAGE: { groundPriority: ['MECH:Galvanized'] },
+          SUSTAIN_DAMAGE: { groundPriority: [['MECH:Galvanized', true]] },
           UNIT_PRIORITY: {
-            groundUnitPriority: ['MECH:Galvanized', 'INFANTRY'],
+            groundUnitPriority: [['MECH:Galvanized'], ['INFANTRY']],
           },
         },
       },
@@ -259,12 +262,12 @@ describe('A3_VALIANCE', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { MECH: 1 },
+            galvanizedUnits: [['MECH', 1]],
             reinforcementTokens: 0,
           },
-          SUSTAIN_DAMAGE: { groundPriority: ['MECH:Galvanized'] },
+          SUSTAIN_DAMAGE: { groundPriority: [['MECH:Galvanized', true]] },
           UNIT_PRIORITY: {
-            groundUnitPriority: ['MECH:Galvanized', 'INFANTRY'],
+            groundUnitPriority: [['MECH:Galvanized'], ['INFANTRY']],
           },
         },
       },

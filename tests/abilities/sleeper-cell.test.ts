@@ -66,7 +66,7 @@ describe.forEachSide('SLEEPER_CELL', () => {
             isEnabled: true,
             fleetPool: 3,
             // Keep cruisers over carriers
-            shipPriority: ['CRUISER', 'CARRIER'],
+            shipPriority: [['CRUISER'], ['CARRIER']],
           },
         },
       },

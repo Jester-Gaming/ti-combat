@@ -66,9 +66,13 @@ export type UnitId = string & { readonly __brand: 'UnitId' }
 export type UnitIdList = string & { readonly __brand: 'UnitIdList' }
 
 /** Unified shape for ability list params that the `<List>` UI component edits.
- *  - `UnitList` (V = never)        → `[UnitType][]`        (order-list)
- *  - `UnitList<boolean>`           → `[UnitType, boolean][]` (checkbox-list)
- *  - `UnitList<number>`            → `[UnitType, number][]`  (number-list) */
-export type UnitList<V = never> = [V] extends [never]
-  ? [UnitType][]
-  : [UnitType, V][]
+ *  - `UnitList` (V = never)        → `[UnitType][]`        (order mode)
+ *  - `UnitList<boolean>`           → `[UnitType, boolean][]` (checkbox mode)
+ *  - `UnitList<number>`            → `[UnitType, number][]`  (number mode)
+ *  Override the key type with the second generic for non-unit lists, e.g.
+ *  `UnitList<boolean, MetaPhase>` or `UnitList<never, string>`. */
+export type UnitList<V = never, K extends string = UnitType> = [V] extends [
+  never,
+]
+  ? [K][]
+  : [K, V][]

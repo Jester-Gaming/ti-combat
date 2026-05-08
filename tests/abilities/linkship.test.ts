@@ -11,7 +11,7 @@ describe.forEachSide('LINKSHIP', () => {
         defender: {
           faction: 'RAL_NEL',
           units: { DESTROYER: 2 },
-          abilities: { LINKSHIP: { structures: { PDS: 2 } } },
+          abilities: { LINKSHIP: { structures: [['PDS', 2]] } },
         },
       })
 
@@ -30,7 +30,7 @@ describe.forEachSide('LINKSHIP', () => {
         defender: {
           faction: 'RAL_NEL',
           units: { DESTROYER: 3 },
-          abilities: { LINKSHIP: { structures: { PDS: 1 } } },
+          abilities: { LINKSHIP: { structures: [['PDS', 1]] } },
         },
       })
 
@@ -48,7 +48,7 @@ describe.forEachSide('LINKSHIP', () => {
         defender: {
           faction: 'RAL_NEL',
           units: { DESTROYER: 1 },
-          abilities: { LINKSHIP: { structures: { PDS: 3 } } },
+          abilities: { LINKSHIP: { structures: [['PDS', 3]] } },
         },
       })
 
@@ -67,7 +67,12 @@ describe.forEachSide('LINKSHIP', () => {
           faction: 'RAL_NEL',
           units: { DESTROYER: 2, SPACE_DOCK: 1 },
           abilities: {
-            LINKSHIP: { structures: { PDS: 1, SPACE_DOCK: 1 } },
+            LINKSHIP: {
+              structures: [
+                ['PDS', 1],
+                ['SPACE_DOCK', 1],
+              ],
+            },
             LIGHTRAIL_ORDNANCE: true,
           },
         },
@@ -92,7 +97,7 @@ describe.forEachSide('LINKSHIP', () => {
           faction: 'RAL_NEL',
           units: { DESTROYER: 3 },
           upgrades: ['DESTROYER'],
-          abilities: { LINKSHIP: { structures: { PDS: 1 } } },
+          abilities: { LINKSHIP: { structures: [['PDS', 1]] } },
         },
       })
 
@@ -112,7 +117,7 @@ describe.forEachSide('LINKSHIP', () => {
       defender: {
         faction: 'RAL_NEL',
         units: { DESTROYER: 1 },
-        abilities: { LINKSHIP: { structures: { PDS: 1 } } },
+        abilities: { LINKSHIP: { structures: [['PDS', 1]] } },
       },
     })
 
@@ -132,7 +137,7 @@ describe.forEachSide('LINKSHIP', () => {
         faction: 'RAL_NEL',
         units: { DESTROYER: 1, SPACE_DOCK: 1 },
         abilities: {
-          LINKSHIP: { structures: { SPACE_DOCK: 1 } },
+          LINKSHIP: { structures: [['SPACE_DOCK', 1]] },
           LIGHTRAIL_ORDNANCE: true,
         },
       },

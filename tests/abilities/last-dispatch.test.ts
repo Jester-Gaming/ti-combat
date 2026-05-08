@@ -39,7 +39,10 @@ describe.forEachSide('LAST_DISPATCH', () => {
           RETREAT: { isEnabled: true, rounds: 1 },
           LAST_DISPATCH: {
             isEnabled: true,
-            targetPriority: ['FIGHTER', 'DESTROYER'],
+            targetPriority: [
+              ['FIGHTER', true],
+              ['DESTROYER', true],
+            ],
           },
         },
       },

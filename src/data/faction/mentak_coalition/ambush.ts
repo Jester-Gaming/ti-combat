@@ -1,10 +1,11 @@
 import { z } from 'zod/mini'
 
 import { type Ability, declareParam, parseVariantId } from '@/combat'
-import type { DiceGroup, UnitBaseType, UnitId, UnitType } from '@/types'
+import type { DiceGroup, UnitBaseType, UnitId, UnitList } from '@/types'
+import { UnitListBooleanSchema } from '@/types'
 
 type Params = {
-  attackerPriority: UnitType[]
+  attackerPriority: UnitList<boolean>
 }
 
 export const ambush: Ability<Params> = {
@@ -14,16 +15,17 @@ export const ambush: Ability<Params> = {
     "At the start of a space combat, you may roll 1 die for each of up to 2 of your cruisers or destroyers in the system. For each result equal to or greater than that ship's combat value produce 1 hit; your opponent must assign it to 1 of their ships.",
   context: 'SPACE',
   paramsSchema: z.object({
-    attackerPriority: z.array(z.string()),
+    attackerPriority: UnitListBooleanSchema,
   }),
   params: {
     isEnabled: false,
     uses: 1,
     attackerPriority: declareParam({
-      default: [],
+      default: [] as UnitList<boolean>,
       source: 'ships',
       side: 'own',
       sort: 'desc',
+      defaultItemValue: true,
       filter: id =>
         (['CRUISER', 'DESTROYER'] as UnitBaseType[]).includes(
           parseVariantId(id).type,
@@ -49,7 +51,7 @@ export const ambush: Ability<Params> = {
         // priority list is empty or short.
         const selected: UnitId[] = []
 
-        for (const variantKey of params.attackerPriority) {
+        for (const variantKey of ctx.utils.getFlat(params.attackerPriority)) {
           for (const uid of ctx.api.own.getUnits(variantKey)) {
             if (selected.length >= MAX_SHIPS) break
             selected.push(uid)
@@ -72,7 +74,9 @@ export const ambush: Ability<Params> = {
     {
       key: 'attackerPriority' as const,
       label: 'Ship Priority',
-      type: 'checkbox-list-sortable' as const,
+      type: 'unit-list' as const,
+      mode: 'checkbox' as const,
+      sortable: true,
       items: ctx.api.own.getUnitVariantsOptions({
         include: ['CRUISER', 'DESTROYER'] as UnitBaseType[],
         combatMode: 'SPACE',

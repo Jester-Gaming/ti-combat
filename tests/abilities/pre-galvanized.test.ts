@@ -12,7 +12,7 @@ describe.forEachSide('PRE_GALVANIZED', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { CRUISER: 1 },
+            galvanizedUnits: [['CRUISER', 1]],
           },
         },
       },
@@ -36,7 +36,7 @@ describe.forEachSide('PRE_GALVANIZED', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { CRUISER: 1 },
+            galvanizedUnits: [['CRUISER', 1]],
           },
         },
       },
@@ -60,7 +60,7 @@ describe.forEachSide('PRE_GALVANIZED', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { DESTROYER: 1 },
+            galvanizedUnits: [['DESTROYER', 1]],
           },
         },
       },
@@ -84,7 +84,7 @@ describe.forEachSide('PRE_GALVANIZED', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { CRUISER: 5 },
+            galvanizedUnits: [['CRUISER', 5]],
           },
         },
       },
@@ -108,7 +108,7 @@ describe.forEachSide('PRE_GALVANIZED', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { CRUISER: 1 },
+            galvanizedUnits: [['CRUISER', 1]],
           },
         },
       },

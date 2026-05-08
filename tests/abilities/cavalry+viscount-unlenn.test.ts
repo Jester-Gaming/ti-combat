@@ -43,7 +43,7 @@ describe.forEachSide('CAVALRY + VISCOUNT_UNLENN', () => {
           CAVALRY: { isEnabled: true, unitType: 'CRUISER' },
           VISCOUNT_UNLENN: { isEnabled: true, unitType: 'CRUISER' },
           ABILITY_ORDER: {
-            startOfCombat: ['CAVALRY', 'VISCOUNT_UNLENN'],
+            startOfCombat: [['CAVALRY'], ['VISCOUNT_UNLENN']],
           },
         },
       },
@@ -68,7 +68,7 @@ describe.forEachSide('CAVALRY + VISCOUNT_UNLENN', () => {
           CAVALRY: { isEnabled: true, unitType: 'CRUISER' },
           VISCOUNT_UNLENN: { isEnabled: true, unitType: 'CRUISER' },
           ABILITY_ORDER: {
-            startOfCombat: ['VISCOUNT_UNLENN', 'CAVALRY'],
+            startOfCombat: [['VISCOUNT_UNLENN'], ['CAVALRY']],
           },
         },
       },
@@ -93,7 +93,7 @@ describe.forEachSide('CAVALRY + VISCOUNT_UNLENN', () => {
           CAVALRY: { isEnabled: true, unitType: 'CRUISER:Viscount' },
           VISCOUNT_UNLENN: { isEnabled: true, unitType: 'CRUISER' },
           ABILITY_ORDER: {
-            startOfCombat: ['VISCOUNT_UNLENN', 'CAVALRY'],
+            startOfCombat: [['VISCOUNT_UNLENN'], ['CAVALRY']],
           },
         },
       },
@@ -125,7 +125,7 @@ describe.forEachSide('CAVALRY + VISCOUNT_UNLENN', () => {
             unitType: 'CRUISER:Cavalry',
           },
           ABILITY_ORDER: {
-            startOfCombat: ['CAVALRY', 'VISCOUNT_UNLENN'],
+            startOfCombat: [['CAVALRY'], ['VISCOUNT_UNLENN']],
           },
         },
       },

@@ -31,7 +31,7 @@ describe.forEachSide('ARTICLES_OF_WAR + EIDOLON', () => {
         abilities: {
           ARTICLES_OF_WAR: true,
           SUSTAIN_DAMAGE: {
-            groundPriority: ['MECH'],
+            groundPriority: [['MECH', true]],
           },
         },
       },

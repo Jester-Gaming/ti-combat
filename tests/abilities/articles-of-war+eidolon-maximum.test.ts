@@ -35,7 +35,7 @@ describe.forEachSide('ARTICLES_OF_WAR + EIDOLON_MAXIMUM', () => {
           ARTICLES_OF_WAR: true,
           EIDOLON_MAXIMUM: true,
           SUSTAIN_DAMAGE: {
-            spacePriority: ['MECH'],
+            spacePriority: [['MECH', true]],
           },
         },
       },
@@ -62,7 +62,7 @@ describe.forEachSide('ARTICLES_OF_WAR + EIDOLON_MAXIMUM', () => {
           ARTICLES_OF_WAR: true,
           EIDOLON_MAXIMUM: true,
           SUSTAIN_DAMAGE: {
-            groundPriority: ['MECH'],
+            groundPriority: [['MECH', true]],
           },
         },
       },

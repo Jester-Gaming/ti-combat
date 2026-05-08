@@ -69,7 +69,7 @@ describe.forEachSide('EIDOLON', () => {
         units: { CRUISER: 1, MECH: 1 },
         abilities: {
           SUSTAIN_DAMAGE: {
-            spacePriority: ['MECH'],
+            spacePriority: [['MECH', true]],
           },
         },
       },
@@ -91,7 +91,7 @@ describe.forEachSide('EIDOLON', () => {
         units: { MECH: 1, INFANTRY: 1 },
         abilities: {
           SUSTAIN_DAMAGE: {
-            groundPriority: ['MECH'],
+            groundPriority: [['MECH', true]],
           },
         },
       },

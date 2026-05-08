@@ -1,14 +1,15 @@
 import { z } from 'zod/mini'
 
 import crimsonRebellionIcon from '@/assets/faction/crimson_rebellion.svg?raw'
-import { type Ability } from '@/combat'
+import { type Ability, declareParam } from '@/combat'
 import { SHIPS, UNIT_DISPLAY_NAMES, UNIT_LIMITS } from '@/constants/units'
-import type { UnitBaseType } from '@/types'
+import type { UnitBaseType, UnitList } from '@/types'
+import { UnitListNumberSchema } from '@/types'
 
 type Params = {
   isEnabled: boolean
   uses: number
-  ships: Record<string, number>
+  ships: UnitList<number>
 }
 
 export const fragmentReality: Ability<Params> = {
@@ -19,24 +20,25 @@ export const fragmentReality: Ability<Params> = {
   icon: crimsonRebellionIcon,
   context: 'SPACE',
   paramsSchema: z.object({
-    ships: z.record(z.string(), z.number()),
-    fleetPool: z.number(),
-    shipPriority: z.array(z.string()),
+    ships: UnitListNumberSchema,
   }),
   params: {
     isEnabled: false,
     uses: Infinity,
-    ships: {},
+    ships: declareParam<UnitList<number>>({
+      default: [],
+      source: 'ships',
+      defaultItemValue: 0,
+    }),
   },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'START_OF_COMBAT',
-      isCallable: params =>
-        Object.values(params.ships).some(count => count > 0),
+      isCallable: (params, ctx) => ctx.utils.getFlat(params.ships).length > 0,
       call: (ctx, params) => {
         const toPlace: Partial<Record<UnitBaseType, number>> = {}
-        for (const [type, count] of Object.entries(params.ships)) {
+        for (const [type, count] of params.ships) {
           if (count > 0) toPlace[type as UnitBaseType] = count
         }
         ctx.api.own.placeUnits(toPlace)
@@ -46,7 +48,8 @@ export const fragmentReality: Ability<Params> = {
   uiConfig: () => [
     {
       key: 'ships' as const,
-      type: 'number-list' as const,
+      type: 'unit-list' as const,
+      mode: 'number' as const,
       items: SHIPS.map(type => ({
         label: UNIT_DISPLAY_NAMES[type],
         value: type,

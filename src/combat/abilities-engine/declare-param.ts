@@ -10,6 +10,13 @@ interface DeclaredParamOptions<
   source?: K
   side?: 'own' | 'opponent'
   sort?: 'asc' | 'desc'
+  /** For `UnitList<V>` params, the value used when reconcile adds a new
+   *  entry that has no parent in the current list (e.g. `false` for
+   *  checkbox lists, `0` for number lists). Subtype variants
+   *  (`DREADNOUGHT:Galvanized`) inherit their parent's value when the
+   *  parent is present, falling back to this only when there is no
+   *  parent. Omit for order-mode lists (single-element tuples). */
+  defaultItemValue?: unknown
   compute?: (value: SettingsParams[K]) => T
   filter?: (value: SettingsParams[K][number]) => boolean
 }
@@ -20,6 +27,7 @@ interface DeclaredParamValue<T> {
   source?: keyof SettingsParams
   side: 'own' | 'opponent'
   sort: 'asc' | 'desc'
+  defaultItemValue?: unknown
   compute?: (value: SettingsParams[keyof SettingsParams]) => T
   filter?: (value: string) => boolean
 }
@@ -38,6 +46,7 @@ export function declareParam<
     source: options.source,
     side: options.side ?? 'own',
     sort: options.sort ?? 'asc',
+    defaultItemValue: options.defaultItemValue,
     compute: options.compute,
     filter: options.filter,
   } as unknown as T
@@ -90,6 +99,7 @@ export function extractSyncSources(
         group: value.source,
         side: value.side,
         sort: value.sort,
+        defaultItemValue: value.defaultItemValue,
         compute: value.compute,
         filter: value.filter,
       })

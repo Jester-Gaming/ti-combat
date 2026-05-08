@@ -12,7 +12,7 @@ describe.forEachSide('CAVALRY + PRE_GALVANIZED', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { CRUISER: 1 },
+            galvanizedUnits: [['CRUISER', 1]],
           },
           CAVALRY: { isEnabled: true, unitType: 'CRUISER:Galvanized' },
         },

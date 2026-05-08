@@ -50,6 +50,7 @@ import type {
   RuntimeAbilityList,
   SidedDiceData,
 } from '../types'
+import { type AbilityUtils, abilityUtils } from './ability-utils'
 
 // ============================================================================
 // BRANCH TYPES
@@ -750,6 +751,10 @@ export class AbilityContext {
 
   get api(): { own: SideApi; opponent: SideApi } {
     return this._api
+  }
+
+  get utils(): AbilityUtils {
+    return abilityUtils
   }
 
   get abilities(): OwnOpponentContext<RuntimeAbilityList> {

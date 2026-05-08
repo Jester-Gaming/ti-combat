@@ -58,6 +58,22 @@ function innerMeta(phase: MetaPhase[]): MetaPhase {
   return phase[phase.length - 1]
 }
 
+/** Extract `UnitType[]` keys from a `UnitList<V>` tuple-array, dropping
+ *  entries whose value slot is explicitly `false` (checkbox-mode "off").
+ *  Number-mode entries are kept regardless of count — sortUnitsByPriority
+ *  consumers care about ordering, not magnitude. */
+function unwrapUnitListKeys(raw: unknown): UnitType[] {
+  if (!Array.isArray(raw)) return raw as UnitType[]
+  if (raw.length === 0) return raw as UnitType[]
+  if (!Array.isArray(raw[0])) return raw as UnitType[]
+  const result: UnitType[] = []
+  for (const entry of raw as readonly [string, ...unknown[]][]) {
+    if (entry.length >= 2 && entry[1] === false) continue
+    result.push(entry[0] as UnitType)
+  }
+  return result
+}
+
 function sortUnitsAtSetup(data: CombatStateData): void {
   const mode = data.combatMode
   for (const side of ['attacker', 'defender'] as const) {
@@ -79,11 +95,12 @@ function sortUnitsAtSetup(data: CombatStateData): void {
       | { spaceUnitPriority?: UnitType[]; groundUnitPriority?: UnitType[] }
       | undefined
 
-    const list =
+    const rawList =
       mode === 'GROUND'
         ? unitPriority?.groundUnitPriority
         : unitPriority?.spaceUnitPriority
-    if (!list) continue
+    if (!rawList) continue
+    const list = unwrapUnitListKeys(rawList)
 
     // Membership comes from SETTINGS.{space,ground}CombatParticipating
     // — the authoritative runtime field. UNIT_PRIORITY only dictates
@@ -639,12 +656,14 @@ export class CombatState {
         : baseUP === undefined
           ? liveUP
           : { ...baseUP, ...liveUP }
-    const orderList =
-      (unitPriority &&
-        ((data.combatMode === 'GROUND'
-          ? unitPriority.groundUnitPriority
-          : unitPriority.spaceUnitPriority) as UnitType[] | undefined)) ??
-      (partList as unknown as UnitType[])
+    const rawOrderList =
+      unitPriority &&
+      ((data.combatMode === 'GROUND'
+        ? unitPriority.groundUnitPriority
+        : unitPriority.spaceUnitPriority) as unknown)
+    const orderList = rawOrderList
+      ? (unwrapUnitListKeys(rawOrderList) as UnitType[])
+      : (partList as unknown as UnitType[])
 
     sortUnitsByPriority(data[side], orderList, participatingTypes)
   }

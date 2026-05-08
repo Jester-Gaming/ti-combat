@@ -10,7 +10,7 @@ describe.forEachSide('EMERGENCY_REPAIRS + PRE_DAMAGED', () => {
         faction: 'ARBOREC',
         units: { DREADNOUGHT: 2, CRUISER: 1 },
         abilities: {
-          PRE_DAMAGED: { isEnabled: true, damagedUnits: { DREADNOUGHT: 2 } },
+          PRE_DAMAGED: { isEnabled: true, damagedUnits: [['DREADNOUGHT', 2]] },
           EMERGENCY_REPAIRS: true,
         },
       },
@@ -37,7 +37,7 @@ describe.forEachSide('EMERGENCY_REPAIRS + PRE_DAMAGED', () => {
         faction: 'ARBOREC',
         units: { DREADNOUGHT: 2 },
         abilities: {
-          PRE_DAMAGED: { isEnabled: true, damagedUnits: { DREADNOUGHT: 1 } },
+          PRE_DAMAGED: { isEnabled: true, damagedUnits: [['DREADNOUGHT', 1]] },
           EMERGENCY_REPAIRS: true,
         },
       },

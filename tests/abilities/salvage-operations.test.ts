@@ -62,7 +62,7 @@ describe('SALVAGE_OPERATIONS', () => {
         abilities: {
           SALVAGE_OPERATIONS: {
             isEnabled: true,
-            shipPriority: ['CRUISER'],
+            shipPriority: [['CRUISER']],
           },
         },
       },
@@ -91,7 +91,7 @@ describe('SALVAGE_OPERATIONS', () => {
         abilities: {
           SALVAGE_OPERATIONS: {
             isEnabled: true,
-            shipPriority: ['DREADNOUGHT', 'CRUISER'],
+            shipPriority: [['DREADNOUGHT'], ['CRUISER']],
           },
         },
       },

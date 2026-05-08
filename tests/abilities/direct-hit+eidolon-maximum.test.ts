@@ -18,7 +18,7 @@ describe('DIRECT_HIT + EIDOLON_MAXIMUM', () => {
         units: { MECH: 1, CRUISER: 1 },
         abilities: {
           EIDOLON_MAXIMUM: true,
-          SUSTAIN_DAMAGE: { spacePriority: ['MECH'] },
+          SUSTAIN_DAMAGE: { spacePriority: [['MECH', true]] },
         },
       },
     })
@@ -51,7 +51,7 @@ describe('DIRECT_HIT + EIDOLON_MAXIMUM', () => {
         units: { MECH: 1, INFANTRY: 1 },
         abilities: {
           EIDOLON_MAXIMUM: true,
-          SUSTAIN_DAMAGE: { groundPriority: ['MECH'] },
+          SUSTAIN_DAMAGE: { groundPriority: [['MECH', true]] },
         },
       },
     })

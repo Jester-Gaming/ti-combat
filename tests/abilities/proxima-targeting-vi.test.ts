@@ -100,7 +100,7 @@ describe('PROXIMA_TARGETING_VI', () => {
           PROXIMA_TARGETING_VI: true,
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { INFANTRY: 1 },
+            galvanizedUnits: [['INFANTRY', 1]],
             reinforcementTokens: 7,
           },
         },

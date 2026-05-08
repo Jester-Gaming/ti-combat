@@ -1,8 +1,8 @@
 import { type Ability, type AbilityReadContext, declareParam } from '@/combat'
-import type { UnitId, UnitType } from '@/types'
+import type { UnitId, UnitList, UnitType } from '@/types'
 
 type Params = {
-  targetPriority: UnitType[]
+  targetPriority: UnitList<boolean>
 }
 
 export const lastDispatch: Ability<Params> = {
@@ -14,11 +14,12 @@ export const lastDispatch: Ability<Params> = {
   params: {
     isEnabled: true,
     uses: Infinity,
-    targetPriority: declareParam({
+    targetPriority: declareParam<UnitList<boolean>>({
       default: [],
       source: 'ships',
       side: 'opponent',
       sort: 'desc',
+      defaultItemValue: true,
     }),
   },
   headerUI: 'isEnabled',
@@ -41,8 +42,8 @@ export const lastDispatch: Ability<Params> = {
         return false
       },
       call: (ctx, params) => {
-        for (const variantId of params.targetPriority) {
-          const ids = ctx.api.opponent.getUnits(variantId as UnitType, {
+        for (const variantId of ctx.utils.getFlat(params.targetPriority)) {
+          const ids = ctx.api.opponent.getUnits(variantId, {
             includeVariants: true,
           })
           for (const id of ids) {
@@ -58,7 +59,9 @@ export const lastDispatch: Ability<Params> = {
   uiConfig: ctx => [
     {
       key: 'targetPriority' as const,
-      type: 'checkbox-list-sortable' as const,
+      type: 'unit-list' as const,
+      mode: 'checkbox' as const,
+      sortable: true,
       items: ctx.api.opponent.getUnitVariantsOptions(),
     },
   ],

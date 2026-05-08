@@ -11,7 +11,7 @@ describe.forEachSide('EIDOLON + RAID_FORMATION', () => {
         units: { DESTROYER: 3 },
         abilities: {
           RAID_FORMATION: {
-            targetPriority: ['MECH', 'FLAGSHIP'],
+            targetPriority: [['MECH'], ['FLAGSHIP']],
           },
         },
       },

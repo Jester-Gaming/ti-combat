@@ -12,7 +12,10 @@ describe.forEachSide('OVERWING_ZETA', () => {
         abilities: {
           OVERWING_ZETA: {
             isEnabled: true,
-            ships: { FLAGSHIP: 1, CRUISER: 1 },
+            ships: [
+              ['FLAGSHIP', 1],
+              ['CRUISER', 1],
+            ],
           },
         },
       },
@@ -41,7 +44,10 @@ describe.forEachSide('OVERWING_ZETA', () => {
         abilities: {
           OVERWING_ZETA: {
             isEnabled: true,
-            ships: { FLAGSHIP: 1, DESTROYER: 2 },
+            ships: [
+              ['FLAGSHIP', 1],
+              ['DESTROYER', 2],
+            ],
           },
         },
       },
@@ -69,7 +75,10 @@ describe.forEachSide('OVERWING_ZETA', () => {
         abilities: {
           OVERWING_ZETA: {
             isEnabled: true,
-            ships: { CRUISER: 2, DESTROYER: 2 },
+            ships: [
+              ['CRUISER', 2],
+              ['DESTROYER', 2],
+            ],
           },
         },
       },
@@ -122,13 +131,21 @@ describe.forEachSide('OVERWING_ZETA', () => {
         abilities: {
           OVERWING_ZETA: {
             isEnabled: true,
-            ships: { FLAGSHIP: 1, DESTROYER: 1 },
+            ships: [
+              ['FLAGSHIP', 1],
+              ['DESTROYER', 1],
+            ],
           },
           FLEET_POOL: {
             isEnabled: true,
             // 3 existing + 2 placed = 5, pool = 3 → 2 excess
             fleetPool: 3,
-            shipPriority: ['FLAGSHIP', 'CRUISER', 'DESTROYER', 'CARRIER'],
+            shipPriority: [
+              ['FLAGSHIP'],
+              ['CRUISER'],
+              ['DESTROYER'],
+              ['CARRIER'],
+            ],
           },
         },
       },
@@ -159,7 +176,7 @@ describe.forEachSide('OVERWING_ZETA', () => {
           OVERWING_ZETA: {
             isEnabled: true,
             strategy: 'ENOUGH_FLEET_POOL',
-            ships: { CRUISER: 2 },
+            ships: [['CRUISER', 2]],
           },
           FLEET_POOL: {
             isEnabled: true,
@@ -198,7 +215,7 @@ describe.forEachSide('OVERWING_ZETA', () => {
           OVERWING_ZETA: {
             isEnabled: true,
             strategy: 'ENOUGH_FLEET_POOL',
-            ships: { FLAGSHIP: 1 },
+            ships: [['FLAGSHIP', 1]],
           },
           FLEET_POOL: {
             isEnabled: true,

@@ -14,7 +14,10 @@ describe.forEachSide('LAST_DISPATCH + WATCHFUL_OJZ', () => {
           RETREAT: { isEnabled: true, rounds: 1 },
           WATCHFUL_OJZ: {
             isEnabled: true,
-            shipConfig: { FLAGSHIP: 1, CRUISER: 1 },
+            shipConfig: [
+              ['FLAGSHIP', 1],
+              ['CRUISER', 1],
+            ],
           },
           LAST_DISPATCH: true,
         },

@@ -121,7 +121,7 @@ describe('COURAGEOUS_TO_THE_END', () => {
         abilities: {
           COURAGEOUS_TO_THE_END: {
             isEnabled: true,
-            ownPriority: ['DESTROYER'],
+            ownPriority: [['DESTROYER', true]],
           },
         },
       },
@@ -163,7 +163,7 @@ describe('COURAGEOUS_TO_THE_END', () => {
         abilities: {
           COURAGEOUS_TO_THE_END: {
             isEnabled: true,
-            targetPriority: ['CRUISER'],
+            targetPriority: [['CRUISER', true]],
           },
         },
       },
@@ -210,7 +210,7 @@ describe('COURAGEOUS_TO_THE_END', () => {
         abilities: {
           COURAGEOUS_TO_THE_END: {
             isEnabled: true,
-            ownPriority: ['CARRIER'],
+            ownPriority: [['CARRIER', true]],
           },
         },
       },
@@ -281,7 +281,7 @@ describe('COURAGEOUS_TO_THE_END', () => {
         abilities: {
           COURAGEOUS_TO_THE_END: {
             isEnabled: true,
-            targetPriority: ['CARRIER'],
+            targetPriority: [['CARRIER', true]],
           },
         },
       },

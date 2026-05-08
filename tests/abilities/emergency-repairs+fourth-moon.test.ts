@@ -14,7 +14,7 @@ describe('EMERGENCY_REPAIRS + FOURTH_MOON', () => {
         faction: 'ARBOREC',
         units: { DREADNOUGHT: 2, CRUISER: 1 },
         abilities: {
-          PRE_DAMAGED: { isEnabled: true, damagedUnits: { DREADNOUGHT: 2 } },
+          PRE_DAMAGED: { isEnabled: true, damagedUnits: [['DREADNOUGHT', 2]] },
           EMERGENCY_REPAIRS: true,
         },
       },

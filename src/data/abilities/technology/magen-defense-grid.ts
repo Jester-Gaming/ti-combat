@@ -1,10 +1,11 @@
 import { z } from 'zod/mini'
 
 import { type Ability, declareParam } from '@/combat'
-import type { UnitBaseType } from '@/types'
+import type { UnitList } from '@/types'
+import { UnitListSchema } from '@/types'
 
 type Params = {
-  targetPriority: UnitBaseType[]
+  targetPriority: UnitList
 }
 
 export const magenDefenseGrid: Ability<Params> = {
@@ -15,12 +16,12 @@ export const magenDefenseGrid: Ability<Params> = {
   context: 'GROUND',
   side: 'defender',
   paramsSchema: z.object({
-    targetPriority: z.array(z.string()),
+    targetPriority: UnitListSchema,
   }),
   params: {
     isEnabled: false,
     uses: Infinity,
-    targetPriority: declareParam({
+    targetPriority: declareParam<UnitList>({
       default: [],
       source: 'groundForces',
       side: 'opponent',
@@ -35,13 +36,14 @@ export const magenDefenseGrid: Ability<Params> = {
         const hasStructure = ctx.api.own.countUnits(structures) > 0
         if (!hasStructure) return false
         return (
-          ctx.api.opponent.findUnitByPriority(params.targetPriority) !==
-          undefined
+          ctx.api.opponent.findUnitByPriority(
+            ctx.utils.getFlat(params.targetPriority),
+          ) !== undefined
         )
       },
       call: (ctx, params) => {
         const target = ctx.api.opponent.findUnitByPriority(
-          params.targetPriority,
+          ctx.utils.getFlat(params.targetPriority),
         )!
         const type = ctx.api.opponent.getUnitBaseType(target)!
         ctx.api.opponent.addHits(1, [type])
@@ -52,7 +54,8 @@ export const magenDefenseGrid: Ability<Params> = {
     return [
       {
         key: 'targetPriority' as const,
-        type: 'order-list' as const,
+        type: 'unit-list' as const,
+        mode: 'order' as const,
         items: ctx.api.opponent.getUnitVariantsOptions({
           combatMode: 'GROUND',
         }),

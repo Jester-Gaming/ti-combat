@@ -15,6 +15,7 @@ export {
   SLOT_DISPLAY,
   SLOT_ORDER,
   type SyncSourceConfig,
+  type UnitListMode,
 } from './abilities-engine'
 export {
   extractDefaults,

@@ -10,7 +10,7 @@ describe.forEachSide('DURANIUM_ARMOR + PRE_DAMAGED', () => {
         faction: 'ARBOREC',
         units: { DREADNOUGHT: 1, CRUISER: 1 },
         abilities: {
-          PRE_DAMAGED: { isEnabled: true, damagedUnits: { DREADNOUGHT: 1 } },
+          PRE_DAMAGED: { isEnabled: true, damagedUnits: [['DREADNOUGHT', 1]] },
           DURANIUM_ARMOR: true,
         },
       },
@@ -33,7 +33,7 @@ describe.forEachSide('DURANIUM_ARMOR + PRE_DAMAGED', () => {
         faction: 'ARBOREC',
         units: { DREADNOUGHT: 1, CRUISER: 1 },
         abilities: {
-          PRE_DAMAGED: { isEnabled: true, damagedUnits: { DREADNOUGHT: 1 } },
+          PRE_DAMAGED: { isEnabled: true, damagedUnits: [['DREADNOUGHT', 1]] },
           DURANIUM_ARMOR: true,
         },
       },

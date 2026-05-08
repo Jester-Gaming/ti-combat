@@ -1,15 +1,16 @@
 import { z } from 'zod/mini'
 
-import type { UnitType } from '@/types'
+import type { UnitList } from '@/types'
+import { UnitListSchema } from '@/types'
 
 import { declareParam } from '../../../combat/abilities-engine/declare-param'
 import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
-  spaceUnitPriority: UnitType[]
-  groundUnitPriority: UnitType[]
+  spaceUnitPriority: UnitList
+  groundUnitPriority: UnitList
   customScoPriority: boolean
-  scoUnitPriority: UnitType[]
+  scoUnitPriority: UnitList
 }
 
 declare global {
@@ -22,24 +23,24 @@ export const unitPriority: Ability<Params> = {
   key: 'UNIT_PRIORITY',
   name: 'Assign Hits Order',
   paramsSchema: z.object({
-    spaceUnitPriority: z.array(z.string()),
-    groundUnitPriority: z.array(z.string()),
+    spaceUnitPriority: UnitListSchema,
+    groundUnitPriority: UnitListSchema,
     customScoPriority: z.boolean(),
-    scoUnitPriority: z.array(z.string()),
+    scoUnitPriority: UnitListSchema,
   }),
   params: {
     isEnabled: true,
     uses: Infinity,
-    spaceUnitPriority: declareParam({
+    spaceUnitPriority: declareParam<UnitList>({
       default: [],
       source: 'spaceCombatParticipating',
     }),
-    groundUnitPriority: declareParam({
+    groundUnitPriority: declareParam<UnitList>({
       default: [],
       source: 'groundCombatParticipating',
     }),
     customScoPriority: false,
-    scoUnitPriority: declareParam({
+    scoUnitPriority: declareParam<UnitList>({
       default: [],
       source: 'spaceCombatParticipating',
     }),
@@ -56,7 +57,8 @@ export const unitPriority: Ability<Params> = {
       return [
         {
           key: 'groundUnitPriority' as const,
-          type: 'order-list' as const,
+          type: 'unit-list' as const,
+          mode: 'order' as const,
           items: ctx.api.own.getUnitVariantsOptions(),
         },
       ]
@@ -67,7 +69,8 @@ export const unitPriority: Ability<Params> = {
     return [
       {
         key: 'spaceUnitPriority' as const,
-        type: 'order-list' as const,
+        type: 'unit-list' as const,
+        mode: 'order' as const,
         items: unitItems,
       },
       {
@@ -80,7 +83,8 @@ export const unitPriority: Ability<Params> = {
             {
               key: 'scoUnitPriority' as const,
               label: 'Space Cannon Offense Priority',
-              type: 'order-list' as const,
+              type: 'unit-list' as const,
+              mode: 'order' as const,
               items: unitItems,
             },
           ]

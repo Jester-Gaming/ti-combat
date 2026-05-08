@@ -1,8 +1,8 @@
 import { type Ability, declareParam } from '@/combat'
-import type { UnitType } from '@/types'
+import type { UnitList } from '@/types'
 
 type Params = {
-  targetPriority: UnitType[]
+  targetPriority: UnitList
 }
 
 export const raidFormation: Ability<Params> = {
@@ -14,7 +14,7 @@ export const raidFormation: Ability<Params> = {
   params: {
     isEnabled: true,
     uses: Infinity,
-    targetPriority: declareParam({
+    targetPriority: declareParam<UnitList>({
       default: [],
       source: 'nonFighterShips',
       side: 'opponent',
@@ -24,7 +24,8 @@ export const raidFormation: Ability<Params> = {
     return [
       {
         key: 'targetPriority' as const,
-        type: 'order-list' as const,
+        type: 'unit-list' as const,
+        mode: 'order' as const,
         items: ctx.api.opponent.getUnitVariantsOptions({
           combatMode: 'SPACE',
           exclude: ['FIGHTER'],
@@ -52,15 +53,13 @@ export const raidFormation: Ability<Params> = {
         for (let i = 0; i < excess; i++) {
           let found = false
 
-          for (const variantId of params.targetPriority) {
-            if (
-              ctx.api.opponent.isUnitAbilityLost('SUSTAIN_DAMAGE', variantId)
-            ) {
+          for (const variant of ctx.utils.getFlat(params.targetPriority)) {
+            if (ctx.api.opponent.isUnitAbilityLost('SUSTAIN_DAMAGE', variant)) {
               continue
             }
 
-            const units = ctx.api.opponent.getUnits(variantId)
-            const stats = ctx.api.opponent.getUnitStats(variantId)
+            const units = ctx.api.opponent.getUnits(variant)
+            const stats = ctx.api.opponent.getUnitStats(variant)
 
             if (!stats?.UNIT_ABILITIES?.SUSTAIN_DAMAGE) continue
 

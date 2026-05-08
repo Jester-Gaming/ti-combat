@@ -13,10 +13,14 @@ describe('PRE_GALVANIZED + SUSTAIN_DAMAGE', () => {
         abilities: {
           PRE_GALVANIZED: {
             isEnabled: true,
-            galvanizedUnits: { FLAGSHIP: 1 },
+            galvanizedUnits: [['FLAGSHIP', 1]],
           },
           SUSTAIN_DAMAGE: {
-            spacePriority: ['FLAGSHIP:Galvanized', 'DREADNOUGHT', 'FLAGSHIP'],
+            spacePriority: [
+              ['FLAGSHIP:Galvanized', true],
+              ['DREADNOUGHT', true],
+              ['FLAGSHIP', true],
+            ],
           },
         },
       },

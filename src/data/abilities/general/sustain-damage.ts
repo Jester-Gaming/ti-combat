@@ -1,11 +1,12 @@
 import { z } from 'zod/mini'
 
 import { type Ability, declareParam } from '@/combat'
-import type { UnitId, UnitType } from '@/types'
+import type { UnitId, UnitList, UnitType } from '@/types'
+import { UnitListBooleanSchema } from '@/types'
 
 type Params = {
-  spacePriority: UnitType[]
-  groundPriority: UnitType[]
+  spacePriority: UnitList<boolean>
+  groundPriority: UnitList<boolean>
 }
 
 declare global {
@@ -25,19 +26,21 @@ export const sustainDamage: Ability<Params> = {
   key: 'SUSTAIN_DAMAGE',
   name: 'Sustain Damage',
   paramsSchema: z.object({
-    spacePriority: z.array(z.string()),
-    groundPriority: z.array(z.string()),
+    spacePriority: UnitListBooleanSchema,
+    groundPriority: UnitListBooleanSchema,
   }),
   params: {
     isEnabled: true,
     uses: Infinity,
-    spacePriority: declareParam({
+    spacePriority: declareParam<UnitList<boolean>>({
       default: [],
       source: 'nonFighterShips',
+      defaultItemValue: true,
     }),
-    groundPriority: declareParam({
+    groundPriority: declareParam<UnitList<boolean>>({
       default: [],
       source: 'groundForces',
+      defaultItemValue: true,
     }),
   },
   sort: (params, ctx, unitIds) => {
@@ -46,8 +49,8 @@ export const sustainDamage: Ability<Params> = {
 
     const remaining = new Set(unitIds)
     const result: UnitId[] = []
-    for (const variantId of priority) {
-      for (const id of ctx.api.own.getUnits(variantId as UnitType)) {
+    for (const variantId of ctx.utils.getFlat(priority)) {
+      for (const id of ctx.api.own.getUnits(variantId)) {
         if (remaining.has(id)) {
           result.push(id)
           remaining.delete(id)
@@ -77,7 +80,7 @@ export const sustainDamage: Ability<Params> = {
         const allowedUnits = isGround
           ? params.groundPriority
           : params.spacePriority
-        if (!allowedUnits.includes(variantId)) return false
+        if (!ctx.utils.getFlat(allowedUnits).includes(variantId)) return false
 
         const validTargets = ctx.api.own.getHitPoolValidTargets()
         if (validTargets && !validTargets.includes(unitType as UnitType)) {
@@ -113,7 +116,9 @@ export const sustainDamage: Ability<Params> = {
     return [
       {
         key,
-        type: 'checkbox-list-sortable' as const,
+        type: 'unit-list' as const,
+        mode: 'checkbox' as const,
+        sortable: true,
         items: ctx.api.own.getUnitVariantsOptions({
           exclude: ['FIGHTER'],
         }),

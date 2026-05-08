@@ -83,38 +83,80 @@ export function expandWithSubtypes(
   return result
 }
 
-export function reconcileArrayParam(
-  current: string[],
-  validList: string[],
-): string[] {
-  const validSet = new Set(validList)
-  const currentSet = new Set(current)
-
-  const kept = current.filter(item => validSet.has(item))
-  const newItems = validList.filter(item => !currentSet.has(item))
-
-  if (newItems.length === 0) return kept
-
-  const result = [...kept]
-  for (const newItem of newItems) {
-    const validIndex = validList.indexOf(newItem)
-    let insertAt = 0
-    for (let i = 0; i < result.length; i++) {
-      const resultItemValidIndex = validList.indexOf(result[i])
-      if (resultItemValidIndex < validIndex) {
-        insertAt = i + 1
-      }
-    }
-    result.splice(insertAt, 0, newItem)
-  }
-
-  return result
-}
-
 export function reconcileStringParam(
   current: string,
   validList: string[],
 ): string {
   if (validList.includes(current)) return current
   return validList[0] ?? current
+}
+
+type UnitListEntry = [string] | [string, unknown]
+
+const NO_PARENT = Symbol('no-parent')
+
+function inheritedValue(
+  newKey: string,
+  byKey: Map<string, unknown>,
+): unknown | typeof NO_PARENT {
+  // Walk parent chain by stripping ":subtype" segments so a freshly-added
+  // variant inherits its base type's value (e.g. DREADNOUGHT:Galvanized
+  // copies DREADNOUGHT's checkbox/number value).
+  let key = newKey
+  while (true) {
+    const colonIdx = key.lastIndexOf(':')
+    if (colonIdx === -1) return NO_PARENT
+    key = key.slice(0, colonIdx)
+    if (byKey.has(key)) return byKey.get(key)
+  }
+}
+
+/** Reconcile a `UnitList<V>` (tuple-array) param against a fresh validList.
+ *  - Drops entries whose key is no longer valid.
+ *  - Preserves user-set order and per-key value for entries that survive.
+ *  - Adds missing keys at their natural validList position. Subtype
+ *    variants inherit their parent's value when the parent is present;
+ *    otherwise the entry is built with `defaultItemValue` (or as a
+ *    length-1 tuple `[key]` when `defaultItemValue` is omitted). */
+export function reconcileUnitListParam(
+  current: readonly UnitListEntry[],
+  validList: readonly string[],
+  defaultItemValue?: unknown,
+): UnitListEntry[] {
+  const validSet = new Set(validList)
+  const kept = current.filter(entry => validSet.has(entry[0]))
+  const keptKeys = new Set(kept.map(entry => entry[0]))
+  const newKeys = validList.filter(key => !keptKeys.has(key))
+
+  if (newKeys.length === 0)
+    return kept.map(entry => [...entry] as UnitListEntry)
+
+  const result: UnitListEntry[] = kept.map(entry => [...entry] as UnitListEntry)
+  const valuesByKey = new Map<string, unknown>(
+    kept.map(entry => [entry[0], entry[1]]),
+  )
+
+  for (const newKey of newKeys) {
+    const validIndex = validList.indexOf(newKey)
+    let insertAt = 0
+    for (let i = 0; i < result.length; i++) {
+      const itemValidIndex = validList.indexOf(result[i][0])
+      if (itemValidIndex !== -1 && itemValidIndex < validIndex) {
+        insertAt = i + 1
+      }
+    }
+    const inherited = inheritedValue(newKey, valuesByKey)
+    let entry: UnitListEntry
+    if (inherited !== NO_PARENT) {
+      entry = [newKey, inherited]
+    } else if (defaultItemValue !== undefined) {
+      entry = [newKey, defaultItemValue]
+    } else {
+      entry = [newKey]
+    }
+    result.splice(insertAt, 0, entry)
+    valuesByKey.set(newKey, entry[1])
+  }
+
+  return result
 }

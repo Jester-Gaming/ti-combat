@@ -95,7 +95,10 @@ describe.forEachSide('SUSTAIN_DAMAGE', () => {
         units: { WAR_SUN: 1, DREADNOUGHT: 1 },
         abilities: {
           SUSTAIN_DAMAGE: {
-            spacePriority: ['WAR_SUN', 'DREADNOUGHT'],
+            spacePriority: [
+              ['WAR_SUN', true],
+              ['DREADNOUGHT', true],
+            ],
           },
         },
       },
@@ -118,7 +121,10 @@ describe.forEachSide('SUSTAIN_DAMAGE', () => {
         units: { DREADNOUGHT: 1 },
         abilities: {
           SUSTAIN_DAMAGE: {
-            spacePriority: ['WAR_SUN', 'FLAGSHIP'],
+            spacePriority: [
+              ['WAR_SUN', true],
+              ['FLAGSHIP', true],
+            ],
           },
         },
       },

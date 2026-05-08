@@ -10,7 +10,13 @@ describe('GHOM_SEKKUS', () => {
         faction: 'ARBOREC',
         units: { INFANTRY: 1 },
         abilities: {
-          GHOM_SEKKUS: { isEnabled: true, units: { INFANTRY: 2, MECH: 1 } },
+          GHOM_SEKKUS: {
+            isEnabled: true,
+            units: [
+              ['INFANTRY', 2],
+              ['MECH', 1],
+            ],
+          },
         },
       },
       defender: {

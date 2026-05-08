@@ -12,15 +12,15 @@ describe('RAISE_THE_STANDARD + SALVAGE_OPERATIONS', () => {
         abilities: {
           SALVAGE_OPERATIONS: {
             isEnabled: true,
-            shipPriority: ['CRUISER'],
+            shipPriority: [['CRUISER']],
           },
           RAISE_THE_STANDARD: {
             isEnabled: true,
-            spaceUnitPriority: ['CRUISER'],
+            spaceUnitPriority: [['CRUISER']],
           },
           PRE_GALVANIZED: { reinforcementTokens: 7 },
           ABILITY_ORDER: {
-            endOfCombat: ['SALVAGE_OPERATIONS', 'RAISE_THE_STANDARD'],
+            endOfCombat: [['SALVAGE_OPERATIONS'], ['RAISE_THE_STANDARD']],
           },
         },
       },
@@ -49,15 +49,15 @@ describe('RAISE_THE_STANDARD + SALVAGE_OPERATIONS', () => {
         abilities: {
           SALVAGE_OPERATIONS: {
             isEnabled: true,
-            shipPriority: ['CRUISER'],
+            shipPriority: [['CRUISER']],
           },
           RAISE_THE_STANDARD: {
             isEnabled: true,
-            spaceUnitPriority: ['CRUISER'],
+            spaceUnitPriority: [['CRUISER']],
           },
           PRE_GALVANIZED: { reinforcementTokens: 7 },
           ABILITY_ORDER: {
-            endOfCombat: ['RAISE_THE_STANDARD', 'SALVAGE_OPERATIONS'],
+            endOfCombat: [['RAISE_THE_STANDARD'], ['SALVAGE_OPERATIONS']],
           },
         },
       },

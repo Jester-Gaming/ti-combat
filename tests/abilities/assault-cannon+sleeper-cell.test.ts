@@ -13,7 +13,7 @@ describe.forEachSide('ASSAULT_CANNON + SLEEPER_CELL', () => {
           SLEEPER_CELL: true,
           ASSAULT_CANNON: true,
           ABILITY_ORDER: {
-            startOfCombat: ['ASSAULT_CANNON', 'SLEEPER_CELL'],
+            startOfCombat: [['ASSAULT_CANNON'], ['SLEEPER_CELL']],
           },
         },
       },
@@ -42,7 +42,7 @@ describe.forEachSide('ASSAULT_CANNON + SLEEPER_CELL', () => {
           SLEEPER_CELL: true,
           ASSAULT_CANNON: true,
           ABILITY_ORDER: {
-            startOfCombat: ['SLEEPER_CELL', 'ASSAULT_CANNON'],
+            startOfCombat: [['SLEEPER_CELL'], ['ASSAULT_CANNON']],
           },
         },
       },

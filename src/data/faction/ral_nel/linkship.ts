@@ -1,11 +1,12 @@
 import { z } from 'zod/mini'
 
-import { type Ability, parseVariantId } from '@/combat'
+import { type Ability, declareParam, parseVariantId } from '@/combat'
 import type { SideApi } from '@/combat/abilities-engine/api/ability-api'
-import type { DiceGroup, UnitBaseType, UnitType } from '@/types'
+import type { DiceGroup, UnitBaseType, UnitList, UnitType } from '@/types'
+import { UnitListNumberSchema } from '@/types'
 
 type Params = {
-  structures: Record<string, number>
+  structures: UnitList<number>
 }
 
 // Linkship I: each structure can only be triggered once
@@ -15,11 +16,17 @@ export const linkshipI: Ability<Params> = {
   description:
     'This unit can use the Space Cannon ability of one of your structures in its space area; each structure can only be triggered once.',
   context: 'SPACE',
-  paramsSchema: z.object({ structures: z.record(z.string(), z.number()) }),
+  paramsSchema: z.object({
+    structures: UnitListNumberSchema,
+  }),
   params: {
     isEnabled: true,
     uses: Infinity,
-    structures: {},
+    structures: declareParam<UnitList<number>>({
+      default: [],
+      source: 'structures',
+      defaultItemValue: 0,
+    }),
   },
   headerUI: 'isEnabled',
   uiConfig: ctx => {
@@ -27,7 +34,8 @@ export const linkshipI: Ability<Params> = {
     return [
       {
         key: 'structures',
-        type: 'number-list',
+        type: 'unit-list',
+        mode: 'number',
         items: ctx.api.own.getUnitVariantsOptions({
           include: STRUCTURE_TYPES,
           includeNonParticipating: true,
@@ -39,17 +47,18 @@ export const linkshipI: Ability<Params> = {
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: 'SPACE_CANNON_OFFENSE',
-      isCallable: params => hasStructures(params),
+      isCallable: (params, ctx) =>
+        ctx.utils.getFlat(params.structures).length > 0,
       call: (ctx, params) => {
         const best = findBestSpaceCannon(params, ctx.api.own)
         if (!best) return
 
         ctx.api.own.addDiceGroup('DESTROYER', ctx.getUnit(), best.sc)
         ctx.api.own.updateAbilityConfig({
-          structures: (prev: Record<string, number>) => ({
-            ...prev,
-            [best.key]: prev[best.key] - 1,
-          }),
+          structures: (prev: UnitList<number>) =>
+            prev.map(([k, v]) =>
+              k === best.key ? [k, v - 1] : [k, v],
+            ) as UnitList<number>,
         })
       },
     },
@@ -63,18 +72,25 @@ export const linkshipII: Ability<Params> = {
   description:
     'This unit can use the Space Cannon ability of one of your structures in its space area; each linkship can trigger the same structure.',
   context: 'SPACE',
-  paramsSchema: z.object({ structures: z.record(z.string(), z.number()) }),
+  paramsSchema: z.object({
+    structures: UnitListNumberSchema,
+  }),
   params: {
     isEnabled: true,
     uses: Infinity,
-    structures: {},
+    structures: declareParam<UnitList<number>>({
+      default: [],
+      source: 'structures',
+      defaultItemValue: 0,
+    }),
   },
   uiConfig: ctx => {
     const STRUCTURE_TYPES: UnitBaseType[] = ['PDS', 'SPACE_DOCK']
     return [
       {
         key: 'structures',
-        type: 'number-list',
+        type: 'unit-list',
+        mode: 'number',
         items: ctx.api.own.getUnitVariantsOptions({
           include: STRUCTURE_TYPES,
           includeNonParticipating: true,
@@ -86,7 +102,8 @@ export const linkshipII: Ability<Params> = {
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: 'SPACE_CANNON_OFFENSE',
-      isCallable: params => hasStructures(params),
+      isCallable: (params, ctx) =>
+        ctx.utils.getFlat(params.structures).length > 0,
       call: (ctx, params) => {
         const best = findBestSpaceCannon(params, ctx.api.own)
         if (!best) return
@@ -101,16 +118,12 @@ function expectedHits(sc: DiceGroup): number {
   return (sc[1] + (sc[2] ?? 0)) * (11 - sc[0])
 }
 
-function hasStructures(params: Params): boolean {
-  return Object.values(params.structures).some(v => v > 0)
-}
-
 function findBestSpaceCannon(
   params: Params,
   api: SideApi,
 ): { key: string; sc: DiceGroup } | null {
   let best: { key: string; sc: DiceGroup } | null = null
-  for (const [key, count] of Object.entries(params.structures)) {
+  for (const [key, count] of params.structures) {
     if (count <= 0) continue
     const { type } = parseVariantId(key as UnitType)
     const sc = api.getUnitStats(type)?.UNIT_ABILITIES?.SPACE_CANNON

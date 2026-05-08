@@ -27,6 +27,11 @@ export interface SyncSourceConfig<
   group: K
   side: 'own' | 'opponent'
   sort: 'asc' | 'desc'
+  /** Default for the value slot when reconcile adds a new tuple entry to a
+   *  `UnitList<V>` param. Inheritance from a parent variant (e.g. base
+   *  `DREADNOUGHT` for `DREADNOUGHT:Galvanized`) takes precedence; this
+   *  is the fallback. Omit for order-mode lists. */
+  defaultItemValue?: unknown
   compute?: (value: SettingsParams[K]) => unknown
   filter?: (value: string) => boolean
 }
@@ -145,6 +150,7 @@ export interface AbilityReadContext {
     readonly own: SideApi
     readonly opponent: SideApi
   }
+  readonly utils: import('./api/ability-utils').AbilityUtils
   /** Innermost active meta-phase for the currently-running ability
    *  (e.g. 'AFB' when the phase stack is ['SPACE_COMBAT', 'AFB']). */
   readonly meta: MetaPhase
@@ -177,6 +183,7 @@ export interface AbilityCallContext {
     own: SideApi
     opponent: SideApi
   }
+  readonly utils: import('./api/ability-utils').AbilityUtils
   /** Innermost active meta-phase for the currently-running ability
    *  (e.g. 'AFB' when the phase stack is ['SPACE_COMBAT', 'AFB']). */
   readonly meta: MetaPhase
@@ -300,36 +307,6 @@ interface UIConfigCheckbox<
   type: 'checkbox'
 }
 
-interface UIConfigOrderList<
-  TParams = Record<string, unknown>,
-> extends UIConfigItemBase<TParams> {
-  type: 'order-list'
-  items: {
-    label: string
-    value: string
-  }[]
-}
-
-interface UIConfigCheckboxList<
-  TParams = Record<string, unknown>,
-> extends UIConfigItemBase<TParams> {
-  type: 'checkbox-list'
-  items: {
-    label: string
-    value: string
-  }[]
-}
-
-interface UIConfigCheckboxListSortable<
-  TParams = Record<string, unknown>,
-> extends UIConfigItemBase<TParams> {
-  type: 'checkbox-list-sortable'
-  items: {
-    label: string
-    value: string
-  }[]
-}
-
 interface UIConfigNumber<
   TParams = Record<string, unknown>,
 > extends UIConfigItemBase<TParams> {
@@ -351,21 +328,14 @@ interface UIConfigSelect<
   items: (SelectItem | SelectGroup)[]
 }
 
-interface UIConfigNumberList<
-  TParams = Record<string, unknown>,
-> extends UIConfigItemBase<TParams> {
-  type: 'number-list'
-  items: {
-    label: string
-    value: string
-    max?: number
-  }[]
-}
+export type UnitListMode = 'order' | 'checkbox' | 'number'
 
-interface UIConfigNumberListSortable<
+interface UIConfigUnitList<
   TParams = Record<string, unknown>,
 > extends UIConfigItemBase<TParams> {
-  type: 'number-list-sortable'
+  type: 'unit-list'
+  mode: UnitListMode
+  sortable?: boolean
   items: {
     label: string
     value: string
@@ -375,13 +345,9 @@ interface UIConfigNumberListSortable<
 
 export type UIConfigItem<TParams = Record<string, unknown>> =
   | UIConfigCheckbox<TParams>
-  | UIConfigOrderList<TParams>
-  | UIConfigCheckboxList<TParams>
-  | UIConfigCheckboxListSortable<TParams>
   | UIConfigNumber<TParams>
   | UIConfigSelect<TParams>
-  | UIConfigNumberList<TParams>
-  | UIConfigNumberListSortable<TParams>
+  | UIConfigUnitList<TParams>
 
 type UIConfig<Params = Record<string, unknown>> =
   | UIConfigItem<Params>[]

@@ -1,6 +1,7 @@
 import { z } from 'zod/mini'
 
-import type { UnitBaseType, UnitStats } from '@/types'
+import type { UnitBaseType, UnitList, UnitStats } from '@/types'
+import { UnitListBooleanSchema } from '@/types'
 import { getFactionUnitConfig } from '@/utils/get-faction-unit-config'
 
 import type {
@@ -9,8 +10,8 @@ import type {
 } from '../../../combat/abilities-engine/types'
 
 type Params = {
-  spacePriority: UnitBaseType[]
-  groundPriority: UnitBaseType[]
+  spacePriority: UnitList<boolean>
+  groundPriority: UnitList<boolean>
 }
 
 export const revealPrototype: Ability<Params> = {
@@ -19,8 +20,8 @@ export const revealPrototype: Ability<Params> = {
   description:
     'At the start of a combat: Spend 4 resources to research a unit upgrade technology of the same type as 1 of your units that is participating in this combat.',
   paramsSchema: z.object({
-    spacePriority: z.array(z.string()),
-    groundPriority: z.array(z.string()),
+    spacePriority: UnitListBooleanSchema,
+    groundPriority: UnitListBooleanSchema,
   }),
   params: {
     isEnabled: false,
@@ -37,7 +38,9 @@ export const revealPrototype: Ability<Params> = {
     return [
       {
         key,
-        type: 'checkbox-list-sortable' as const,
+        type: 'unit-list' as const,
+        mode: 'checkbox' as const,
+        sortable: true,
         items: ctx.api.own
           .getUnitVariantsOptions()
           .filter(opt => !opt.value.includes(':')),
@@ -106,7 +109,8 @@ function pickTarget(
       : params.spacePriority
   const faction = getFactionUnitConfig(ctx.api.own.getFaction())
 
-  for (const type of priority) {
+  for (const variantKey of ctx.utils.getFlat(priority)) {
+    const type = variantKey as UnitBaseType
     if (!ctx.api.own.hasUnitType(type)) continue
     const upgraded = faction[type]?.UPGRADED
     if (!upgraded || Object.keys(upgraded).length === 0) continue

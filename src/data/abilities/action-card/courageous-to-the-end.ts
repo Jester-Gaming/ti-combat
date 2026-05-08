@@ -1,11 +1,12 @@
 import { z } from 'zod/mini'
 
 import { type Ability, declareParam } from '@/combat'
-import type { UnitType } from '@/types'
+import type { UnitList } from '@/types'
+import { UnitListBooleanSchema } from '@/types'
 
 type Params = {
-  ownPriority: UnitType[]
-  targetPriority: UnitType[]
+  ownPriority: UnitList<boolean>
+  targetPriority: UnitList<boolean>
 }
 
 export const courageousToTheEnd: Ability<Params> = {
@@ -15,21 +16,23 @@ export const courageousToTheEnd: Ability<Params> = {
     "After 1 of your ships is destroyed during a space combat: Roll 2 dice. For each result equal to or greater than that ship's combat value, your opponent must choose and destroy 1 of their ships.",
   context: 'SPACE',
   paramsSchema: z.object({
-    ownPriority: z.array(z.string()),
-    targetPriority: z.array(z.string()),
+    ownPriority: UnitListBooleanSchema,
+    targetPriority: UnitListBooleanSchema,
   }),
   params: {
     isEnabled: false,
     uses: 1,
-    ownPriority: declareParam({
+    ownPriority: declareParam<UnitList<boolean>>({
       default: [],
       source: 'ships',
       side: 'own',
+      defaultItemValue: true,
     }),
-    targetPriority: declareParam({
+    targetPriority: declareParam<UnitList<boolean>>({
       default: [],
       source: 'ships',
       side: 'opponent',
+      defaultItemValue: true,
     }),
   },
   headerUI: 'isEnabled',
@@ -42,18 +45,18 @@ export const courageousToTheEnd: Ability<Params> = {
           const key = ctx.api.own.getVariantKey(id)
           if (key) ownDestroyedVariants.add(key)
         }
-        const ownMatched = params.ownPriority.some(v =>
-          ownDestroyedVariants.has(v),
-        )
-        if (!ownMatched) return false
+        const ownEnabled = ctx.utils.getFlat(params.ownPriority)
+        if (!ownEnabled.some(v => ownDestroyedVariants.has(v))) return false
 
         const targets = ctx.api.opponent.getAssignHitsTargets({
           hits: [2, 0],
         })
-        return targets.every(targetId => {
-          const topVariant = ctx.api.opponent.getUnitVariant(targetId)!
-          return params.targetPriority.includes(topVariant)
-        })
+        const targetEnabled = new Set<string>(
+          ctx.utils.getFlat(params.targetPriority),
+        )
+        return targets.every(targetId =>
+          targetEnabled.has(ctx.api.opponent.getUnitVariant(targetId)!),
+        )
       },
       call: (ctx, params, ids) => {
         // Anchor the dice roll on the best (lowest combat value → easiest to
@@ -64,7 +67,7 @@ export const courageousToTheEnd: Ability<Params> = {
           if (key) ownDestroyedVariants.add(key)
         }
         let combatValue: number | undefined
-        for (const variantKey of params.ownPriority) {
+        for (const variantKey of ctx.utils.getFlat(params.ownPriority)) {
           if (!ownDestroyedVariants.has(variantKey)) continue
           const stats = ctx.api.own.getUnitStats(variantKey)
           if (!stats?.COMBAT) continue
@@ -89,13 +92,15 @@ export const courageousToTheEnd: Ability<Params> = {
     {
       key: 'ownPriority' as const,
       label: 'Own Trigger Priority',
-      type: 'checkbox-list' as const,
+      type: 'unit-list' as const,
+      mode: 'checkbox' as const,
       items: ctx.api.own.getUnitVariantsOptions({ combatMode: 'SPACE' }),
     },
     {
       key: 'targetPriority' as const,
       label: 'Allowed Targets',
-      type: 'checkbox-list' as const,
+      type: 'unit-list' as const,
+      mode: 'checkbox' as const,
       items: ctx.api.opponent.getUnitVariantsOptions({ combatMode: 'SPACE' }),
     },
   ],

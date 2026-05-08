@@ -1,11 +1,12 @@
 import { z } from 'zod/mini'
 
 import { type Ability, declareParam, parseVariantId } from '@/combat'
-import type { UnitType } from '@/types'
+import type { UnitList } from '@/types'
+import { UnitListBooleanSchema } from '@/types'
 
 type Params = {
-  sacrificePriority: UnitType[]
-  targetPriority: UnitType[]
+  sacrificePriority: UnitList<boolean>
+  targetPriority: UnitList<boolean>
 }
 
 export const devotion: Ability<Params> = {
@@ -15,25 +16,27 @@ export const devotion: Ability<Params> = {
     "After each space battle round, you may destroy 1 of your cruisers or destroyers in the active system to produce 1 hit and assign it to 1 of your opponent's ships in that system.",
   context: 'SPACE',
   paramsSchema: z.object({
-    sacrificePriority: z.array(z.string()),
-    targetPriority: z.array(z.string()),
+    sacrificePriority: UnitListBooleanSchema,
+    targetPriority: UnitListBooleanSchema,
   }),
   params: {
     isEnabled: false,
     uses: Infinity,
     sacrificePriority: declareParam({
-      default: [],
+      default: [] as UnitList<boolean>,
       source: 'ships',
       side: 'own',
+      defaultItemValue: true,
       filter: id => {
         const SACRIFICE_TYPES = new Set(['CRUISER', 'DESTROYER'])
         return SACRIFICE_TYPES.has(parseVariantId(id).type)
       },
     }),
-    targetPriority: declareParam({
+    targetPriority: declareParam<UnitList<boolean>>({
       default: [],
       source: 'ships',
       side: 'opponent',
+      defaultItemValue: true,
     }),
   },
   headerUI: 'isEnabled',
@@ -42,23 +45,24 @@ export const devotion: Ability<Params> = {
       timing: 'END_OF_COMBAT_ROUND',
       isCallable: (params, ctx) => {
         const sacrifice = ctx.api.own.findUnitByPriority(
-          params.sacrificePriority,
+          ctx.utils.getFlat(params.sacrificePriority),
         )
         if (sacrifice === undefined) return false
         return (
-          ctx.api.opponent.findUnitByPriority(params.targetPriority) !==
-          undefined
+          ctx.api.opponent.findUnitByPriority(
+            ctx.utils.getFlat(params.targetPriority),
+          ) !== undefined
         )
       },
       call: (ctx, params) => {
         const sacrifice = ctx.api.own.findUnitByPriority(
-          params.sacrificePriority,
+          ctx.utils.getFlat(params.sacrificePriority),
         )
         if (sacrifice === undefined) return
 
-        for (const variantId of params.targetPriority) {
-          if (ctx.api.opponent.findUnitByPriority([variantId]) !== undefined) {
-            ctx.api.opponent.addHits(1, [parseVariantId(variantId).type])
+        for (const variant of ctx.utils.getFlat(params.targetPriority)) {
+          if (ctx.api.opponent.findUnitByPriority([variant]) !== undefined) {
+            ctx.api.opponent.addHits(1, [parseVariantId(variant).type])
             ctx.api.own.destroyUnits(sacrifice)
             return
           }
@@ -71,7 +75,9 @@ export const devotion: Ability<Params> = {
       {
         key: 'sacrificePriority' as const,
         label: 'Sacrifice Priority',
-        type: 'checkbox-list-sortable' as const,
+        type: 'unit-list' as const,
+        mode: 'checkbox' as const,
+        sortable: true,
         items: ctx.api.own.getUnitVariantsOptions({
           include: ['CRUISER', 'DESTROYER'],
           combatMode: 'SPACE',
@@ -80,7 +86,9 @@ export const devotion: Ability<Params> = {
       {
         key: 'targetPriority' as const,
         label: 'Target Priority',
-        type: 'checkbox-list-sortable' as const,
+        type: 'unit-list' as const,
+        mode: 'checkbox' as const,
+        sortable: true,
         items: ctx.api.opponent.getUnitVariantsOptions({
           combatMode: 'SPACE',
         }),

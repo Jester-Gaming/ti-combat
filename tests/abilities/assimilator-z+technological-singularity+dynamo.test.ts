@@ -12,7 +12,12 @@ describe('ASSIMILATOR_Z + TECHNOLOGICAL_SINGULARITY + DYNAMO', () => {
         abilities: {
           DYNAMO: { uses: 10 },
           NEKRO_FLAGSHIP_DYNAMO: { uses: 10 },
-          SUSTAIN_DAMAGE: { spacePriority: ['FLAGSHIP', 'DREADNOUGHT'] },
+          SUSTAIN_DAMAGE: {
+            spacePriority: [
+              ['FLAGSHIP', true],
+              ['DREADNOUGHT', true],
+            ],
+          },
         },
       },
       defender: {

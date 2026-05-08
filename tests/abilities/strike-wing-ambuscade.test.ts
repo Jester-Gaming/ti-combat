@@ -13,7 +13,7 @@ describe('STRIKE_WING_AMBUSCADE', () => {
           STRIKE_WING_AMBUSCADE: {
             isEnabled: true,
             uses: 1,
-            phases: ['AFB'],
+            phases: [['AFB', true]],
           },
         },
       },
@@ -38,7 +38,7 @@ describe('STRIKE_WING_AMBUSCADE', () => {
           STRIKE_WING_AMBUSCADE: {
             isEnabled: true,
             uses: 1,
-            phases: ['SPACE_CANNON_OFFENSE'],
+            phases: [['SPACE_CANNON_OFFENSE', true]],
           },
         },
       },
@@ -62,7 +62,7 @@ describe('STRIKE_WING_AMBUSCADE', () => {
           STRIKE_WING_AMBUSCADE: {
             isEnabled: true,
             uses: 1,
-            phases: ['SPACE_CANNON_OFFENSE'],
+            phases: [['SPACE_CANNON_OFFENSE', true]],
           },
         },
       },
@@ -84,7 +84,7 @@ describe('STRIKE_WING_AMBUSCADE', () => {
           STRIKE_WING_AMBUSCADE: {
             isEnabled: true,
             uses: 1,
-            phases: ['BOMBARDMENT'],
+            phases: [['BOMBARDMENT', true]],
           },
         },
       },
@@ -109,7 +109,7 @@ describe('STRIKE_WING_AMBUSCADE', () => {
           STRIKE_WING_AMBUSCADE: {
             isEnabled: true,
             uses: 1,
-            phases: ['SPACE_CANNON_DEFENSE'],
+            phases: [['SPACE_CANNON_DEFENSE', true]],
           },
         },
       },
@@ -132,7 +132,7 @@ describe('STRIKE_WING_AMBUSCADE', () => {
           STRIKE_WING_AMBUSCADE: {
             isEnabled: true,
             uses: 1,
-            phases: ['BOMBARDMENT'],
+            phases: [['BOMBARDMENT', true]],
           },
         },
       },

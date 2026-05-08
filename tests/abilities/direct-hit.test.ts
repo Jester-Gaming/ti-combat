@@ -163,7 +163,7 @@ describe.forEachSide('DIRECT_HIT', () => {
       attacker: {
         faction: 'ARBOREC',
         units: { CRUISER: 1 },
-        abilities: { DIRECT_HIT: { uses: 1, targets: ['CRUISER'] } },
+        abilities: { DIRECT_HIT: { uses: 1, targets: [['CRUISER', true]] } },
       },
       defender: {
         faction: 'ARBOREC',
@@ -185,7 +185,9 @@ describe.forEachSide('DIRECT_HIT', () => {
       attacker: {
         faction: 'ARBOREC',
         units: { CRUISER: 2 },
-        abilities: { DIRECT_HIT: { uses: 2, targets: ['DREADNOUGHT'] } },
+        abilities: {
+          DIRECT_HIT: { uses: 2, targets: [['DREADNOUGHT', true]] },
+        },
       },
       defender: {
         faction: 'ARBOREC',

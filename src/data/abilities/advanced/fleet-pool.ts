@@ -1,12 +1,13 @@
-import type { UnitBaseType } from '@/types'
+import type { UnitBaseType, UnitList } from '@/types'
 
 import type { SideApi } from '../../../combat/abilities-engine/api/ability-api'
+import { abilityUtils } from '../../../combat/abilities-engine/api/ability-utils'
 import { declareParam } from '../../../combat/abilities-engine/declare-param'
 import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
   fleetPool: number
-  shipPriority: string[]
+  shipPriority: UnitList
 }
 
 declare global {
@@ -23,7 +24,7 @@ export const fleetPool: Ability<Params> = {
     isEnabled: false,
     uses: Infinity,
     fleetPool: 8,
-    shipPriority: declareParam({
+    shipPriority: declareParam<UnitList>({
       default: [],
       source: 'spaceCombatParticipating',
       side: 'own',
@@ -50,7 +51,8 @@ export const fleetPool: Ability<Params> = {
     {
       key: 'shipPriority' as const,
       label: 'Ship Keep Priority',
-      type: 'order-list' as const,
+      type: 'unit-list' as const,
+      mode: 'order' as const,
       items: ctx.api.own.getUnitVariantsOptions({
         combatMode: 'SPACE',
       }),
@@ -139,7 +141,8 @@ export function enforceFleetPool(api: SideApi): void {
   if (excess <= 0) return
 
   // Build removal order: unlisted types with cost first, then listed in reverse priority
-  const prioritySet = new Set(shipPriority)
+  const priorityKeys = abilityUtils.getFlat(shipPriority)
+  const prioritySet = new Set(priorityKeys)
   const typesWithCost = activeTypes.filter(t => {
     const stats = api.getUnitStats(t)
     return typeof stats?.FLEET_POOL_COST === 'number'
@@ -147,7 +150,7 @@ export function enforceFleetPool(api: SideApi): void {
   const unlisted = typesWithCost.filter(t => !prioritySet.has(t))
   const removalOrder = [
     ...unlisted,
-    ...[...shipPriority]
+    ...[...priorityKeys]
       .reverse()
       .filter(t => typesWithCost.includes(t as UnitBaseType)),
   ]

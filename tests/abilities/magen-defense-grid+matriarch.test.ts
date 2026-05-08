@@ -16,7 +16,7 @@ describe('MAGEN_DEFENSE_GRID + MATRIARCH', () => {
         abilities: {
           MAGEN_DEFENSE_GRID: {
             isEnabled: true,
-            targetPriority: ['FIGHTER', 'INFANTRY'],
+            targetPriority: [['FIGHTER'], ['INFANTRY']],
           },
         },
       },
@@ -44,7 +44,7 @@ describe('MAGEN_DEFENSE_GRID + MATRIARCH', () => {
         abilities: {
           MAGEN_DEFENSE_GRID: {
             isEnabled: true,
-            targetPriority: ['INFANTRY', 'FIGHTER'],
+            targetPriority: [['INFANTRY'], ['FIGHTER']],
           },
         },
       },

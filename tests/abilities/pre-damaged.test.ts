@@ -10,7 +10,7 @@ describe.forEachSide('PRE_DAMAGED', () => {
         faction: 'BARONY_OF_LETNEV',
         units: { DREADNOUGHT: 2 },
         abilities: {
-          PRE_DAMAGED: { isEnabled: true, damagedUnits: { DREADNOUGHT: 1 } },
+          PRE_DAMAGED: { isEnabled: true, damagedUnits: [['DREADNOUGHT', 1]] },
         },
       },
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
@@ -31,7 +31,7 @@ describe.forEachSide('PRE_DAMAGED', () => {
         faction: 'BARONY_OF_LETNEV',
         units: { DREADNOUGHT: 1, WAR_SUN: 1 },
         abilities: {
-          PRE_DAMAGED: { isEnabled: true, damagedUnits: { DREADNOUGHT: 1 } },
+          PRE_DAMAGED: { isEnabled: true, damagedUnits: [['DREADNOUGHT', 1]] },
         },
       },
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
@@ -50,7 +50,7 @@ describe.forEachSide('PRE_DAMAGED', () => {
         faction: 'BARONY_OF_LETNEV',
         units: { DREADNOUGHT: 2 },
         abilities: {
-          PRE_DAMAGED: { isEnabled: true, damagedUnits: { DREADNOUGHT: 5 } },
+          PRE_DAMAGED: { isEnabled: true, damagedUnits: [['DREADNOUGHT', 5]] },
         },
       },
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },

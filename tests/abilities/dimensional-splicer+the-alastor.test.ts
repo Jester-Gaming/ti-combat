@@ -50,7 +50,7 @@ describe('DIMENSIONAL_SPLICER + THE_ALASTOR', () => {
         abilities: {
           DIMENSIONAL_SPLICER: {
             isEnabled: true,
-            targetPriority: ['FLAGSHIP'],
+            targetPriority: [['FLAGSHIP']],
           },
         },
       },

@@ -41,7 +41,7 @@ describe.forEachSide('ARTICLES_OF_WAR + QUANTUM_MANIPULATOR', () => {
         abilities: {
           ARTICLES_OF_WAR: true,
           SUSTAIN_DAMAGE: {
-            groundPriority: ['MECH'],
+            groundPriority: [['MECH', true]],
           },
         },
       },
