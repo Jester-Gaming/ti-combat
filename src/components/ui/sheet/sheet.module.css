@@ -64,33 +64,6 @@
   color: var(--color-text-main);
 }
 
-.close {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  padding: 0;
-  cursor: pointer;
-  background: transparent;
-  border: 0;
-  border-radius: 0.25rem;
-  color: var(--color-text-muted);
-}
-
-.close:hover {
-  color: var(--color-text-main);
-  background: var(--color-overlay-strong);
-}
-
-.closeIcon {
-  width: 1rem;
-  height: 1rem;
-}
-
 @keyframes fadeIn {
   from {
     opacity: 0%;

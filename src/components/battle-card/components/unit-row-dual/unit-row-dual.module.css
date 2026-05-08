@@ -31,7 +31,7 @@
   display: none;
 }
 
-@container (width < 100px) {
+@container (width < 90px) {
   .fullName {
     display: none;
   }

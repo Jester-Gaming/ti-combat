@@ -21,4 +21,5 @@
 .input {
   --color-accent-70: unset;
   --color-accent-10: unset;
+  display: contents;
 }

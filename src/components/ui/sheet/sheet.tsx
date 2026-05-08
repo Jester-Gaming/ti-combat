@@ -1,5 +1,4 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { Cross1Icon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
 import * as React from 'react'
 
@@ -45,9 +44,6 @@ const SheetContent = React.forwardRef<
       {...props}
     >
       {children}
-      <DialogPrimitive.Close className={styles.close}>
-        <Cross1Icon className={styles.closeIcon} />
-      </DialogPrimitive.Close>
     </DialogPrimitive.Content>
   </SheetPortal>
 ))
