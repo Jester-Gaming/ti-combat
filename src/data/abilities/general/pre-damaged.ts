@@ -3,7 +3,6 @@ import { z } from 'zod/mini'
 import type { UnitList, UnitType } from '@/types'
 import { UnitListNumberSchema } from '@/types'
 
-import { declareParam } from '../../../combat/abilities-engine/declare-param'
 import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
@@ -19,12 +18,7 @@ export const preDamaged: Ability<Params> = {
   params: {
     isEnabled: true,
     uses: Infinity,
-    damagedUnits: declareParam<UnitList<number>>({
-      default: [],
-      source: 'nonFighterShips',
-      sort: 'desc',
-      defaultItemValue: 0,
-    }),
+    damagedUnits: [],
   },
   uiConfig: ctx => {
     const items = ctx.api.own.getUnitVariantsOptions({

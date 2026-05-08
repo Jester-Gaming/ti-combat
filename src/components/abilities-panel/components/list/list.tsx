@@ -58,32 +58,50 @@ export type ListProps = CommonProps &
 
 export function List(props: ListProps): React.ReactElement {
   const sortable = props.mode === 'order' || props.sortable === true
-  const labelMap = useMemo(
-    () => new Map(props.items.map(i => [i.value, i.label])),
-    [props.items],
-  )
-  const maxMap = useMemo(
-    () => new Map(props.items.map(i => [i.value, i.max])),
-    [props.items],
-  )
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 3 } }),
   )
 
-  const ids = props.value.map(([id]) => id)
+  const stateMap = useMemo(() => {
+    const m = new Map<string, boolean | number>()
+    if (props.mode === 'checkbox' || props.mode === 'number') {
+      for (const [k, v] of props.value) m.set(k, v)
+    }
+    return m
+  }, [props.value, props.mode])
+
+  const orderedItems = useMemo(() => {
+    if (!sortable) return [...props.items]
+    const orderIndex = new Map<string, number>()
+    props.value.forEach(([id], i) => orderIndex.set(id, i))
+    return [...props.items].sort(
+      (a, b) =>
+        (orderIndex.get(a.value) ?? Infinity) -
+        (orderIndex.get(b.value) ?? Infinity),
+    )
+  }, [props.items, props.value, sortable])
+
+  const ids = orderedItems.map(i => i.value)
 
   function handleToggle(id: string): void {
     if (props.mode !== 'checkbox') return
-    props.onChange(props.value.map(([k, v]) => (k === id ? [k, !v] : [k, v])))
+    const current = stateMap.get(id) === true
+    const has = props.value.some(([k]) => k === id)
+    const next: CheckboxListValue = has
+      ? props.value.map(([k, v]) => (k === id ? [k, !current] : [k, v]))
+      : [...props.value, [id, true]]
+    props.onChange(next)
   }
 
   function handleCountChange(id: string, count: number): void {
     if (props.mode !== 'number') return
-    const max = maxMap.get(id)
+    const max = orderedItems.find(i => i.value === id)?.max
     const clamped = Math.max(0, max != null ? Math.min(count, max) : count)
-    props.onChange(
-      props.value.map(([k, v]) => (k === id ? [k, clamped] : [k, v])),
-    )
+    const has = props.value.some(([k]) => k === id)
+    const next: NumberListValue = has
+      ? props.value.map(([k, v]) => (k === id ? [k, clamped] : [k, v]))
+      : [...props.value, [id, clamped]]
+    props.onChange(next)
   }
 
   function handleDragEnd(event: DragEndEvent): void {
@@ -92,44 +110,48 @@ export function List(props: ListProps): React.ReactElement {
     const oldIndex = ids.indexOf(active.id as string)
     const newIndex = ids.indexOf(over.id as string)
     if (oldIndex === -1 || newIndex === -1) return
+    const newIds = arrayMove(ids, oldIndex, newIndex)
     if (props.mode === 'order') {
-      props.onChange(arrayMove(props.value, oldIndex, newIndex))
+      props.onChange(newIds.map(id => [id]))
     } else if (props.mode === 'checkbox') {
-      props.onChange(arrayMove(props.value, oldIndex, newIndex))
+      props.onChange(newIds.map(id => [id, stateMap.get(id) === true]))
     } else {
-      props.onChange(arrayMove(props.value, oldIndex, newIndex))
+      props.onChange(
+        newIds.map(id => [id, (stateMap.get(id) as number | undefined) ?? 0]),
+      )
     }
   }
 
-  function isActive(index: number): boolean {
-    if (props.mode === 'checkbox') return props.value[index][1] === true
-    if (props.mode === 'number') return (props.value[index][1] ?? 0) > 0
+  function isActive(id: string): boolean {
+    if (props.mode === 'checkbox') return stateMap.get(id) === true
+    if (props.mode === 'number')
+      return ((stateMap.get(id) as number | undefined) ?? 0) > 0
     return true
   }
 
-  function renderRight(id: string, index: number): React.ReactElement {
+  function renderRight(item: ListItem, index: number): React.ReactElement {
     if (props.mode === 'checkbox') {
-      const checked = props.value[index][1]
+      const checked = stateMap.get(item.value) === true
       return (
         <Checkbox
           onPointerDown={e => e.stopPropagation()}
           onClick={e => e.stopPropagation()}
           checked={checked}
-          onChange={() => handleToggle(id)}
+          onChange={() => handleToggle(item.value)}
         />
       )
     }
     if (props.mode === 'number') {
-      const count = props.value[index][1]
+      const count = (stateMap.get(item.value) as number | undefined) ?? 0
       return (
         <Input
           square
           value={count}
           active={!!count}
           min={0}
-          max={maxMap.get(id)}
+          max={item.max}
           onPointerDown={e => e.stopPropagation()}
-          onChange={value => handleCountChange(id, value)}
+          onChange={value => handleCountChange(item.value, value)}
         />
       )
     }
@@ -145,17 +167,19 @@ export function List(props: ListProps): React.ReactElement {
       >
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
           <div className={styles.list}>
-            {ids.map((id, index) => (
+            {orderedItems.map((item, index) => (
               <SortableRow
-                key={id}
-                id={id}
-                label={labelMap.get(id) ?? id}
-                active={isActive(index)}
+                key={item.value}
+                id={item.value}
+                label={item.label}
+                active={isActive(item.value)}
                 onRowClick={
-                  props.mode === 'checkbox' ? () => handleToggle(id) : undefined
+                  props.mode === 'checkbox'
+                    ? () => handleToggle(item.value)
+                    : undefined
                 }
               >
-                {renderRight(id, index)}
+                {renderRight(item, index)}
               </SortableRow>
             ))}
           </div>
@@ -167,25 +191,22 @@ export function List(props: ListProps): React.ReactElement {
   const isClickable = props.mode === 'checkbox'
   return (
     <div className={styles.list}>
-      {ids.map((id, index) => {
-        const label = labelMap.get(id) ?? id
-        return (
-          <div
-            key={id}
-            className={clsx(
-              styles.item,
-              isActive(index) && styles.item_active,
-              isClickable && styles.item_clickable,
-            )}
-            onClick={isClickable ? () => handleToggle(id) : undefined}
-          >
-            <span className={styles.label} title={label}>
-              {label}
-            </span>
-            <div className={styles.right}>{renderRight(id, index)}</div>
-          </div>
-        )
-      })}
+      {orderedItems.map((item, index) => (
+        <div
+          key={item.value}
+          className={clsx(
+            styles.item,
+            isActive(item.value) && styles.item_active,
+            isClickable && styles.item_clickable,
+          )}
+          onClick={isClickable ? () => handleToggle(item.value) : undefined}
+        >
+          <span className={styles.label} title={item.label}>
+            {item.label}
+          </span>
+          <div className={styles.right}>{renderRight(item, index)}</div>
+        </div>
+      ))}
     </div>
   )
 }
