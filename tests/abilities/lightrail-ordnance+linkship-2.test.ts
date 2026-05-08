@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { combatTest } from '../utils/combat-test'
 
-describe.forEachSide('LIGHTRAIL_ORDNANCE + LINKSHIP', () => {
+describe.forEachSide('LIGHTRAIL_ORDNANCE + LINKSHIP_2', () => {
   it('linkship uses enhanced Space Dock SC from Lightrail Ordnance', () => {
     const t = combatTest({
       mode: 'SPACE',
@@ -10,9 +10,10 @@ describe.forEachSide('LIGHTRAIL_ORDNANCE + LINKSHIP', () => {
       defender: {
         faction: 'RAL_NEL',
         units: { DESTROYER: 1 },
+        upgrades: ['DESTROYER'],
         abilities: {
           LIGHTRAIL_ORDNANCE: true,
-          LINKSHIP: { structures: [['SPACE_DOCK', 1]] },
+          LINKSHIP_2: { structures: [['SPACE_DOCK', 1]] },
         },
       },
     })

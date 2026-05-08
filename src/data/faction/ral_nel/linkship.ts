@@ -11,8 +11,8 @@ type Params = {
 
 // Linkship I: each structure can only be triggered once
 export const linkshipI: Ability<Params> = {
-  key: 'LINKSHIP',
-  name: 'Linkship',
+  key: 'LINKSHIP_1',
+  name: 'Linkship I',
   description:
     'This unit can use the Space Cannon ability of one of your structures in its space area; each structure can only be triggered once.',
   context: 'SPACE',
@@ -67,8 +67,8 @@ export const linkshipI: Ability<Params> = {
 
 // Linkship II: each linkship can trigger the same structure
 export const linkshipII: Ability<Params> = {
-  key: 'LINKSHIP',
-  name: 'Linkship',
+  key: 'LINKSHIP_2',
+  name: 'Linkship II',
   description:
     'This unit can use the Space Cannon ability of one of your structures in its space area; each linkship can trigger the same structure.',
   context: 'SPACE',
@@ -84,6 +84,7 @@ export const linkshipII: Ability<Params> = {
       defaultItemValue: 0,
     }),
   },
+  headerUI: 'isEnabled',
   uiConfig: ctx => {
     const STRUCTURE_TYPES: UnitBaseType[] = ['PDS', 'SPACE_DOCK']
     return [
