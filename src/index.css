@@ -47,7 +47,7 @@
   --color-amber-300: 32 90% 40%;
   --color-amber-500: 32 100% 50%;
 
-  /* Slate */
+  /* Slate (dark theme) */
   --color-slate-50: 222 47% 6%;
   --color-slate-100: 222 47% 9%;
   --color-slate-200: 222 20% 20%;
@@ -58,35 +58,46 @@
   --color-slate-800: 222 35% 80%;
   --color-slate-900: 222 20% 90%;
 
+  /* Light theme palette */
+  --color-light-50: 220 12% 97%; /* near-white background */
+  --color-light-100: 0 0% 100%; /* pure white cards */
+  --color-light-200: 220 12% 92%; /* light neutral */
+  --color-light-400: 220 12% 45%; /* muted text */
+  --color-light-500: 220 14% 35%; /* mid text */
+  --color-light-600: 220 14% 25%; /* darker text */
+  --color-light-700: 220 12% 88%; /* visible borders */
+  --color-light-800: 220 12% 90%; /* light input bg */
+  --color-light-900: 220 18% 15%; /* main text */
+
   /* === Layer 2: text === */
-  --color-text-main: hsl(var(--color-slate-100));
-  --color-text-muted: hsl(var(--color-slate-400));
+  --color-text-main: hsl(var(--color-light-900));
+  --color-text-muted: hsl(var(--color-light-400));
 
   /* === Layer 2: backgrounds (solid surfaces) === */
-  --color-background-main: hsl(var(--color-slate-800));
-  --color-background-main-translucent: hsl(var(--color-slate-800) / 40%);
-  --color-background-popover: hsl(var(--color-slate-900));
-  --color-background-popover-translucent: hsl(var(--color-slate-900) / 95%);
-  --color-background-secondary: hsl(var(--color-slate-700));
-  --color-background-muted: hsl(var(--color-slate-700));
-  --color-background-input: hsl(var(--color-slate-700));
-  --color-background-surface: hsl(var(--color-slate-900));
-  --color-background-button: hsl(var(--color-slate-700));
-  --color-background-input-field: hsl(var(--color-slate-700));
-  --color-background-toast: hsl(var(--color-slate-900) / 90%);
-  --color-background-skeleton-light: hsl(var(--color-slate-700) / 30%);
-  --color-background-skeleton-medium: hsl(var(--color-slate-700) / 50%);
+  --color-background-main: hsl(var(--color-light-50));
+  --color-background-main-translucent: hsl(var(--color-light-50) / 95%);
+  --color-background-popover: hsl(var(--color-light-100));
+  --color-background-popover-translucent: hsl(var(--color-light-100) / 98%);
+  --color-background-secondary: hsl(var(--color-light-200));
+  --color-background-muted: hsl(var(--color-light-200));
+  --color-background-input: hsl(var(--color-light-200));
+  --color-background-surface: hsl(var(--color-light-100));
+  --color-background-button: hsl(var(--color-light-200));
+  --color-background-input-field: hsl(var(--color-light-800));
+  --color-background-toast: hsl(var(--color-light-100) / 95%);
+  --color-background-skeleton-light: hsl(var(--color-light-200) / 50%);
+  --color-background-skeleton-medium: hsl(var(--color-light-200) / 70%);
 
   /* === Layer 2: overlays (foreground tints for hovers, subtle bgs, shadows) === */
-  --color-overlay-light: hsl(var(--color-slate-100) / 5%);
-  --color-overlay-medium: hsl(var(--color-slate-100) / 8%);
-  --color-overlay-strong: hsl(var(--color-slate-100) / 10%);
-  --color-overlay-emphasis: hsl(var(--color-slate-100) / 15%);
-  --color-overlay-bold: hsl(var(--color-slate-100) / 25%);
+  --color-overlay-light: hsl(var(--color-light-900) / 3%);
+  --color-overlay-medium: hsl(var(--color-light-900) / 5%);
+  --color-overlay-strong: hsl(var(--color-light-900) / 8%);
+  --color-overlay-emphasis: hsl(var(--color-light-900) / 12%);
+  --color-overlay-bold: hsl(var(--color-light-900) / 18%);
 
   /* === Layer 2: borders === */
-  --color-border-main: hsl(var(--color-slate-600));
-  --color-border-surface: hsl(var(--color-slate-600));
+  --color-border-main: hsl(var(--color-light-700));
+  --color-border-surface: hsl(var(--color-light-700));
 
   /* === Layer 2: side accents (attacker/defender only) === */
   --color-accent-attacker: hsl(var(--color-attacker-raw));
@@ -107,7 +118,7 @@
   --color-accent-defender-70: hsl(var(--color-defender-raw) / 70%);
 
   /* === Layer 2: divider, focus === */
-  --color-focus-ring: hsl(var(--color-slate-100));
+  --color-focus-ring: hsl(var(--color-light-900));
 
   /* === Layer 2: raw channel pairs (dynamic theming only — side-color, btn-color, checkbox-color, select-color, glow-color) === */
   --color-attacker-raw: var(--color-cyan-300);

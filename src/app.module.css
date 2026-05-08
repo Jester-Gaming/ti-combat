@@ -90,22 +90,26 @@ body {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background:
-    radial-gradient(
-      ellipse 80% 50% at 20% 80%,
-      hsl(270deg 60% 30% / 15%),
-      transparent
-    ),
-    radial-gradient(
-      ellipse 60% 40% at 80% 20%,
-      hsl(186deg 60% 30% / 10%),
-      transparent
-    ),
-    radial-gradient(
-      ellipse 100% 60% at 50% 100%,
-      hsl(222deg 50% 10% / 80%),
-      transparent
-    );
+  background: hsl(40deg 15% 97%);
+
+  :global(.dark) & {
+    background:
+      radial-gradient(
+        ellipse 80% 50% at 20% 80%,
+        hsl(270deg 60% 30% / 15%),
+        transparent
+      ),
+      radial-gradient(
+        ellipse 60% 40% at 80% 20%,
+        hsl(186deg 60% 30% / 10%),
+        transparent
+      ),
+      radial-gradient(
+        ellipse 100% 60% at 50% 100%,
+        hsl(222deg 50% 10% / 80%),
+        transparent
+      );
+  }
 }
 
 @keyframes fadeUp {
@@ -162,15 +166,16 @@ body {
 }
 
 .title {
-  @media (width < 500px) {
-    font-size: var(--text-sm);
-  }
   margin: 0;
   font-size: var(--text-lg);
   font-weight: 400;
   letter-spacing: 0.025em;
   font-family: var(--font-heading);
   color: var(--color-text-muted);
+
+  @media (width < 500px) {
+    font-size: var(--text-sm);
+  }
 }
 
 .titleLink {

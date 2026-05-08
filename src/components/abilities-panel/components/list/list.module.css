@@ -27,7 +27,7 @@
 }
 
 .item_active {
-  border-color: var(--color-accent-50);
+  border-color: var(--color-accent-70);
   background-color: var(--color-accent-20);
 }
 
