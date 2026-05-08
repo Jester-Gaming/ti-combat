@@ -377,16 +377,6 @@ export class CombatSetup {
       this._attackerSelections,
     ]
 
-    // Swap side abilities
-    ;[this._sideAbilities.attacker, this._sideAbilities.defender] = [
-      this._sideAbilities.defender,
-      this._sideAbilities.attacker,
-    ]
-    ;[this._sideRegistered.attacker, this._sideRegistered.defender] = [
-      this._sideRegistered.defender,
-      this._sideRegistered.attacker,
-    ]
-
     // Swap abilities config
     this._abilities = {
       attacker: this._abilities.defender,
@@ -398,6 +388,36 @@ export class CombatSetup {
       ...this._stateData,
       attacker: this._stateData.defender,
       defender: this._stateData.attacker,
+    }
+
+    // Recompute available abilities for the swapped sides — `side`-restricted
+    // abilities (e.g. attacker-only commanders) need re-filtering against the
+    // new side. Swapping the cached lists alone leaks old entries through.
+    const attackerRegistered = getAvailableAbilities(
+      'attacker',
+      this._attackerFaction,
+      this.getUpgradedTypes('attacker'),
+    )
+    const defenderRegistered = getAvailableAbilities(
+      'defender',
+      this._defenderFaction,
+      this.getUpgradedTypes('defender'),
+    )
+    this._sideRegistered = {
+      attacker: attackerRegistered,
+      defender: defenderRegistered,
+    }
+    this._sideAbilities = {
+      attacker: flattenUnique(attackerRegistered),
+      defender: flattenUnique(defenderRegistered),
+    }
+    this._unitAbilityKeys = {
+      attacker: getUnitDefinitionAbilityKeys(this._attackerFaction),
+      defender: getUnitDefinitionAbilityKeys(this._defenderFaction),
+    }
+    this._factionOwnedKeys = {
+      attacker: getFactionOwnedAbilityKeys(this._attackerFaction),
+      defender: getFactionOwnedAbilityKeys(this._defenderFaction),
     }
 
     // Rebuild units for both sides
