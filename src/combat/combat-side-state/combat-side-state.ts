@@ -50,6 +50,32 @@ const CATEGORY_TO_SETTINGS_KEY: Record<UnitCategory, string> = {
 /** Shared empty destroyed record to avoid per-call {} allocation */
 const EMPTY_DESTROYED: Record<string, UnitId[]> = {}
 
+/** Merge an ability's base config with its live-overlay config. */
+function mergeConfig(
+  s: SideStateData,
+  key: string,
+): Record<string, unknown> | undefined {
+  const base = s.abilities[key]
+  const live = s.liveAbilities[key]
+  if (base === undefined && live === undefined) return undefined
+  if (live === undefined) return base
+  if (base === undefined) return live
+  return { ...base, ...live }
+}
+
+/** Parse a UnitList (flat or `[type, enabled]` tuples) into a UnitType[]. */
+function parsePriorityList(raw: unknown): UnitType[] | undefined {
+  if (!Array.isArray(raw)) return undefined
+  if (raw.length === 0) return raw as UnitType[]
+  if (!Array.isArray(raw[0])) return raw as UnitType[]
+  const result: UnitType[] = []
+  for (const entry of raw as readonly [string, ...unknown[]][]) {
+    if (entry.length >= 2 && entry[1] === false) continue
+    result.push(entry[0] as UnitType)
+  }
+  return result
+}
+
 /** CoW — clone `unitState` if its ref may be shared with another side.
  *  Also clones the touched entry refs lazily via replace-semantics at
  *  the mutation site (see `modifyUnitState`). */
@@ -812,32 +838,17 @@ export class CombatSideState {
     mode: CombatMode,
     meta: MetaPhase,
   ): UnitType[] | undefined {
-    const baseUP = s.abilities['UNIT_PRIORITY']
-    const liveUP = s.liveAbilities['UNIT_PRIORITY']
-    if (baseUP === undefined && liveUP === undefined) return undefined
-    const unitPriority =
-      liveUP === undefined
-        ? baseUP
-        : baseUP === undefined
-          ? liveUP
-          : { ...baseUP, ...liveUP }
-    if (!unitPriority) return undefined
-    const key =
-      meta === 'SPACE_CANNON_OFFENSE'
-        ? 'scoUnitPriority'
-        : mode === 'GROUND'
-          ? 'groundUnitPriority'
-          : 'spaceUnitPriority'
-    const raw = unitPriority[key] as unknown
-    if (!Array.isArray(raw)) return undefined
-    if (raw.length === 0) return raw as UnitType[]
-    if (!Array.isArray(raw[0])) return raw as UnitType[]
-    const result: UnitType[] = []
-    for (const entry of raw as readonly [string, ...unknown[]][]) {
-      if (entry.length >= 2 && entry[1] === false) continue
-      result.push(entry[0] as UnitType)
+    if (meta === 'SPACE_CANNON_OFFENSE') {
+      const sc = mergeConfig(s, 'RESOLVE_SPACE_CANNON')
+      if (sc?.customScoPriority) {
+        const parsed = parsePriorityList(sc.scoUnitPriority)
+        if (parsed !== undefined) return parsed
+      }
     }
-    return result
+    const unitPriority = mergeConfig(s, 'UNIT_PRIORITY')
+    if (!unitPriority) return undefined
+    const key = mode === 'GROUND' ? 'groundUnitPriority' : 'spaceUnitPriority'
+    return parsePriorityList(unitPriority[key])
   }
 
   /** Get valid targets from SETTINGS for the given meta. Throws when

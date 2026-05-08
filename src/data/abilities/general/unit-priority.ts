@@ -9,8 +9,6 @@ import type { Ability } from '../../../combat/abilities-engine/types'
 type Params = {
   spaceUnitPriority: UnitList
   groundUnitPriority: UnitList
-  customScoPriority: boolean
-  scoUnitPriority: UnitList
 }
 
 declare global {
@@ -25,8 +23,6 @@ export const unitPriority: Ability<Params> = {
   paramsSchema: z.object({
     spaceUnitPriority: UnitListSchema,
     groundUnitPriority: UnitListSchema,
-    customScoPriority: z.boolean(),
-    scoUnitPriority: UnitListSchema,
   }),
   params: {
     isEnabled: true,
@@ -39,20 +35,9 @@ export const unitPriority: Ability<Params> = {
       default: [],
       source: 'groundCombatParticipating',
     }),
-    customScoPriority: false,
-    scoUnitPriority: declareParam<UnitList>({
-      default: [],
-      source: 'spaceCombatParticipating',
-    }),
-  },
-  onParamSet(params, key) {
-    if (key === 'spaceUnitPriority' && !params.customScoPriority) {
-      params.scoUnitPriority = params.spaceUnitPriority
-      return params
-    }
   },
   invoke: [],
-  uiConfig: (ctx, params) => {
+  uiConfig: ctx => {
     if (ctx.state.combatMode === 'GROUND') {
       return [
         {
@@ -64,31 +49,13 @@ export const unitPriority: Ability<Params> = {
       ]
     }
 
-    const unitItems = ctx.api.own.getUnitVariantsOptions()
-
     return [
       {
         key: 'spaceUnitPriority' as const,
         type: 'unit-list' as const,
         mode: 'order' as const,
-        items: unitItems,
+        items: ctx.api.own.getUnitVariantsOptions(),
       },
-      {
-        key: 'customScoPriority' as const,
-        label: 'Custom priority for SCO',
-        type: 'checkbox' as const,
-      },
-      ...(params.customScoPriority
-        ? [
-            {
-              key: 'scoUnitPriority' as const,
-              label: 'Space Cannon Offense Priority',
-              type: 'unit-list' as const,
-              mode: 'order' as const,
-              items: unitItems,
-            },
-          ]
-        : []),
     ]
   },
 }

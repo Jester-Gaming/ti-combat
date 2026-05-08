@@ -34,9 +34,9 @@ describe.forEachSide('CAPACITY', () => {
         units: { CARRIER: 1, CRUISER: 1, INFANTRY: 3 },
         abilities: {
           CAPACITY: true,
-          UNIT_PRIORITY: {
-            scoUnitPriority: [['CARRIER'], ['CRUISER'], ['INFANTRY']],
+          RESOLVE_SPACE_CANNON: {
             customScoPriority: true,
+            scoUnitPriority: [['CARRIER'], ['CRUISER'], ['INFANTRY']],
           },
         },
       },
