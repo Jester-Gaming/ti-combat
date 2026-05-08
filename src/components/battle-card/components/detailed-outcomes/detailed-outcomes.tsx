@@ -153,8 +153,8 @@ function sortOutcomes(outcomes: CombatOutcome[]): CombatOutcome[] {
     const aDmg = countDamaged(a.attacker) - countDamaged(b.attacker)
     if (aDmg !== 0) return aDmg
 
-    // Fewer damaged defender units means defender is worse off — better for attacker
-    return countDamaged(a.defender) - countDamaged(b.defender)
+    // More damaged defender units means defender is worse off — better for attacker
+    return countDamaged(b.defender) - countDamaged(a.defender)
   })
 }
 
