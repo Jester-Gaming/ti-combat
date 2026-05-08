@@ -92,9 +92,11 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
       combatMode === 'GROUND' ? 'groundUnitPriority' : 'spaceUnitPriority'
     const a = abilities.attacker['UNIT_PRIORITY']
     const d = abilities.defender['UNIT_PRIORITY']
+    const flatten = (list: unknown): string[] =>
+      Array.isArray(list) ? list.map(entry => entry[0]) : []
     return {
-      attacker: (a?.[key] as string[] | undefined) ?? [],
-      defender: (d?.[key] as string[] | undefined) ?? [],
+      attacker: flatten(a?.[key]),
+      defender: flatten(d?.[key]),
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stateData])
