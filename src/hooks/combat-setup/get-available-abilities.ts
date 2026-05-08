@@ -140,6 +140,7 @@ const NEUTRAL_HIDDEN_SLOTS: ReadonlySet<AbilitySlot> = new Set<AbilitySlot>([
 
 function collectUnitAbilities(
   faction: Faction,
+  side: CombatSide,
   upgradedTypes?: ReadonlySet<UnitBaseType>,
 ): RegisteredAbility[] {
   const seen = new Set<string>()
@@ -157,6 +158,7 @@ function collectUnitAbilities(
       if (SHARED_UNIT_ABILITY_KEYS.has(ability.key)) continue
       if (seen.has(ability.key)) continue
       if (!ability.headerUI && !ability.uiConfig) continue
+      if (ability.side && ability.side !== side) continue
       seen.add(ability.key)
       out.push({ ability, slot })
     }
@@ -169,8 +171,10 @@ function collectUnitAbilities(
     const deploy = effective.UNIT_ABILITIES?.DEPLOY
     if (deploy && !seen.has(deploy.key)) {
       if (deploy.headerUI || deploy.uiConfig) {
-        seen.add(deploy.key)
-        out.push({ ability: deploy, slot })
+        if (!deploy.side || deploy.side === side) {
+          seen.add(deploy.key)
+          out.push({ ability: deploy, slot })
+        }
       }
     }
   }
@@ -278,13 +282,15 @@ export function getAvailableAbilities(
       let factionSlot: AbilitySlot = slot
       if (slot === 'AGENT') factionSlot = 'FACTION_AGENT'
       else if (slot === 'COMMANDER') factionSlot = 'FACTION_COMMANDER'
-      for (const ability of list)
+      for (const ability of list) {
+        if (ability.side && ability.side !== side) continue
         factionAbilities.push({ ability, slot: factionSlot })
+      }
     }
   }
 
   const unitAbilities = faction
-    ? collectUnitAbilities(faction, upgradedTypes)
+    ? collectUnitAbilities(faction, side, upgradedTypes)
     : []
 
   return [...base, ...factionAbilities, ...unitAbilities]
