@@ -26,20 +26,23 @@ export const a3Valiance: Ability = {
       isCallable: (_params, ctx, ids) => {
         const myId = ctx.getUnit()
         if (!ids.includes(myId)) return false
-        const variantKey = ctx.api.own.getVariantKey(myId)
-        if (!variantKey) return false
-        const { type, subtypes } = parseVariantId(variantKey)
-        if (type !== 'MECH' || !subtypes.includes(GALVANIZED)) return false
-        if (!ctx.api.own.hasUnitType('INFANTRY')) return false
+        const variantKey = ctx.api.own.getVariantKey(myId)!
+        const { subtypes } = parseVariantId(variantKey)
+        if (!subtypes.includes(GALVANIZED)) return false
+        if (!ctx.api.own.hasUnitType('INFANTRY', { includeVariants: true }))
+          return false
         const tokens =
           ctx.api.own.getAbilityConfig('PRE_GALVANIZED')?.reinforcementTokens ??
           0
         return tokens > 0
       },
       call: ctx => {
-        for (let i = 0; i < 3; i++) {
-          if (!ctx.api.own.hasUnitType('INFANTRY')) break
-          if (!galvanizeUnit(ctx, 'INFANTRY', true)) break
+        const ids = ctx.api.own.getUnits('INFANTRY', { includeVariants: true })
+        console.log(ids)
+        let count = 0
+        for (const id of ids) {
+          if (count >= 3) break
+          if (galvanizeUnit(ctx, id, true)) count++
         }
       },
     },

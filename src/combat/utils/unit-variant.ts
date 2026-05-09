@@ -44,6 +44,24 @@ export function parseVariantId(id: UnitType): {
   return result
 }
 
+/** Variant-superset match: `unitVariantId` matches `queryVariantId` when they
+ *  share a base type and the unit's subtypes include every subtype required
+ *  by the query. Used by `getUnits` / `hasUnitType` / etc. when called with
+ *  `includeVariants: true`: querying `INFANTRY:Evelyn` matches
+ *  `INFANTRY:Evelyn,Galvanized` but not `INFANTRY:Galvanized`. */
+export function matchesVariantSuperset(
+  unitVariantId: UnitType,
+  queryVariantId: UnitType,
+): boolean {
+  const u = parseVariantId(unitVariantId)
+  const q = parseVariantId(queryVariantId)
+  if (u.type !== q.type) return false
+  for (const sub of q.subtypes) {
+    if (!u.subtypes.includes(sub)) return false
+  }
+  return true
+}
+
 export function getVariantDisplayName(id: UnitType): string {
   const { type, subtypes } = parseVariantId(id)
   const base = UNIT_DISPLAY_NAMES[type]

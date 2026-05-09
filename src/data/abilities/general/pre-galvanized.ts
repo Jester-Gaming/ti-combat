@@ -5,7 +5,6 @@ import {
   type AbilityCallContext,
   type DeclaredSubtype,
   declareParam,
-  makeVariantId,
   parseVariantId,
 } from '@/combat'
 import type {
@@ -98,7 +97,7 @@ export const preGalvanized: Ability<Params> = {
           const ids = ctx.api.own.getUnits(unitType as UnitType)
           const max = Math.min(count, ids.length)
           for (let i = 0; i < max; i++) {
-            galvanizeUnit(ctx, unitType as UnitType)
+            galvanizeUnit(ctx, ids[i])
           }
         }
       },
@@ -126,17 +125,20 @@ function galvanizeStats(stats: UnitStats): UnitStats {
   return { ...stats, COMBAT: combat, UNIT_ABILITIES: nextAbilities }
 }
 
-/** Galvanize one unit of the given type — moves it to the Galvanized subtype
- *  with +1 bonus die on COMBAT, BOMBARDMENT, AFB, and SPACE_CANNON. Emits
- *  `WHEN_GALVANIZE` with the newly galvanized UnitId.
- *  Pass `consumeToken: true` to consume one reinforcement token from
- *  PRE_GALVANIZED; returns false if the token pool is empty. */
+/** Galvanize the given unit — moves it to the Galvanized subtype with +1 bonus
+ *  die on COMBAT, BOMBARDMENT, AFB, and SPACE_CANNON. Emits `WHEN_GALVANIZE`
+ *  with the newly galvanized UnitId. Returns false if the unit is already
+ *  galvanized, isn't tracked, or (when `consumeToken` is set) the
+ *  PRE_GALVANIZED token pool is empty. */
 export function galvanizeUnit(
   ctx: AbilityCallContext,
-  unitType: UnitType,
+  unitId: UnitId,
   consumeToken?: boolean,
 ): boolean {
   const api = ctx.api.own
+  const sourceKey = api.getVariantKey(unitId)
+  if (!sourceKey) return false
+  if (parseVariantId(sourceKey).subtypes.includes(GALVANIZED)) return false
   if (consumeToken) {
     const tokens =
       api.getAbilityConfig('PRE_GALVANIZED')?.reinforcementTokens ?? 0
@@ -145,11 +147,8 @@ export function galvanizeUnit(
       reinforcementTokens: tokens - 1,
     })
   }
-  api.addSubtype(unitType, GALVANIZED)
-  const galvanizedVariant = makeVariantId(unitType, [GALVANIZED])
-  const ids = api.getUnits(galvanizedVariant)
-  const movedId = ids[ids.length - 1]
-  if (movedId !== undefined) ctx.trigger('WHEN_GALVANIZE', movedId)
+  api.addSubtype(unitId, GALVANIZED)
+  ctx.trigger('WHEN_GALVANIZE', unitId)
   return true
 }
 

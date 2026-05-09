@@ -80,7 +80,10 @@ export const phoenixStandard: Ability<Params> = {
             : params.spaceUnitPriority
         const target = findTarget(ctx.api.own, priority)
         if (target === undefined) return
-        galvanizeUnit(ctx, target, true)
+        const ids = ctx.api.own.getUnits(target, { includeVariants: true })
+        for (const id of ids) {
+          if (galvanizeUnit(ctx, id, true)) break
+        }
       },
     },
   ],

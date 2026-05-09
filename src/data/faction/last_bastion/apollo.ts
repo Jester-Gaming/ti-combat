@@ -62,8 +62,8 @@ export const apollo: Ability<Params> = {
         if (params.heroDesignated) return false
         return ctx.api.own.getVariantKey(unitId) === params.heroUnit
       },
-      call: (ctx, params) => {
-        ctx.api.own.addSubtype(params.heroUnit!, HERO)
+      call: (ctx, _params, unitId) => {
+        ctx.api.own.addSubtype(unitId, HERO)
         ctx.api.own.updateAbilityConfig({ heroDesignated: true })
       },
     },
@@ -122,7 +122,8 @@ export const apollo: Ability<Params> = {
       isCallable: params => !!params.heroUnit,
       call: (ctx, params) => {
         const variantId = makeVariantId(params.heroUnit!, [HERO])
-        ctx.api.own.removeSubtype(variantId, HERO)
+        const [unitId] = ctx.api.own.getUnits(variantId)
+        if (unitId !== undefined) ctx.api.own.removeSubtype(unitId, HERO)
       },
     },
   ],

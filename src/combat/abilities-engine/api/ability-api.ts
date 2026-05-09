@@ -216,10 +216,13 @@ export class SideApi {
   }
 
   findUnitByPriority(priority: UnitType[]): UnitId | undefined
-  findUnitByPriority(priority: UnitType[], amount: number): UnitId[]
   findUnitByPriority(
     priority: UnitType[],
-    amount?: number,
+    opts: { amount?: number; includeVariants?: boolean },
+  ): UnitId[]
+  findUnitByPriority(
+    priority: UnitType[],
+    opts?: { amount?: number; includeVariants?: boolean },
   ): UnitId | UnitId[] | undefined {
     const participating = new Set(
       CombatSideState.getParticipatingUnitTypes(
@@ -227,12 +230,12 @@ export class SideApi {
         this.state.combatMode,
       ),
     )
-    if (amount !== undefined) {
+    if (opts !== undefined) {
       return CombatSideState.findUnitByPriority(
         this._sideData,
         priority,
         participating,
-        amount,
+        opts,
       )
     }
     return CombatSideState.findUnitByPriority(
@@ -484,19 +487,18 @@ export class SideApi {
     )
   }
 
-  addSubtype(variantId: UnitType, subtype: UnitVariantId) {
-    const moved = CombatSideState.addSubtype(this._sideData, variantId, subtype)
-    if (!moved) return
+  addSubtype(unitId: UnitId, subtype: UnitVariantId): UnitType | undefined {
+    const newKey = CombatSideState.addSubtype(this._sideData, unitId, subtype)
+    if (!newKey) return undefined
     // Re-register invokes for the new variant so the unit's ABILITIES set
     // matches its variant stats and per-ability `sort` runs against the
     // current variant key. Mirrors `modifyUnitType` / `placeUnits`.
-    this._abilitiesParams?.addUnitInvokes(this._side, moved.newKey, [
-      moved.unitId,
-    ])
+    this._abilitiesParams?.addUnitInvokes(this._side, newKey, [unitId])
+    return newKey
   }
 
-  removeSubtype(variantId: UnitType, subtype: UnitVariantId) {
-    CombatSideState.removeSubtype(this._sideData, variantId, subtype)
+  removeSubtype(unitId: UnitId, subtype: UnitVariantId) {
+    CombatSideState.removeSubtype(this._sideData, unitId, subtype)
   }
 
   updateAbilityConfig(

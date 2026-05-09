@@ -35,6 +35,7 @@ import { nextUnitIds } from '../utils/unit-id'
 import {
   getVariantDisplayName,
   makeVariantId,
+  matchesVariantSuperset,
   parseVariantId,
 } from '../utils/unit-variant'
 import { getSettingsValidTargets as getSettingsValidTargetsUtil } from './get-settings-valid-targets'
@@ -527,12 +528,11 @@ export class CombatSideState {
   ): boolean {
     const { participatingUnits, nonParticipatingUnits, unitType: typeMap } = s
     if (includeVariants) {
-      const baseType = parseVariantId(unitType).type
       for (const id of participatingUnits) {
-        if (parseVariantId(typeMap[id]).type === baseType) return true
+        if (matchesVariantSuperset(typeMap[id], unitType)) return true
       }
       for (const id of nonParticipatingUnits) {
-        if (parseVariantId(typeMap[id]).type === baseType) return true
+        if (matchesVariantSuperset(typeMap[id], unitType)) return true
       }
       return false
     }
@@ -578,36 +578,43 @@ export class CombatSideState {
     s: SideStateData,
     priority: UnitType[],
     participatingTypes?: ReadonlySet<UnitBaseType>,
-    amount?: undefined,
+    opts?: undefined,
   ): UnitId | undefined
   static findUnitByPriority(
     s: SideStateData,
     priority: UnitType[],
     participatingTypes: ReadonlySet<UnitBaseType> | undefined,
-    amount: number,
+    opts: { amount?: number; includeVariants?: boolean },
   ): UnitId[]
   static findUnitByPriority(
     s: SideStateData,
     priority: UnitType[],
     participatingTypes?: ReadonlySet<UnitBaseType>,
-    amount?: number,
+    opts?: { amount?: number; includeVariants?: boolean },
   ): UnitId | UnitId[] | undefined {
     const { participatingUnits, nonParticipatingUnits, unitType } = s
-    const collect = amount !== undefined
+    const collect = opts !== undefined
+    const amount = opts?.amount ?? Infinity
+    const includeVariants = opts?.includeVariants ?? false
     const result: UnitId[] = []
+
+    const matches = (key: UnitType, variantId: UnitType): boolean =>
+      includeVariants
+        ? matchesVariantSuperset(key, variantId)
+        : key === variantId
 
     for (const variantId of priority) {
       const { type } = parseVariantId(variantId)
       if (participatingTypes && !participatingTypes.has(type)) continue
       for (const id of participatingUnits) {
-        if (unitType[id] !== variantId) continue
+        if (!matches(unitType[id], variantId)) continue
         const unitId = id as UnitId
         if (!collect) return unitId
         result.push(unitId)
         if (result.length >= amount) return result
       }
       for (const id of nonParticipatingUnits) {
-        if (unitType[id] !== variantId) continue
+        if (!matches(unitType[id], variantId)) continue
         const unitId = id as UnitId
         if (!collect) return unitId
         result.push(unitId)
@@ -630,13 +637,14 @@ export class CombatSideState {
     const filters = typeof filter === 'string' ? [filter] : filter
 
     if (includeVariants) {
-      const baseTypes = new Set(filters.map(f => parseVariantId(f).type))
+      const matchesAny = (key: UnitType): boolean =>
+        filters.some(f => matchesVariantSuperset(key, f))
       let total = 0
       for (const id of participatingUnits) {
-        if (baseTypes.has(parseVariantId(unitType[id]).type)) total++
+        if (matchesAny(unitType[id])) total++
       }
       for (const id of nonParticipatingUnits) {
-        if (baseTypes.has(parseVariantId(unitType[id]).type)) total++
+        if (matchesAny(unitType[id])) total++
       }
       return total
     }
@@ -662,13 +670,12 @@ export class CombatSideState {
     const { participatingUnits, nonParticipatingUnits, unitType: typeMap } = s
     const result: UnitId[] = []
     if (includeVariants) {
-      const baseType = parseVariantId(unitType).type
       for (const id of participatingUnits) {
-        if (parseVariantId(typeMap[id]).type === baseType)
+        if (matchesVariantSuperset(typeMap[id], unitType))
           result.push(id as UnitId)
       }
       for (const id of nonParticipatingUnits) {
-        if (parseVariantId(typeMap[id]).type === baseType)
+        if (matchesVariantSuperset(typeMap[id], unitType))
           result.push(id as UnitId)
       }
       return result
@@ -1297,41 +1304,25 @@ export class CombatSideState {
     }
   }
 
-  /** Move one unit to a new variant with an added subtype. Returns the moved
-   *  unit id and its new variant key so callers can refresh engine bindings
-   *  (invoke buckets, sort order) for the variant change. */
+  /** Add a subtype to the given unit. Returns the new variant key on change,
+   *  or undefined if the unit isn't tracked. The subtype is appended even if
+   *  already present, producing a duplicated-subtype variant key — callers
+   *  that want to skip duplicates should check first.
+   *  Callers refresh engine bindings (invoke buckets, sort order) using the
+   *  returned key. */
   static addSubtype(
     s: SideStateData,
-    variantId: UnitType,
+    unitId: UnitId,
     subtype: UnitVariantId,
-  ): { unitId: UnitId; newKey: UnitType } | undefined {
-    const { type, subtypes: currentSubtypes } = parseVariantId(variantId)
+  ): UnitType | undefined {
+    const sourceKey = s.unitType[unitId]
+    if (!sourceKey) return undefined
+    const { type, subtypes: currentSubtypes } = parseVariantId(sourceKey)
 
-    const pickFrom = (
-      pool: UnitIdList,
-      matchExact: boolean,
-    ): UnitId | undefined => {
-      for (let i = pool.length - 1; i >= 0; i--) {
-        const id = pool[i] as UnitId
-        const key = s.unitType[id]
-        if (matchExact ? key === variantId : parseVariantId(key).type === type)
-          return id
-      }
-      return undefined
-    }
-    const pickedId =
-      pickFrom(s.participatingUnits, true) ??
-      pickFrom(s.nonParticipatingUnits, true) ??
-      pickFrom(s.participatingUnits, false) ??
-      pickFrom(s.nonParticipatingUnits, false)
-    if (pickedId === undefined) return undefined
-
-    const sourceKey = s.unitType[pickedId]
     const newSubtypes = [...currentSubtypes, subtype].sort()
     const newKey = makeVariantId(type, newSubtypes as UnitVariantId[])
-    if (newKey === sourceKey) return undefined
 
-    s.unitType = { ...s.unitType, [pickedId]: newKey }
+    s.unitType = { ...s.unitType, [unitId]: newKey }
     s._resolvedRestrictions = undefined
 
     if (!s.unitStats[newKey]) {
@@ -1343,41 +1334,26 @@ export class CombatSideState {
       }
     }
 
-    return { unitId: pickedId, newKey }
+    return newKey
   }
 
-  /** Move one unit to a variant with a subtype removed. */
+  /** Remove a subtype from the given unit. No-op if the unit doesn't have it. */
   static removeSubtype(
     s: SideStateData,
-    variantId: UnitType,
+    unitId: UnitId,
     subtype: UnitVariantId,
   ): void {
-    const { type, subtypes: requiredSubtypes } = parseVariantId(variantId)
+    const sourceKey = s.unitType[unitId]
+    if (!sourceKey) return
+    const { type, subtypes: sourceSubs } = parseVariantId(sourceKey)
+    if (!sourceSubs.includes(subtype)) return
 
-    const findIn = (pool: UnitIdList): UnitId | undefined => {
-      for (let i = pool.length - 1; i >= 0; i--) {
-        const id = pool[i] as UnitId
-        const key = s.unitType[id]
-        const { type: kType, subtypes: kSubs } = parseVariantId(key)
-        if (kType !== type) continue
-        if (!kSubs.includes(subtype as UnitVariantId)) continue
-        if (requiredSubtypes.every(sub => kSubs.includes(sub))) return id
-      }
-      return undefined
-    }
-    const pickedId =
-      findIn(s.participatingUnits) ?? findIn(s.nonParticipatingUnits)
-    if (pickedId === undefined) return
-
-    const sourceKey = s.unitType[pickedId]
-    const { subtypes: sourceSubs } = parseVariantId(sourceKey)
     const newSubtypes = sourceSubs.filter(sub => sub !== subtype)
     const newKey: UnitType =
       newSubtypes.length > 0 ? makeVariantId(type, newSubtypes) : type
-
     if (newKey === sourceKey) return
 
-    s.unitType = { ...s.unitType, [pickedId]: newKey }
+    s.unitType = { ...s.unitType, [unitId]: newKey }
     s._resolvedRestrictions = undefined
   }
 

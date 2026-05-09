@@ -60,7 +60,7 @@ export const exotrireme: Ability<Params> = {
         const self = ctx.getUnit()
         const targets = ctx.api.opponent.findUnitByPriority(
           ctx.utils.getFlat(params.targetPriority),
-          2,
+          { amount: 2 },
         )
 
         if (targets.length > 0) ctx.api.opponent.destroyUnits(targets)

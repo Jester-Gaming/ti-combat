@@ -91,7 +91,12 @@ export const cavalry: Ability<Params> = {
         return ctx.api.own.hasUnitType(params.unitType)
       },
       call: (ctx, params) => {
-        ctx.api.own.addSubtype(params.unitType, CAVALRY)
+        const exact = ctx.api.own.getUnits(params.unitType)
+        const [unitId] =
+          exact.length > 0
+            ? exact
+            : ctx.api.own.getUnits(params.unitType, { includeVariants: true })
+        if (unitId !== undefined) ctx.api.own.addSubtype(unitId, CAVALRY)
       },
     },
     {
@@ -99,7 +104,8 @@ export const cavalry: Ability<Params> = {
       system: true,
       call: (ctx, params) => {
         const variantId = makeVariantId(params.unitType, [CAVALRY])
-        ctx.api.own.removeSubtype(variantId, CAVALRY)
+        const [unitId] = ctx.api.own.getUnits(variantId)
+        if (unitId !== undefined) ctx.api.own.removeSubtype(unitId, CAVALRY)
       },
     },
   ],
