@@ -1283,24 +1283,27 @@ export class CombatSideState {
     return newKey
   }
 
-  /** Remove a subtype from the given unit. No-op if the unit doesn't have it. */
+  /** Remove a subtype from the given unit. Returns the new variant key for
+   *  callers to refresh engine bindings (invoke buckets, sort order), or
+   *  undefined when the unit didn't have the subtype (no-op). */
   static removeSubtype(
     s: SideStateData,
     unitId: UnitId,
     subtype: UnitVariantId,
-  ): void {
+  ): UnitType | undefined {
     const sourceKey = s.unitType[unitId]
-    if (!sourceKey) return
+    if (!sourceKey) return undefined
     const { type, subtypes: sourceSubs } = parseVariantId(sourceKey)
-    if (!sourceSubs.includes(subtype)) return
+    if (!sourceSubs.includes(subtype)) return undefined
 
     const newSubtypes = sourceSubs.filter(sub => sub !== subtype)
     const newKey: UnitType =
       newSubtypes.length > 0 ? makeVariantId(type, newSubtypes) : type
-    if (newKey === sourceKey) return
+    if (newKey === sourceKey) return undefined
 
     s.unitType = { ...s.unitType, [unitId]: newKey }
     s._resolvedRestrictions = undefined
+    return newKey
   }
 
   /**

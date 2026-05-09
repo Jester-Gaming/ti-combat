@@ -479,11 +479,22 @@ export class SideApi {
     // matches its variant stats and per-ability `sort` runs against the
     // current variant key. Mirrors `modifyUnitType` / `placeUnits`.
     this._abilitiesParams?.addUnitInvokes(this._side, newKey, [unitId])
+    // Variant-key change can move the unit to a different rank tier in
+    // UNIT_PRIORITY (e.g. `CRUISER:Cavalry` ranked separately from
+    // `CRUISER`); re-split so tail-slice destroys the right unit.
+    this._abilitiesParams?.combatState.resyncParticipating(this._side)
     return newKey
   }
 
   removeSubtype(unitId: UnitId, subtype: UnitVariantId) {
-    CombatSideState.removeSubtype(this._sideData, unitId, subtype)
+    const newKey = CombatSideState.removeSubtype(
+      this._sideData,
+      unitId,
+      subtype,
+    )
+    if (!newKey) return
+    this._abilitiesParams?.addUnitInvokes(this._side, newKey, [unitId])
+    this._abilitiesParams?.combatState.resyncParticipating(this._side)
   }
 
   updateAbilityConfig(
