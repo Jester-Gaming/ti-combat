@@ -4,7 +4,7 @@ import {
   QuestionMarkCircledIcon,
 } from '@radix-ui/react-icons'
 import clsx from 'clsx'
-import { useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 
 import {
   type Ability,
@@ -59,6 +59,28 @@ export function AbilityConfig({
     })
     return ability.uiConfig(ctx, effectiveParams)
   }, [ability, defaults, readContext, params])
+
+  useEffect(() => {
+    if (!uiConfigItems) return
+    for (const config of uiConfigItems) {
+      if (config.type !== 'unit-list') continue
+      const key = config.key as string
+      const allowed = new Set(config.items.map(i => i.value))
+      const value = params[key] ?? config.defaultValue ?? defaults?.[key] ?? []
+      if (!Array.isArray(value)) continue
+      for (const entry of value) {
+        const unitType = Array.isArray(entry) ? entry[0] : entry
+        if (typeof unitType !== 'string') continue
+        if (!allowed.has(unitType)) {
+          console.warn('[ability params] extra value', {
+            abilityKey: ability.key,
+            paramKey: key,
+            value: unitType,
+          })
+        }
+      }
+    }
+  }, [ability.key, uiConfigItems, params, defaults])
 
   const hasConfigItems = uiConfigItems && uiConfigItems.length > 0
   const isCollapsible = !!hasConfigItems

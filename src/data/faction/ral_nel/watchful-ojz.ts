@@ -33,7 +33,9 @@ export const watchfulOjz: Ability<Params> = {
       type: 'unit-list',
       mode: 'number',
       sortable: true,
-      items: ctx.api.own.getUnitVariantsOptions(),
+      items: ctx.api.own.getUnitVariantsOptions({
+        combatMode: 'SPACE',
+      }),
     },
   ],
   invoke: [
