@@ -28,7 +28,8 @@ export const shieldPaling: Ability = {
     },
     {
       timing: 'AFTER_DESTROY',
-      isCallable: (_params, ctx) => !ctx.api.own.hasUnitType('MECH'),
+      isCallable: (_params, ctx) =>
+        !ctx.api.own.hasUnitType('MECH', { includeVariants: true }),
       call: ctx => {
         ctx.api.own.updateAbilityConfig('FRAGILE', {
           excludeUnits: (current: UnitBaseType[] = []) =>
