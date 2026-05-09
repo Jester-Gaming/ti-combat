@@ -95,6 +95,36 @@ describe.forEachSide('GREYFIRE_MUTAGEN', () => {
     expect(t.defender.units.INFANTRY).toHaveLength(2)
   })
 
+  it('replaces a galvanized opponent infantry', () => {
+    const t = combatTest({
+      mode: 'GROUND',
+      attacker: {
+        faction: 'EMIRATES_OF_HACAN',
+        units: { INFANTRY: 1 },
+        abilities: { GREYFIRE_MUTAGEN: true },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { INFANTRY: 2 },
+        abilities: {
+          PRE_GALVANIZED: {
+            isEnabled: true,
+            galvanizedUnits: [['INFANTRY', 2]],
+          },
+        },
+      },
+    })
+
+    t.advanceTo('GROUND_COMBAT')
+    t.advanceRound()
+
+    expect(t.abilityLog('GREYFIRE_MUTAGEN')).not.toHaveLength(0)
+    expect(t.attacker.units.INFANTRY).toHaveLength(2)
+    expect(t.defender.units.INFANTRY).toHaveLength(1)
+    const remaining = t.defender.units.INFANTRY!
+    expect(remaining[0]?.subtypes).toContain('Galvanized')
+  })
+
   it('fires when opponent has mix of mechs and infantry totaling 2+ ground forces', () => {
     const t = combatTest({
       mode: 'GROUND',

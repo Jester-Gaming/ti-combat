@@ -1,28 +1,82 @@
-import yinBrotherhoodIcon from '@/assets/faction/yin_brotherhood.svg?raw'
-import type { Ability } from '@/combat'
+import { z } from 'zod/mini'
 
-export const greyfireMutagen: Ability = {
+import yinBrotherhoodIcon from '@/assets/faction/yin_brotherhood.svg?raw'
+import { type Ability, declareParam, parseVariantId } from '@/combat'
+import type { UnitList, UnitType } from '@/types'
+import { UnitListBooleanSchema } from '@/types'
+
+type Params = {
+  targetPriority: UnitList<boolean>
+}
+
+export const greyfireMutagen: Ability<Params> = {
   key: 'GREYFIRE_MUTAGEN',
   name: 'Greyfire Mutagen',
   description:
     "At the start of a ground combat against 2 or more ground forces that are not controlled by the Yin player: Replace 1 of your opponent's infantry with 1 infantry from your reinforcements.",
   icon: yinBrotherhoodIcon,
   context: 'GROUND',
-  params: { isEnabled: false, uses: 1 },
+  paramsSchema: z.object({
+    targetPriority: UnitListBooleanSchema,
+  }),
+  params: {
+    isEnabled: false,
+    uses: 1,
+    targetPriority: declareParam<UnitList<boolean>>({
+      default: [],
+      source: 'groundForces',
+      side: 'opponent',
+      defaultItemValue: true,
+      sort: 'price-desc',
+      filter: id => parseVariantId(id as UnitType).type === 'INFANTRY',
+    }),
+  },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'START_OF_COMBAT',
-      isCallable: (_params, ctx) => {
+      isCallable: (params, ctx) => {
         if (ctx.api.opponent.getFaction() === 'YIN_BROTHERHOOD') return false
         const { groundForces } = ctx.api.opponent.getAbilityConfig('SETTINGS')
-        if (ctx.api.opponent.countUnits(groundForces) < 2) return false
-        return ctx.api.opponent.hasUnitType('INFANTRY')
+        if (
+          ctx.api.opponent.countUnits(groundForces, { includeVariants: true }) <
+          2
+        )
+          return false
+        return (
+          ctx.api.opponent.findUnitByPriority(
+            ctx.utils.getFlat(params.targetPriority),
+          ) !== undefined
+        )
       },
-      call: ctx => {
-        ctx.api.opponent.removeUnits('INFANTRY')
+      call: (ctx, params) => {
+        const target = ctx.api.opponent.findUnitByPriority(
+          ctx.utils.getFlat(params.targetPriority),
+        )
+        if (target === undefined) return
+        ctx.api.opponent.removeUnits(target)
         ctx.api.own.placeUnits({ INFANTRY: 1 })
       },
     },
   ],
+  uiConfig: ctx => {
+    const items = ctx.api.opponent.getUnitVariantsOptions({
+      combatMode: 'GROUND',
+      include: ['INFANTRY'],
+    })
+
+    if (items.length <= 1) {
+      return []
+    }
+
+    return [
+      {
+        key: 'targetPriority' as const,
+        type: 'unit-list' as const,
+        mode: 'checkbox' as const,
+        sortable: true,
+        items,
+      },
+    ]
+  },
 }
