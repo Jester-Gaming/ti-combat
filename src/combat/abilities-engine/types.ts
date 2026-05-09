@@ -41,11 +41,20 @@ export interface SyncSourceConfig<
   defaultItemValue?: unknown
   compute?: (value: SettingsParams[K]) => unknown
   filter?: (value: string) => boolean
+  /** When true, the produced valid list includes declared subtypes whose
+   *  `participating` is false. Default: false. */
+  includeNonParticipating?: boolean
 }
 
 export interface DeclaredSubtype {
   name: UnitVariantId
   unitType: UnitType
+  /** When false, the subtype is registered but treated as inactive: UI
+   *  consumers (`getUnitVariantsOptions`) and `declareParam(source: ...)`
+   *  reconciliation hide it unless the caller passes
+   *  `includeNonParticipating: true`. Required — every declarer makes an
+   *  explicit choice. */
+  participating: boolean
   /** Ability key that declared this subtype — auto-populated by the reconcile
    *  pass from `ability.declareParamChange`. Abilities don't set this
    *  themselves. Used by `excludeSubtypeSource` on `getUnitVariantsOptions`

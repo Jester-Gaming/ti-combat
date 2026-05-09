@@ -38,8 +38,8 @@ export const dameBriar: Ability<Params> = {
   },
   headerUI: 'isEnabled',
   declareParamChange: params => [
-    declareGalvanizeUnits(params.spaceUnitType),
-    declareGalvanizeUnits(params.groundUnitType),
+    declareGalvanizeUnits(params.spaceUnitType, true),
+    declareGalvanizeUnits(params.groundUnitType, true),
   ],
   uiConfig: ctx => {
     const isGround = ctx.state.combatMode === 'GROUND'

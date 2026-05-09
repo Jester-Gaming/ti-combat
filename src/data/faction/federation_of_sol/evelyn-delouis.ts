@@ -27,7 +27,14 @@ export const evelynDelouis: Ability<Params> = {
     }),
   },
   declareParamChange: params => [
-    { key: 'subtypes', value: { name: EVELYN, unitType: params.unitType } },
+    {
+      key: 'subtypes',
+      value: {
+        name: EVELYN,
+        unitType: params.unitType,
+        participating: true,
+      },
+    },
   ],
   headerUI: 'isEnabled',
   uiConfig: ctx => {

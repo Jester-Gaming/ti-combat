@@ -60,13 +60,8 @@ export const preGalvanized: Ability<Params> = {
   declareParamChange: params => {
     const changes: ParamChange[] = []
     for (const [unitType, count] of params.galvanizedUnits) {
-      if (count <= 0) continue
-      changes.push(declareGalvanizeUnits(unitType as UnitType))
+      changes.push(declareGalvanizeUnits(unitType as UnitType, count > 0))
     }
-
-    // Always declare structures for Linkship
-    changes.push(declareGalvanizeUnits('PDS'))
-    changes.push(declareGalvanizeUnits('SPACE_DOCK'))
 
     return changes
   },
@@ -161,7 +156,15 @@ export function galvanizeUnit(
 
 /** Declare a Galvanized subtype for a given unit type — for use inside an
  *  ability's `declareParamChange` so the Galvanized variant is registered in
- *  SETTINGS.subtypes and appears in UI dropdowns. */
-export function declareGalvanizeUnits(unitType: UnitType): ParamChange {
-  return { key: 'subtypes', value: { name: GALVANIZED, unitType } }
+ *  SETTINGS.subtypes and appears in UI dropdowns. `participating` controls
+ *  whether the subtype is hidden by default (false) or surfaced everywhere
+ *  (true). */
+export function declareGalvanizeUnits(
+  unitType: UnitType,
+  participating: boolean,
+): ParamChange {
+  return {
+    key: 'subtypes',
+    value: { name: GALVANIZED, unitType, participating },
+  }
 }

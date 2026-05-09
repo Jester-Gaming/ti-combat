@@ -27,7 +27,14 @@ export const viscountUnlenn: Ability<Params> = {
     }),
   },
   declareParamChange: params => [
-    { key: 'subtypes', value: { name: VISCOUNT, unitType: params.unitType } },
+    {
+      key: 'subtypes',
+      value: {
+        name: VISCOUNT,
+        unitType: params.unitType,
+        participating: true,
+      },
+    },
   ],
   headerUI: 'isEnabled',
   uiConfig: ctx => {

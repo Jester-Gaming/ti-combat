@@ -36,7 +36,14 @@ export const cavalry: Ability<Params> = {
   },
   headerUI: 'isEnabled',
   declareParamChange: params => [
-    { key: 'subtypes', value: { name: CAVALRY, unitType: params.unitType } },
+    {
+      key: 'subtypes',
+      value: {
+        name: CAVALRY,
+        unitType: params.unitType,
+        participating: true,
+      },
+    },
   ],
   uiConfig: ctx => {
     return [

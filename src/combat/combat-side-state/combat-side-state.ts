@@ -906,11 +906,14 @@ export class CombatSideState {
     const excludedSources = filter?.excludeSubtypeSource
       ? new Set<string>(filter.excludeSubtypeSource)
       : undefined
-    const declaredSubtypes = excludedSources
+    let declaredSubtypes = excludedSources
       ? allDeclaredSubtypes.filter(
           d => d.source === undefined || !excludedSources.has(d.source),
         )
       : allDeclaredSubtypes
+    if (!filter?.includeNonParticipating) {
+      declaredSubtypes = declaredSubtypes.filter(d => d.participating !== false)
+    }
 
     const baseSet = new Set<string>(baseTypes)
     const result: UnitType[] = [...baseTypes]

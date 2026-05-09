@@ -30,6 +30,7 @@ export const unitPriority: Ability<Params> = {
     spaceUnitPriority: declareParam<UnitList>({
       default: [],
       source: 'spaceCombatParticipating',
+      includeNonParticipating: true,
     }),
     groundUnitPriority: declareParam<UnitList>({
       default: [],

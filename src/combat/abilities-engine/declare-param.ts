@@ -24,6 +24,9 @@ interface DeclaredParamOptions<
   defaultItemValue?: unknown
   compute?: (value: SettingsParams[K]) => T
   filter?: (value: SettingsParams[K][number]) => boolean
+  /** When true, the synced valid list includes declared subtypes whose
+   *  `participating` is false. Default: false. */
+  includeNonParticipating?: boolean
 }
 
 interface DeclaredParamValue<T> {
@@ -35,6 +38,7 @@ interface DeclaredParamValue<T> {
   defaultItemValue?: unknown
   compute?: (value: SettingsParams[keyof SettingsParams]) => T
   filter?: (value: string) => boolean
+  includeNonParticipating?: boolean
 }
 
 /**
@@ -54,6 +58,7 @@ export function declareParam<
     defaultItemValue: options.defaultItemValue,
     compute: options.compute,
     filter: options.filter,
+    includeNonParticipating: options.includeNonParticipating,
   } as unknown as T
 }
 
@@ -107,6 +112,7 @@ export function extractSyncSources(
         defaultItemValue: value.defaultItemValue,
         compute: value.compute,
         filter: value.filter,
+        includeNonParticipating: value.includeNonParticipating,
       })
     }
   }

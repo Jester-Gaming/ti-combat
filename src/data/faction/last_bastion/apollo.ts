@@ -31,7 +31,16 @@ export const apollo: Ability<Params> = {
   headerUI: 'isEnabled',
   declareParamChange: params =>
     params.heroUnit
-      ? [{ key: 'subtypes', value: { name: HERO, unitType: params.heroUnit } }]
+      ? [
+          {
+            key: 'subtypes',
+            value: {
+              name: HERO,
+              unitType: params.heroUnit,
+              participating: true,
+            },
+          },
+        ]
       : [],
   uiConfig: ctx => [
     {

@@ -54,7 +54,10 @@ function buildValidList(
   opponentSubtypes: DeclaredSubtype[],
 ): string[] {
   const settings = config.side === 'own' ? ownSettings : opponentSettings
-  const subtypes = config.side === 'own' ? ownSubtypes : opponentSubtypes
+  const allSubtypes = config.side === 'own' ? ownSubtypes : opponentSubtypes
+  const subtypes = config.includeNonParticipating
+    ? allSubtypes
+    : allSubtypes.filter(s => s.participating !== false)
   const group = settings[config.group] as UnitBaseType[]
   const sorted = sortBaseTypes(group, config.sort)
   return expandWithSubtypes(sorted, subtypes, config.sort)
