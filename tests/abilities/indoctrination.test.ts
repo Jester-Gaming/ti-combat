@@ -68,4 +68,34 @@ describe.forEachSide('INDOCTRINATION', () => {
     expect(t.abilityLog('INDOCTRINATION')).toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
   })
+
+  it('replaces a galvanized opponent infantry', () => {
+    const t = combatTest({
+      mode: 'GROUND',
+      attacker: {
+        faction: 'YIN_BROTHERHOOD',
+        units: { INFANTRY: 2 },
+        abilities: { INDOCTRINATION: true },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { INFANTRY: 2 },
+        abilities: {
+          PRE_GALVANIZED: {
+            isEnabled: true,
+            galvanizedUnits: [['INFANTRY', 2]],
+          },
+        },
+      },
+    })
+
+    t.advanceTo('GROUND_COMBAT')
+    t.advanceRound()
+
+    expect(t.abilityLog('INDOCTRINATION')).not.toHaveLength(0)
+    expect(t.attacker.units.INFANTRY).toHaveLength(3)
+    expect(t.defender.units.INFANTRY).toHaveLength(1)
+    const remaining = t.defender.units.INFANTRY!
+    expect(remaining[0]?.subtypes).toContain('Galvanized')
+  })
 })

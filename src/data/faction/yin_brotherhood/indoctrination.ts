@@ -1,5 +1,8 @@
-import type { Ability } from '@/combat'
-import type { UnitId } from '@/types'
+import { z } from 'zod/mini'
+
+import { type Ability, declareParam, parseVariantId } from '@/combat'
+import type { UnitId, UnitList, UnitType } from '@/types'
+import { UnitListBooleanSchema } from '@/types'
 
 /** Fires with the UnitId of the infantry swapped in by Indoctrination. */
 declare global {
@@ -8,28 +11,68 @@ declare global {
   }
 }
 
-export const indoctrination: Ability = {
+type Params = {
+  targetPriority: UnitList<boolean>
+}
+
+export const indoctrination: Ability<Params> = {
   key: 'INDOCTRINATION',
   name: 'Indoctrination',
   description:
     "At the start of a ground combat, you may spend 2 influence to replace 1 of your opponent's participating infantry with 1 infantry from your reinforcements.",
   context: 'GROUND',
+  paramsSchema: z.object({
+    targetPriority: UnitListBooleanSchema,
+  }),
   params: {
     isEnabled: false,
     uses: Infinity,
+    targetPriority: declareParam<UnitList<boolean>>({
+      default: [],
+      source: 'groundForces',
+      side: 'opponent',
+      defaultItemValue: true,
+      sort: 'price-desc',
+      filter: id => parseVariantId(id as UnitType).type === 'INFANTRY',
+    }),
   },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'START_OF_COMBAT',
-      isCallable: (_params, ctx) => {
-        return ctx.api.opponent.hasUnitType('INFANTRY')
-      },
-      call: ctx => {
-        ctx.api.opponent.removeUnits('INFANTRY')
+      isCallable: (params, ctx) =>
+        ctx.api.opponent.findUnitByPriority(
+          ctx.utils.getFlat(params.targetPriority),
+        ) !== undefined,
+      call: (ctx, params) => {
+        const target = ctx.api.opponent.findUnitByPriority(
+          ctx.utils.getFlat(params.targetPriority),
+        )
+        if (target === undefined) return
+        ctx.api.opponent.removeUnits(target)
         const [placedId] = ctx.api.own.placeUnits({ INFANTRY: 1 }).INFANTRY
         ctx.trigger('WHEN_INDOCTRINATION', placedId)
       },
     },
   ],
+  uiConfig: ctx => {
+    const items = ctx.api.opponent.getUnitVariantsOptions({
+      combatMode: 'GROUND',
+      include: ['INFANTRY'],
+    })
+
+    if (items.length <= 1) {
+      return []
+    }
+
+    return [
+      {
+        key: 'targetPriority' as const,
+        type: 'unit-list' as const,
+        mode: 'checkbox' as const,
+        sortable: true,
+        items,
+      },
+    ]
+  },
 }
