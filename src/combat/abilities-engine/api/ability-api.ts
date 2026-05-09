@@ -370,6 +370,9 @@ export class SideApi {
       for (const [variantKey, newIds] of Object.entries(placed)) {
         abilitiesParams.addUnitInvokes(this._side, variantKey, newIds)
       }
+      // placeUnits appends to the tail of participatingUnits; resort so the
+      // configured UNIT_PRIORITY governs hit assignment for the new units.
+      abilitiesParams.combatState.resyncParticipating(this._side)
     }
     enforceFleetPool(this)
     return placed as Record<UnitType, UnitId[]>
