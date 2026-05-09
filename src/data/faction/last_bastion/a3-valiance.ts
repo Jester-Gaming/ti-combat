@@ -19,7 +19,7 @@ export const a3Valiance: Ability = {
   },
   headerUI: 'isEnabled',
   readOnly: true,
-  declareParamChange: () => [declareGalvanizeUnits('INFANTRY', true)],
+  declareSubtype: () => [declareGalvanizeUnits('INFANTRY', true)],
   invoke: [
     {
       timing: 'WHEN_DESTROY',

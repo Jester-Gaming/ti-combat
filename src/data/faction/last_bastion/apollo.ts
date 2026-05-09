@@ -29,16 +29,14 @@ export const apollo: Ability<Params> = {
     heroDesignated: false,
   },
   headerUI: 'isEnabled',
-  declareParamChange: params =>
+  declareSubtype: params =>
     params.heroUnit
       ? [
           {
-            key: 'subtypes',
-            value: {
-              name: HERO,
-              unitType: params.heroUnit,
-              participating: true,
-            },
+            name: HERO,
+            unitType: params.heroUnit,
+            participating: true,
+            statsFactory: parentStats => parentStats,
           },
         ]
       : [],

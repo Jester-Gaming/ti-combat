@@ -26,13 +26,15 @@ export const evelynDelouis: Ability<Params> = {
       source: 'groundForces',
     }),
   },
-  declareParamChange: params => [
+  declareSubtype: params => [
     {
-      key: 'subtypes',
-      value: {
-        name: EVELYN,
-        unitType: params.unitType,
-        participating: true,
+      name: EVELYN,
+      unitType: params.unitType,
+      participating: true,
+      statsFactory: parentStats => {
+        if (!parentStats.COMBAT) return parentStats
+        const [hit, dice, bonus = 0] = parentStats.COMBAT
+        return { ...parentStats, COMBAT: [hit, dice, bonus + 1] as DiceGroup }
       },
     },
   ],
@@ -59,11 +61,7 @@ export const evelynDelouis: Ability<Params> = {
         return ctx.api.own.hasUnitType(params.unitType)
       },
       call: (ctx, params) => {
-        ctx.api.own.addSubtype(params.unitType, EVELYN, parentStats => {
-          if (!parentStats.COMBAT) return parentStats
-          const [hit, dice, bonus = 0] = parentStats.COMBAT
-          return { ...parentStats, COMBAT: [hit, dice, bonus + 1] as DiceGroup }
-        })
+        ctx.api.own.addSubtype(params.unitType, EVELYN)
       },
     },
     {

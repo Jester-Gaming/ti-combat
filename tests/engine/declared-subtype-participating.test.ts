@@ -104,22 +104,18 @@ describe('declareParam source — participating flag', () => {
     key: 'TEST_DECLARER',
     name: 'Test Declarer',
     params: { isEnabled: true, uses: Infinity },
-    declareParamChange: () => [
+    declareSubtype: () => [
       {
-        key: 'subtypes',
-        value: {
-          name: 'Galvanized',
-          unitType: 'CRUISER',
-          participating: true,
-        },
+        name: 'Galvanized',
+        unitType: 'CRUISER',
+        participating: true,
+        statsFactory: (stats: import('@/types').UnitStats) => stats,
       },
       {
-        key: 'subtypes',
-        value: {
-          name: 'Galvanized',
-          unitType: 'DESTROYER',
-          participating: false,
-        },
+        name: 'Galvanized',
+        unitType: 'DESTROYER',
+        participating: false,
+        statsFactory: (stats: import('@/types').UnitStats) => stats,
       },
     ],
     invoke: [],

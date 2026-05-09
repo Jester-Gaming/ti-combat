@@ -5,6 +5,28 @@ import type { SimulationInput } from '@/hooks/combat-setup'
 
 const DEBOUNCE_MS = 0
 
+/** SETTINGS.subtypes is a reconcile-derived field — each entry carries a
+ *  `statsFactory` function which structured clone can't transfer to the
+ *  worker. Clear it before postMessage; the worker re-derives it via its own
+ *  `prepareSimulationConfig` pass against the same ability source code. */
+function stripDerivedSubtypes(input: SimulationInput): SimulationInput {
+  const sanitizeSide = (
+    side: SimulationInput['abilities']['attacker'],
+  ): SimulationInput['abilities']['attacker'] => {
+    const settings = side['SETTINGS'] as { subtypes?: unknown[] } | undefined
+    if (!settings || !settings.subtypes || settings.subtypes.length === 0)
+      return side
+    return { ...side, SETTINGS: { ...settings, subtypes: [] } }
+  }
+  return {
+    ...input,
+    abilities: {
+      attacker: sanitizeSide(input.abilities.attacker),
+      defender: sanitizeSide(input.abilities.defender),
+    },
+  }
+}
+
 export function useSimulation(input: SimulationInput | null): {
   outcomes: CombatOutcome[] | null
   isComputing: boolean
@@ -40,7 +62,7 @@ export function useSimulation(input: SimulationInput | null): {
       }
 
       console.time('useSimulation')
-      worker.postMessage(input)
+      worker.postMessage(stripDerivedSubtypes(input))
       workerRef.current = worker
     }, DEBOUNCE_MS)
 

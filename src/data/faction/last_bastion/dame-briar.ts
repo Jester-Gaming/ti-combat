@@ -37,7 +37,7 @@ export const dameBriar: Ability<Params> = {
     }),
   },
   headerUI: 'isEnabled',
-  declareParamChange: params => [
+  declareSubtype: params => [
     declareGalvanizeUnits(params.spaceUnitType, true),
     declareGalvanizeUnits(params.groundUnitType, true),
   ],

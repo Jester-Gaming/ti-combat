@@ -4,6 +4,7 @@ import type {
   SourcedDiceGroup,
   UnitBaseType,
   UnitId,
+  UnitStats,
   UnitType,
   UnitVariantId,
 } from '@/types'
@@ -55,8 +56,13 @@ export interface DeclaredSubtype {
    *  `includeNonParticipating: true`. Required — every declarer makes an
    *  explicit choice. */
   participating: boolean
+  /** Factory that computes the variant's stats from its parent variant's
+   *  stats. Invoked once at config time (`buildSideState`) so runtime callers
+   *  (`addSubtype`, `placeUnits` with variant keys) don't need to supply a
+   *  factory — `s.unitStats[variantKey]` is always pre-populated. */
+  statsFactory: (parentStats: UnitStats) => UnitStats
   /** Ability key that declared this subtype — auto-populated by the reconcile
-   *  pass from `ability.declareParamChange`. Abilities don't set this
+   *  pass from `ability.declareSubtype`. Abilities don't set this
    *  themselves. Used by `excludeSubtypeSource` on `getUnitVariantsOptions`
    *  so an ability can hide its own declarations while keeping equivalent
    *  declarations from other abilities visible. */
@@ -78,12 +84,14 @@ export type SettingsParams = {
   subtypes: DeclaredSubtype[]
 }
 
+type ParamChangeKey = Exclude<keyof SettingsParams, 'subtypes'>
+
 export type ParamChange = {
-  [K in keyof SettingsParams]: {
+  [K in ParamChangeKey]: {
     key: K
     value: SettingsParams[K] extends (infer E)[] ? E : SettingsParams[K]
   }
-}[keyof SettingsParams]
+}[ParamChangeKey]
 
 // Sided context (external API - attacker/defender perspective)
 export interface SidedContext<T> {
@@ -415,6 +423,13 @@ export interface Ability<Params extends Record<string, unknown> = any> {
     params: AbilityBaseParams & Params,
     settings: SettingsParams,
   ) => ParamChange[]
+  /** Declare subtype variants this ability registers. Called during reconcile.
+   *  Each entry's `statsFactory` is invoked once at config time to compute the
+   *  variant's stats from its parent variant's stats. Subtypes are surfaced in
+   *  `getUnitVariantsOptions` and pre-populated into `s.unitStats` at combat
+   *  start, so runtime callers (`addSubtype`, `placeUnits` with variant keys)
+   *  don't need to supply factories. */
+  declareSubtype?: (params: AbilityBaseParams & Params) => DeclaredSubtype[]
   /** Pre-sort the unit-sourced invoke entries of this ability before the
    *  engine iterates them. Called with the ability's merged params, a
    *  read-only context, and the list of UnitIds that currently carry this

@@ -3,9 +3,9 @@ import { z } from 'zod/mini'
 import {
   type Ability,
   type AbilityCallContext,
+  type DeclaredSubtype,
   declareParam,
   makeVariantId,
-  type ParamChange,
   parseVariantId,
 } from '@/combat'
 import type {
@@ -57,13 +57,12 @@ export const preGalvanized: Ability<Params> = {
     }),
     reinforcementTokens: 7,
   },
-  declareParamChange: params => {
-    const changes: ParamChange[] = []
+  declareSubtype: params => {
+    const subtypes: DeclaredSubtype[] = []
     for (const [unitType, count] of params.galvanizedUnits) {
-      changes.push(declareGalvanizeUnits(unitType as UnitType, count > 0))
+      subtypes.push(declareGalvanizeUnits(unitType as UnitType, count > 0))
     }
-
-    return changes
+    return subtypes
   },
   uiConfig: ctx => {
     const items = ctx.api.own.getUnitVariantsOptions({
@@ -112,7 +111,7 @@ const bumpDice = <T extends [number, number] | [number, number, number]>(
 ): T | undefined =>
   dice === undefined ? undefined : ([dice[0], dice[1], (dice[2] ?? 0) + 1] as T)
 
-export function galvanizeStats(stats: UnitStats): UnitStats {
+function galvanizeStats(stats: UnitStats): UnitStats {
   const combat = stats.COMBAT ? bumpDice(stats.COMBAT) : stats.COMBAT
   const abilities = stats.UNIT_ABILITIES
   const nextAbilities = abilities
@@ -146,7 +145,7 @@ export function galvanizeUnit(
       reinforcementTokens: tokens - 1,
     })
   }
-  api.addSubtype(unitType, GALVANIZED, galvanizeStats)
+  api.addSubtype(unitType, GALVANIZED)
   const galvanizedVariant = makeVariantId(unitType, [GALVANIZED])
   const ids = api.getUnits(galvanizedVariant)
   const movedId = ids[ids.length - 1]
@@ -155,16 +154,17 @@ export function galvanizeUnit(
 }
 
 /** Declare a Galvanized subtype for a given unit type — for use inside an
- *  ability's `declareParamChange` so the Galvanized variant is registered in
- *  SETTINGS.subtypes and appears in UI dropdowns. `participating` controls
- *  whether the subtype is hidden by default (false) or surfaced everywhere
- *  (true). */
+ *  ability's `declareSubtype` so the Galvanized variant is registered with
+ *  the right stats factory. `participating` controls whether the subtype is
+ *  hidden by default (false) or surfaced everywhere (true). */
 export function declareGalvanizeUnits(
   unitType: UnitType,
   participating: boolean,
-): ParamChange {
+): DeclaredSubtype {
   return {
-    key: 'subtypes',
-    value: { name: GALVANIZED, unitType, participating },
+    name: GALVANIZED,
+    unitType,
+    participating,
+    statsFactory: galvanizeStats,
   }
 }

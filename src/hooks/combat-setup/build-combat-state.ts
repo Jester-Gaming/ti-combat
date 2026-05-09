@@ -1,3 +1,5 @@
+import { makeVariantId } from '@/combat'
+import type { DeclaredSubtype } from '@/combat/abilities-engine/types'
 import type {
   FactionKey,
   UnitBaseType,
@@ -90,16 +92,36 @@ function buildSideState(
     unitStats[unitType_] = stats
   }
 
+  const settings = abilities['SETTINGS'] as
+    | { subtypes?: DeclaredSubtype[] }
+    | undefined
+  const declaredSubtypes = settings?.subtypes ?? []
+
+  const baseUnitStats: Record<string, UnitStatsEntry> = {
+    ...buildUnitStatsMap(config.faction, upgradedSet),
+    ...unitStats,
+  }
+
+  // Pre-populate variant stats. Store the factory rather than its eager
+  // result so the variant tracks runtime mutations of its parent (e.g.
+  // Eidolon flipping MECH stats at start of combat) — `resolveUnitStats`
+  // applies the factory lazily on lookup.
+  for (const decl of declaredSubtypes) {
+    const variantKey = makeVariantId(decl.unitType, [decl.name])
+    if (baseUnitStats[variantKey]) continue
+    baseUnitStats[variantKey] = decl.statsFactory
+  }
+
   return {
     faction: config.faction,
     participatingUnits: participatingUnits as UnitIdList,
     nonParticipatingUnits: '' as UnitIdList,
     unitType,
     unitState,
-    unitStats: {
-      ...buildUnitStatsMap(config.faction, upgradedSet),
-      ...unitStats,
-    } as Record<import('@/types').UnitType, UnitStatsEntry>,
+    unitStats: baseUnitStats as Record<
+      import('@/types').UnitType,
+      UnitStatsEntry
+    >,
     hitPools: [],
     abilities,
     liveAbilities: {},

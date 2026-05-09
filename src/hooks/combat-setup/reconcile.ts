@@ -5,6 +5,7 @@ import {
 } from '@/combat/abilities-engine/declare-param'
 import type {
   Ability,
+  AbilityBaseParams,
   DeclaredSubtype,
   ParamChange,
   SettingsParams,
@@ -131,30 +132,16 @@ function resetBaseGroups(
     // Two passes: first builds groups (groundForces, etc.),
     // second resolves cross-group deps (e.g. Alastor copies groundForces → ships)
     for (let pass = 0; pass < 2; pass++) {
-      // Reset subtypes each pass — only the final pass's declarations are
-      // authoritative.
-      settings.subtypes = []
       const changes = collectParamChanges(sideAbilities, config[side], settings)
       for (const change of changes) {
-        if (change.key === 'subtypes') {
-          if (
-            !settings.subtypes.some(
-              d =>
-                d.source === change.value.source &&
-                d.name === change.value.name &&
-                d.unitType === change.value.unitType,
-            )
-          ) {
-            settings.subtypes.push(change.value)
-          }
-        } else {
-          const group = settings[change.key]
-          if (!group.includes(change.value)) {
-            group.push(change.value)
-          }
+        const group = settings[change.key]
+        if (!group.includes(change.value)) {
+          group.push(change.value)
         }
       }
     }
+
+    settings.subtypes = collectDeclaredSubtypes(sideAbilities, config[side])
 
     // Compute SETTINGS derived params via onParamSet
     if (settingsAbility?.onParamSet) {
@@ -319,13 +306,46 @@ function collectParamChanges(
 
     const declared = ability.declareParamChange(abilityParams, settings)
     for (const change of declared) {
-      if (change.key === 'subtypes') {
-        result.push({
-          ...change,
-          value: { ...change.value, source: ability.key },
-        })
-      } else {
-        result.push(change)
+      result.push(change)
+    }
+  }
+
+  return result
+}
+
+function collectDeclaredSubtypes(
+  abilities: readonly Ability[],
+  params: Record<string, Record<string, unknown>>,
+): DeclaredSubtype[] {
+  const result: DeclaredSubtype[] = []
+
+  for (const ability of abilities) {
+    if (!ability.declareSubtype) continue
+
+    const abilityParams = {
+      ...extractDefaults(ability),
+      ...params[ability.key],
+    }
+
+    if (ability.headerUI) {
+      const headerValue = abilityParams[ability.headerUI]
+      if (!headerValue) continue
+    }
+
+    const declared = ability.declareSubtype(
+      abilityParams as AbilityBaseParams & Record<string, unknown>,
+    )
+    for (const decl of declared) {
+      const stamped = { ...decl, source: ability.key }
+      if (
+        !result.some(
+          d =>
+            d.source === stamped.source &&
+            d.name === stamped.name &&
+            d.unitType === stamped.unitType,
+        )
+      ) {
+        result.push(stamped)
       }
     }
   }
@@ -460,28 +480,7 @@ export function resetSettingsToBase(
 
     settings.ships = [...SHIPS]
     settings.groundForces = [...GROUND_FORCES]
-    settings.subtypes = []
-
-    // Collect subtypes only (no group additions) — abilities add at runtime
-    for (let pass = 0; pass < 2; pass++) {
-      // Reset each pass — only the final pass is authoritative.
-      settings.subtypes = []
-      const changes = collectParamChanges(sideAbilities, config[side], settings)
-      for (const change of changes) {
-        if (change.key === 'subtypes') {
-          if (
-            !settings.subtypes.some(
-              d =>
-                d.source === change.value.source &&
-                d.name === change.value.name &&
-                d.unitType === change.value.unitType,
-            )
-          ) {
-            settings.subtypes.push(change.value)
-          }
-        }
-      }
-    }
+    settings.subtypes = collectDeclaredSubtypes(sideAbilities, config[side])
 
     // Compute SETTINGS derived params via onParamSet
     const settingsAbility = sideAbilities.find(a => a.key === 'SETTINGS')

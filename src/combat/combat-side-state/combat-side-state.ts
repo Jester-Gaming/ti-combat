@@ -1299,7 +1299,6 @@ export class CombatSideState {
     s: SideStateData,
     variantId: UnitType,
     subtype: UnitVariantId,
-    statsFactory?: (parentStats: UnitStats) => UnitStats,
   ): { unitId: UnitId; newKey: UnitType } | undefined {
     const { type, subtypes: currentSubtypes } = parseVariantId(variantId)
 
@@ -1331,17 +1330,11 @@ export class CombatSideState {
     s._resolvedRestrictions = undefined
 
     if (!s.unitStats[newKey]) {
-      let value: UnitStats | ((parentStats: UnitStats) => UnitStats) | undefined
-      if (statsFactory) {
-        value = statsFactory
-      } else {
-        const sourceStats =
-          resolveUnitStats(s.unitStats, sourceKey) ??
-          resolveUnitStats(s.unitStats, type)
-        if (sourceStats) value = { ...sourceStats }
-      }
-      if (value !== undefined) {
-        s.unitStats = { ...s.unitStats, [newKey]: value }
+      const parentStats =
+        resolveUnitStats(s.unitStats, sourceKey) ??
+        resolveUnitStats(s.unitStats, type)
+      if (parentStats) {
+        s.unitStats = { ...s.unitStats, [newKey]: { ...parentStats } }
       }
     }
 
@@ -1446,7 +1439,7 @@ export class CombatSideState {
   static placeUnits(
     s: SideStateData,
     mode: CombatMode,
-    unitsToAdd: Partial<Record<UnitBaseType, number>>,
+    unitsToAdd: Partial<Record<UnitType, number>>,
     gen: { _nextCode?: number },
   ): Record<UnitType, UnitId[]> {
     const placed: Record<UnitType, UnitId[]> = {} as Record<UnitType, UnitId[]>
@@ -1458,42 +1451,47 @@ export class CombatSideState {
     let nextNon = s.nonParticipatingUnits
     let nextUnitType = s.unitType
 
-    for (const [type, count] of Object.entries(unitsToAdd)) {
-      const unitType_ = type as UnitBaseType
+    for (const [variantKey, count] of Object.entries(unitsToAdd)) {
+      const vKey = variantKey as UnitType
       if (!count || count <= 0) continue
+
+      const baseType = parseVariantId(vKey).type as UnitBaseType
 
       let existing = 0
       for (const id of s.participatingUnits) {
-        if (parseVariantId(s.unitType[id]).type === unitType_) existing++
+        if (parseVariantId(s.unitType[id]).type === baseType) existing++
       }
       for (const id of s.nonParticipatingUnits) {
-        if (parseVariantId(s.unitType[id]).type === unitType_) existing++
+        if (parseVariantId(s.unitType[id]).type === baseType) existing++
       }
 
-      const limit = UNIT_LIMITS[unitType_]
+      const limit = UNIT_LIMITS[baseType]
       if (existing + count > limit) {
         console.warn(
-          `Unit limit exceeded: ${unitType_} has a maximum of ${limit}`,
+          `Unit limit exceeded: ${baseType} has a maximum of ${limit}`,
         )
       }
       const allowed = Math.min(count, limit - existing)
       if (allowed <= 0) continue
 
       const newIds = nextUnitIds(allowed, gen)
-      if (participatingTypes.has(unitType_)) {
+      if (participatingTypes.has(baseType)) {
         nextPart = (nextPart + newIds.join('')) as UnitIdList
       } else {
         nextNon = (nextNon + newIds.join('')) as UnitIdList
       }
       const typeMapAdditions: Record<UnitId, UnitType> = {}
-      for (const id of newIds) typeMapAdditions[id] = unitType_
+      for (const id of newIds) typeMapAdditions[id] = vKey
       nextUnitType = { ...nextUnitType, ...typeMapAdditions }
 
-      if (!s.unitStats[unitType_]) {
-        s.unitStats[unitType_] = {}
+      // Stats for vKey are pre-populated by buildSideState; if missing
+      // (test fixtures bypassing declareSubtype), seed an empty record so
+      // resolveUnitStats can fall back to the parent.
+      if (!s.unitStats[vKey]) {
+        s.unitStats[vKey] = {}
       }
 
-      placed[unitType_] = newIds
+      placed[vKey] = newIds
     }
 
     s.participatingUnits = nextPart

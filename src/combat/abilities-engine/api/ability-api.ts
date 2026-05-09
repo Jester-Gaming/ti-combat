@@ -356,8 +356,8 @@ export class SideApi {
   }
 
   placeUnits(
-    unitsToAdd: Partial<Record<UnitBaseType, number>>,
-  ): Record<UnitBaseType, UnitId[]> {
+    unitsToAdd: Partial<Record<UnitType, number>>,
+  ): Record<UnitType, UnitId[]> {
     const placed = CombatSideState.placeUnits(
       this._sideData,
       this.state.combatMode,
@@ -367,12 +367,12 @@ export class SideApi {
 
     const abilitiesParams = this._abilitiesParams
     if (abilitiesParams) {
-      for (const [unitType, newIds] of Object.entries(placed)) {
-        abilitiesParams.addUnitInvokes(this._side, unitType as UnitType, newIds)
+      for (const [variantKey, newIds] of Object.entries(placed)) {
+        abilitiesParams.addUnitInvokes(this._side, variantKey, newIds)
       }
     }
     enforceFleetPool(this)
-    return placed as Record<UnitBaseType, UnitId[]>
+    return placed as Record<UnitType, UnitId[]>
   }
 
   modifyUnitType(key: UnitType, updates: Partial<UnitStats>): void {
@@ -480,17 +480,8 @@ export class SideApi {
     )
   }
 
-  addSubtype(
-    variantId: UnitType,
-    subtype: UnitVariantId,
-    statsFactory?: (parentStats: UnitStats) => UnitStats,
-  ) {
-    const moved = CombatSideState.addSubtype(
-      this._sideData,
-      variantId,
-      subtype,
-      statsFactory,
-    )
+  addSubtype(variantId: UnitType, subtype: UnitVariantId) {
+    const moved = CombatSideState.addSubtype(this._sideData, variantId, subtype)
     if (!moved) return
     // Re-register invokes for the new variant so the unit's ABILITIES set
     // matches its variant stats and per-ability `sort` runs against the

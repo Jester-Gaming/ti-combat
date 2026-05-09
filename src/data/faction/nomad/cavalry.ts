@@ -35,16 +35,34 @@ export const cavalry: Ability<Params> = {
     }),
   },
   headerUI: 'isEnabled',
-  declareParamChange: params => [
-    {
-      key: 'subtypes',
-      value: {
+  declareSubtype: params => {
+    const flagship = nomad.units.FLAGSHIP!
+    const memoriaStats = getEffectiveStats(
+      flagship.BASE,
+      flagship.UPGRADED,
+      params.memoria2,
+    )
+    return [
+      {
         name: CAVALRY,
         unitType: params.unitType,
         participating: true,
+        statsFactory: stats => ({
+          ...stats,
+          COMBAT: [
+            memoriaStats.COMBAT![0],
+            memoriaStats.COMBAT![1],
+            (memoriaStats.COMBAT![2] ?? 0) + (stats.COMBAT![2] ?? 0),
+          ],
+          UNIT_ABILITIES: {
+            ...stats.UNIT_ABILITIES,
+            SUSTAIN_DAMAGE: memoriaStats.UNIT_ABILITIES?.SUSTAIN_DAMAGE,
+            AFB: memoriaStats.UNIT_ABILITIES?.AFB,
+          },
+        }),
       },
-    },
-  ],
+    ]
+  },
   uiConfig: ctx => {
     return [
       {
@@ -73,26 +91,7 @@ export const cavalry: Ability<Params> = {
         return ctx.api.own.hasUnitType(params.unitType)
       },
       call: (ctx, params) => {
-        const flagship = nomad.units.FLAGSHIP!
-        const memoriaStats = getEffectiveStats(
-          flagship.BASE,
-          flagship.UPGRADED,
-          params.memoria2,
-        )
-
-        ctx.api.own.addSubtype(params.unitType, CAVALRY, stats => ({
-          ...stats,
-          COMBAT: [
-            memoriaStats.COMBAT![0],
-            memoriaStats.COMBAT![1],
-            (memoriaStats.COMBAT![2] ?? 0) + (stats.COMBAT![2] ?? 0),
-          ],
-          UNIT_ABILITIES: {
-            ...stats.UNIT_ABILITIES,
-            SUSTAIN_DAMAGE: memoriaStats.UNIT_ABILITIES?.SUSTAIN_DAMAGE,
-            AFB: memoriaStats.UNIT_ABILITIES?.AFB,
-          },
-        }))
+        ctx.api.own.addSubtype(params.unitType, CAVALRY)
       },
     },
     {

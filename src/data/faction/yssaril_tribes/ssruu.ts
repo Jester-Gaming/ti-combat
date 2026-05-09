@@ -54,6 +54,14 @@ export const ssruu: Ability<Params> = {
       settings,
     )
   },
+  declareSubtype: params => {
+    const agent = getAgents().find(a => a.key === params.agentKey)
+    if (!agent?.declareSubtype) return []
+    const merged = withAgentDefaults(agent, params as Params)
+    return agent.declareSubtype(
+      merged as Parameters<NonNullable<Ability['declareSubtype']>>[0],
+    )
+  },
   uiConfig: (ctx, params) => {
     const agents = getAgents()
     const selectItem = {
