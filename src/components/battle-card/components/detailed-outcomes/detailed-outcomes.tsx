@@ -5,6 +5,7 @@ import { UNIT_SHORT_NAMES } from '@/constants/units'
 import type { UnitBaseType } from '@/types'
 
 import styles from './detailed-outcomes.module.css'
+import { sortSurvivors } from './sort-survivors'
 
 interface UnitPriority {
   attacker: string[]
@@ -78,60 +79,32 @@ function SurvivorList({
   side: SurvivorSide
   priority: string[]
 }) {
-  const entries = Object.entries(side)
-    .filter(([, units]) => units && units.length > 0)
-    .sort(([a], [b]) => {
-      const aIdx = priority.findIndex(v => v === a || v.startsWith(`${a}:`))
-      const bIdx = priority.findIndex(v => v === b || v.startsWith(`${b}:`))
-      // Units not in priority go to the end
-      const aPos = aIdx === -1 ? Infinity : aIdx
-      const bPos = bIdx === -1 ? Infinity : bIdx
-      return bPos - aPos
-    })
+  const entries = sortSurvivors(side, priority)
   if (entries.length === 0) {
     return <span className={styles.noSurvivors}>&mdash;</span>
   }
 
+  const parts: string[] = []
+  for (const entry of entries) {
+    const name = UNIT_SHORT_NAMES[entry.base as UnitBaseType] ?? entry.base
+    const label = entry.subtypes ? `${name}:${entry.subtypes.join(',')}` : name
+    if (entry.healthy > 0) {
+      parts.push(entry.healthy > 1 ? `${entry.healthy}${label}` : label)
+    }
+    if (entry.damaged > 0) {
+      const dmgLabel = `${label}-`
+      parts.push(entry.damaged > 1 ? `${entry.damaged}${dmgLabel}` : dmgLabel)
+    }
+  }
+
   return (
     <>
-      {entries.map(([unitType, units], i) => {
-        if (!units) return null
-        const name = UNIT_SHORT_NAMES[unitType as UnitBaseType] ?? unitType
-
-        // Group units by subtypes so mixed variants render separately
-        const groups = new Map<string, { healthy: number; damaged: number }>()
-        for (const u of units) {
-          const key = u.subtypes?.join(',') ?? ''
-          const g = groups.get(key) ?? { healthy: 0, damaged: 0 }
-          if (u.isDamaged) g.damaged++
-          else g.healthy++
-          groups.set(key, g)
-        }
-
-        const parts: string[] = []
-        for (const [subtypeKey, { healthy, damaged }] of groups) {
-          const label = subtypeKey ? `${name}:${subtypeKey}` : name
-          if (healthy > 0) {
-            parts.push(healthy > 1 ? `${healthy}${label}` : label)
-          }
-          if (damaged > 0) {
-            const dmgLabel = `${label}-`
-            parts.push(damaged > 1 ? `${damaged}${dmgLabel}` : dmgLabel)
-          }
-        }
-
-        return (
-          <span key={unitType} className={styles.unitEntry}>
-            {i > 0 && <span className={styles.unitSeparator}>,&nbsp;</span>}
-            {parts.map((part, j) => (
-              <span key={j}>
-                {j > 0 && <span className={styles.unitSeparator}>,&nbsp;</span>}
-                {part}
-              </span>
-            ))}
-          </span>
-        )
-      })}
+      {parts.map((part, i) => (
+        <span key={i} className={styles.unitEntry}>
+          {i > 0 && <span className={styles.unitSeparator}>,&nbsp;</span>}
+          {part}
+        </span>
+      ))}
     </>
   )
 }
