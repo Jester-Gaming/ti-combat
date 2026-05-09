@@ -23,6 +23,7 @@ function buildSideState(
   faction: FactionKey,
   selections: Record<UnitBaseType, UnitSelection>,
   abilities: SideAbilitiesConfig,
+  gen: { _nextCode?: number },
 ): SideStateData {
   const upgradedSet = new Set<UnitBaseType>()
   for (const [k, v] of Object.entries(selections)) {
@@ -31,6 +32,7 @@ function buildSideState(
   const { units, unitType, unitState, unitStats } = getSimulationUnits(
     faction,
     selections,
+    gen,
   )
   return {
     faction,
@@ -64,9 +66,20 @@ self.onmessage = (e: MessageEvent<SimulationInput>) => {
     defenderFaction,
     combatMode,
   )
+  const gen: { _nextCode?: number } = {}
   const combatState = CombatState.forSimulation(
-    buildSideState(attackerFaction, attackerSelections, abilities.attacker),
-    buildSideState(defenderFaction, defenderSelections, abilities.defender),
+    buildSideState(
+      attackerFaction,
+      attackerSelections,
+      abilities.attacker,
+      gen,
+    ),
+    buildSideState(
+      defenderFaction,
+      defenderSelections,
+      abilities.defender,
+      gen,
+    ),
     combatMode,
     {
       attacker: sideAbilities.attacker.registered,
@@ -80,6 +93,7 @@ self.onmessage = (e: MessageEvent<SimulationInput>) => {
       attacker: sideAbilities.attacker.factionOwnedKeys,
       defender: sideAbilities.defender.factionOwnedKeys,
     },
+    gen._nextCode,
   )
 
   const engine = new CombatEngine()

@@ -271,6 +271,7 @@ export class CombatState {
       import('@/types').CombatSide,
       ReadonlySet<string>
     >,
+    nextCode?: number,
   ): CombatState {
     const instance = Object.create(CombatState.prototype) as CombatState
 
@@ -278,6 +279,7 @@ export class CombatState {
       attacker,
       defender,
       combatMode,
+      _nextCode: nextCode,
     }
 
     const emptyKeys = {

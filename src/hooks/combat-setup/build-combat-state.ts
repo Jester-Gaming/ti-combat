@@ -52,6 +52,7 @@ export interface CombatStateConfig {
 function buildSideState(
   config: SideConfig,
   abilities: SideAbilitiesConfig,
+  gen: { _nextCode?: number },
 ): SideStateData {
   const upgradedSet = new Set(config.upgrades ?? [])
   let participatingUnits = ''
@@ -81,7 +82,7 @@ function buildSideState(
       }
     }
 
-    const ids = nextUnitIds(count)
+    const ids = nextUnitIds(count, gen)
     for (const id of ids) {
       participatingUnits += id
       unitType[id] = unitType_ as import('@/types').UnitType
@@ -137,8 +138,17 @@ export function buildCombatState(config: CombatStateConfig): CombatState {
     config.customAbilities,
   )
 
-  const attackerSide = buildSideState(config.attacker, abilitiesConfig.attacker)
-  const defenderSide = buildSideState(config.defender, abilitiesConfig.defender)
+  const gen: { _nextCode?: number } = {}
+  const attackerSide = buildSideState(
+    config.attacker,
+    abilitiesConfig.attacker,
+    gen,
+  )
+  const defenderSide = buildSideState(
+    config.defender,
+    abilitiesConfig.defender,
+    gen,
+  )
 
   config.prepareAbilities?.({
     attacker: sideAbilities.attacker.registered,
@@ -161,5 +171,6 @@ export function buildCombatState(config: CombatStateConfig): CombatState {
       attacker: sideAbilities.attacker.factionOwnedKeys,
       defender: sideAbilities.defender.factionOwnedKeys,
     },
+    gen._nextCode,
   )
 }

@@ -1437,11 +1437,14 @@ export class CombatSideState {
   }
 
   /** Place new units. New UnitIds are appended to the pool matching the base
-   *  type's participating status. */
+   *  type's participating status. `gen` (typically the parent CombatStateData)
+   *  owns the codepoint counter so freshly minted IDs never collide across
+   *  sides. */
   static placeUnits(
     s: SideStateData,
     mode: CombatMode,
     unitsToAdd: Partial<Record<UnitBaseType, number>>,
+    gen: { _nextCode?: number },
   ): Record<UnitType, UnitId[]> {
     const placed: Record<UnitType, UnitId[]> = {} as Record<UnitType, UnitId[]>
     const participatingTypes = new Set(
@@ -1473,7 +1476,7 @@ export class CombatSideState {
       const allowed = Math.min(count, limit - existing)
       if (allowed <= 0) continue
 
-      const newIds = nextUnitIds(allowed)
+      const newIds = nextUnitIds(allowed, gen)
       if (participatingTypes.has(unitType_)) {
         nextPart = (nextPart + newIds.join('')) as UnitIdList
       } else {

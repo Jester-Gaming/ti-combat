@@ -285,6 +285,12 @@ export interface CombatStateData {
    *  END_OF_COMBAT / CLEANUP_ROUND / CLEANUP timings run. Engine/test
    *  harness check this instead of reading the (now-removed) `currentPhase`. */
   isFinished?: boolean
+  /** Next codepoint to mint as a `UnitId` when either side places new
+   *  units. Shared across both sides so cross-side IDs never collide,
+   *  and carried with the state so branched sibling states inherit the
+   *  same starting value — equivalent placement paths produce equivalent
+   *  IDs and converge through `getUnitsHash`. */
+  _nextCode?: number
 }
 
 /** Hit source determines dice collection */

@@ -362,6 +362,7 @@ export class SideApi {
       this._sideData,
       this.state.combatMode,
       unitsToAdd,
+      this.state,
     )
 
     const abilitiesParams = this._abilitiesParams

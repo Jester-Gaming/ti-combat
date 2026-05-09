@@ -13,6 +13,12 @@ function reg(abilities: Ability[]): RegisteredAbility[] {
   return abilities.map(ability => ({ ability, slot: 'GENERAL' as const }))
 }
 
+// Shared across all `buildSide` calls so attacker/defender IDs don't
+// collide within a single test setup. Equivalent to the old module-level
+// counter — tests don't exercise branching convergence, so monotonically
+// advancing across tests is fine.
+const idGen: { _nextCode?: number } = {}
+
 /** Helper to build compact SideStateData from unit specs */
 function buildSide(
   faction: SideStateData['faction'],
@@ -23,7 +29,7 @@ function buildSide(
   const unitStats = {} as SideStateData['unitStats']
   for (const [key, spec] of Object.entries(unitSpecs)) {
     const k = key as import('@/types').UnitType
-    const ids = nextUnitIds(spec.count)
+    const ids = nextUnitIds(spec.count, idGen)
     for (const id of ids) {
       participatingUnits += id
       unitType[id] = k

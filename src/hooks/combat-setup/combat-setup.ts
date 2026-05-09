@@ -663,9 +663,13 @@ export class CombatSetup {
         t => selections[t].upgraded,
       ),
     )
+    const gen: { _nextCode?: number } = {
+      _nextCode: this._stateData._nextCode,
+    }
     const { units, unitType, unitState, unitStats } = getSimulationUnits(
       faction,
       selections,
+      gen,
     )
     this._stateData = {
       ...this._stateData,
@@ -680,6 +684,7 @@ export class CombatSetup {
           ...unitStats,
         },
       },
+      _nextCode: gen._nextCode,
     }
   }
 

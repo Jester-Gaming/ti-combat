@@ -19,6 +19,7 @@ import { getFactionUnitConfig } from './get-faction-unit-config'
 export function getSimulationUnits(
   faction: FactionKey,
   selections: Record<UnitBaseType, UnitSelection>,
+  gen: { _nextCode?: number },
 ): {
   units: UnitIdList
   unitType: Record<string, UnitType>
@@ -48,7 +49,7 @@ export function getSimulationUnits(
     )
     if (!effectiveStats) continue
 
-    const ids = nextUnitIds(sel.count)
+    const ids = nextUnitIds(sel.count, gen)
     for (const id of ids) {
       units += id
       unitType[id] = baseType as UnitType
@@ -58,8 +59,15 @@ export function getSimulationUnits(
 
   // Returns a packed UnitIdList — the caller places it into
   // `participatingUnits` and lets `sortUnitsAtSetup` split out the
-  // non-participating tail.
-  return { units: units as UnitIdList, unitType, unitState, unitStats }
+  // non-participating tail. The shared `gen` carries the
+  // post-allocation counter so the caller can store it on the parent
+  // CombatStateData for runtime placements.
+  return {
+    units: units as UnitIdList,
+    unitType,
+    unitState,
+    unitStats,
+  }
 }
 
 /**
