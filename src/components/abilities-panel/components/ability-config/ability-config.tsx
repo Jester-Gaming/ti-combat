@@ -95,10 +95,10 @@ export function AbilityConfig({
     ? (params[headerParamKey] ?? defaults?.[headerParamKey])
     : undefined
   const headerParamType = typeof headerParamValue as 'boolean' | 'number'
-  const isHeaderBoolean = typeof headerParamValue === 'boolean'
 
   function handleContainerClick(e: React.MouseEvent): void {
     if (ability.readOnly || !headerParamKey) {
+      toggleCollapsed()
       return
     }
 
@@ -150,7 +150,7 @@ export function AbilityConfig({
     }[headerParamType]
 
   const header = (
-    <div className={styles.header}>
+    <div className={styles.header} onClick={handleContainerClick}>
       {isCollapsible ? (
         <button
           type="button"
@@ -180,7 +180,7 @@ export function AbilityConfig({
     <div
       className={clsx({
         [styles.container]: true,
-        [styles.container_clickable]: headerParamKey && isHeaderBoolean,
+        [styles.container_clickable]: headerParamKey || isCollapsible,
         [styles.container_readOnly]: ability.readOnly,
         [styles.container_active]: !!headerParamValue,
         [styles.container_dimmed]:
@@ -191,7 +191,6 @@ export function AbilityConfig({
           ? ({ anchorName } as React.CSSProperties)
           : undefined
       }
-      onClick={handleContainerClick}
     >
       {header}
       {hasConfigItems && !isCollapsed && (
