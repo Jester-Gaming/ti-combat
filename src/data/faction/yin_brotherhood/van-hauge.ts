@@ -1,5 +1,5 @@
 import type { Ability } from '@/combat'
-import { SHIPS } from '@/constants/units'
+import type { UnitId } from '@/types/unit'
 
 export const vanHauge: Ability = {
   key: 'VAN_HAUGE',
@@ -17,11 +17,19 @@ export const vanHauge: Ability = {
       timing: 'WHEN_DESTROY',
       isCallable: (_params, ctx, ids) => ids.includes(ctx.getUnit()),
       call: ctx => {
-        for (const type of SHIPS) {
-          while (ctx.api.own.hasUnitType(type)) ctx.api.own.destroyUnits(type)
-          while (ctx.api.opponent.hasUnitType(type))
-            ctx.api.opponent.destroyUnits(type)
-        }
+        const ownSettings = ctx.api.own.getAbilityConfig('SETTINGS')
+        const opSettings = ctx.api.opponent.getAbilityConfig('SETTINGS')
+
+        const opIds: UnitId[] = opSettings.ships.flatMap(type =>
+          ctx.api.opponent.getUnits(type, { includeVariants: true }),
+        )
+
+        const ownIds: UnitId[] = ownSettings.ships.flatMap(type =>
+          ctx.api.own.getUnits(type, { includeVariants: true }),
+        )
+
+        ctx.api.opponent.destroyUnits(opIds)
+        ctx.api.own.destroyUnits(ownIds)
       },
     },
   ],

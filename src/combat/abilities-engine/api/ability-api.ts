@@ -206,6 +206,7 @@ export class SideApi {
     includeSubtypes?: UnitVariantId[]
     combatMode?: CombatMode
     includeNonParticipating?: boolean
+    includeOnlyBaseTypes?: boolean
   }) {
     return CombatSideState.getUnitVariantOptions(
       this._sideData,

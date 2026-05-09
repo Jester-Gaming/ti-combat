@@ -1,7 +1,6 @@
 import { z } from 'zod/mini'
 
 import { type Ability, declareParam } from '@/combat'
-import { UNIT_DISPLAY_NAMES } from '@/constants/units'
 import type { UnitBaseType, UnitList, UnitType } from '@/types'
 import { UnitListNumberSchema } from '@/types'
 
@@ -76,31 +75,28 @@ export const overwingZeta: Ability<Params> = {
       },
     },
   ],
-  uiConfig: () => {
-    const ALLOWED_TYPES: UnitBaseType[] = ['FLAGSHIP', 'CRUISER', 'DESTROYER']
-    return [
-      {
-        key: 'strategy' as const,
-        label: 'Strategy',
-        type: 'select' as const,
-        items: [
-          { label: 'Immediately (R1)', value: 'IMMEDIATELY' },
-          { label: 'Enough Fleet Pool', value: 'ENOUGH_FLEET_POOL' },
-        ],
-      },
-      {
-        key: 'ships' as const,
-        label: 'Ships',
-        type: 'unit-list' as const,
-        mode: 'number' as const,
-        items: ALLOWED_TYPES.map(type => ({
-          label: UNIT_DISPLAY_NAMES[type],
-          value: type,
-          max: type === 'FLAGSHIP' ? 1 : 2,
-        })),
-      },
-    ]
-  },
+  uiConfig: ctx => [
+    {
+      key: 'strategy' as const,
+      label: 'Strategy',
+      type: 'select' as const,
+      items: [
+        { label: 'Immediately (R1)', value: 'IMMEDIATELY' },
+        { label: 'Enough Fleet Pool', value: 'ENOUGH_FLEET_POOL' },
+      ],
+    },
+    {
+      key: 'ships' as const,
+      label: 'Ships',
+      type: 'unit-list' as const,
+      mode: 'number' as const,
+      items: ctx.api.own.getUnitVariantsOptions({
+        include: ['FLAGSHIP', 'CRUISER', 'DESTROYER'],
+        combatMode: 'SPACE',
+        includeOnlyBaseTypes: true,
+      }),
+    },
+  ],
 }
 
 function getShipsToPlace(counts: Record<UnitType, number>) {

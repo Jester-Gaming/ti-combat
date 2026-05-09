@@ -2,7 +2,6 @@ import { z } from 'zod/mini'
 
 import crimsonRebellionIcon from '@/assets/faction/crimson_rebellion.svg?raw'
 import { type Ability, declareParam } from '@/combat'
-import { SHIPS, UNIT_DISPLAY_NAMES, UNIT_LIMITS } from '@/constants/units'
 import type { UnitBaseType, UnitList } from '@/types'
 import { UnitListNumberSchema } from '@/types'
 
@@ -45,16 +44,15 @@ export const fragmentReality: Ability<Params> = {
       },
     },
   ],
-  uiConfig: () => [
+  uiConfig: ctx => [
     {
       key: 'ships' as const,
       type: 'unit-list' as const,
       mode: 'number' as const,
-      items: SHIPS.map(type => ({
-        label: UNIT_DISPLAY_NAMES[type],
-        value: type,
-        max: UNIT_LIMITS[type],
-      })),
+      items: ctx.api.own.getUnitVariantsOptions({
+        combatMode: 'SPACE',
+        includeOnlyBaseTypes: true,
+      }),
     },
   ],
 }

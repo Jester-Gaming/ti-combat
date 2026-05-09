@@ -896,6 +896,7 @@ export class CombatSideState {
       includeSubtypes?: string[]
       combatMode?: CombatMode
       includeNonParticipating?: boolean
+      includeOnlyBaseTypes?: boolean
     },
   ): UnitType[] {
     const baseTypes = filter?.includeNonParticipating
@@ -918,6 +919,9 @@ export class CombatSideState {
     const baseSet = new Set<string>(baseTypes)
     const result: UnitType[] = [...baseTypes]
     const addedSet = new Set<string>(baseTypes)
+    if (filter?.includeOnlyBaseTypes) {
+      declaredSubtypes = []
+    }
     for (const decl of declaredSubtypes) {
       const { type, subtypes: parentSubs } = parseVariantId(decl.unitType)
       if (!baseSet.has(decl.unitType) && !addedSet.has(decl.unitType)) continue
@@ -998,6 +1002,7 @@ export class CombatSideState {
       includeSubtypes?: string[]
       combatMode?: CombatMode
       includeNonParticipating?: boolean
+      includeOnlyBaseTypes?: boolean
     },
   ): { label: string; value: UnitType }[] {
     return CombatSideState.getUnitVariants(s, mode, filter).map(id => ({

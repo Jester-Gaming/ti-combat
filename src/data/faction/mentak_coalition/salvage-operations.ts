@@ -1,7 +1,6 @@
 import { z } from 'zod/mini'
 
 import { type Ability, declareParam, parseVariantId } from '@/combat'
-import { UNIT_DISPLAY_NAMES } from '@/constants/units'
 import type { UnitBaseType, UnitList, UnitType } from '@/types'
 import { UnitListSchema } from '@/types'
 
@@ -31,14 +30,16 @@ export const salvageOperations: Ability<Params> = {
   },
   headerUI: 'isEnabled',
   uiConfig: ctx => {
-    const { ships } = ctx.api.own.getAbilityConfig('SETTINGS')
     return [
       {
         key: 'shipPriority' as const,
         label: 'Ship Priority',
         type: 'unit-list' as const,
         mode: 'order' as const,
-        items: ships.map(s => ({ label: UNIT_DISPLAY_NAMES[s], value: s })),
+        items: ctx.api.own.getUnitVariantsOptions({
+          combatMode: 'SPACE',
+          includeOnlyBaseTypes: true,
+        }),
       },
     ]
   },
