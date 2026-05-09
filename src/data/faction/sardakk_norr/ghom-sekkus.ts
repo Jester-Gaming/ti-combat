@@ -2,12 +2,7 @@ import { z } from 'zod/mini'
 
 import sardakkNorrIcon from '@/assets/faction/sardakk_norr.svg?raw'
 import { type Ability, declareParam } from '@/combat'
-import {
-  GROUND_FORCES,
-  UNIT_DISPLAY_NAMES,
-  UNIT_LIMITS,
-} from '@/constants/units'
-import type { UnitBaseType, UnitList } from '@/types'
+import type { UnitList, UnitType } from '@/types'
 import { UnitListNumberSchema } from '@/types'
 
 type Params = {
@@ -32,7 +27,9 @@ export const ghomSekkus: Ability<Params> = {
     units: declareParam<UnitList<number>>({
       default: [],
       source: 'groundForces',
+      sort: 'price-desc',
       defaultItemValue: 0,
+      includeNonParticipating: true,
     }),
   },
   headerUI: 'isEnabled',
@@ -41,24 +38,24 @@ export const ghomSekkus: Ability<Params> = {
       timing: 'COMMIT_UNITS',
       isCallable: (params, ctx) => ctx.utils.getFlat(params.units).length > 0,
       call: (ctx, params) => {
-        const toPlace: Partial<Record<UnitBaseType, number>> = {}
-        for (const [type, count] of params.units) {
-          if (count > 0) toPlace[type as UnitBaseType] = count
+        const toPlace: Partial<Record<UnitType, number>> = {}
+        for (const [key, count] of params.units) {
+          if (count > 0) toPlace[key as UnitType] = count
         }
         ctx.api.own.placeUnits(toPlace)
       },
     },
   ],
-  uiConfig: [
+  uiConfig: ctx => [
     {
       key: 'units' as const,
       type: 'unit-list' as const,
       mode: 'number' as const,
-      items: GROUND_FORCES.map(type => ({
-        label: UNIT_DISPLAY_NAMES[type],
-        value: type,
-        max: UNIT_LIMITS[type],
-      })),
+      items: ctx.api.own.getUnitVariantsOptions({
+        combatMode: 'GROUND',
+        include: ['MECH', 'INFANTRY'],
+        includeNonParticipating: true,
+      }),
     },
   ],
 }

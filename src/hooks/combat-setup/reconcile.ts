@@ -97,7 +97,52 @@ export function reconcileAbilitiesConfig(
   resetBaseGroups(config, abilities)
   ensureConsumerDefaults(config, abilities)
   reconcileSyncAll(config, abilities, syncSnapshots)
+  // Subtype declarations may depend on params that are themselves
+  // sync-source params (e.g. PRE_GALVANIZED.galvanizedUnits is sourced from
+  // `units`). The collectDeclaredSubtypes pass inside `resetBaseGroups`
+  // saw those params before reconcile filled them in. Re-collect now and,
+  // if the result changed, re-run sync so consumer params (Ghom Sek'kus,
+  // Alarum, etc.) pick up the freshly-declared subtype variants.
+  if (refreshDeclaredSubtypes(config, abilities)) {
+    reconcileSyncAll(config, abilities, syncSnapshots)
+  }
   reconcileAbilityOrder(config, abilities, combatMode)
+}
+
+/** Re-collect declared subtypes against the current (post-sync) consumer
+ *  params. Returns true if any side's subtype list changed shape — caller
+ *  re-runs sync to propagate. */
+function refreshDeclaredSubtypes(
+  config: AbilitiesConfig,
+  abilities: Record<CombatSide, Ability[]>,
+): boolean {
+  let changed = false
+  for (const side of ['attacker', 'defender'] as const) {
+    const settings = config[side]['SETTINGS'] as SettingsParams | undefined
+    if (!settings) continue
+    const next = collectDeclaredSubtypes(abilities[side], config[side])
+    if (subtypesEqual(settings.subtypes, next)) continue
+    settings.subtypes = next
+    changed = true
+  }
+  return changed
+}
+
+function subtypesEqual(a: DeclaredSubtype[], b: DeclaredSubtype[]): boolean {
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i]
+    const y = b[i]
+    if (
+      x.name !== y.name ||
+      x.unitType !== y.unitType ||
+      x.participating !== y.participating ||
+      x.source !== y.source
+    ) {
+      return false
+    }
+  }
+  return true
 }
 
 /**
