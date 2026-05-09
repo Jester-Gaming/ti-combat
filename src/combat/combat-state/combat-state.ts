@@ -1139,7 +1139,11 @@ export function buildDestroyGroup(
 export function clonePendingSteps(steps: PendingStep[]): PendingStep[] {
   return steps.map(s =>
     s.kind === 'group'
-      ? { ...s, data: { ...(s.data as object) }, steps: s.steps.map(cloneStep) }
+      ? {
+          ...s,
+          data: Array.isArray(s.data) ? [...s.data] : { ...(s.data as object) },
+          steps: s.steps.map(cloneStep),
+        }
       : cloneStep(s),
   )
 }
