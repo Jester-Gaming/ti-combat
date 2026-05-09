@@ -9,7 +9,9 @@ describe.forEachSide('Alarum', () => {
       attacker: {
         faction: 'RAL_NEL',
         units: { MECH: 1, INFANTRY: 1 },
-        abilities: { ALARUM: { infantryAvailable: 4 } },
+        abilities: {
+          ALARUM: { isEnabled: true, availableUnits: [['INFANTRY', 4]] },
+        },
       },
       defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
     })
@@ -33,7 +35,9 @@ describe.forEachSide('Alarum', () => {
       attacker: {
         faction: 'RAL_NEL',
         units: { MECH: 1, INFANTRY: 1 },
-        abilities: { ALARUM: { infantryAvailable: 1 } },
+        abilities: {
+          ALARUM: { isEnabled: true, availableUnits: [['INFANTRY', 1]] },
+        },
       },
       defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
     })
@@ -41,7 +45,6 @@ describe.forEachSide('Alarum', () => {
     t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
-    // Should add only 1 infantry
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
   })
 
@@ -51,7 +54,9 @@ describe.forEachSide('Alarum', () => {
       attacker: {
         faction: 'RAL_NEL',
         units: { MECH: 1, INFANTRY: 1 },
-        abilities: { ALARUM: { infantryAvailable: 0 } },
+        abilities: {
+          ALARUM: { isEnabled: true, availableUnits: [['INFANTRY', 0]] },
+        },
       },
       defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
     })
@@ -68,7 +73,9 @@ describe.forEachSide('Alarum', () => {
       attacker: {
         faction: 'RAL_NEL',
         units: { MECH: 1, INFANTRY: 1 },
-        abilities: { ALARUM: { infantryAvailable: 3 } },
+        abilities: {
+          ALARUM: { isEnabled: true, availableUnits: [['INFANTRY', 3]] },
+        },
       },
       defender: { faction: 'ARBOREC', units: { INFANTRY: 4 } },
     })
@@ -94,7 +101,9 @@ describe.forEachSide('Alarum', () => {
       attacker: {
         faction: 'RAL_NEL',
         units: { MECH: 2, INFANTRY: 1 },
-        abilities: { ALARUM: { infantryAvailable: 6 } },
+        abilities: {
+          ALARUM: { isEnabled: true, availableUnits: [['INFANTRY', 6]] },
+        },
       },
       defender: { faction: 'ARBOREC', units: { INFANTRY: 6 } },
     })
@@ -113,5 +122,65 @@ describe.forEachSide('Alarum', () => {
     // No more available
     t.advanceRound()
     expect(t.attacker.units.INFANTRY).toHaveLength(7)
+  })
+
+  it('places galvanized variants when the variant is picked', () => {
+    const t = combatTest({
+      mode: 'GROUND',
+      attacker: {
+        faction: 'RAL_NEL',
+        units: { MECH: 1, INFANTRY: 1 },
+        abilities: {
+          // PRE_GALVANIZED must be enabled so the Galvanized subtype is
+          // declared on INFANTRY and the variant key is valid.
+          PRE_GALVANIZED: {
+            isEnabled: true,
+            galvanizedUnits: [['INFANTRY', 0]],
+          },
+          ALARUM: {
+            isEnabled: true,
+            availableUnits: [['INFANTRY:Galvanized', 2]],
+          },
+        },
+      },
+      defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
+    })
+
+    t.advanceTo('GROUND_COMBAT')
+    t.advanceRound()
+
+    expect(t.attacker.units.INFANTRY).toHaveLength(3)
+    const galvanized = t.attacker.units.INFANTRY!.filter(u =>
+      u.subtypes?.includes('Galvanized'),
+    )
+    expect(galvanized).toHaveLength(2)
+  })
+
+  it('does not fire newly-placed mechs in the same end of round', () => {
+    const t = combatTest({
+      mode: 'GROUND',
+      attacker: {
+        faction: 'RAL_NEL',
+        units: { MECH: 1, INFANTRY: 1 },
+        abilities: {
+          // 4 buffer entries — if a freshly-placed Mech also fired its
+          // Alarum it would consume more than 2 from the pool. The
+          // expectation below verifies only 2 were taken.
+          ALARUM: { isEnabled: true, availableUnits: [['MECH', 4]] },
+        },
+      },
+      defender: { faction: 'ARBOREC', units: { INFANTRY: 4 } },
+    })
+
+    t.advanceTo('GROUND_COMBAT')
+    t.advanceRound()
+
+    // Starting Mech placed up to 2 new Mechs. Newly-placed Mechs must NOT
+    // fire their own Alarum this round.
+    expect(t.attacker.units.MECH).toHaveLength(3) // 1 starting + 2 placed
+    const remaining = t.state.attacker.abilities.ALARUM!
+      .availableUnits as Array<[string, number]>
+    const mechRemaining = remaining.find(([k]) => k === 'MECH')?.[1]
+    expect(mechRemaining).toBe(2) // 4 - 2 = 2; if double-firing happened, would be 0
   })
 })

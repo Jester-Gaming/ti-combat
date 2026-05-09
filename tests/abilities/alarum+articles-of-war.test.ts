@@ -10,7 +10,7 @@ describe.forEachSide('ALARUM + ARTICLES_OF_WAR', () => {
         faction: 'RAL_NEL',
         units: { MECH: 1, INFANTRY: 1 },
         abilities: {
-          ALARUM: { infantryAvailable: 4 },
+          ALARUM: { isEnabled: true, availableUnits: [['INFANTRY', 4]] },
           ARTICLES_OF_WAR: true,
         },
       },
@@ -20,8 +20,6 @@ describe.forEachSide('ALARUM + ARTICLES_OF_WAR', () => {
     t.advanceTo('GROUND_COMBAT')
     t.advanceRound()
 
-    // Articles of War removes all printed mech abilities except Sustain Damage
-    // Alarum should not fire — no infantry added
     expect(t.abilityLog('ALARUM')).toHaveLength(0)
     expect(t.attacker.units.INFANTRY).toHaveLength(1)
   })
