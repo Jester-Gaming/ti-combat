@@ -65,6 +65,30 @@ describe('validateSerializedConfig', () => {
     expect(result.config.aa['DIRECT_HIT']).toBeUndefined()
   })
 
+  it('recognizes faction-owned abilities (technology, breakthrough, ...)', () => {
+    // NON_EUCLIDEAN_SHIELDING lives under Barony's `abilities.technology` and
+    // GRAVLEASH_MANEUVERS under `abilities.breakthrough` — neither comes from
+    // the global ability directories. They must still be recognized so URL
+    // restore doesn't drop them with an "Unknown ability" warning.
+    const config: SerializedConfig = {
+      v: 1,
+      af: 'BARONY_OF_LETNEV',
+      df: 'ARBOREC',
+      m: 'S',
+      au: { FIGHTER: [1, 0] },
+      du: { FIGHTER: [1, 0] },
+      aa: {
+        NON_EUCLIDEAN_SHIELDING: { isEnabled: true },
+        GRAVLEASH_MANEUVERS: { isEnabled: true },
+      },
+      da: {},
+    }
+    const result = validateSerializedConfig(config, abilityLookup)
+    expect(result.warnings).toEqual([])
+    expect(result.config.aa['NON_EUCLIDEAN_SHIELDING']).toBeDefined()
+    expect(result.config.aa['GRAVLEASH_MANEUVERS']).toBeDefined()
+  })
+
   it('skips unknown ability keys with warning', () => {
     const config = makeValidConfig()
     config.aa['NONEXISTENT_ABILITY'] = { isEnabled: true, uses: 1 }
@@ -80,5 +104,18 @@ describe('validateSerializedConfig', () => {
     const result = validateSerializedConfig(config, abilityLookup)
     expect(result.config.aa['DIRECT_HIT']).toBeDefined()
     expect(result.config.aa['FAKE_ABILITY']).toBeUndefined()
+  })
+
+  it('warns when custom param shape fails schema validation', () => {
+    const config = makeValidConfig()
+    // PRE_GALVANIZED expects [string, number][] but a flat string array
+    // (the shape produced by the pre-fix decoder) should now be rejected.
+    config.da['PRE_GALVANIZED'] = {
+      isEnabled: true,
+      galvanizedUnits: ['FIGHTER', '1', 'DESTROYER', '0'],
+    }
+    const result = validateSerializedConfig(config, abilityLookup)
+    expect(result.warnings.some(w => w.includes('Galvanized'))).toBe(true)
+    expect(result.config.da['PRE_GALVANIZED']).toBeUndefined()
   })
 })

@@ -95,6 +95,32 @@ describe('loadConfig', () => {
     expect(restored.abilities.attacker['DIRECT_HIT']?.uses).toBe(3)
   })
 
+  it('preserves URL-loaded UNIT_PRIORITY order through final reconcile', () => {
+    // Reproduces the URL-restore path: spaceUnitPriority arrives as a flat
+    // `string[]` (order-mode lists round-trip without per-key values), and
+    // the reconcile pass that runs after loadConfig must preserve it
+    // instead of clobbering it with the auto-synced default order.
+    const setup = new CombatSetup()
+    setup.setUnitCount('attacker', 'FIGHTER', 1)
+    setup.setUnitCount('attacker', 'DESTROYER', 1)
+    setup.setUnitCount('defender', 'FIGHTER', 1)
+    setup.setUnitCount('defender', 'DESTROYER', 1)
+    const base = setup.toSerializedConfig()
+    const config: SerializedConfig = {
+      ...base,
+      da: {
+        ...base.da,
+        UNIT_PRIORITY: { spaceUnitPriority: ['DESTROYER', 'FIGHTER'] },
+      },
+    }
+    setup.loadConfig(config)
+    const priority = setup.abilities.defender['UNIT_PRIORITY']
+      ?.spaceUnitPriority as ([string] | string)[]
+    const keys = priority.map(e => (typeof e === 'string' ? e : e[0]))
+    // DESTROYER must come before FIGHTER — the URL-loaded order wins.
+    expect(keys.indexOf('DESTROYER')).toBeLessThan(keys.indexOf('FIGHTER'))
+  })
+
   it('resets to default for absent abilities', () => {
     const setup = new CombatSetup()
     const config: SerializedConfig = {

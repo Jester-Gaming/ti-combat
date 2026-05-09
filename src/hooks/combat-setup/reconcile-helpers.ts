@@ -140,12 +140,18 @@ function inheritedValue(
  *    otherwise the entry is built with `defaultItemValue` (or as a
  *    length-1 tuple `[key]` when `defaultItemValue` is omitted). */
 export function reconcileUnitListParam(
-  current: readonly UnitListEntry[],
+  current: readonly (UnitListEntry | string)[],
   validList: readonly string[],
   defaultItemValue?: unknown,
 ): UnitListEntry[] {
+  // Order-mode lists round-trip through the URL as flat string arrays —
+  // normalize those to 1-tuples here so reconcile treats both shapes
+  // identically (matches the runtime contract of `unwrapUnitListKeys`).
+  const normalized: UnitListEntry[] = current.map(entry =>
+    typeof entry === 'string' ? [entry] : (entry as UnitListEntry),
+  )
   const validSet = new Set(validList)
-  const kept = current.filter(entry => validSet.has(entry[0]))
+  const kept = normalized.filter(entry => validSet.has(entry[0]))
   const keptKeys = new Set(kept.map(entry => entry[0]))
   const newKeys = validList.filter(key => !keptKeys.has(key))
 

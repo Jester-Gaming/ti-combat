@@ -11,7 +11,7 @@ import {
 
 // ── Encode: SerializedConfig → query string ─────────────────────────
 
-function configToSearchString(config: SerializedConfig): string {
+export function configToSearchString(config: SerializedConfig): string {
   const parts: string[] = [
     `v=${config.v}`,
     `af=${config.af}`,
@@ -50,7 +50,17 @@ function encodeValue(value: unknown): string {
   if (value === false) return 'false'
   if (typeof value === 'number') return String(value)
   if (typeof value === 'string') return value
-  if (Array.isArray(value)) return value.join(',')
+  if (Array.isArray(value)) {
+    // Tuple arrays `[K, V][]` (UnitList<number>, UnitList<boolean>) — encode
+    // each tuple as `key~val` so we can distinguish from a flat string array
+    // at decode time. Single-element tuples / flat arrays use plain `,`.
+    if (value.length > 0 && Array.isArray(value[0]) && value[0].length >= 2) {
+      return value
+        .map(t => (t as unknown[]).map(encodeScalar).join('~'))
+        .join(',')
+    }
+    return value.join(',')
+  }
   if (typeof value === 'object' && value !== null) {
     return Object.entries(value as Record<string, unknown>)
       .map(([k, v]) => `${k}~${v}`)
@@ -59,9 +69,16 @@ function encodeValue(value: unknown): string {
   return String(value)
 }
 
+function encodeScalar(v: unknown): string {
+  if (v === Infinity) return 'Inf'
+  if (v === true) return 'true'
+  if (v === false) return 'false'
+  return String(v)
+}
+
 // ── Decode: query string → raw config object ────────────────────────
 
-function searchParamsToConfig(
+export function searchParamsToConfig(
   search: string,
   abilityLookup: Map<string, Ability>,
 ): Record<string, unknown> {
@@ -127,7 +144,19 @@ function decodeValue(
   if (typeof defaultValue === 'number')
     return raw === 'Inf' ? Infinity : Number(raw)
   if (typeof defaultValue === 'string') return raw
-  if (Array.isArray(defaultValue)) return raw === '' ? [] : raw.split(',')
+  if (Array.isArray(defaultValue)) {
+    if (raw === '') return []
+    const entries = raw.split(',')
+    // Tuple-array encoding uses `~` between tuple elements; if any entry
+    // contains `~`, parse as `[K, V][]` (UnitList<number>/<boolean>).
+    if (entries.some(e => e.includes('~'))) {
+      return entries.map(e => {
+        const idx = e.indexOf('~')
+        return [e.slice(0, idx), decodeScalar(e.slice(idx + 1))]
+      })
+    }
+    return entries
+  }
   if (typeof defaultValue === 'object' && defaultValue !== null) {
     if (raw === '') return {}
     const result: Record<string, number> = {}
@@ -139,6 +168,14 @@ function decodeValue(
     return result
   }
   return raw
+}
+
+function decodeScalar(s: string): unknown {
+  if (s === 'true') return true
+  if (s === 'false') return false
+  if (s === 'Inf') return Infinity
+  if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s)
+  return s
 }
 
 // ── Hook ─────────────────────────────────────────────────────────────

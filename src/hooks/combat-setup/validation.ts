@@ -1,6 +1,6 @@
 import { z } from 'zod/mini'
 
-import type { Ability } from '@/combat'
+import { type Ability, extractDefaults } from '@/combat'
 import { UNIT_LIMITS, UNIT_TYPES } from '@/constants/units'
 import factions from '@/data/faction'
 
@@ -122,11 +122,36 @@ function validateAbilities(
       continue
     }
 
-    // Custom params are type-checked during URL decoding and
-    // spread-merged onto reconciled defaults in loadConfig,
-    // so strict schema validation is not needed for partial diffs
+    // Schema-validate the URL diff merged onto defaults so malformed
+    // values surface a warning instead of silently corrupting the
+    // ability config (e.g. a tuple-array param decoded as flat strings).
+    if (ability.paramsSchema) {
+      const merged = mergeWithDefaults(ability, paramsObj)
+      const customResult = ability.paramsSchema.safeParse(merged)
+      if (!customResult.success) {
+        warnings.push(`Ability "${ability.name}" has invalid params, skipped`)
+        continue
+      }
+    }
 
     result[key] = paramsObj
   }
   return result
+}
+
+function mergeWithDefaults(
+  ability: Ability,
+  params: Record<string, unknown>,
+): Record<string, unknown> {
+  const defaults = extractDefaults(ability)
+  const merged: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(defaults)) {
+    if (k === 'isEnabled' || k === 'uses') continue
+    merged[k] = v
+  }
+  for (const [k, v] of Object.entries(params)) {
+    if (k === 'isEnabled' || k === 'uses') continue
+    merged[k] = v
+  }
+  return merged
 }

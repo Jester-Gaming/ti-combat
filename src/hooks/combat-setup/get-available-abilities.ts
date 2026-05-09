@@ -120,9 +120,26 @@ const baseRegistered: RegisteredAbility[] = [
   ...allExternalAbilities,
 ]
 
+const allFactionAbilities: Ability[] = []
+{
+  const seen = new Set<string>()
+  for (const faction of Object.values(factions)) {
+    if (!faction?.abilities) continue
+    for (const list of Object.values(faction.abilities)) {
+      if (!list) continue
+      for (const ability of list as Ability[]) {
+        if (seen.has(ability.key)) continue
+        seen.add(ability.key)
+        allFactionAbilities.push(ability)
+      }
+    }
+  }
+}
+
 const allAbilitiesForLookup: Ability[] = [
   ...baseRegistered.map(r => r.ability),
   ...allUnitAbilities,
+  ...allFactionAbilities,
 ]
 
 export function getAllAbilities(): Ability[] {
