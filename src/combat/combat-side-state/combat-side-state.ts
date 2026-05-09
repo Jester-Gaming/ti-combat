@@ -427,6 +427,10 @@ function findPendingDiceRollGroup(
   return undefined
 }
 
+export interface GetUnitsOptions {
+  includeVariants?: boolean
+}
+
 /**
  * CombatSideState — namespace of all side operations.
  *
@@ -524,25 +528,9 @@ export class CombatSideState {
   static hasUnitType(
     s: SideStateData,
     unitType: UnitType,
-    includeVariants?: boolean,
+    options?: GetUnitsOptions,
   ): boolean {
-    const { participatingUnits, nonParticipatingUnits, unitType: typeMap } = s
-    if (includeVariants) {
-      for (const id of participatingUnits) {
-        if (matchesVariantSuperset(typeMap[id], unitType)) return true
-      }
-      for (const id of nonParticipatingUnits) {
-        if (matchesVariantSuperset(typeMap[id], unitType)) return true
-      }
-      return false
-    }
-    for (const id of participatingUnits) {
-      if (typeMap[id] === unitType) return true
-    }
-    for (const id of nonParticipatingUnits) {
-      if (typeMap[id] === unitType) return true
-    }
-    return false
+    return CombatSideState.countUnits(s, unitType, options) > 0
   }
 
   // ==========================================================================
@@ -574,54 +562,25 @@ export class CombatSideState {
     return undefined
   }
 
-  static findUnitByPriority(
+  /** Get all UnitIds for a type, optionally including variants.
+   *  Participating ids are returned first (in priority-sort order). */
+  static getUnits(
     s: SideStateData,
-    priority: UnitType[],
-    participatingTypes?: ReadonlySet<UnitBaseType>,
-    opts?: undefined,
-  ): UnitId | undefined
-  static findUnitByPriority(
-    s: SideStateData,
-    priority: UnitType[],
-    participatingTypes: ReadonlySet<UnitBaseType> | undefined,
-    opts: { amount?: number; includeVariants?: boolean },
-  ): UnitId[]
-  static findUnitByPriority(
-    s: SideStateData,
-    priority: UnitType[],
-    participatingTypes?: ReadonlySet<UnitBaseType>,
-    opts?: { amount?: number; includeVariants?: boolean },
-  ): UnitId | UnitId[] | undefined {
-    const { participatingUnits, nonParticipatingUnits, unitType } = s
-    const collect = opts !== undefined
-    const amount = opts?.amount ?? Infinity
-    const includeVariants = opts?.includeVariants ?? false
+    unitType: UnitType,
+    options?: GetUnitsOptions,
+  ): UnitId[] {
+    const { participatingUnits, nonParticipatingUnits, unitType: typeMap } = s
     const result: UnitId[] = []
-
-    const matches = (key: UnitType, variantId: UnitType): boolean =>
-      includeVariants
-        ? matchesVariantSuperset(key, variantId)
-        : key === variantId
-
-    for (const variantId of priority) {
-      const { type } = parseVariantId(variantId)
-      if (participatingTypes && !participatingTypes.has(type)) continue
-      for (const id of participatingUnits) {
-        if (!matches(unitType[id], variantId)) continue
-        const unitId = id as UnitId
-        if (!collect) return unitId
-        result.push(unitId)
-        if (result.length >= amount) return result
-      }
-      for (const id of nonParticipatingUnits) {
-        if (!matches(unitType[id], variantId)) continue
-        const unitId = id as UnitId
-        if (!collect) return unitId
-        result.push(unitId)
-        if (result.length >= amount) return result
-      }
+    const matches = options?.includeVariants
+      ? (key: UnitType) => matchesVariantSuperset(key, unitType)
+      : (key: UnitType) => key === unitType
+    for (const id of participatingUnits) {
+      if (matches(typeMap[id])) result.push(id as UnitId)
     }
-    return collect ? result : undefined
+    for (const id of nonParticipatingUnits) {
+      if (matches(typeMap[id])) result.push(id as UnitId)
+    }
+    return result
   }
 
   /** Count units with optional filter and variant support.
@@ -629,64 +588,51 @@ export class CombatSideState {
   static countUnits(
     s: SideStateData,
     filter?: UnitType | UnitType[],
-    includeVariants?: boolean,
+    options?: GetUnitsOptions,
   ): number {
-    const { participatingUnits, nonParticipatingUnits, unitType } = s
-    if (!filter) return participatingUnits.length + nonParticipatingUnits.length
-
+    if (!filter) {
+      return s.participatingUnits.length + s.nonParticipatingUnits.length
+    }
     const filters = typeof filter === 'string' ? [filter] : filter
-
-    if (includeVariants) {
-      const matchesAny = (key: UnitType): boolean =>
-        filters.some(f => matchesVariantSuperset(key, f))
-      let total = 0
-      for (const id of participatingUnits) {
-        if (matchesAny(unitType[id])) total++
-      }
-      for (const id of nonParticipatingUnits) {
-        if (matchesAny(unitType[id])) total++
-      }
-      return total
-    }
-
-    const keys = new Set(filters)
     let total = 0
-    for (const id of participatingUnits) {
-      if (keys.has(unitType[id])) total++
-    }
-    for (const id of nonParticipatingUnits) {
-      if (keys.has(unitType[id])) total++
+    for (const f of filters) {
+      total += CombatSideState.getUnits(s, f, options).length
     }
     return total
   }
 
-  /** Get all UnitIds for a type, optionally including variants.
-   *  Participating ids are returned first (in priority-sort order). */
-  static getUnits(
+  static findUnitByPriority(
     s: SideStateData,
-    unitType: UnitType,
-    includeVariants?: boolean,
-  ): UnitId[] {
-    const { participatingUnits, nonParticipatingUnits, unitType: typeMap } = s
+    priority: UnitType[],
+    participatingTypes?: ReadonlySet<UnitBaseType>,
+    options?: undefined,
+  ): UnitId | undefined
+  static findUnitByPriority(
+    s: SideStateData,
+    priority: UnitType[],
+    participatingTypes: ReadonlySet<UnitBaseType> | undefined,
+    options: GetUnitsOptions & { amount?: number },
+  ): UnitId[]
+  static findUnitByPriority(
+    s: SideStateData,
+    priority: UnitType[],
+    participatingTypes?: ReadonlySet<UnitBaseType>,
+    options?: GetUnitsOptions & { amount?: number },
+  ): UnitId | UnitId[] | undefined {
+    const collect = options !== undefined
+    const amount = options?.amount ?? Infinity
     const result: UnitId[] = []
-    if (includeVariants) {
-      for (const id of participatingUnits) {
-        if (matchesVariantSuperset(typeMap[id], unitType))
-          result.push(id as UnitId)
+
+    for (const variantId of priority) {
+      const { type } = parseVariantId(variantId)
+      if (participatingTypes && !participatingTypes.has(type)) continue
+      for (const id of CombatSideState.getUnits(s, variantId, options)) {
+        if (!collect) return id
+        result.push(id)
+        if (result.length >= amount) return result
       }
-      for (const id of nonParticipatingUnits) {
-        if (matchesVariantSuperset(typeMap[id], unitType))
-          result.push(id as UnitId)
-      }
-      return result
     }
-    for (const id of participatingUnits) {
-      if (typeMap[id] === unitType) result.push(id as UnitId)
-    }
-    for (const id of nonParticipatingUnits) {
-      if (typeMap[id] === unitType) result.push(id as UnitId)
-    }
-    return result
+    return collect ? result : undefined
   }
 
   /** Get UnitState for a UnitId. */

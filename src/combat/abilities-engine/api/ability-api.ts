@@ -17,6 +17,7 @@ import type {
 import {
   CombatSideState,
   getOpponentSide,
+  type GetUnitsOptions,
 } from '../../combat-side-state/combat-side-state'
 import {
   buildDestroyGroup,
@@ -148,35 +149,20 @@ export class SideApi {
     return this.state[this._side].faction
   }
 
-  getUnits(unitType: UnitType, options?: { includeVariants: true }) {
-    return CombatSideState.getUnits(
-      this._sideData,
-      unitType,
-      options?.includeVariants,
-    )
+  getUnits(unitType: UnitType, options?: GetUnitsOptions) {
+    return CombatSideState.getUnits(this._sideData, unitType, options)
   }
 
   hasUnit(unitId: UnitId) {
     return CombatSideState.hasUnit(this._sideData, unitId)
   }
 
-  hasUnitType(unitType: UnitType, options?: { includeVariants: true }) {
-    return CombatSideState.hasUnitType(
-      this._sideData,
-      unitType,
-      options?.includeVariants,
-    )
+  hasUnitType(unitType: UnitType, options?: GetUnitsOptions) {
+    return CombatSideState.hasUnitType(this._sideData, unitType, options)
   }
 
-  countUnits(
-    filter?: UnitType | UnitType[],
-    options?: { includeVariants: true },
-  ) {
-    return CombatSideState.countUnits(
-      this._sideData,
-      filter,
-      options?.includeVariants,
-    )
+  countUnits(filter?: UnitType | UnitType[], options?: GetUnitsOptions) {
+    return CombatSideState.countUnits(this._sideData, filter, options)
   }
 
   getPendingHits(filter?: { base?: true; bonus?: true }) {
@@ -218,11 +204,11 @@ export class SideApi {
   findUnitByPriority(priority: UnitType[]): UnitId | undefined
   findUnitByPriority(
     priority: UnitType[],
-    opts: { amount?: number; includeVariants?: boolean },
+    options: GetUnitsOptions & { amount?: number },
   ): UnitId[]
   findUnitByPriority(
     priority: UnitType[],
-    opts?: { amount?: number; includeVariants?: boolean },
+    options?: GetUnitsOptions & { amount?: number },
   ): UnitId | UnitId[] | undefined {
     const participating = new Set(
       CombatSideState.getParticipatingUnitTypes(
@@ -230,12 +216,12 @@ export class SideApi {
         this.state.combatMode,
       ),
     )
-    if (opts !== undefined) {
+    if (options !== undefined) {
       return CombatSideState.findUnitByPriority(
         this._sideData,
         priority,
         participating,
-        opts,
+        options,
       )
     }
     return CombatSideState.findUnitByPriority(
@@ -260,7 +246,7 @@ export class SideApi {
     return CombatSideState.getUnitStats(this._sideData, unitTypeOrId)
   }
 
-  getVariantKey(unitId: UnitId) {
+  getUnitVariantKey(unitId: UnitId) {
     return CombatSideState.findVariantKey(this._sideData, unitId) || undefined
   }
 

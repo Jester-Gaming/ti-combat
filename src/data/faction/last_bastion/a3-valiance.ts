@@ -26,7 +26,7 @@ export const a3Valiance: Ability = {
       isCallable: (_params, ctx, ids) => {
         const myId = ctx.getUnit()
         if (!ids.includes(myId)) return false
-        const variantKey = ctx.api.own.getVariantKey(myId)!
+        const variantKey = ctx.api.own.getUnitVariantKey(myId)!
         const { subtypes } = parseVariantId(variantKey)
         if (!subtypes.includes(GALVANIZED)) return false
         if (!ctx.api.own.hasUnitType('INFANTRY', { includeVariants: true }))
@@ -38,7 +38,6 @@ export const a3Valiance: Ability = {
       },
       call: ctx => {
         const ids = ctx.api.own.getUnits('INFANTRY', { includeVariants: true })
-        console.log(ids)
         let count = 0
         for (const id of ids) {
           if (count >= 3) break

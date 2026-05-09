@@ -42,7 +42,7 @@ export const courageousToTheEnd: Ability<Params> = {
       isCallable: (params, ctx, ids) => {
         const ownDestroyedVariants = new Set<string>()
         for (const id of ids) {
-          const key = ctx.api.own.getVariantKey(id)
+          const key = ctx.api.own.getUnitVariantKey(id)
           if (key) ownDestroyedVariants.add(key)
         }
         const ownEnabled = ctx.utils.getFlat(params.ownPriority)
@@ -63,7 +63,7 @@ export const courageousToTheEnd: Ability<Params> = {
         // hit) destroyed own ship among those matching ownPriority.
         const ownDestroyedVariants = new Set<string>()
         for (const id of ids) {
-          const key = ctx.api.own.getVariantKey(id)
+          const key = ctx.api.own.getUnitVariantKey(id)
           if (key) ownDestroyedVariants.add(key)
         }
         let combatValue: number | undefined

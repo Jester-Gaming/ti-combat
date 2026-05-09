@@ -106,7 +106,7 @@ function collectOwnDestroyedShipTypes(
   const shipsSet = new Set<UnitBaseType>(ships)
   const types = new Set<UnitBaseType>()
   for (const id of destroyedIds) {
-    const variantKey = ctx.api.own.getVariantKey(id)
+    const variantKey = ctx.api.own.getUnitVariantKey(id)
     if (!variantKey) continue
     const { type } = parseVariantId(variantKey)
     if (shipsSet.has(type)) types.add(type)

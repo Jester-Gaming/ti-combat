@@ -71,7 +71,7 @@ function isEligibleTarget(ctx: AbilityReadContext, unitId: UnitId) {
   const stats = ctx.api.opponent.getUnitStats(unitId)
   if (!stats?.UNIT_ABILITIES?.SUSTAIN_DAMAGE) return true
   // Has sustain in stats, but check if it's been restricted (lost/disabled)
-  const variantKey = ctx.api.opponent.getVariantKey(unitId)
+  const variantKey = ctx.api.opponent.getUnitVariantKey(unitId)
   if (!variantKey) return false
   return (
     ctx.api.opponent.isUnitAbilityLost('SUSTAIN_DAMAGE', variantKey) ||

@@ -117,7 +117,7 @@ export function createTechnologicalSingularity(
         context: ['SPACE_COMBAT', 'GROUND_COMBAT'],
         isCallable: (params, ctx, ids) => {
           if (params.opponentDestroyed) return false
-          return ids.some(id => !!ctx.api.opponent.getVariantKey(id))
+          return ids.some(id => !!ctx.api.opponent.getUnitVariantKey(id))
         },
         call: (ctx, params) => {
           ctx.api.own.updateAbilityConfig({ opponentDestroyed: true })

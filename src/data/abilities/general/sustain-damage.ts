@@ -74,7 +74,7 @@ export const sustainDamage: Ability<Params> = {
         }
 
         const unitType = ctx.api.own.getUnitBaseType(unitId)!
-        const variantId = ctx.api.own.getVariantKey(unitId)! as UnitType
+        const variantId = ctx.api.own.getUnitVariantKey(unitId)! as UnitType
 
         const isGround = ctx.state.combatMode === 'GROUND'
         const allowedUnits = isGround

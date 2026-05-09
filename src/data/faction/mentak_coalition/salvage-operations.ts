@@ -52,7 +52,8 @@ export const salvageOperations: Ability<Params> = {
         const collected = new Set<UnitBaseType>(params._destroyedShipTypes)
         for (const id of ids) {
           const variantKey =
-            ctx.api.own.getVariantKey(id) || ctx.api.opponent.getVariantKey(id)
+            ctx.api.own.getUnitVariantKey(id) ||
+            ctx.api.opponent.getUnitVariantKey(id)
           if (!variantKey) continue
           const { type } = parseVariantId(variantKey)
           if (shipsSet.has(type)) collected.add(type)

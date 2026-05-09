@@ -136,7 +136,7 @@ export function galvanizeUnit(
   consumeToken?: boolean,
 ): boolean {
   const api = ctx.api.own
-  const sourceKey = api.getVariantKey(unitId)
+  const sourceKey = api.getUnitVariantKey(unitId)
   if (!sourceKey) return false
   if (parseVariantId(sourceKey).subtypes.includes(GALVANIZED)) return false
   if (consumeToken) {

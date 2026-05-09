@@ -60,7 +60,7 @@ export const apollo: Ability<Params> = {
         // Hero is designated at most once per combat, even if the first Hero
         // has since been destroyed and Apollo has already fired.
         if (params.heroDesignated) return false
-        return ctx.api.own.getVariantKey(unitId) === params.heroUnit
+        return ctx.api.own.getUnitVariantKey(unitId) === params.heroUnit
       },
       call: (ctx, _params, unitId) => {
         ctx.api.own.addSubtype(unitId, HERO)
@@ -72,7 +72,7 @@ export const apollo: Ability<Params> = {
       isCallable: (params, ctx, ids) => {
         if (!params.heroUnit) return false
         const heroVariant = makeVariantId(params.heroUnit, [HERO])
-        return ids.some(id => ctx.api.own.getVariantKey(id) === heroVariant)
+        return ids.some(id => ctx.api.own.getUnitVariantKey(id) === heroVariant)
       },
       call: (ctx, params) => {
         const heroVariant = makeVariantId(params.heroUnit!, [HERO])
@@ -88,7 +88,7 @@ export const apollo: Ability<Params> = {
         const groups = new Map<string, UnitId[]>()
         for (const baseType of opp.getActiveBaseTypes()) {
           for (const id of opp.getUnits(baseType, { includeVariants: true })) {
-            const variantKey = opp.getVariantKey(id) ?? baseType
+            const variantKey = opp.getUnitVariantKey(id) ?? baseType
             const state = opp.getUnitState(id) ?? {}
             const stateKey = Object.keys(state)
               .sort()

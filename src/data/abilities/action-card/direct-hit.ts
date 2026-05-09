@@ -35,7 +35,7 @@ export const directHit: Ability<Params> = {
       timing: 'AFTER_SUSTAIN_DAMAGE_USE',
       isCallable: (params, ctx, unitId) => {
         if (!ctx.api.opponent.hasUnit(unitId)) return false
-        const variant = ctx.api.opponent.getVariantKey(unitId)
+        const variant = ctx.api.opponent.getUnitVariantKey(unitId)
         if (!variant) return false
         const targets = ctx.utils.getFlat(params.targets)
         if (!targets.includes(variant as UnitType)) return false

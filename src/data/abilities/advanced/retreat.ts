@@ -53,7 +53,7 @@ export function retreatUnits(ctx: AbilityCallContext, unitIds: UnitId[]): void {
   const mergedState = { ...existing.savedUnitState }
 
   for (const unitId of unitIds) {
-    const variantKey = ctx.api.own.getVariantKey(unitId)
+    const variantKey = ctx.api.own.getUnitVariantKey(unitId)
     if (!variantKey) continue
 
     mergedUnits[variantKey] = [...(mergedUnits[variantKey] ?? []), unitId]

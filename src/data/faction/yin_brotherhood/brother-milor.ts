@@ -17,7 +17,7 @@ export const brotherMilor: Ability = {
       timing: 'AFTER_DESTROY',
       context: ['SPACE_COMBAT', 'GROUND_COMBAT'],
       isCallable: (_params, ctx, ids) =>
-        ids.some(id => !!ctx.api.own.getVariantKey(id)),
+        ids.some(id => !!ctx.api.own.getUnitVariantKey(id)),
       call: ctx => {
         if (ctx.state.combatMode === 'SPACE') {
           ctx.api.own.placeUnits({ FIGHTER: 2 })

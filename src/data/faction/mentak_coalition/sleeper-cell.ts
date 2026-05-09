@@ -37,7 +37,7 @@ export const sleeperCell: Ability<Params> = {
         const { ships } = ctx.api.own.getAbilityConfig('SETTINGS')
         const shipsSet = new Set<UnitBaseType>(ships)
         for (const id of ids) {
-          const variantKey = ctx.api.opponent.getVariantKey(id)
+          const variantKey = ctx.api.opponent.getUnitVariantKey(id)
           if (!variantKey) continue
           const { type } = parseVariantId(variantKey)
           if (shipsSet.has(type)) return true
@@ -49,7 +49,7 @@ export const sleeperCell: Ability<Params> = {
         const shipsSet = new Set<UnitBaseType>(ships)
         const destroyed: Partial<Record<UnitBaseType, number>> = {}
         for (const id of ids) {
-          const variantKey = ctx.api.opponent.getVariantKey(id)
+          const variantKey = ctx.api.opponent.getUnitVariantKey(id)
           if (!variantKey) continue
           const { type } = parseVariantId(variantKey)
           if (!shipsSet.has(type)) continue
