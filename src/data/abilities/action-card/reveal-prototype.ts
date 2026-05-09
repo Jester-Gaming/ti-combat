@@ -111,7 +111,11 @@ function pickTarget(
 
   for (const variantKey of ctx.utils.getFlat(priority)) {
     const type = variantKey as UnitBaseType
-    if (!ctx.api.own.hasUnitType(type)) continue
+    // includeVariants: true so a Cruiser already moved to a subtype variant
+    // (e.g. by Viscount running first via ABILITY_ORDER) is still found.
+    // modifyUnitType then upgrades the base entry; subtype factories
+    // re-evaluate against it lazily.
+    if (!ctx.api.own.hasUnitType(type, { includeVariants: true })) continue
     const upgraded = faction[type]?.UPGRADED
     if (!upgraded || Object.keys(upgraded).length === 0) continue
     const current = ctx.api.own.getUnitStats(type)

@@ -30,4 +30,37 @@ describe.forEachSide('REVEAL_PROTOTYPE + VISCOUNT_UNLENN', () => {
     expect(t.abilityLog('REVEAL_PROTOTYPE')).not.toHaveLength(0)
     expect(t.abilityLog('VISCOUNT_UNLENN')).not.toHaveLength(0)
   })
+
+  it('result is order-independent: Viscount-then-Reveal produces same dice', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 1 },
+        abilities: {
+          REVEAL_PROTOTYPE: {
+            isEnabled: true,
+            spacePriority: [['CRUISER', true]],
+          },
+          VISCOUNT_UNLENN: { isEnabled: true, unitType: 'CRUISER' },
+          ABILITY_ORDER: {
+            startOfCombat: [['VISCOUNT_UNLENN'], ['REVEAL_PROTOTYPE']],
+          },
+        },
+      },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
+    })
+
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound()
+    const pool = t.dicePool()
+
+    // Even when Viscount moves the only Cruiser to CRUISER:Viscount before
+    // Reveal Prototype runs, the upgrade still applies. modifyUnitType
+    // mutates the base CRUISER stats; the CRUISER:Viscount factory
+    // re-evaluates against the upgraded base lazily at dice-roll time.
+    expect(pool.attacker).toContainDice('CRUISER', [6, 2])
+    expect(t.abilityLog('REVEAL_PROTOTYPE')).not.toHaveLength(0)
+    expect(t.abilityLog('VISCOUNT_UNLENN')).not.toHaveLength(0)
+  })
 })
