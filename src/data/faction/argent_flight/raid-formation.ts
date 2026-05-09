@@ -39,13 +39,17 @@ export const raidFormation: Ability<Params> = {
       context: 'AFB',
       isCallable: (_, ctx) => {
         const pendingHits = ctx.api.opponent.getPendingHits()
-        const fighterCount = ctx.api.opponent.countUnits('FIGHTER')
+        const fighterCount = ctx.api.opponent.countUnits('FIGHTER', {
+          includeVariants: true,
+        })
 
         return pendingHits > fighterCount
       },
       call: (ctx, params) => {
         const pendingHits = ctx.api.opponent.getPendingHits()
-        const fighterCount = ctx.api.opponent.countUnits('FIGHTER')
+        const fighterCount = ctx.api.opponent.countUnits('FIGHTER', {
+          includeVariants: true,
+        })
         const excess = pendingHits - fighterCount
 
         let damaged = 0
@@ -58,7 +62,9 @@ export const raidFormation: Ability<Params> = {
               continue
             }
 
-            const units = ctx.api.opponent.getUnits(variant)
+            const units = ctx.api.opponent.getUnits(variant, {
+              includeVariants: false,
+            })
             const stats = ctx.api.opponent.getUnitStats(variant)
 
             if (!stats?.UNIT_ABILITIES?.SUSTAIN_DAMAGE) continue

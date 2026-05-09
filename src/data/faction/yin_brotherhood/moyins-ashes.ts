@@ -14,7 +14,10 @@ export const moyinsAshes: Ability = {
     {
       timing: 'WHEN_INDOCTRINATION',
       isCallable: (_params, ctx) => {
-        return ctx.api.own.countUnits('MECH') < UNIT_LIMITS.MECH
+        return (
+          ctx.api.own.countUnits('MECH', { includeVariants: true }) <
+          UNIT_LIMITS.MECH
+        )
       },
       call: (ctx, _params, placedId) => {
         ctx.api.own.removeUnits(placedId)

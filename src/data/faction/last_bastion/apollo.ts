@@ -122,7 +122,9 @@ export const apollo: Ability<Params> = {
       isCallable: params => !!params.heroUnit,
       call: (ctx, params) => {
         const variantId = makeVariantId(params.heroUnit!, [HERO])
-        const [unitId] = ctx.api.own.getUnits(variantId)
+        const [unitId] = ctx.api.own.getUnits(variantId, {
+          includeVariants: false,
+        })
         if (unitId !== undefined) ctx.api.own.removeSubtype(unitId, HERO)
       },
     },

@@ -2,6 +2,7 @@ import { z } from 'zod/mini'
 
 import lastBastionIcon from '@/assets/faction/last_bastion.svg?raw'
 import { type Ability, declareParam, parseVariantId } from '@/combat'
+import type { SideApi } from '@/combat/abilities-engine/api/ability-api'
 import {
   GALVANIZED,
   galvanizeUnit,
@@ -31,13 +32,13 @@ export const raiseTheStandard: Ability<Params> = {
       default: [] as UnitList,
       source: 'spaceCombatParticipating',
       sort: 'price-desc',
-      filter: v => !parseVariantId(v as UnitType).subtypes.includes(GALVANIZED),
+      filter: v => parseVariantId(v as UnitType).subtypes.length === 0,
     }),
     groundUnitPriority: declareParam({
       default: [] as UnitList,
       source: 'groundCombatParticipating',
       sort: 'price-desc',
-      filter: v => !parseVariantId(v as UnitType).subtypes.includes(GALVANIZED),
+      filter: v => parseVariantId(v as UnitType).subtypes.length === 0,
     }),
   },
   headerUI: 'isEnabled',
@@ -53,8 +54,8 @@ export const raiseTheStandard: Ability<Params> = {
         type: 'unit-list',
         mode: 'order',
         items: ctx.api.own.getUnitVariantsOptions({
-          excludeSubtypes: [GALVANIZED],
           combatMode: ctx.state.combatMode,
+          includeOnlyBaseTypes: true,
         }),
       },
     ]
@@ -89,14 +90,11 @@ export const raiseTheStandard: Ability<Params> = {
   ],
 }
 
-function findTarget(
-  api: { hasUnitType: (t: UnitType) => boolean },
-  priority: UnitList,
-): UnitType | undefined {
+function findTarget(api: SideApi, priority: UnitList): UnitType | undefined {
   for (const [t] of priority) {
     const type = t as UnitType
     if (parseVariantId(type).subtypes.includes(GALVANIZED)) continue
-    if (api.hasUnitType(type)) return type
+    if (api.hasUnitType(type, { includeVariants: true })) return type
   }
   return undefined
 }

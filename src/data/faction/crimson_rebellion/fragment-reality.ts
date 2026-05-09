@@ -8,7 +8,7 @@ import { UnitListNumberSchema } from '@/types'
 type Params = {
   isEnabled: boolean
   uses: number
-  ships: UnitList<number>
+  ships: UnitList<number, UnitBaseType>
 }
 
 export const fragmentReality: Ability<Params> = {
@@ -24,7 +24,7 @@ export const fragmentReality: Ability<Params> = {
   params: {
     isEnabled: false,
     uses: Infinity,
-    ships: declareParam<UnitList<number>>({
+    ships: declareParam({
       default: [],
       source: 'ships',
       defaultItemValue: 0,

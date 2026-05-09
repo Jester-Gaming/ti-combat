@@ -42,7 +42,9 @@ export const preDamaged: Ability<Params> = {
       call: (ctx, params) => {
         for (const [unitType, count] of params.damagedUnits) {
           if (count <= 0) continue
-          const ids = ctx.api.own.getUnits(unitType as UnitType)
+          const ids = ctx.api.own.getUnits(unitType as UnitType, {
+            includeVariants: false,
+          })
           const max = Math.min(count, ids.length)
           for (let i = 0; i < max; i++) {
             ctx.api.own.modifyUnitState(ids[i], { isDamaged: true })

@@ -73,7 +73,12 @@ const chainRollDiceAbility: Ability = {
       isCallable: (_params, _ctx, ids) => ids.length > 0,
       call: ctx => {
         ctx.rollDice([[5, 1]], (branchCtx, hits) => {
-          if (hits[0] > 0 && branchCtx.api.opponent.hasUnitType('CRUISER')) {
+          if (
+            hits[0] > 0 &&
+            branchCtx.api.opponent.hasUnitType('CRUISER', {
+              includeVariants: false,
+            })
+          ) {
             branchCtx.api.opponent.destroyUnits('CRUISER')
           }
         })

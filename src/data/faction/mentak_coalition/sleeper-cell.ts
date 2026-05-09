@@ -60,7 +60,9 @@ export const sleeperCell: Ability<Params> = {
         const toPlace: Partial<Record<UnitBaseType, number>> = {}
         for (const [type, count] of Object.entries(destroyed)) {
           const unitType = type as UnitBaseType
-          const existing = ctx.api.own.countUnits(unitType)
+          const existing = ctx.api.own.countUnits(unitType, {
+            includeVariants: true,
+          })
           const canPlace = Math.max(0, UNIT_LIMITS[unitType] - existing)
           if (canPlace > 0) toPlace[unitType] = Math.min(count, canPlace)
         }

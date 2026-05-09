@@ -53,7 +53,7 @@ export const vosHollow: Ability<Params> = {
           if (
             ownDestroyedShips.has(type) &&
             opponentShipsSet.has(type) &&
-            ctx.api.opponent.hasUnitType(type)
+            ctx.api.opponent.hasUnitType(type, { includeVariants: false })
           )
             return true
         }
@@ -74,7 +74,7 @@ export const vosHollow: Ability<Params> = {
           if (
             ownDestroyedShips.has(type) &&
             opponentShipsSet.has(type) &&
-            ctx.api.opponent.hasUnitType(type)
+            ctx.api.opponent.hasUnitType(type, { includeVariants: false })
           ) {
             ctx.api.opponent.destroyUnits(type)
             return

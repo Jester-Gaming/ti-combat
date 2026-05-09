@@ -6,7 +6,7 @@ import { UnitListNumberSchema } from '@/types'
 
 type Params = {
   strategy: 'IMMEDIATELY' | 'ENOUGH_FLEET_POOL'
-  ships: UnitList<number>
+  ships: UnitList<number, UnitBaseType>
 }
 
 export const overwingZeta: Ability<Params> = {
@@ -24,11 +24,10 @@ export const overwingZeta: Ability<Params> = {
     uses: 1,
     strategy: 'IMMEDIATELY',
     ships: declareParam({
-      default: [] as UnitList<number>,
+      default: [],
       source: 'ships',
       defaultItemValue: 0,
-      filter: t =>
-        (['FLAGSHIP', 'CRUISER', 'DESTROYER'] as UnitBaseType[]).includes(t),
+      filter: t => ['FLAGSHIP', 'CRUISER', 'DESTROYER'].includes(t),
     }),
   },
   headerUI: 'isEnabled',

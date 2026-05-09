@@ -50,6 +50,7 @@ export const exotrireme: Ability<Params> = {
         if (
           ctx.api.opponent.findUnitByPriority(
             ctx.utils.getFlat(params.targetPriority),
+            { includeVariants: false },
           ) === undefined
         ) {
           return false
@@ -60,7 +61,7 @@ export const exotrireme: Ability<Params> = {
         const self = ctx.getUnit()
         const targets = ctx.api.opponent.findUnitByPriority(
           ctx.utils.getFlat(params.targetPriority),
-          { amount: 2 },
+          { includeVariants: false, amount: 2 },
         )
 
         if (targets.length > 0) ctx.api.opponent.destroyUnits(targets)
@@ -106,7 +107,7 @@ function isHighestPrioritySacrifice(
   const myUnitId = ctx.getUnit()
 
   for (const variantId of ctx.utils.getFlat(params.sacrificePriority)) {
-    const units = ctx.api.own.getUnits(variantId)
+    const units = ctx.api.own.getUnits(variantId, { includeVariants: false })
     if (units.length === 0) continue
 
     return units[0] === myUnitId

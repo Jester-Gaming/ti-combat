@@ -1,11 +1,11 @@
 import { z } from 'zod/mini'
 
 import { type Ability, declareParam, parseVariantId } from '@/combat'
-import type { UnitBaseType, UnitList, UnitType } from '@/types'
+import type { UnitBaseType, UnitList } from '@/types'
 import { UnitListSchema } from '@/types'
 
 type Params = {
-  shipPriority: UnitList
+  shipPriority: UnitList<never, UnitBaseType>
   _destroyedShipTypes: UnitBaseType[]
 }
 
@@ -22,7 +22,7 @@ export const salvageOperations: Ability<Params> = {
   params: {
     isEnabled: false,
     uses: Infinity,
-    shipPriority: declareParam<UnitList>({
+    shipPriority: declareParam({
       default: [],
       source: 'ships',
     }),
@@ -70,7 +70,7 @@ export const salvageOperations: Ability<Params> = {
 
         if (params._destroyedShipTypes.length === 0) return false
         if (
-          ctx.api.own.countUnits(ownShips as UnitType[], {
+          ctx.api.own.countUnits(ownShips, {
             includeVariants: true,
           }) === 0
         )

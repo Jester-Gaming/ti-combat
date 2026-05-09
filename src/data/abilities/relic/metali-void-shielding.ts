@@ -52,7 +52,7 @@ function findVoidShieldTarget(ctx: AbilityReadContext): UnitId | undefined {
       continue
     }
 
-    const units = ctx.api.own.getUnits(variant)
+    const units = ctx.api.own.getUnits(variant, { includeVariants: false })
     if (units.length === 0) continue
 
     // Ignore units that don't have sustain because it lost

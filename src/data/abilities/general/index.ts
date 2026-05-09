@@ -15,8 +15,8 @@ export const SHARED_UNIT_ABILITY_KEYS: ReadonlySet<string> = new Set([
 export default [
   settings,
   unitPriority,
-  preDamaged,
   preGalvanized,
+  preDamaged,
   sustainDamage,
   planetaryShield,
   disablePlanetaryShield,

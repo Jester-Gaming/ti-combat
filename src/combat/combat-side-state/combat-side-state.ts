@@ -428,7 +428,7 @@ function findPendingDiceRollGroup(
 }
 
 export interface GetUnitsOptions {
-  includeVariants?: boolean
+  includeVariants: boolean
 }
 
 /**
@@ -604,23 +604,23 @@ export class CombatSideState {
   static findUnitByPriority(
     s: SideStateData,
     priority: UnitType[],
-    participatingTypes?: ReadonlySet<UnitBaseType>,
-    options?: undefined,
+    participatingTypes: ReadonlySet<UnitBaseType> | undefined,
+    options: GetUnitsOptions,
   ): UnitId | undefined
   static findUnitByPriority(
     s: SideStateData,
     priority: UnitType[],
     participatingTypes: ReadonlySet<UnitBaseType> | undefined,
-    options: GetUnitsOptions & { amount?: number },
+    options: GetUnitsOptions & { amount: number },
   ): UnitId[]
   static findUnitByPriority(
     s: SideStateData,
     priority: UnitType[],
-    participatingTypes?: ReadonlySet<UnitBaseType>,
-    options?: GetUnitsOptions & { amount?: number },
+    participatingTypes: ReadonlySet<UnitBaseType> | undefined,
+    options: GetUnitsOptions & { amount?: number },
   ): UnitId | UnitId[] | undefined {
-    const collect = options !== undefined
-    const amount = options?.amount ?? Infinity
+    const collect = options.amount !== undefined
+    const amount = options.amount ?? Infinity
     const result: UnitId[] = []
 
     for (const variantId of priority) {

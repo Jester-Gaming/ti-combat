@@ -58,14 +58,14 @@ export const evelynDelouis: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT_ROUND',
       isCallable: (params, ctx) => {
-        return ctx.api.own.hasUnitType(params.unitType)
+        return ctx.api.own.hasUnitType(params.unitType, {
+          includeVariants: false,
+        })
       },
       call: (ctx, params) => {
-        const exact = ctx.api.own.getUnits(params.unitType)
-        const [unitId] =
-          exact.length > 0
-            ? exact
-            : ctx.api.own.getUnits(params.unitType, { includeVariants: true })
+        const [unitId] = ctx.api.own.getUnits(params.unitType, {
+          includeVariants: false,
+        })
         if (unitId !== undefined) ctx.api.own.addSubtype(unitId, EVELYN)
       },
     },

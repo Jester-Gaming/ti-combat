@@ -20,9 +20,12 @@ export const dunlainReaper: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT_ROUND',
       isCallable: (_params, ctx) => {
-        const mechCount = ctx.api.own.countUnits('MECH')
+        const mechCount = ctx.api.own.countUnits('MECH', {
+          includeVariants: true,
+        })
         return (
-          ctx.api.own.hasUnitType('INFANTRY') && mechCount < UNIT_LIMITS.MECH
+          ctx.api.own.hasUnitType('INFANTRY', { includeVariants: true }) &&
+          mechCount < UNIT_LIMITS.MECH
         )
       },
       call: ctx => {

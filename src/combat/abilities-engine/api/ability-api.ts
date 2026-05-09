@@ -149,7 +149,7 @@ export class SideApi {
     return this.state[this._side].faction
   }
 
-  getUnits(unitType: UnitType, options?: GetUnitsOptions) {
+  getUnits(unitType: UnitType, options: GetUnitsOptions) {
     return CombatSideState.getUnits(this._sideData, unitType, options)
   }
 
@@ -157,11 +157,14 @@ export class SideApi {
     return CombatSideState.hasUnit(this._sideData, unitId)
   }
 
-  hasUnitType(unitType: UnitType, options?: GetUnitsOptions) {
+  hasUnitType(unitType: UnitType, options: GetUnitsOptions) {
     return CombatSideState.hasUnitType(this._sideData, unitType, options)
   }
 
-  countUnits(filter?: UnitType | UnitType[], options?: GetUnitsOptions) {
+  countUnits(
+    filter: UnitType | UnitType[] | undefined,
+    options: GetUnitsOptions,
+  ) {
     return CombatSideState.countUnits(this._sideData, filter, options)
   }
 
@@ -201,14 +204,17 @@ export class SideApi {
     )
   }
 
-  findUnitByPriority(priority: UnitType[]): UnitId | undefined
   findUnitByPriority(
     priority: UnitType[],
-    options: GetUnitsOptions & { amount?: number },
+    options: GetUnitsOptions,
+  ): UnitId | undefined
+  findUnitByPriority(
+    priority: UnitType[],
+    options: GetUnitsOptions & { amount: number },
   ): UnitId[]
   findUnitByPriority(
     priority: UnitType[],
-    options?: GetUnitsOptions & { amount?: number },
+    options: GetUnitsOptions & { amount?: number },
   ): UnitId | UnitId[] | undefined {
     const participating = new Set(
       CombatSideState.getParticipatingUnitTypes(
@@ -216,18 +222,11 @@ export class SideApi {
         this.state.combatMode,
       ),
     )
-    if (options !== undefined) {
-      return CombatSideState.findUnitByPriority(
-        this._sideData,
-        priority,
-        participating,
-        options,
-      )
-    }
     return CombatSideState.findUnitByPriority(
       this._sideData,
       priority,
       participating,
+      options,
     )
   }
 

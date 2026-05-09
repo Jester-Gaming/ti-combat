@@ -19,7 +19,9 @@ export const salaiSaiCorian: Ability = {
         let nonFighterCount = 0
         for (const type of ctx.api.opponent.getParticipatingUnitTypes()) {
           if (type === 'FIGHTER') continue
-          nonFighterCount += ctx.api.opponent.countUnits(type)
+          nonFighterCount += ctx.api.opponent.countUnits(type, {
+            includeVariants: true,
+          })
         }
 
         ctx.api.own.setDiceCount(nonFighterCount, ctx.getUnit())

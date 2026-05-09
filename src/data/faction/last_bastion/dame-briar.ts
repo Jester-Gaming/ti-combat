@@ -72,7 +72,8 @@ export const dameBriar: Ability<Params> = {
           ctx.state.combatMode === 'GROUND'
             ? params.groundUnitType
             : params.spaceUnitType
-        if (!ctx.api.own.hasUnitType(target)) return false
+        if (!ctx.api.own.hasUnitType(target, { includeVariants: false }))
+          return false
         const tokens =
           ctx.api.own.getAbilityConfig('PRE_GALVANIZED')?.reinforcementTokens ??
           0

@@ -46,12 +46,14 @@ export const greyfireMutagen: Ability<Params> = {
         return (
           ctx.api.opponent.findUnitByPriority(
             ctx.utils.getFlat(params.targetPriority),
+            { includeVariants: false },
           ) !== undefined
         )
       },
       call: (ctx, params) => {
         const target = ctx.api.opponent.findUnitByPriority(
           ctx.utils.getFlat(params.targetPriority),
+          { includeVariants: false },
         )
         if (target === undefined) return
         ctx.api.opponent.removeUnits(target)

@@ -46,22 +46,29 @@ export const devotion: Ability<Params> = {
       isCallable: (params, ctx) => {
         const sacrifice = ctx.api.own.findUnitByPriority(
           ctx.utils.getFlat(params.sacrificePriority),
+          { includeVariants: false },
         )
         if (sacrifice === undefined) return false
         return (
           ctx.api.opponent.findUnitByPriority(
             ctx.utils.getFlat(params.targetPriority),
+            { includeVariants: false },
           ) !== undefined
         )
       },
       call: (ctx, params) => {
         const sacrifice = ctx.api.own.findUnitByPriority(
           ctx.utils.getFlat(params.sacrificePriority),
+          { includeVariants: false },
         )
         if (sacrifice === undefined) return
 
         for (const variant of ctx.utils.getFlat(params.targetPriority)) {
-          if (ctx.api.opponent.findUnitByPriority([variant]) !== undefined) {
+          if (
+            ctx.api.opponent.findUnitByPriority([variant], {
+              includeVariants: false,
+            }) !== undefined
+          ) {
             ctx.api.opponent.addHits(1, [parseVariantId(variant).type])
             ctx.api.own.destroyUnits(sacrifice)
             return

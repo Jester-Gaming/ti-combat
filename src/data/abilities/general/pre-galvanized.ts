@@ -8,6 +8,7 @@ import {
   parseVariantId,
 } from '@/combat'
 import type {
+  UnitBaseType,
   UnitId,
   UnitList,
   UnitStats,
@@ -17,7 +18,7 @@ import type {
 import { UnitListNumberSchema } from '@/types'
 
 type Params = {
-  galvanizedUnits: UnitList<number>
+  galvanizedUnits: UnitList<number, UnitBaseType>
   reinforcementTokens: number
 }
 
@@ -48,53 +49,47 @@ export const preGalvanized: Ability<Params> = {
     isEnabled: true,
     uses: Infinity,
     galvanizedUnits: declareParam({
-      default: [] as UnitList<number>,
+      default: [],
       defaultItemValue: 0,
       source: 'units',
       sort: 'normal-desc',
-      filter: v => !parseVariantId(v as UnitType).subtypes.includes(GALVANIZED),
+      filter: v => parseVariantId(v).subtypes.length === 0,
     }),
     reinforcementTokens: 7,
   },
   declareSubtype: params => {
     const subtypes: DeclaredSubtype[] = []
     for (const [unitType, count] of params.galvanizedUnits) {
-      subtypes.push(declareGalvanizeUnits(unitType as UnitType, count > 0))
+      subtypes.push(declareGalvanizeUnits(unitType, count > 0))
     }
     return subtypes
   },
-  uiConfig: ctx => {
-    const items = ctx.api.own.getUnitVariantsOptions({
-      excludeSubtypes: [GALVANIZED],
-      includeNonParticipating: true,
-    })
-
-    const tokens = {
+  uiConfig: ctx => [
+    {
       key: 'reinforcementTokens' as const,
       label: 'Tokens in reinforcement',
       type: 'number' as const,
       min: 0,
-    }
-
-    return items.length > 0
-      ? [
-          tokens,
-          {
-            key: 'galvanizedUnits' as const,
-            type: 'unit-list' as const,
-            mode: 'number' as const,
-            items,
-          },
-        ]
-      : [tokens]
-  },
+    },
+    {
+      key: 'galvanizedUnits' as const,
+      type: 'unit-list' as const,
+      mode: 'number' as const,
+      items: ctx.api.own.getUnitVariantsOptions({
+        includeOnlyBaseTypes: true,
+        includeNonParticipating: true,
+      }),
+    },
+  ],
   invoke: [
     {
       timing: 'PREPARE',
       call: (ctx, params) => {
         for (const [unitType, count] of params.galvanizedUnits) {
           if (count <= 0) continue
-          const ids = ctx.api.own.getUnits(unitType as UnitType)
+          const ids = ctx.api.own.getUnits(unitType, {
+            includeVariants: false,
+          })
           const max = Math.min(count, ids.length)
           for (let i = 0; i < max; i++) {
             galvanizeUnit(ctx, ids[i])

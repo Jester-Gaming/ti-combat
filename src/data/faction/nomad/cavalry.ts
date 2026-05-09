@@ -88,14 +88,15 @@ export const cavalry: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT',
       isCallable: (params, ctx) => {
-        return ctx.api.own.hasUnitType(params.unitType)
+        return ctx.api.own.hasUnitType(params.unitType, {
+          includeVariants: false,
+        })
       },
       call: (ctx, params) => {
-        const exact = ctx.api.own.getUnits(params.unitType)
-        const [unitId] =
-          exact.length > 0
-            ? exact
-            : ctx.api.own.getUnits(params.unitType, { includeVariants: true })
+        const [unitId] = ctx.api.own.getUnits(params.unitType, {
+          includeVariants: false,
+        })
+
         if (unitId !== undefined) ctx.api.own.addSubtype(unitId, CAVALRY)
       },
     },
@@ -104,7 +105,9 @@ export const cavalry: Ability<Params> = {
       system: true,
       call: (ctx, params) => {
         const variantId = makeVariantId(params.unitType, [CAVALRY])
-        const [unitId] = ctx.api.own.getUnits(variantId)
+        const [unitId] = ctx.api.own.getUnits(variantId, {
+          includeVariants: false,
+        })
         if (unitId !== undefined) ctx.api.own.removeSubtype(unitId, CAVALRY)
       },
     },

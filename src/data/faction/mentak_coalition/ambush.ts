@@ -52,7 +52,9 @@ export const ambush: Ability<Params> = {
         const selected: UnitId[] = []
 
         for (const variantKey of ctx.utils.getFlat(params.attackerPriority)) {
-          for (const uid of ctx.api.own.getUnits(variantKey)) {
+          for (const uid of ctx.api.own.getUnits(variantKey, {
+            includeVariants: false,
+          })) {
             if (selected.length >= MAX_SHIPS) break
             selected.push(uid)
           }

@@ -34,7 +34,9 @@ export const assaultCannon: Ability<Params> = {
       timing: 'START_OF_COMBAT',
       isCallable: (_, ctx) => {
         const { nonFighterShips } = ctx.api.own.getAbilityConfig('SETTINGS')
-        const nonFighterCount = ctx.api.own.countUnits(nonFighterShips)
+        const nonFighterCount = ctx.api.own.countUnits(nonFighterShips, {
+          includeVariants: true,
+        })
         if (nonFighterCount < 3) return false
 
         return true
@@ -42,6 +44,7 @@ export const assaultCannon: Ability<Params> = {
       call: (ctx, params) => {
         const target = ctx.api.opponent.findUnitByPriority(
           ctx.utils.getFlat(params.targetPriority),
+          { includeVariants: false },
         )!
 
         ctx.api.opponent.destroyUnits(target)
