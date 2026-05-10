@@ -69,13 +69,13 @@ describe.forEachSide('DUNLAIN_REAPER', () => {
     expect(t.abilityLog('DUNLAIN_REAPER')).toHaveLength(0)
   })
 
-  it('does not fire when mech limit (4) is reached', () => {
+  it('does not fire when no mechs are available in reinforcements', () => {
     const t = combatTest({
       mode: 'GROUND',
       attacker: {
         faction: 'BARONY_OF_LETNEV',
         units: { MECH: 4, INFANTRY: 2 },
-        abilities: { DUNLAIN_REAPER: { uses: 1 } },
+        abilities: { DUNLAIN_REAPER: { uses: 1, availableMechs: 0 } },
       },
       defender: {
         faction: 'ARBOREC',
@@ -89,5 +89,50 @@ describe.forEachSide('DUNLAIN_REAPER', () => {
     expect(t.attacker.units.MECH).toHaveLength(4)
     expect(t.attacker.units.INFANTRY).toHaveLength(2)
     expect(t.abilityLog('DUNLAIN_REAPER')).toHaveLength(0)
+  })
+
+  it('decrements availableMechs after each deploy', () => {
+    const t = combatTest({
+      mode: 'GROUND',
+      attacker: {
+        faction: 'BARONY_OF_LETNEV',
+        units: { INFANTRY: 3 },
+        abilities: { DUNLAIN_REAPER: { uses: 3, availableMechs: 2 } },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { INFANTRY: 3 },
+      },
+    })
+
+    t.advanceTo('GROUND_COMBAT')
+    t.advanceRound()
+    t.advanceRound()
+    t.advanceRound()
+
+    expect(t.attacker.units.MECH).toHaveLength(2)
+    expect(t.attacker.units.INFANTRY).toHaveLength(1)
+    expect(t.abilityLog('DUNLAIN_REAPER')).toHaveLength(2)
+  })
+
+  it('refunds availableMechs when own mechs are destroyed', () => {
+    const t = combatTest({
+      mode: 'GROUND',
+      attacker: {
+        faction: 'BARONY_OF_LETNEV',
+        units: { MECH: 1, INFANTRY: 1 },
+        abilities: { DUNLAIN_REAPER: { uses: 1, availableMechs: 0 } },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { INFANTRY: 4 },
+      },
+    })
+
+    t.advanceTo('GROUND_COMBAT')
+    t.advanceRound({ attacker: 3 })
+
+    expect(t.attacker.units.MECH).toBeUndefined()
+    expect(t.state.attacker.abilities.DUNLAIN_REAPER?.availableMechs).toBe(1)
   })
 })
