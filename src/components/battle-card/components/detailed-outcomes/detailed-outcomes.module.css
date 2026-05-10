@@ -6,6 +6,13 @@
   background: var(--color-background-surface);
 }
 
+.modeRow {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--color-border-main);
+}
+
 .detailedTable {
   width: 100%;
   border-collapse: collapse;

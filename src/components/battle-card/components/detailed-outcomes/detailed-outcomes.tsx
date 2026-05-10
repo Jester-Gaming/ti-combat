@@ -1,6 +1,8 @@
 import { clsx } from 'clsx'
+import { useMemo, useState } from 'react'
 
 import type { CombatOutcome, SurvivorSide } from '@/combat'
+import { ToggleGroup } from '@/components/ui/toggle-group'
 import { UNIT_SHORT_NAMES } from '@/constants/units'
 import type { UnitBaseType } from '@/types'
 
@@ -15,16 +17,44 @@ interface UnitPriority {
 interface DetailedOutcomesProps {
   outcomes: CombatOutcome[]
   unitPriority: UnitPriority
+  participatingTypes: UnitPriority
 }
+
+type DisplayMode = 'all' | 'participating'
+
+const MODE_OPTIONS = [
+  { value: 'all' as const, label: 'All' },
+  { value: 'participating' as const, label: 'Participating' },
+]
 
 export function DetailedOutcomes({
   outcomes,
   unitPriority,
+  participatingTypes,
 }: DetailedOutcomesProps) {
-  const sorted = sortOutcomes(mergeOutcomes(outcomes))
+  const [mode, setMode] = useState<DisplayMode>('all')
+
+  const sorted = useMemo(() => {
+    const filtered =
+      mode === 'participating'
+        ? outcomes.map(o => ({
+            ...o,
+            attacker: filterSide(o.attacker, participatingTypes.attacker),
+            defender: filterSide(o.defender, participatingTypes.defender),
+          }))
+        : outcomes
+    return sortOutcomes(mergeOutcomes(filtered))
+  }, [outcomes, mode, participatingTypes])
 
   return (
     <div className={styles.detailedPanel}>
+      <div className={styles.modeRow}>
+        <ToggleGroup<DisplayMode>
+          options={MODE_OPTIONS}
+          value={mode}
+          onChange={setMode}
+        />
+      </div>
       <table className={styles.detailedTable}>
         <thead>
           <tr className={styles.detailedHeader}>
@@ -107,6 +137,20 @@ function SurvivorList({
       ))}
     </>
   )
+}
+
+function filterSide(
+  side: SurvivorSide,
+  participating: readonly string[],
+): SurvivorSide {
+  if (participating.length === 0) return {}
+  const allowed = new Set(participating)
+  const result: SurvivorSide = {}
+  for (const [base, units] of Object.entries(side)) {
+    if (!units || !allowed.has(base)) continue
+    result[base] = units
+  }
+  return result
 }
 
 /** Merge outcomes that show the same survivors on both sides (same winner,

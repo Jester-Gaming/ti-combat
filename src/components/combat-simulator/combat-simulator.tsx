@@ -101,6 +101,19 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stateData])
 
+  const participatingTypes = useMemo(() => {
+    const key =
+      combatMode === 'GROUND'
+        ? 'groundCombatParticipating'
+        : 'spaceCombatParticipating'
+    const read = (side: 'attacker' | 'defender'): string[] => {
+      const list = abilities[side]['SETTINGS']?.[key]
+      return Array.isArray(list) ? (list as string[]) : []
+    }
+    return { attacker: read('attacker'), defender: read('defender') }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stateData])
+
   const combatResult = useMemo(() => {
     if (!outcomes) return null
     let attackerWin = 0
@@ -201,6 +214,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
           combatResult={combatResult}
           outcomes={outcomes}
           unitPriority={unitPriority}
+          participatingTypes={participatingTypes}
           isComputing={isComputing}
           combatMode={combatMode}
           onCombatModeChange={setCombatMode}

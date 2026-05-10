@@ -60,6 +60,7 @@ interface BattleCardProps {
   combatResult: CombatResult | null
   outcomes: CombatOutcome[] | null
   unitPriority: { attacker: string[]; defender: string[] }
+  participatingTypes: { attacker: string[]; defender: string[] }
   isComputing?: boolean
   combatMode: CombatMode
   onCombatModeChange: (mode: CombatMode) => void
@@ -87,6 +88,7 @@ export function BattleCard({
   combatResult,
   outcomes,
   unitPriority,
+  participatingTypes,
   isComputing,
   combatMode,
   onCombatModeChange,
@@ -195,6 +197,7 @@ export function BattleCard({
         result={combatResult}
         outcomes={outcomes}
         unitPriority={unitPriority}
+        participatingTypes={participatingTypes}
         isComputing={isComputing}
       />
     </GlassCard>

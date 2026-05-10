@@ -21,6 +21,7 @@ interface CombatResultBarProps {
   result: CombatResult | null
   outcomes: CombatOutcome[] | null
   unitPriority: UnitPriority
+  participatingTypes: UnitPriority
   isComputing?: boolean
 }
 
@@ -28,6 +29,7 @@ export function CombatResultBar({
   result,
   outcomes,
   unitPriority,
+  participatingTypes,
   isComputing,
 }: CombatResultBarProps) {
   const [showDetailed, setShowDetailed] = useState(false)
@@ -61,7 +63,11 @@ export function CombatResultBar({
       </button>
 
       {showDetailed && outcomes && outcomes.length > 0 && (
-        <DetailedOutcomes outcomes={outcomes} unitPriority={unitPriority} />
+        <DetailedOutcomes
+          outcomes={outcomes}
+          unitPriority={unitPriority}
+          participatingTypes={participatingTypes}
+        />
       )}
     </div>
   )
