@@ -14,7 +14,6 @@ export const temporalCommandSuite: Ability<Params> = {
   name: 'Temporal Command Suite',
   description:
     "After any player's agent becomes exhausted, you may exhaust this card to ready that agent; if you ready another player's agent, you may perform a transaction with that player.",
-  allowExternal: true,
   paramsSchema: z.object({ agentKey: z.string() }),
   params: {
     isEnabled: false,
@@ -36,6 +35,7 @@ export const temporalCommandSuite: Ability<Params> = {
   invoke: [
     {
       timing: 'PREPARE',
+      external: true,
       isCallable: (params, ctx) =>
         params.agentKey !== '' && findAgent(ctx, params.agentKey) !== undefined,
       call: (ctx, params) => {

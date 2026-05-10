@@ -150,6 +150,29 @@ function passesInvoke(
   return true
 }
 
+/** True when the ability declares any external invoke. Cached on the ability
+ *  (frozen objects are tolerant of an own non-enumerable property; use a
+ *  WeakMap to avoid mutating the object). */
+const hasExternalInvokeCache = new WeakMap<Ability, boolean>()
+function hasExternalInvoke(ability: Ability): boolean {
+  const cached = hasExternalInvokeCache.get(ability)
+  if (cached !== undefined) return cached
+  const value = ability.invoke.some(inv => inv.external === true)
+  hasExternalInvokeCache.set(ability, value)
+  return value
+}
+
+/** When this side doesn't own an externalizable ability (cross-faction usage),
+ *  drop non-external invokes — they belong to the owner's side only. */
+function passesCrossFactionFilter(
+  invoke: AbilityInvoke,
+  candidate: AbilityCandidate,
+): boolean {
+  if (candidate.ownerFaction !== undefined) return true
+  if (!hasExternalInvoke(candidate.ability)) return true
+  return invoke.external === true
+}
+
 function buildEntry(
   ability: Ability,
   invoke: AbilityInvoke,
@@ -808,13 +831,13 @@ export class AbilitiesEngine {
       })
     }
 
-    // 3. allowExternal unit abilities whose unit is not on the field —
+    // 3. Externalizable unit abilities whose unit is not on the field —
     //    registered as config-sourced so the ability still runs (e.g. a
     //    flagship ability active when the flagship is deployed elsewhere).
     //    Ability `isCallable` must tolerate `ctx.unitSource === undefined`.
     for (const ability of abilities) {
       if (!unitAbilityKeys.has(ability.key)) continue
-      if (!ability.allowExternal) continue
+      if (!hasExternalInvoke(ability)) continue
       if (collectedUnitKeys.has(ability.key)) continue
       if (ability.context && ability.context !== state.combatMode) continue
       candidates.push({
@@ -920,6 +943,13 @@ export class AbilitiesEngine {
 
       if (result === 'parked') return
 
+      if (result === 'ran-stay') {
+        consecutiveSkips = 0
+        // External invoke fired by a non-owner side — don't consume the
+        // alternation slot; dispatch the next invoke on the same side.
+        continue
+      }
+
       if (result === 'ran') {
         consecutiveSkips = 0
       } else {
@@ -953,7 +983,7 @@ export class AbilitiesEngine {
       attacker: CombatSide
       defender: CombatSide
     },
-  ): 'ran' | 'skipped' | 'parked' {
+  ): 'ran' | 'ran-stay' | 'skipped' | 'parked' {
     const state = this._combatState.data
     const step = this._combatState.currentStep
     const phase =
@@ -1049,12 +1079,20 @@ export class AbilitiesEngine {
           // PREPARE or a test-driven `runAbilities`) there's no outer step
           // to come back to. We still pre-stamp for branch propagation;
           // the final step.frame is cleared on non-parked completion.
+          // External invokes fired by a non-owner side don't consume the
+          // alternation slot — the loop stays on that side for the next
+          // dispatch. `ownerFaction === undefined` means this side doesn't
+          // own the ability; combined with `invoke.external` that's the
+          // cross-faction usage case.
+          const stayOnSide =
+            invoke.external === true && ownerFaction === undefined
+
           const frameTracker = step ? cloneTracker(tracker) : undefined
           if (step && frameTracker) {
             markTracker(frameTracker)
             step.frame = {
               tracker: frameTracker,
-              currentSide: getOpponentSide(side),
+              currentSide: stayOnSide ? side : getOpponentSide(side),
               consecutiveSkips: 0,
             }
           }
@@ -1101,7 +1139,8 @@ export class AbilitiesEngine {
             step !== undefined && this._combatState.currentStep !== step
 
           if (!parked && step) step.frame = undefined
-          return parked ? 'parked' : 'ran'
+          if (parked) return 'parked'
+          return stayOnSide ? 'ran-stay' : 'ran'
         }
       } finally {
         if (priorOpponentSide !== undefined) {
@@ -1130,6 +1169,7 @@ export class AbilitiesEngine {
         if (!mergedParams) continue
         for (const invoke of candidate.ability.invoke) {
           if (!passesInvoke(invoke, mergedParams)) continue
+          if (!passesCrossFactionFilter(invoke, candidate)) continue
           pushInvokeEntry(
             sideMap,
             buildEntry(
@@ -1203,6 +1243,7 @@ export class AbilitiesEngine {
       if (!mergedParams) continue
       for (const invoke of candidate.ability.invoke) {
         if (!passesInvoke(invoke, mergedParams)) continue
+        if (!passesCrossFactionFilter(invoke, candidate)) continue
         if (!pushed) {
           this._combatState.ensureOwnInvokes()
           pushed = true
@@ -1320,6 +1361,7 @@ export class AbilitiesEngine {
     let pushed = false
     for (const invoke of candidate.ability.invoke) {
       if (!passesInvoke(invoke, mergedParams)) continue
+      if (!passesCrossFactionFilter(invoke, candidate)) continue
       pushInvokeEntry(
         owned,
         buildEntry(

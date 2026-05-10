@@ -63,6 +63,7 @@ export const dameBriar: Ability<Params> = {
   invoke: [
     {
       timing: 'WHEN_DESTROY',
+      external: true,
       isCallable: (params, ctx, ids) => {
         const anyOwnDestroyed = ids.some(
           id => !!ctx.api.own.getUnitVariantKey(id),

@@ -16,6 +16,7 @@ export const brotherMilor: Ability = {
     {
       timing: 'AFTER_DESTROY',
       context: ['SPACE_COMBAT', 'GROUND_COMBAT'],
+      external: true,
       isCallable: (_params, ctx, ids) =>
         ids.some(id => !!ctx.api.own.getUnitVariantKey(id)),
       call: ctx => {

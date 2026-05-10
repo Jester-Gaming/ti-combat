@@ -189,7 +189,7 @@ export interface AbilityReadContext {
    *  Lets helpers like `excludeSubtypeSource: [ctx.this.key]` stay generic. */
   readonly this: Ability
   /** UnitId the ability is attached to, or `undefined` for config-sourced
-   *  candidates (including the allowExternal-no-unit fallback). */
+   *  candidates (including the external-invoke no-unit fallback). */
   readonly unitSource: UnitId | undefined
   /** Get the UnitId this ability is attached to. Throws if called from a non-unit ability. */
   getUnit(): UnitId
@@ -223,7 +223,7 @@ export interface AbilityCallContext {
   /** Run abilities for the given timing inline during this call */
   trigger<K extends AbilityTiming>(name: K, context: TimingContextMap[K]): void
   /** UnitId the ability is attached to, or `undefined` for config-sourced
-   *  candidates (including the allowExternal-no-unit fallback). */
+   *  candidates (including the external-invoke no-unit fallback). */
   readonly unitSource: UnitId | undefined
   /** Get the UnitId this ability is attached to. Throws if called from a non-unit ability. */
   getUnit(): UnitId
@@ -292,6 +292,12 @@ type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
    *  (e.g. CLEANUP_ROUND after START_OF_COMBAT_ROUND setup) so the pair counts
    *  as a single use. Rely on `isCallable` to gate firing. Default: false. */
   system?: boolean
+  /** When true, this invoke fires for sides that don't own the ability
+   *  (cross-faction usage). Sides running an ability they don't own dispatch
+   *  ONLY external invokes; non-external ones are skipped. External invokes
+   *  fired on a non-owner side don't consume the alternation slot — the
+   *  loop stays on that side and dispatches its next invoke. */
+  external?: boolean
 } & (TimingContextMap[T] extends void
   ? {
       // Void timings (PREPARE, START_OF_COMBAT, BEFORE_DICE_ROLL, etc.)
@@ -405,8 +411,6 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   context?: CombatMode
   /** When true, both sides share identical config. Changing params on one side mirrors to the other. */
   sync?: boolean
-  /** When true, this unit ability can fire as a config ability when its source unit is not on the field. */
-  allowExternal?: boolean
   /** Abilities sharing the same exclusiveGroup are mutually exclusive — enabling one disables others in the group. */
   exclusiveGroup?: string
   /** Called when a user changes a param. Can modify other params in response.

@@ -57,6 +57,7 @@ export const evelynDelouis: Ability<Params> = {
   invoke: [
     {
       timing: 'START_OF_COMBAT_ROUND',
+      external: true,
       isCallable: (params, ctx) => {
         return ctx.api.own.hasUnitType(params.unitType, {
           includeVariants: false,
@@ -72,6 +73,7 @@ export const evelynDelouis: Ability<Params> = {
     {
       timing: 'CLEANUP_ROUND',
       system: true,
+      external: true,
       isCallable: (params, ctx) => {
         const variantId = makeVariantId(params.unitType, [EVELYN])
         return (

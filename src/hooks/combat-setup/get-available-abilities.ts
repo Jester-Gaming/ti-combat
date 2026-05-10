@@ -24,6 +24,10 @@ function tag(
   return abilities.map(ability => ({ ability, slot }))
 }
 
+function hasExternalInvoke(ability: Ability): boolean {
+  return ability.invoke.some(inv => inv.external === true)
+}
+
 const FACTION_KEY_TO_SLOT = {
   faction: 'FACTION_ABILITY',
   technology: 'FACTION_TECHNOLOGY',
@@ -53,12 +57,30 @@ const allCommanderAbilities = Object.values(factions).flatMap(
   faction => faction?.abilities?.commander ?? [],
 ) as Ability[]
 
+// Keys already displayed via dedicated slots — agents/commanders/promissories
+// have their own cross-faction pools, generic abilities (technology, action
+// cards, etc.) live in baseRegistered. Such abilities must NOT also appear
+// in the catch-all OTHER slot, even if their invokes are marked external.
+const alreadyDisplayedKeys = new Set<string>([
+  ...general.map(a => a.key),
+  ...advanced.map(a => a.key),
+  ...environment.map(a => a.key),
+  ...agenda.map(a => a.key),
+  ...technology.map(a => a.key),
+  ...actionCard.map(a => a.key),
+  ...relic.map(a => a.key),
+  ...allPromissoryAbilities.map(a => a.key),
+  ...allAgentAbilities.map(a => a.key),
+  ...allCommanderAbilities.map(a => a.key),
+])
+
 const allExternalAbilities: RegisteredAbility[] = []
 {
   const seen = new Set<string>()
   const addIfExternal = (ability: Ability, faction: Faction) => {
-    if (!ability.allowExternal) return
+    if (!hasExternalInvoke(ability)) return
     if (seen.has(ability.key)) return
+    if (alreadyDisplayedKeys.has(ability.key)) return
     if (!ability.headerUI && !ability.uiConfig) return
     seen.add(ability.key)
     allExternalAbilities.push({
@@ -264,25 +286,19 @@ export function getAvailableAbilities(
   const faction = factions[factionKey]
   const ownedKeys = getFactionOwnedAbilityKeys(factionKey)
 
-  const base: RegisteredAbility[] = baseRegistered
-    .filter(reg => {
-      const a = reg.ability
-      if (a.side && a.side !== side) return false
-      if (isNeutral) {
-        if (NEUTRAL_HIDDEN_SLOTS.has(reg.slot)) return false
-        if (a.key === 'FLEET_POOL') return false
-        return true
-      }
-      if (a.allowExternal && ownedKeys.has(a.key)) return false
+  const base: RegisteredAbility[] = baseRegistered.filter(reg => {
+    const a = reg.ability
+    if (a.side && a.side !== side) return false
+    if (isNeutral) {
+      if (NEUTRAL_HIDDEN_SLOTS.has(reg.slot)) return false
+      if (a.key === 'FLEET_POOL') return false
       return true
-    })
-    .map(reg => {
-      const a = reg.ability
-      if (a.allowExternal && !ownedKeys.has(a.key)) {
-        return { ability: a, slot: 'OTHER' as const }
-      }
-      return reg
-    })
+    }
+    // OTHER is the catch-all for cross-faction external display — drop
+    // entries the running faction already exposes via its own routes.
+    if (reg.slot === 'OTHER' && ownedKeys.has(a.key)) return false
+    return true
+  })
 
   const factionAbilities: RegisteredAbility[] = []
   if (faction?.abilities) {

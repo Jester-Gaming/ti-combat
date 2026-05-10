@@ -38,6 +38,7 @@ export const vosHollow: Ability<Params> = {
   invoke: [
     {
       timing: 'AFTER_DESTROY',
+      external: true,
       isCallable: (params, ctx, ids) => {
         const { ships: ownShips } = ctx.api.own.getAbilityConfig('SETTINGS')
         const { ships: opponentShips } =

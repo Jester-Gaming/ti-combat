@@ -10,7 +10,6 @@ export const dynamo: Ability<Params> = {
   name: 'Dynamo',
   description:
     "After any player's unit in this system or an adjacent system uses Sustain Damage, you may spend 2 influence to repair that unit.",
-  allowExternal: true,
   params: {
     isEnabled: true,
     uses: 0,
@@ -19,6 +18,7 @@ export const dynamo: Ability<Params> = {
   invoke: [
     {
       timing: 'AFTER_SUSTAIN_DAMAGE_USE',
+      external: true,
       isCallable: (_, ctx, unitId) => ctx.api.own.hasUnit(unitId),
       call: (ctx, _params, unitId) => {
         ctx.api.own.modifyUnitState(unitId, { isDamaged: false })

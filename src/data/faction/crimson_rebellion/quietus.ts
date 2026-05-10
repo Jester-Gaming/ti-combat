@@ -7,7 +7,6 @@ export const quietus: Ability = {
   name: 'Quietus',
   description:
     "While this unit is in a system that contains an active breach, other players' units in systems with active breaches lose all of their unit abilities.",
-  allowExternal: true,
   sync: true,
   params: {
     isEnabled: false,
@@ -17,6 +16,7 @@ export const quietus: Ability = {
   invoke: [
     {
       timing: 'PREPARE',
+      external: true,
       call: ctx => {
         if (ctx.isOwner()) return
         for (const ability of UNIT_ABILITIES) {
