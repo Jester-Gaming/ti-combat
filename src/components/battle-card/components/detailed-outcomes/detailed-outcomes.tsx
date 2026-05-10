@@ -21,7 +21,7 @@ export function DetailedOutcomes({
   outcomes,
   unitPriority,
 }: DetailedOutcomesProps) {
-  const sorted = sortOutcomes(outcomes)
+  const sorted = sortOutcomes(mergeOutcomes(outcomes))
 
   return (
     <div className={styles.detailedPanel}>
@@ -107,6 +107,41 @@ function SurvivorList({
       ))}
     </>
   )
+}
+
+/** Merge outcomes that show the same survivors on both sides (same winner,
+ *  same per-variant healthy/damaged counts) — they only differ in internal
+ *  ability resolution, which the table doesn't render. */
+function mergeOutcomes(outcomes: CombatOutcome[]): CombatOutcome[] {
+  const merged = new Map<string, CombatOutcome>()
+  for (const outcome of outcomes) {
+    const key = `${outcome.winner}|${sideSignature(outcome.attacker)}|${sideSignature(outcome.defender)}`
+    const existing = merged.get(key)
+    if (existing) {
+      existing.probability += outcome.probability
+    } else {
+      merged.set(key, { ...outcome })
+    }
+  }
+  return [...merged.values()]
+}
+
+function sideSignature(side: SurvivorSide): string {
+  const groups = new Map<string, { healthy: number; damaged: number }>()
+  for (const [base, units] of Object.entries(side)) {
+    if (!units) continue
+    for (const u of units) {
+      const variantKey = u.subtypes ? `${base}:${u.subtypes.join(',')}` : base
+      const g = groups.get(variantKey) ?? { healthy: 0, damaged: 0 }
+      if (u.isDamaged) g.damaged++
+      else g.healthy++
+      groups.set(variantKey, g)
+    }
+  }
+  return [...groups.entries()]
+    .map(([k, c]) => `${k}:${c.healthy}:${c.damaged}`)
+    .sort()
+    .join(',')
 }
 
 /** Sort outcomes from best to worst for attacker */
