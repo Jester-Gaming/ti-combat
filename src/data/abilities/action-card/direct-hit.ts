@@ -19,6 +19,9 @@ export const directHit: Ability<Params> = {
       source: 'ships',
       side: 'opponent',
       defaultItemValue: true,
+      filter: {
+        combatMode: 'SPACE',
+      },
     }),
   },
   headerUI: 'uses',
@@ -27,7 +30,7 @@ export const directHit: Ability<Params> = {
       key: 'targets' as const,
       type: 'unit-list' as const,
       mode: 'checkbox' as const,
-      items: ctx.api.opponent.getUnitVariantsOptions({ combatMode: 'SPACE' }),
+      items: ctx.api.opponent.getUnitVariantsOptions('targets'),
     },
   ],
   invoke: [

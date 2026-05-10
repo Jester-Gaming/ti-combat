@@ -1,8 +1,8 @@
 import { z } from 'zod/mini'
 
 import yinBrotherhoodIcon from '@/assets/faction/yin_brotherhood.svg?raw'
-import { type Ability, declareParam, parseVariantId } from '@/combat'
-import type { UnitList, UnitType } from '@/types'
+import { type Ability, declareParam } from '@/combat'
+import type { UnitList } from '@/types'
 import { UnitListBooleanSchema } from '@/types'
 
 type Params = {
@@ -28,7 +28,7 @@ export const greyfireMutagen: Ability<Params> = {
       side: 'opponent',
       defaultItemValue: true,
       sort: 'price-desc',
-      filter: id => parseVariantId(id as UnitType).type === 'INFANTRY',
+      filter: { include: ['INFANTRY'], combatMode: 'GROUND' },
     }),
   },
   headerUI: 'isEnabled',
@@ -62,10 +62,7 @@ export const greyfireMutagen: Ability<Params> = {
     },
   ],
   uiConfig: ctx => {
-    const items = ctx.api.opponent.getUnitVariantsOptions({
-      combatMode: 'GROUND',
-      include: ['INFANTRY'],
-    })
+    const items = ctx.api.opponent.getUnitVariantsOptions('targetPriority')
 
     if (items.length <= 1) {
       return []

@@ -12,7 +12,11 @@ import type {
   UnitVariantId,
 } from '@/types'
 
-import type { DeclaredSubtype, DicePool } from '../abilities-engine/types'
+import type {
+  DeclaredSubtype,
+  DicePool,
+  ParamFilter,
+} from '../abilities-engine/types'
 import type {
   CombatMode,
   CombatStateData,
@@ -50,6 +54,88 @@ const CATEGORY_TO_SETTINGS_KEY: Record<UnitCategory, string> = {
 
 /** Shared empty destroyed record to avoid per-call {} allocation */
 const EMPTY_DESTROYED: Record<string, UnitId[]> = {}
+
+/** Pre-filter declared subtypes by `excludeSubtypeSource` and
+ *  `includeNonParticipating`. Shared between runtime variant queries
+ *  (`getUnitVariants`) and reconcile (consumer-param valid-list build). */
+export function filterDeclaredSubtypes(
+  allSubtypes: readonly DeclaredSubtype[],
+  filter?: Pick<
+    ParamFilter,
+    'excludeSubtypeSource' | 'includeNonParticipating'
+  >,
+): DeclaredSubtype[] {
+  const excludedSources = filter?.excludeSubtypeSource
+    ? new Set<string>(filter.excludeSubtypeSource)
+    : undefined
+  let result = excludedSources
+    ? allSubtypes.filter(
+        d => d.source === undefined || !excludedSources.has(d.source),
+      )
+    : [...allSubtypes]
+  if (!filter?.includeNonParticipating) {
+    result = result.filter(d => d.participating !== false)
+  }
+  return result
+}
+
+/** Apply the post-expansion variant filters
+ *  (`include`, `exclude`, `excludeSubtypes`, `includeSubtypes`).
+ *  Pure on the variant list; shared between `getUnitVariants` and reconcile. */
+export function applyVariantPostFilter(
+  variants: readonly string[],
+  filter?: Pick<
+    ParamFilter,
+    'include' | 'exclude' | 'excludeSubtypes' | 'includeSubtypes'
+  >,
+): string[] {
+  if (!filter) return [...variants]
+  const includeParsed = filter.include?.map(v => parseVariantId(v))
+  const excludeParsed = filter.exclude?.map(v => parseVariantId(v))
+  const excludeSubtypeSet = filter.excludeSubtypes
+    ? new Set<string>(filter.excludeSubtypes)
+    : undefined
+  const includeSubtypeSet =
+    filter.includeSubtypes && filter.includeSubtypes.length > 0
+      ? new Set<string>(filter.includeSubtypes)
+      : undefined
+  const matches = (
+    variantParsed: { type: UnitBaseType; subtypes: UnitVariantId[] },
+    entry: { type: UnitBaseType; subtypes: UnitVariantId[] },
+  ) => {
+    if (variantParsed.type !== entry.type) return false
+    if (entry.subtypes.length === 0) return true
+    const vSubs = new Set<string>(variantParsed.subtypes)
+    return entry.subtypes.every(s => vSubs.has(s))
+  }
+
+  let filtered: string[] = [...variants]
+  if (includeParsed && includeParsed.length > 0) {
+    filtered = filtered.filter(v => {
+      const p = parseVariantId(v as UnitType)
+      return includeParsed.some(e => matches(p, e))
+    })
+  }
+  if (excludeParsed && excludeParsed.length > 0) {
+    filtered = filtered.filter(v => {
+      const p = parseVariantId(v as UnitType)
+      return !excludeParsed.some(e => matches(p, e))
+    })
+  }
+  if (excludeSubtypeSet) {
+    filtered = filtered.filter(v => {
+      const { subtypes } = parseVariantId(v as UnitType)
+      return !subtypes.some(sub => excludeSubtypeSet.has(sub))
+    })
+  }
+  if (includeSubtypeSet) {
+    filtered = filtered.filter(v => {
+      const { subtypes } = parseVariantId(v as UnitType)
+      return subtypes.some(sub => includeSubtypeSet.has(sub))
+    })
+  }
+  return filtered
+}
 
 /** Merge an ability's base config with its live-overlay config. */
 function mergeConfig(
@@ -833,33 +919,14 @@ export class CombatSideState {
   static getUnitVariants(
     s: SideStateData,
     mode: CombatMode,
-    filter?: {
-      include?: UnitType[]
-      exclude?: UnitType[]
-      excludeSubtypes?: string[]
-      excludeSubtypeSource?: string[]
-      includeSubtypes?: string[]
-      combatMode?: CombatMode
-      includeNonParticipating?: boolean
-      includeOnlyBaseTypes?: boolean
-    },
+    filter?: ParamFilter,
   ): UnitType[] {
     const baseTypes = filter?.includeNonParticipating
       ? CombatSideState.getAllUnitTypes()
       : CombatSideState.getParticipatingUnitTypes(s, filter?.combatMode ?? mode)
     const settings = CombatSideState.getLiveParams(s, 'SETTINGS')
     const allDeclaredSubtypes = (settings?.subtypes ?? []) as DeclaredSubtype[]
-    const excludedSources = filter?.excludeSubtypeSource
-      ? new Set<string>(filter.excludeSubtypeSource)
-      : undefined
-    let declaredSubtypes = excludedSources
-      ? allDeclaredSubtypes.filter(
-          d => d.source === undefined || !excludedSources.has(d.source),
-        )
-      : allDeclaredSubtypes
-    if (!filter?.includeNonParticipating) {
-      declaredSubtypes = declaredSubtypes.filter(d => d.participating !== false)
-    }
+    let declaredSubtypes = filterDeclaredSubtypes(allDeclaredSubtypes, filter)
 
     const baseSet = new Set<string>(baseTypes)
     const result: UnitType[] = [...baseTypes]
@@ -889,66 +956,13 @@ export class CombatSideState {
       addedSet.add(variantId)
     }
 
-    const includeParsed = filter?.include?.map(v => parseVariantId(v))
-    const excludeParsed = filter?.exclude?.map(v => parseVariantId(v))
-    const excludeSubtypeSet = filter?.excludeSubtypes
-      ? new Set<string>(filter.excludeSubtypes)
-      : undefined
-    const includeSubtypeSet =
-      filter?.includeSubtypes && filter.includeSubtypes.length > 0
-        ? new Set<string>(filter.includeSubtypes)
-        : undefined
-    const matches = (
-      variantParsed: { type: UnitBaseType; subtypes: UnitVariantId[] },
-      entry: { type: UnitBaseType; subtypes: UnitVariantId[] },
-    ) => {
-      if (variantParsed.type !== entry.type) return false
-      if (entry.subtypes.length === 0) return true
-      const vSubs = new Set<string>(variantParsed.subtypes)
-      return entry.subtypes.every(s => vSubs.has(s))
-    }
-
-    let filtered = result
-    if (includeParsed && includeParsed.length > 0) {
-      filtered = filtered.filter(v => {
-        const p = parseVariantId(v)
-        return includeParsed.some(e => matches(p, e))
-      })
-    }
-    if (excludeParsed && excludeParsed.length > 0) {
-      filtered = filtered.filter(v => {
-        const p = parseVariantId(v)
-        return !excludeParsed.some(e => matches(p, e))
-      })
-    }
-    if (excludeSubtypeSet) {
-      filtered = filtered.filter(v => {
-        const { subtypes } = parseVariantId(v)
-        return !subtypes.some(sub => excludeSubtypeSet.has(sub))
-      })
-    }
-    if (includeSubtypeSet) {
-      filtered = filtered.filter(v => {
-        const { subtypes } = parseVariantId(v)
-        return subtypes.some(sub => includeSubtypeSet.has(sub))
-      })
-    }
-    return filtered
+    return applyVariantPostFilter(result, filter) as UnitType[]
   }
 
   static getUnitVariantOptions(
     s: SideStateData,
     mode: CombatMode,
-    filter?: {
-      include?: UnitType[]
-      exclude?: UnitType[]
-      excludeSubtypes?: string[]
-      excludeSubtypeSource?: string[]
-      includeSubtypes?: string[]
-      combatMode?: CombatMode
-      includeNonParticipating?: boolean
-      includeOnlyBaseTypes?: boolean
-    },
+    filter?: ParamFilter,
   ): { label: string; value: UnitType }[] {
     return CombatSideState.getUnitVariants(s, mode, filter).map(id => ({
       label: getVariantDisplayName(id),

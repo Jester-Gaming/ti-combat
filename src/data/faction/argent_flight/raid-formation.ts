@@ -18,21 +18,17 @@ export const raidFormation: Ability<Params> = {
       default: [],
       source: 'nonFighterShips',
       side: 'opponent',
+      filter: { combatMode: 'SPACE', exclude: ['FIGHTER'] },
     }),
   },
-  uiConfig: ctx => {
-    return [
-      {
-        key: 'targetPriority' as const,
-        type: 'unit-list' as const,
-        mode: 'order' as const,
-        items: ctx.api.opponent.getUnitVariantsOptions({
-          combatMode: 'SPACE',
-          exclude: ['FIGHTER'],
-        }),
-      },
-    ]
-  },
+  uiConfig: ctx => [
+    {
+      key: 'targetPriority' as const,
+      type: 'unit-list' as const,
+      mode: 'order' as const,
+      items: ctx.api.opponent.getUnitVariantsOptions('targetPriority'),
+    },
+  ],
   invoke: [
     {
       timing: 'AFTER_UNIT_ABILITY_ROLL',

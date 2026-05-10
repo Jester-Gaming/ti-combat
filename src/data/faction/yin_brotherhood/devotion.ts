@@ -27,16 +27,14 @@ export const devotion: Ability<Params> = {
       source: 'ships',
       side: 'own',
       defaultItemValue: true,
-      filter: id => {
-        const SACRIFICE_TYPES = new Set(['CRUISER', 'DESTROYER'])
-        return SACRIFICE_TYPES.has(parseVariantId(id).type)
-      },
+      filter: { include: ['CRUISER', 'DESTROYER'], combatMode: 'SPACE' },
     }),
     targetPriority: declareParam<UnitList<boolean>>({
       default: [],
       source: 'ships',
       side: 'opponent',
       defaultItemValue: true,
+      filter: { combatMode: 'SPACE' },
     }),
   },
   headerUI: 'isEnabled',
@@ -85,10 +83,7 @@ export const devotion: Ability<Params> = {
         type: 'unit-list' as const,
         mode: 'checkbox' as const,
         sortable: true,
-        items: ctx.api.own.getUnitVariantsOptions({
-          include: ['CRUISER', 'DESTROYER'],
-          combatMode: 'SPACE',
-        }),
+        items: ctx.api.own.getUnitVariantsOptions('sacrificePriority'),
       },
       {
         key: 'targetPriority' as const,
@@ -96,9 +91,7 @@ export const devotion: Ability<Params> = {
         type: 'unit-list' as const,
         mode: 'checkbox' as const,
         sortable: true,
-        items: ctx.api.opponent.getUnitVariantsOptions({
-          combatMode: 'SPACE',
-        }),
+        items: ctx.api.opponent.getUnitVariantsOptions('targetPriority'),
       },
     ]
   },

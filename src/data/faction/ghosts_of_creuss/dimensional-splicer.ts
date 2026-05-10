@@ -24,6 +24,7 @@ export const dimensionalSplicer: Ability<Params> = {
       default: [],
       source: 'ships',
       side: 'opponent',
+      filter: { combatMode: 'SPACE' },
     }),
   },
   headerUI: 'isEnabled',
@@ -49,16 +50,12 @@ export const dimensionalSplicer: Ability<Params> = {
       },
     },
   ],
-  uiConfig: ctx => {
-    return [
-      {
-        key: 'targetPriority' as const,
-        type: 'unit-list' as const,
-        mode: 'order' as const,
-        items: ctx.api.opponent.getUnitVariantsOptions({
-          combatMode: 'SPACE',
-        }),
-      },
-    ]
-  },
+  uiConfig: ctx => [
+    {
+      key: 'targetPriority' as const,
+      type: 'unit-list' as const,
+      mode: 'order' as const,
+      items: ctx.api.opponent.getUnitVariantsOptions('targetPriority'),
+    },
+  ],
 }

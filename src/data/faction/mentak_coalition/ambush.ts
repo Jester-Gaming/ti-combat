@@ -1,6 +1,6 @@
 import { z } from 'zod/mini'
 
-import { type Ability, declareParam, parseVariantId } from '@/combat'
+import { type Ability, declareParam } from '@/combat'
 import type { DiceGroup, UnitBaseType, UnitId, UnitList } from '@/types'
 import { UnitListBooleanSchema } from '@/types'
 
@@ -26,10 +26,10 @@ export const ambush: Ability<Params> = {
       side: 'own',
       sort: 'price-desc',
       defaultItemValue: true,
-      filter: id =>
-        (['CRUISER', 'DESTROYER'] as UnitBaseType[]).includes(
-          parseVariantId(id).type,
-        ),
+      filter: {
+        include: ['CRUISER', 'DESTROYER'] as UnitBaseType[],
+        combatMode: 'SPACE',
+      },
     }),
   },
   headerUI: 'isEnabled',
@@ -79,10 +79,7 @@ export const ambush: Ability<Params> = {
       type: 'unit-list' as const,
       mode: 'checkbox' as const,
       sortable: true,
-      items: ctx.api.own.getUnitVariantsOptions({
-        include: ['CRUISER', 'DESTROYER'] as UnitBaseType[],
-        combatMode: 'SPACE',
-      }),
+      items: ctx.api.own.getUnitVariantsOptions('attackerPriority'),
     },
   ],
 }

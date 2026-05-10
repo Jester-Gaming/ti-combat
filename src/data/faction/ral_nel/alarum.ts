@@ -32,7 +32,11 @@ export const alarum: Ability<Params> = {
       defaultItemValue: 0,
       source: 'groundForces',
       sort: 'price-desc',
-      includeNonParticipating: true,
+      filter: {
+        combatMode: 'GROUND',
+        include: ['MECH', 'INFANTRY'],
+        includeNonParticipating: true,
+      },
     }),
     firedRoundIds: [] as UnitId[],
   },
@@ -43,11 +47,7 @@ export const alarum: Ability<Params> = {
       type: 'unit-list',
       mode: 'number',
       sortable: true,
-      items: ctx.api.own.getUnitVariantsOptions({
-        combatMode: 'GROUND',
-        include: ['MECH', 'INFANTRY'],
-        includeNonParticipating: true,
-      }),
+      items: ctx.api.own.getUnitVariantsOptions('availableUnits'),
     },
   ],
   invoke: [

@@ -62,7 +62,7 @@ export const lastDispatch: Ability<Params> = {
       type: 'unit-list' as const,
       mode: 'checkbox' as const,
       sortable: true,
-      items: ctx.api.opponent.getUnitVariantsOptions(),
+      items: ctx.api.opponent.getUnitVariantsOptions('targetPriority'),
     },
   ],
 }

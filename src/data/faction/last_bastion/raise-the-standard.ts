@@ -32,13 +32,13 @@ export const raiseTheStandard: Ability<Params> = {
       default: [] as UnitList,
       source: 'spaceCombatParticipating',
       sort: 'price-desc',
-      filter: v => parseVariantId(v as UnitType).subtypes.length === 0,
+      filter: { includeOnlyBaseTypes: true },
     }),
     groundUnitPriority: declareParam({
       default: [] as UnitList,
       source: 'groundCombatParticipating',
       sort: 'price-desc',
-      filter: v => parseVariantId(v as UnitType).subtypes.length === 0,
+      filter: { includeOnlyBaseTypes: true },
     }),
   },
   headerUI: 'isEnabled',
@@ -53,10 +53,7 @@ export const raiseTheStandard: Ability<Params> = {
         label: 'Unit Priority',
         type: 'unit-list',
         mode: 'order',
-        items: ctx.api.own.getUnitVariantsOptions({
-          combatMode: ctx.state.combatMode,
-          includeOnlyBaseTypes: true,
-        }),
+        items: ctx.api.own.getUnitVariantsOptions(key),
       },
     ]
   },

@@ -30,10 +30,12 @@ export const dameBriar: Ability<Params> = {
     spaceUnitType: declareParam<UnitType>({
       default: 'DESTROYER',
       source: 'spaceCombatParticipating',
+      filter: { excludeSubtypes: [GALVANIZED], combatMode: 'SPACE' },
     }),
     groundUnitType: declareParam<UnitType>({
       default: 'INFANTRY',
       source: 'groundCombatParticipating',
+      filter: { excludeSubtypes: [GALVANIZED], combatMode: 'GROUND' },
     }),
   },
   headerUI: 'isEnabled',
@@ -51,12 +53,7 @@ export const dameBriar: Ability<Params> = {
         key,
         label: 'Unit Type',
         type: 'select',
-        items: ctx.api.own
-          .getUnitVariantsOptions({
-            excludeSubtypes: [GALVANIZED],
-            combatMode: ctx.state.combatMode,
-          })
-          .reverse(),
+        items: ctx.api.own.getUnitVariantsOptions(key).reverse(),
       },
     ]
   },

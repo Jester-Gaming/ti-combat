@@ -25,6 +25,7 @@ export type {
   DeclaredSubtype,
   DicePool,
   ParamChange,
+  ParamFilter,
   RegisteredAbility,
   RuntimeAbilityList,
   SettingsParams,

@@ -10,6 +10,7 @@ export {
   declareParam,
   type DicePool,
   type ParamChange,
+  type ParamFilter,
   type RegisteredAbility,
   type SettingsParams,
   SLOT_DISPLAY,
@@ -24,7 +25,9 @@ export {
 } from './abilities-engine/declare-param'
 export { CombatEngine } from './combat-engine'
 export {
+  applyVariantPostFilter,
   CombatSideState,
+  filterDeclaredSubtypes,
   getOpponentSide,
 } from './combat-side-state/combat-side-state'
 export {

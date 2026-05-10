@@ -4,6 +4,7 @@ import type { UnitBaseType, UnitList, UnitStats } from '@/types'
 import { UnitListBooleanSchema } from '@/types'
 import { getFactionUnitConfig } from '@/utils/get-faction-unit-config'
 
+import { declareParam } from '../../../combat/abilities-engine/declare-param'
 import type {
   Ability,
   AbilityReadContext,
@@ -26,8 +27,18 @@ export const revealPrototype: Ability<Params> = {
   params: {
     isEnabled: false,
     uses: 1,
-    spacePriority: [],
-    groundPriority: [],
+    spacePriority: declareParam<UnitList<boolean>>({
+      source: 'spaceCombatParticipating',
+      defaultItemValue: false,
+      default: [],
+      filter: { includeOnlyBaseTypes: true, combatMode: 'SPACE' },
+    }),
+    groundPriority: declareParam<UnitList<boolean>>({
+      source: 'groundCombatParticipating',
+      defaultItemValue: false,
+      default: [],
+      filter: { includeOnlyBaseTypes: true, combatMode: 'GROUND' },
+    }),
   },
   headerUI: 'isEnabled',
   uiConfig: ctx => {
@@ -41,9 +52,7 @@ export const revealPrototype: Ability<Params> = {
         type: 'unit-list' as const,
         mode: 'checkbox' as const,
         sortable: true,
-        items: ctx.api.own
-          .getUnitVariantsOptions()
-          .filter(opt => !opt.value.includes(':')),
+        items: ctx.api.own.getUnitVariantsOptions(key),
       },
     ]
   },

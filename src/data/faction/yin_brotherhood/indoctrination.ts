@@ -1,7 +1,7 @@
 import { z } from 'zod/mini'
 
-import { type Ability, declareParam, parseVariantId } from '@/combat'
-import type { UnitId, UnitList, UnitType } from '@/types'
+import { type Ability, declareParam } from '@/combat'
+import type { UnitId, UnitList } from '@/types'
 import { UnitListBooleanSchema } from '@/types'
 
 /** Fires with the UnitId of the infantry swapped in by Indoctrination. */
@@ -33,7 +33,7 @@ export const indoctrination: Ability<Params> = {
       side: 'opponent',
       defaultItemValue: true,
       sort: 'price-desc',
-      filter: id => parseVariantId(id as UnitType).type === 'INFANTRY',
+      filter: { include: ['INFANTRY'], combatMode: 'GROUND' },
     }),
   },
   headerUI: 'isEnabled',
@@ -58,10 +58,7 @@ export const indoctrination: Ability<Params> = {
     },
   ],
   uiConfig: ctx => {
-    const items = ctx.api.opponent.getUnitVariantsOptions({
-      combatMode: 'GROUND',
-      include: ['INFANTRY'],
-    })
+    const items = ctx.api.opponent.getUnitVariantsOptions('targetPriority')
 
     if (items.length <= 1) {
       return []

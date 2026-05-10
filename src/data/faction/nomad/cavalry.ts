@@ -33,6 +33,11 @@ export const cavalry: Ability<Params> = {
     unitType: declareParam<UnitType>({
       default: 'DESTROYER',
       source: 'nonFighterShips',
+      filter: {
+        exclude: ['FIGHTER'],
+        excludeSubtypeSource: ['CAVALRY'],
+        combatMode: 'SPACE',
+      },
     }),
   },
   headerUI: 'isEnabled',
@@ -72,27 +77,19 @@ export const cavalry: Ability<Params> = {
       },
     ]
   },
-  uiConfig: ctx => {
-    return [
-      {
-        key: 'memoria2' as const,
-        label: 'Memoria II',
-        type: 'checkbox' as const,
-      },
-      {
-        key: 'unitType' as const,
-        label: 'Unit Type',
-        type: 'select' as const,
-        items: ctx.api.own
-          .getUnitVariantsOptions({
-            exclude: ['FIGHTER'],
-            excludeSubtypeSource: [ctx.this.key],
-            combatMode: 'SPACE',
-          })
-          .reverse(),
-      },
-    ]
-  },
+  uiConfig: ctx => [
+    {
+      key: 'memoria2' as const,
+      label: 'Memoria II',
+      type: 'checkbox' as const,
+    },
+    {
+      key: 'unitType' as const,
+      label: 'Unit Type',
+      type: 'select' as const,
+      items: ctx.api.own.getUnitVariantsOptions('unitType').reverse(),
+    },
+  ],
   invoke: [
     {
       timing: 'START_OF_COMBAT',

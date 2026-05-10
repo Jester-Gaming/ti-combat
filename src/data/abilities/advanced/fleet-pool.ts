@@ -29,6 +29,9 @@ export const fleetPool: Ability<Params> = {
       source: 'spaceCombatParticipating',
       side: 'own',
       sort: 'price-desc',
+      filter: {
+        combatMode: 'SPACE',
+      },
     }),
   },
   headerUI: 'isEnabled',
@@ -53,9 +56,7 @@ export const fleetPool: Ability<Params> = {
       label: 'Ship Keep Priority',
       type: 'unit-list' as const,
       mode: 'order' as const,
-      items: ctx.api.own.getUnitVariantsOptions({
-        combatMode: 'SPACE',
-      }),
+      items: ctx.api.own.getUnitVariantsOptions('shipPriority'),
     },
   ],
 }

@@ -23,6 +23,7 @@ export const watchfulOjz: Ability<Params> = {
       default: [],
       source: 'spaceCombatParticipating',
       defaultItemValue: 0,
+      filter: { combatMode: 'SPACE' },
     }),
   },
   headerUI: 'isEnabled',
@@ -33,9 +34,7 @@ export const watchfulOjz: Ability<Params> = {
       type: 'unit-list',
       mode: 'number',
       sortable: true,
-      items: ctx.api.own.getUnitVariantsOptions({
-        combatMode: 'SPACE',
-      }),
+      items: ctx.api.own.getUnitVariantsOptions('shipConfig'),
     },
   ],
   invoke: [

@@ -1,6 +1,6 @@
 import { z } from 'zod/mini'
 
-import { type Ability, declareParam, parseVariantId } from '@/combat'
+import { type Ability, declareParam } from '@/combat'
 import type { UnitId, UnitList } from '@/types'
 import { UnitListBooleanSchema } from '@/types'
 
@@ -27,7 +27,7 @@ export const exotrireme: Ability<Params> = {
       source: 'ships',
       side: 'own',
       defaultItemValue: true,
-      filter: id => parseVariantId(id).type === 'DREADNOUGHT',
+      filter: { include: ['DREADNOUGHT'], combatMode: 'SPACE' },
     }),
     targetPriority: declareParam<UnitList<boolean>>({
       default: [],
@@ -35,6 +35,7 @@ export const exotrireme: Ability<Params> = {
       side: 'opponent',
       sort: 'price-desc',
       defaultItemValue: true,
+      filter: { combatMode: 'SPACE' },
     }),
   },
   headerUI: 'isEnabled',
@@ -99,10 +100,7 @@ export const exotrireme: Ability<Params> = {
       type: 'unit-list' as const,
       mode: 'checkbox' as const,
       sortable: true,
-      items: ctx.api.own.getUnitVariantsOptions({
-        include: ['DREADNOUGHT'],
-        combatMode: 'SPACE',
-      }),
+      items: ctx.api.own.getUnitVariantsOptions('sacrificePriority'),
     },
     {
       key: 'targetPriority' as const,
@@ -110,9 +108,7 @@ export const exotrireme: Ability<Params> = {
       type: 'unit-list' as const,
       mode: 'checkbox' as const,
       sortable: true,
-      items: ctx.api.opponent.getUnitVariantsOptions({
-        combatMode: 'SPACE',
-      }),
+      items: ctx.api.opponent.getUnitVariantsOptions('targetPriority'),
     },
   ],
 }

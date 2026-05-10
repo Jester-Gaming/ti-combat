@@ -32,6 +32,7 @@ export const vosHollow: Ability<Params> = {
       source: 'ships',
       side: 'opponent',
       defaultItemValue: true,
+      filter: { combatMode: 'SPACE' },
     }),
   },
   headerUI: 'isEnabled',
@@ -84,19 +85,15 @@ export const vosHollow: Ability<Params> = {
       },
     },
   ],
-  uiConfig: ctx => {
-    return [
-      {
-        key: 'targetPriority' as const,
-        type: 'unit-list' as const,
-        mode: 'checkbox' as const,
-        sortable: true,
-        items: ctx.api.opponent.getUnitVariantsOptions({
-          combatMode: 'SPACE',
-        }),
-      },
-    ]
-  },
+  uiConfig: ctx => [
+    {
+      key: 'targetPriority' as const,
+      type: 'unit-list' as const,
+      mode: 'checkbox' as const,
+      sortable: true,
+      items: ctx.api.opponent.getUnitVariantsOptions('targetPriority'),
+    },
+  ],
 }
 
 function collectOwnDestroyedShipTypes(

@@ -52,12 +52,18 @@ export function AbilityConfig({
       return ability.uiConfig
     }
     const effectiveParams = { ...defaults, ...params }
-    // Inherit readContext via prototype so class getters (`state`, `api`, …)
-    // still resolve; shadow `this` with the ability being rendered.
-    const ctx: AbilityReadContext = Object.create(readContext, {
-      this: { value: ability, enumerable: true },
-    })
-    return ability.uiConfig(ctx, effectiveParams)
+    // Set the running ability on the shared context so `ctx.this` and any
+    // SideApi lookups (e.g. `getUnitVariantsOptions(paramKey)`) resolve to
+    // this ability's spec. uiConfig is synchronous, so the surrounding
+    // try/finally restores the previous value before any other rendering.
+    const ctx = readContext as AbilityReadContext & { ability?: Ability }
+    const prev = ctx.ability
+    ctx.ability = ability
+    try {
+      return ability.uiConfig(ctx, effectiveParams)
+    } finally {
+      ctx.ability = prev
+    }
   }, [ability, defaults, readContext, params])
 
   useEffect(() => {

@@ -1,5 +1,6 @@
 import type {
   Ability,
+  ParamFilter,
   SettingsParams,
   SyncSortSpec,
   SyncSourceConfig,
@@ -23,13 +24,14 @@ interface DeclaredParamOptions<
    *  parent. Omit for order-mode lists (single-element tuples). */
   defaultItemValue?: unknown
   compute?: (value: SettingsParams[K]) => T
-  filter?: (value: SettingsParams[K][number]) => boolean
-  /** When true, the synced valid list includes declared subtypes whose
-   *  `participating` is false. Default: false. */
-  includeNonParticipating?: boolean
+  /** Variant-list filter. Same shape as `getUnitVariantsOptions`'s filter
+   *  argument — reconcile applies it to the synced valid list, and
+   *  `getUnitVariantsOptions(paramKey)` reuses it to render the matching UI
+   *  list. `includeNonParticipating` lives inside this filter. */
+  filter?: ParamFilter
 }
 
-interface DeclaredParamValue<T> {
+export interface DeclaredParamValue<T> {
   [DECLARED_PARAM]: true
   default: T
   source?: keyof SettingsParams
@@ -37,8 +39,7 @@ interface DeclaredParamValue<T> {
   sort: SyncSortSpec
   defaultItemValue?: unknown
   compute?: (value: SettingsParams[keyof SettingsParams]) => T
-  filter?: (value: string) => boolean
-  includeNonParticipating?: boolean
+  filter?: ParamFilter
 }
 
 /**
@@ -58,7 +59,6 @@ export function declareParam<
     defaultItemValue: options.defaultItemValue,
     compute: options.compute,
     filter: options.filter,
-    includeNonParticipating: options.includeNonParticipating,
   } as unknown as T
 }
 
@@ -112,7 +112,6 @@ export function extractSyncSources(
         defaultItemValue: value.defaultItemValue,
         compute: value.compute,
         filter: value.filter,
-        includeNonParticipating: value.includeNonParticipating,
       })
     }
   }

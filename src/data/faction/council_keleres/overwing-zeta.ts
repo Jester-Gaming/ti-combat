@@ -27,7 +27,11 @@ export const overwingZeta: Ability<Params> = {
       default: [],
       source: 'ships',
       defaultItemValue: 0,
-      filter: t => ['FLAGSHIP', 'CRUISER', 'DESTROYER'].includes(t),
+      filter: {
+        include: ['FLAGSHIP', 'CRUISER', 'DESTROYER'],
+        combatMode: 'SPACE',
+        includeOnlyBaseTypes: true,
+      },
     }),
   },
   headerUI: 'isEnabled',
@@ -89,11 +93,7 @@ export const overwingZeta: Ability<Params> = {
       label: 'Ships',
       type: 'unit-list' as const,
       mode: 'number' as const,
-      items: ctx.api.own.getUnitVariantsOptions({
-        include: ['FLAGSHIP', 'CRUISER', 'DESTROYER'],
-        combatMode: 'SPACE',
-        includeOnlyBaseTypes: true,
-      }),
+      items: ctx.api.own.getUnitVariantsOptions('ships'),
     },
   ],
 }

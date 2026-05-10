@@ -1,3 +1,4 @@
+import { applyVariantPostFilter, filterDeclaredSubtypes } from '@/combat'
 import { TIMING_GROUPS } from '@/combat/abilities-engine/abilities-engine'
 import {
   extractDefaults,
@@ -56,12 +57,13 @@ function buildValidList(
 ): string[] {
   const settings = config.side === 'own' ? ownSettings : opponentSettings
   const allSubtypes = config.side === 'own' ? ownSubtypes : opponentSubtypes
-  const subtypes = config.includeNonParticipating
-    ? allSubtypes
-    : allSubtypes.filter(s => s.participating !== false)
+  const subtypes = config.filter?.includeOnlyBaseTypes
+    ? []
+    : filterDeclaredSubtypes(allSubtypes, config.filter)
   const group = settings[config.group] as UnitBaseType[]
   const sorted = sortBaseTypes(group, config.sort)
-  return expandWithSubtypes(sorted, subtypes, config.sort)
+  const expanded = expandWithSubtypes(sorted, subtypes, config.sort)
+  return applyVariantPostFilter(expanded, config.filter)
 }
 
 // ── Pure reconcile functions ────────────────────────────────────────────
@@ -432,17 +434,13 @@ function reconcileSyncSources(
         continue
       }
 
-      let validList = buildValidList(
+      const validList = buildValidList(
         config,
         ownSettings,
         opponentSettings,
         ownSubtypes,
         opponentSubtypes,
       )
-
-      if (config.filter) {
-        validList = validList.filter(config.filter)
-      }
 
       const currentValue = abilityParams[config.key]
 

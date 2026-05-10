@@ -28,6 +28,7 @@ export const fragmentReality: Ability<Params> = {
       default: [],
       source: 'ships',
       defaultItemValue: 0,
+      filter: { combatMode: 'SPACE', includeOnlyBaseTypes: true },
     }),
   },
   headerUI: 'isEnabled',
@@ -49,10 +50,7 @@ export const fragmentReality: Ability<Params> = {
       key: 'ships' as const,
       type: 'unit-list' as const,
       mode: 'number' as const,
-      items: ctx.api.own.getUnitVariantsOptions({
-        combatMode: 'SPACE',
-        includeOnlyBaseTypes: true,
-      }),
+      items: ctx.api.own.getUnitVariantsOptions('ships'),
     },
   ],
 }

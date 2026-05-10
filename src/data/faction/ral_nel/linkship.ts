@@ -26,23 +26,21 @@ export const linkshipI: Ability<Params> = {
       default: [],
       source: 'structures',
       defaultItemValue: 0,
+      filter: {
+        include: ['PDS', 'SPACE_DOCK'] as UnitBaseType[],
+        includeNonParticipating: true,
+      },
     }),
   },
   headerUI: 'isEnabled',
-  uiConfig: ctx => {
-    const STRUCTURE_TYPES: UnitBaseType[] = ['PDS', 'SPACE_DOCK']
-    return [
-      {
-        key: 'structures',
-        type: 'unit-list',
-        mode: 'number',
-        items: ctx.api.own.getUnitVariantsOptions({
-          include: STRUCTURE_TYPES,
-          includeNonParticipating: true,
-        }),
-      },
-    ]
-  },
+  uiConfig: ctx => [
+    {
+      key: 'structures',
+      type: 'unit-list',
+      mode: 'number',
+      items: ctx.api.own.getUnitVariantsOptions('structures'),
+    },
+  ],
   invoke: [
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
@@ -82,23 +80,21 @@ export const linkshipII: Ability<Params> = {
       default: [],
       source: 'structures',
       defaultItemValue: 0,
+      filter: {
+        include: ['PDS', 'SPACE_DOCK'] as UnitBaseType[],
+        includeNonParticipating: true,
+      },
     }),
   },
   headerUI: 'isEnabled',
-  uiConfig: ctx => {
-    const STRUCTURE_TYPES: UnitBaseType[] = ['PDS', 'SPACE_DOCK']
-    return [
-      {
-        key: 'structures',
-        type: 'unit-list',
-        mode: 'number',
-        items: ctx.api.own.getUnitVariantsOptions({
-          include: STRUCTURE_TYPES,
-          includeNonParticipating: true,
-        }),
-      },
-    ]
-  },
+  uiConfig: ctx => [
+    {
+      key: 'structures',
+      type: 'unit-list',
+      mode: 'number',
+      items: ctx.api.own.getUnitVariantsOptions('structures'),
+    },
+  ],
   invoke: [
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',

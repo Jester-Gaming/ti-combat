@@ -24,6 +24,10 @@ export const evelynDelouis: Ability<Params> = {
     unitType: declareParam<UnitType>({
       default: 'INFANTRY',
       source: 'groundForces',
+      filter: {
+        excludeSubtypeSource: ['EVELYN_DELOUIS'],
+        combatMode: 'GROUND',
+      },
     }),
   },
   declareSubtype: params => [
@@ -39,21 +43,14 @@ export const evelynDelouis: Ability<Params> = {
     },
   ],
   headerUI: 'isEnabled',
-  uiConfig: ctx => {
-    return [
-      {
-        key: 'unitType',
-        label: 'Unit Type',
-        type: 'select',
-        items: ctx.api.own
-          .getUnitVariantsOptions({
-            excludeSubtypeSource: [ctx.this.key],
-            combatMode: 'GROUND',
-          })
-          .reverse(),
-      },
-    ]
-  },
+  uiConfig: ctx => [
+    {
+      key: 'unitType',
+      label: 'Unit Type',
+      type: 'select',
+      items: ctx.api.own.getUnitVariantsOptions('unitType').reverse(),
+    },
+  ],
   invoke: [
     {
       timing: 'START_OF_COMBAT_ROUND',

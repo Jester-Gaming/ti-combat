@@ -42,12 +42,15 @@ import type {
   AbilityCandidate,
   InvokeCollections,
 } from '../abilities-engine'
+import type { DeclaredParamValue } from '../declare-param'
+import { isDeclaredParam } from '../declare-param'
 import type {
   Ability,
   AbilityBaseParams,
   AbilityTiming,
   DicePool,
   OwnOpponentContext,
+  ParamFilter,
   RuntimeAbilityList,
   SidedDiceData,
 } from '../types'
@@ -187,21 +190,32 @@ export class SideApi {
     )
   }
 
-  getUnitVariantsOptions(filter?: {
-    include?: UnitType[]
-    exclude?: UnitType[]
-    excludeSubtypes?: UnitVariantId[]
-    excludeSubtypeSource?: string[]
-    includeSubtypes?: UnitVariantId[]
-    combatMode?: CombatMode
-    includeNonParticipating?: boolean
-    includeOnlyBaseTypes?: boolean
-  }) {
+  getUnitVariantsOptions(filter?: ParamFilter): {
+    label: string
+    value: UnitType
+  }[]
+  getUnitVariantsOptions(paramKey: string): {
+    label: string
+    value: UnitType
+  }[]
+  getUnitVariantsOptions(arg?: ParamFilter | string) {
+    const filter = typeof arg === 'string' ? this._resolveParamFilter(arg) : arg
     return CombatSideState.getUnitVariantOptions(
       this._sideData,
       this.state.combatMode,
       filter,
     )
+  }
+
+  /** Resolve the `ParamFilter` declared on the running ability for `paramKey`.
+   *  The wrapped `DeclaredParamValue` lives on the ability spec — extracted
+   *  here so `getUnitVariantsOptions(paramKey)` can mirror reconcile's view. */
+  private _resolveParamFilter(paramKey: string): ParamFilter | undefined {
+    const ability = this._ctx.ability
+    if (!ability) return undefined
+    const raw = (ability.params as Record<string, unknown>)[paramKey]
+    if (!isDeclaredParam(raw)) return undefined
+    return (raw as DeclaredParamValue<unknown>).filter
   }
 
   findUnitByPriority(

@@ -28,6 +28,20 @@ export type SyncSortSpec =
   | 'normal-desc'
   | ((a: UnitBaseType, b: UnitBaseType) => number)
 
+/** Variant-list filter shape — shared between `SideApi.getUnitVariantsOptions`
+ *  and `declareParam({ filter })`. The same options control which variants
+ *  appear in the UI list and which are kept in the synced consumer params. */
+export interface ParamFilter {
+  include?: UnitType[]
+  exclude?: UnitType[]
+  excludeSubtypes?: UnitVariantId[]
+  excludeSubtypeSource?: string[]
+  includeSubtypes?: UnitVariantId[]
+  combatMode?: CombatMode
+  includeNonParticipating?: boolean
+  includeOnlyBaseTypes?: boolean
+}
+
 export interface SyncSourceConfig<
   K extends keyof SettingsParams = keyof SettingsParams,
 > {
@@ -41,10 +55,7 @@ export interface SyncSourceConfig<
    *  is the fallback. Omit for order-mode lists. */
   defaultItemValue?: unknown
   compute?: (value: SettingsParams[K]) => unknown
-  filter?: (value: string) => boolean
-  /** When true, the produced valid list includes declared subtypes whose
-   *  `participating` is false. Default: false. */
-  includeNonParticipating?: boolean
+  filter?: ParamFilter
 }
 
 export interface DeclaredSubtype {

@@ -65,7 +65,7 @@ export const spaceCannon: Ability<Params> = {
               label: 'Space Cannon Offense Priority',
               type: 'unit-list' as const,
               mode: 'order' as const,
-              items: ctx.api.own.getUnitVariantsOptions(),
+              items: ctx.api.own.getUnitVariantsOptions('scoUnitPriority'),
             },
           ]
         : []),

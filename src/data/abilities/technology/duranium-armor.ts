@@ -30,11 +30,13 @@ export const duraniumArmor: Ability<Params> = {
       default: [],
       source: 'nonFighterShips',
       sort: 'price-desc',
+      filter: { exclude: ['FIGHTER'], combatMode: 'SPACE' },
     }),
     groundRepairPriority: declareParam<UnitList>({
       default: [],
       source: 'groundForces',
       sort: 'price-desc',
+      filter: { exclude: ['FIGHTER'], combatMode: 'GROUND' },
     }),
   },
   headerUI: 'isEnabled',
@@ -84,9 +86,7 @@ export const duraniumArmor: Ability<Params> = {
         key,
         type: 'unit-list' as const,
         mode: 'order' as const,
-        items: ctx.api.own.getUnitVariantsOptions({
-          exclude: ['FIGHTER'],
-        }),
+        items: ctx.api.own.getUnitVariantsOptions(key),
       },
     ]
   },

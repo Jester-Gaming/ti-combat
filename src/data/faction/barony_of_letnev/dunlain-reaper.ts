@@ -2,7 +2,7 @@ import { z } from 'zod/mini'
 
 import { type Ability, declareParam, parseVariantId } from '@/combat'
 import { UNIT_LIMITS } from '@/constants/units'
-import type { UnitList, UnitType } from '@/types'
+import type { UnitList } from '@/types'
 import { UnitListBooleanSchema } from '@/types'
 
 type Params = {
@@ -36,7 +36,7 @@ export const dunlainReaper: Ability<Params> = {
       side: 'own',
       defaultItemValue: true,
       sort: 'price-asc',
-      filter: id => parseVariantId(id as UnitType).type === 'INFANTRY',
+      filter: { include: ['INFANTRY'], combatMode: 'GROUND' },
     }),
   },
   headerUI: 'uses',
@@ -97,10 +97,7 @@ export const dunlainReaper: Ability<Params> = {
     },
   ],
   uiConfig: ctx => {
-    const items = ctx.api.own.getUnitVariantsOptions({
-      combatMode: 'GROUND',
-      include: ['INFANTRY'],
-    })
+    const items = ctx.api.own.getUnitVariantsOptions('targetPriority')
 
     return [
       {

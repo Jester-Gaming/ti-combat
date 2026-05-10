@@ -45,6 +45,7 @@ export const sleeperCell: Ability<Params> = {
       source: 'ships',
       sort: 'price-desc',
       defaultItemValue: 0,
+      filter: { combatMode: 'SPACE', includeOnlyBaseTypes: true },
     }),
   },
   headerUI: 'isEnabled',
@@ -54,10 +55,7 @@ export const sleeperCell: Ability<Params> = {
       label: 'Available Ships',
       type: 'unit-list' as const,
       mode: 'number' as const,
-      items: ctx.api.own.getUnitVariantsOptions({
-        combatMode: 'SPACE',
-        includeOnlyBaseTypes: true,
-      }),
+      items: ctx.api.own.getUnitVariantsOptions('availableShips'),
     },
   ],
   invoke: [

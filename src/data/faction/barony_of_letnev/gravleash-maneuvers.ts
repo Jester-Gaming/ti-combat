@@ -24,21 +24,18 @@ export const gravleashManeuvers: Ability<Params> = {
       default: [],
       source: 'ships',
       side: 'opponent',
+      filter: { combatMode: 'SPACE' },
     }),
   },
   headerUI: 'isEnabled',
-  uiConfig: ctx => {
-    return [
-      {
-        key: 'shipPriority' as const,
-        type: 'unit-list' as const,
-        mode: 'order' as const,
-        items: ctx.api.own.getUnitVariantsOptions({
-          combatMode: 'SPACE',
-        }),
-      },
-    ]
-  },
+  uiConfig: ctx => [
+    {
+      key: 'shipPriority' as const,
+      type: 'unit-list' as const,
+      mode: 'order' as const,
+      items: ctx.api.own.getUnitVariantsOptions('shipPriority'),
+    },
+  ],
   invoke: [
     {
       timing: 'BEFORE_DICE_ROLL',

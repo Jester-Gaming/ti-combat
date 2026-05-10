@@ -132,7 +132,7 @@ describe('declareParam source — participating flag', () => {
           default: [] as UnitList<number>,
           defaultItemValue: 0,
           source: 'units',
-          includeNonParticipating,
+          filter: { includeNonParticipating },
         }),
       },
       invoke: [],

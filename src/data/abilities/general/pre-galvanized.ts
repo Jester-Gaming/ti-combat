@@ -53,7 +53,10 @@ export const preGalvanized: Ability<Params> = {
       defaultItemValue: 0,
       source: 'units',
       sort: 'normal-desc',
-      filter: v => parseVariantId(v).subtypes.length === 0,
+      filter: {
+        includeOnlyBaseTypes: true,
+        includeNonParticipating: true,
+      },
     }),
     reinforcementTokens: 7,
   },
@@ -75,10 +78,7 @@ export const preGalvanized: Ability<Params> = {
       key: 'galvanizedUnits' as const,
       type: 'unit-list' as const,
       mode: 'number' as const,
-      items: ctx.api.own.getUnitVariantsOptions({
-        includeOnlyBaseTypes: true,
-        includeNonParticipating: true,
-      }),
+      items: ctx.api.own.getUnitVariantsOptions('galvanizedUnits'),
     },
   ],
   invoke: [

@@ -26,6 +26,7 @@ export const assaultCannon: Ability<Params> = {
       default: [],
       source: 'nonFighterShips',
       side: 'opponent',
+      filter: { combatMode: 'SPACE', exclude: ['FIGHTER'] },
     }),
   },
   headerUI: 'isEnabled',
@@ -51,17 +52,12 @@ export const assaultCannon: Ability<Params> = {
       },
     },
   ],
-  uiConfig: ctx => {
-    return [
-      {
-        key: 'targetPriority' as const,
-        type: 'unit-list' as const,
-        mode: 'order' as const,
-        items: ctx.api.opponent.getUnitVariantsOptions({
-          combatMode: 'SPACE',
-          exclude: ['FIGHTER'],
-        }),
-      },
-    ]
-  },
+  uiConfig: ctx => [
+    {
+      key: 'targetPriority' as const,
+      type: 'unit-list' as const,
+      mode: 'order' as const,
+      items: ctx.api.opponent.getUnitVariantsOptions('targetPriority'),
+    },
+  ],
 }

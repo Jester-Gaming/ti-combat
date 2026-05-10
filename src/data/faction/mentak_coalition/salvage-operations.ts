@@ -25,24 +25,20 @@ export const salvageOperations: Ability<Params> = {
     shipPriority: declareParam({
       default: [],
       source: 'ships',
+      filter: { combatMode: 'SPACE', includeOnlyBaseTypes: true },
     }),
     _destroyedShipTypes: [],
   },
   headerUI: 'isEnabled',
-  uiConfig: ctx => {
-    return [
-      {
-        key: 'shipPriority' as const,
-        label: 'Ship Priority',
-        type: 'unit-list' as const,
-        mode: 'order' as const,
-        items: ctx.api.own.getUnitVariantsOptions({
-          combatMode: 'SPACE',
-          includeOnlyBaseTypes: true,
-        }),
-      },
-    ]
-  },
+  uiConfig: ctx => [
+    {
+      key: 'shipPriority' as const,
+      label: 'Ship Priority',
+      type: 'unit-list' as const,
+      mode: 'order' as const,
+      items: ctx.api.own.getUnitVariantsOptions('shipPriority'),
+    },
+  ],
   invoke: [
     {
       timing: 'DESTROY',

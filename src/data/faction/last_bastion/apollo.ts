@@ -1,7 +1,7 @@
 import { z } from 'zod/mini'
 
 import lastBastionIcon from '@/assets/faction/last_bastion.svg?raw'
-import { type Ability, makeVariantId } from '@/combat'
+import { type Ability, declareParam, makeVariantId } from '@/combat'
 import { GALVANIZED } from '@/data/abilities/general/pre-galvanized'
 import type { DiceGroup, UnitId, UnitType, UnitVariantId } from '@/types'
 
@@ -25,7 +25,11 @@ export const apollo: Ability<Params> = {
   params: {
     isEnabled: false,
     uses: 1,
-    heroUnit: null,
+    heroUnit: declareParam<UnitType | null>({
+      source: 'units',
+      default: null,
+      filter: { includeSubtypes: [GALVANIZED], excludeSubtypes: [HERO] },
+    }),
     heroDesignated: false,
   },
   headerUI: 'isEnabled',
@@ -45,10 +49,7 @@ export const apollo: Ability<Params> = {
       key: 'heroUnit' as const,
       label: 'Hero Unit',
       type: 'select' as const,
-      items: ctx.api.own.getUnitVariantsOptions({
-        includeSubtypes: [GALVANIZED],
-        excludeSubtypes: [HERO],
-      }),
+      items: ctx.api.own.getUnitVariantsOptions('heroUnit'),
     },
   ],
   invoke: [

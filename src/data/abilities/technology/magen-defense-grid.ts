@@ -25,6 +25,7 @@ export const magenDefenseGrid: Ability<Params> = {
       default: [],
       source: 'groundForces',
       side: 'opponent',
+      filter: { combatMode: 'GROUND' },
     }),
   },
   headerUI: 'isEnabled',
@@ -53,16 +54,12 @@ export const magenDefenseGrid: Ability<Params> = {
       },
     },
   ],
-  uiConfig: ctx => {
-    return [
-      {
-        key: 'targetPriority' as const,
-        type: 'unit-list' as const,
-        mode: 'order' as const,
-        items: ctx.api.opponent.getUnitVariantsOptions({
-          combatMode: 'GROUND',
-        }),
-      },
-    ]
-  },
+  uiConfig: ctx => [
+    {
+      key: 'targetPriority' as const,
+      type: 'unit-list' as const,
+      mode: 'order' as const,
+      items: ctx.api.opponent.getUnitVariantsOptions('targetPriority'),
+    },
+  ],
 }

@@ -1,6 +1,6 @@
 import { z } from 'zod/mini'
 
-import { type Ability, declareParam, parseVariantId } from '@/combat'
+import { type Ability, declareParam } from '@/combat'
 import { UNIT_PRICE } from '@/constants/units'
 import type { UnitList } from '@/types'
 import { UnitListBooleanSchema } from '@/types'
@@ -28,10 +28,7 @@ export const impulseCore: Ability<Params> = {
       source: 'nonFighterShips',
       side: 'own',
       defaultItemValue: true,
-      filter: id => {
-        const SACRIFICE_TYPES = new Set(['CRUISER', 'DESTROYER'])
-        return SACRIFICE_TYPES.has(parseVariantId(id).type)
-      },
+      filter: { include: ['CRUISER', 'DESTROYER'], combatMode: 'SPACE' },
     }),
     targetPriority: declareParam<UnitList<boolean>>({
       default: [],
@@ -43,6 +40,7 @@ export const impulseCore: Ability<Params> = {
         if (b === 'FIGHTER') return -1
         return UNIT_PRICE[a] - UNIT_PRICE[b]
       },
+      filter: { combatMode: 'SPACE' },
     }),
   },
   headerUI: 'isEnabled',
@@ -80,41 +78,26 @@ export const impulseCore: Ability<Params> = {
       },
     },
   ],
-  uiConfig: ctx => {
-    const nonFighter = ctx.api.opponent.getUnitVariantsOptions({
-      exclude: ['FIGHTER'],
-      combatMode: 'SPACE',
-    })
-    const fighters = ctx.api.opponent
-      .getUnitVariantsOptions({
-        include: ['FIGHTER'],
-        combatMode: 'SPACE',
-      })
-      .map(item => ({
-        ...item,
-        stable: true,
-      }))
-
-    return [
-      {
-        key: 'sacrificePriority' as const,
-        label: 'Sacrifice Priority',
-        type: 'unit-list' as const,
-        mode: 'checkbox' as const,
-        sortable: true,
-        items: ctx.api.own.getUnitVariantsOptions({
-          include: ['CRUISER', 'DESTROYER'],
-          combatMode: 'SPACE',
-        }),
-      },
-      {
-        key: 'targetPriority' as const,
-        label: 'Target Priority',
-        type: 'unit-list' as const,
-        mode: 'checkbox' as const,
-        sortable: true,
-        items: [...nonFighter, ...fighters],
-      },
-    ]
-  },
+  uiConfig: ctx => [
+    {
+      key: 'sacrificePriority' as const,
+      label: 'Sacrifice Priority',
+      type: 'unit-list' as const,
+      mode: 'checkbox' as const,
+      sortable: true,
+      items: ctx.api.own.getUnitVariantsOptions('sacrificePriority'),
+    },
+    {
+      key: 'targetPriority' as const,
+      label: 'Target Priority',
+      type: 'unit-list' as const,
+      mode: 'checkbox' as const,
+      sortable: true,
+      items: ctx.api.opponent
+        .getUnitVariantsOptions('targetPriority')
+        .map(item =>
+          item.value === 'FIGHTER' ? { ...item, stable: true } : item,
+        ),
+    },
+  ],
 }

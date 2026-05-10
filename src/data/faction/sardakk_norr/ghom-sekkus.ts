@@ -29,7 +29,11 @@ export const ghomSekkus: Ability<Params> = {
       source: 'groundForces',
       sort: 'price-desc',
       defaultItemValue: 0,
-      includeNonParticipating: true,
+      filter: {
+        combatMode: 'GROUND',
+        include: ['MECH', 'INFANTRY'],
+        includeNonParticipating: true,
+      },
     }),
   },
   headerUI: 'isEnabled',
@@ -51,11 +55,7 @@ export const ghomSekkus: Ability<Params> = {
       key: 'units' as const,
       type: 'unit-list' as const,
       mode: 'number' as const,
-      items: ctx.api.own.getUnitVariantsOptions({
-        combatMode: 'GROUND',
-        include: ['MECH', 'INFANTRY'],
-        includeNonParticipating: true,
-      }),
+      items: ctx.api.own.getUnitVariantsOptions('units'),
     },
   ],
 }

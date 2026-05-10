@@ -24,6 +24,10 @@ export const viscountUnlenn: Ability<Params> = {
     unitType: declareParam<UnitType>({
       default: 'FIGHTER',
       source: 'ships',
+      filter: {
+        excludeSubtypeSource: ['VISCOUNT_UNLENN'],
+        combatMode: 'SPACE',
+      },
     }),
   },
   declareSubtype: params => [
@@ -39,21 +43,14 @@ export const viscountUnlenn: Ability<Params> = {
     },
   ],
   headerUI: 'isEnabled',
-  uiConfig: ctx => {
-    return [
-      {
-        key: 'unitType' as const,
-        label: 'Unit Type',
-        type: 'select' as const,
-        items: ctx.api.own
-          .getUnitVariantsOptions({
-            excludeSubtypeSource: [ctx.this.key],
-            combatMode: 'SPACE',
-          })
-          .reverse(),
-      },
-    ]
-  },
+  uiConfig: ctx => [
+    {
+      key: 'unitType' as const,
+      label: 'Unit Type',
+      type: 'select' as const,
+      items: ctx.api.own.getUnitVariantsOptions('unitType').reverse(),
+    },
+  ],
   invoke: [
     {
       timing: 'START_OF_COMBAT_ROUND',
