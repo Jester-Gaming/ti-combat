@@ -188,26 +188,44 @@ function sideSignature(side: SurvivorSide): string {
     .join(',')
 }
 
-/** Sort outcomes from best to worst for attacker */
+/** Sort outcomes from best to worst for attacker. Group by attacker
+ *  composition first so similar attacker rows sit next to each other; break
+ *  ties by defender. */
 function sortOutcomes(outcomes: CombatOutcome[]): CombatOutcome[] {
   return [...outcomes].sort((a, b) => {
-    // Winner priority: attacker wins (best) → draw → defender wins (worst)
     const winOrder = { attacker: 0, draw: 1, defender: 2 }
     const winDiff = winOrder[a.winner] - winOrder[b.winner]
     if (winDiff !== 0) return winDiff
 
-    // Within same winner category, sort by net survivor count (descending)
-    const aNet = countUnits(a.attacker) - countUnits(a.defender)
-    const bNet = countUnits(b.attacker) - countUnits(b.defender)
-    if (aNet !== bNet) return bNet - aNet
+    const attackerCmp = compareSide(a.attacker, b.attacker, 'attacker')
+    if (attackerCmp !== 0) return attackerCmp
 
-    // Same net count — fewer damaged attacker units is better
-    const aDmg = countDamaged(a.attacker) - countDamaged(b.attacker)
-    if (aDmg !== 0) return aDmg
-
-    // More damaged defender units means defender is worse off — better for attacker
-    return countDamaged(b.defender) - countDamaged(a.defender)
+    return compareSide(a.defender, b.defender, 'defender')
   })
+}
+
+/** Compare two sides; for `attacker` more units / fewer damaged is better,
+ *  for `defender` fewer units / more damaged is better (from the attacker's
+ *  POV). Falls back to a deterministic per-variant signature so identical
+ *  totals with different compositions still sort consistently. */
+function compareSide(
+  a: SurvivorSide,
+  b: SurvivorSide,
+  role: 'attacker' | 'defender',
+): number {
+  const aTotal = countUnits(a)
+  const bTotal = countUnits(b)
+  if (aTotal !== bTotal) {
+    return role === 'attacker' ? bTotal - aTotal : aTotal - bTotal
+  }
+  const aDmg = countDamaged(a)
+  const bDmg = countDamaged(b)
+  if (aDmg !== bDmg) {
+    return role === 'attacker' ? aDmg - bDmg : bDmg - aDmg
+  }
+  const aSig = sideSignature(a)
+  const bSig = sideSignature(b)
+  return aSig < bSig ? -1 : aSig > bSig ? 1 : 0
 }
 
 function countUnits(side: SurvivorSide): number {
