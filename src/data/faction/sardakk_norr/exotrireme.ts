@@ -1,12 +1,7 @@
 import { z } from 'zod/mini'
 
-import {
-  type Ability,
-  type AbilityReadContext,
-  declareParam,
-  parseVariantId,
-} from '@/combat'
-import type { UnitList } from '@/types'
+import { type Ability, declareParam, parseVariantId } from '@/combat'
+import type { UnitId, UnitList } from '@/types'
 import { UnitListBooleanSchema } from '@/types'
 
 type Params = {
@@ -43,6 +38,24 @@ export const exotrireme: Ability<Params> = {
     }),
   },
   headerUI: 'isEnabled',
+  sort: (params, ctx, unitIds) => {
+    const remaining = new Set(unitIds)
+    const result: UnitId[] = []
+    for (const variantId of ctx.utils.getFlat(params.sacrificePriority)) {
+      for (const id of ctx.api.own.getUnits(variantId, {
+        includeVariants: false,
+      })) {
+        if (remaining.has(id)) {
+          result.push(id)
+          remaining.delete(id)
+        }
+      }
+    }
+    for (const id of unitIds) {
+      if (remaining.has(id)) result.push(id)
+    }
+    return result
+  },
   invoke: [
     {
       timing: 'AFTER_COMBAT_ROUND',
@@ -55,7 +68,11 @@ export const exotrireme: Ability<Params> = {
         ) {
           return false
         }
-        return isHighestPrioritySacrifice(params, ctx)
+        const variantKey = ctx.api.own.getUnitVariantKey(ctx.getUnit())
+        return (
+          variantKey !== undefined &&
+          ctx.utils.getFlat(params.sacrificePriority).includes(variantKey)
+        )
       },
       call: (ctx, params) => {
         const self = ctx.getUnit()
@@ -98,20 +115,4 @@ export const exotrireme: Ability<Params> = {
       }),
     },
   ],
-}
-
-function isHighestPrioritySacrifice(
-  params: Params,
-  ctx: AbilityReadContext,
-): boolean {
-  const myUnitId = ctx.getUnit()
-
-  for (const variantId of ctx.utils.getFlat(params.sacrificePriority)) {
-    const units = ctx.api.own.getUnits(variantId, { includeVariants: false })
-    if (units.length === 0) continue
-
-    return units[0] === myUnitId
-  }
-
-  return false
 }
