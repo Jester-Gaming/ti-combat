@@ -87,6 +87,7 @@
   --color-background-toast: hsl(var(--color-light-100) / 95%);
   --color-background-skeleton-light: hsl(var(--color-light-200) / 50%);
   --color-background-skeleton-medium: hsl(var(--color-light-200) / 70%);
+  --background: var(--color-light-100);
 
   /* === Layer 2: overlays (foreground tints for hovers, subtle bgs, shadows) === */
   --color-overlay-light: hsl(var(--color-light-900) / 3%);
@@ -144,6 +145,7 @@
   --color-background-toast: hsl(var(--color-slate-100) / 85%);
   --color-background-skeleton-light: hsl(var(--color-slate-200) / 30%);
   --color-background-skeleton-medium: hsl(var(--color-slate-200) / 50%);
+  --background: var(--color-slate-50);
 
   /* Overlays */
   --color-overlay-light: hsl(var(--color-slate-900) / 5%);
