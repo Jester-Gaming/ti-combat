@@ -138,4 +138,112 @@ describe.forEachSide('SLEEPER_CELL', () => {
     t.advanceRound({ defender: 1 })
     expect(t.attacker.units.CRUISER).toHaveLength(4) // 3 + 1
   })
+
+  it('does not place ships when no reinforcements are available', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'MENTAK_COALITION',
+        units: { CRUISER: 2 },
+        abilities: {
+          SLEEPER_CELL: {
+            isEnabled: true,
+            availableShips: [['CRUISER', 0]],
+          },
+        },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound({ defender: 1 })
+
+    // No CRUISER reinforcements → nothing placed
+    expect(t.attacker.units.CRUISER).toHaveLength(2)
+  })
+
+  it('caps placement by availableShips even when board limit allows more', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'MENTAK_COALITION',
+        units: { CRUISER: 2 },
+        abilities: {
+          SLEEPER_CELL: {
+            isEnabled: true,
+            availableShips: [['CRUISER', 1]],
+          },
+        },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 3 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT')
+    // Defender loses 2 cruisers, but only 1 reinforcement is available
+    t.advanceRound({ defender: 2 })
+
+    expect(t.attacker.units.CRUISER).toHaveLength(3) // 2 + 1 (not 2 + 2)
+  })
+
+  it('decrements availableShips after placing copies', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'MENTAK_COALITION',
+        units: { CRUISER: 2 },
+        abilities: {
+          SLEEPER_CELL: {
+            isEnabled: true,
+            availableShips: [['CRUISER', 2]],
+          },
+        },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 3 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound({ defender: 1 })
+
+    expect(t.attacker.units.CRUISER).toHaveLength(3) // 2 + 1
+    const availableShips =
+      t.state.attacker.abilities.SLEEPER_CELL?.availableShips
+    expect(availableShips).toContainEqual(['CRUISER', 1])
+  })
+
+  it('refunds availableShips when own ships are destroyed', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'MENTAK_COALITION',
+        units: { CRUISER: 2 },
+        abilities: {
+          SLEEPER_CELL: {
+            isEnabled: true,
+            availableShips: [['CRUISER', 0]],
+          },
+        },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 4 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT')
+    // Attacker loses 1 cruiser → reinforcements should refund to 1
+    t.advanceRound({ attacker: 1 })
+
+    const availableShips =
+      t.state.attacker.abilities.SLEEPER_CELL?.availableShips
+    expect(availableShips).toContainEqual(['CRUISER', 1])
+  })
 })

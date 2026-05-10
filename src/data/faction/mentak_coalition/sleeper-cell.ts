@@ -1,12 +1,30 @@
 import { z } from 'zod/mini'
 
-import { type Ability, parseVariantId } from '@/combat'
+import { type Ability, declareParam, parseVariantId } from '@/combat'
 import { UNIT_LIMITS } from '@/constants/units'
-import type { UnitBaseType } from '@/types'
+import type { UnitBaseType, UnitList } from '@/types'
+import { UnitListNumberSchema } from '@/types'
 
 type Params = {
   isActive: boolean
+  availableShips: UnitList<number, UnitBaseType>
 }
+
+declare global {
+  interface AbilityConfigMap {
+    SLEEPER_CELL: Params
+  }
+}
+
+const SHIP_LIMITS_DEFAULT: UnitList<number, UnitBaseType> = [
+  ['FLAGSHIP', UNIT_LIMITS.FLAGSHIP],
+  ['WAR_SUN', UNIT_LIMITS.WAR_SUN],
+  ['DREADNOUGHT', UNIT_LIMITS.DREADNOUGHT],
+  ['CARRIER', UNIT_LIMITS.CARRIER],
+  ['CRUISER', UNIT_LIMITS.CRUISER],
+  ['DESTROYER', UNIT_LIMITS.DESTROYER],
+  ['FIGHTER', UNIT_LIMITS.FIGHTER],
+]
 
 export const sleeperCell: Ability<Params> = {
   key: 'SLEEPER_CELL',
@@ -16,13 +34,32 @@ export const sleeperCell: Ability<Params> = {
   context: 'SPACE',
   paramsSchema: z.object({
     isActive: z.boolean(),
+    availableShips: UnitListNumberSchema,
   }),
   params: {
     isEnabled: false,
     uses: Infinity,
     isActive: false,
+    availableShips: declareParam<UnitList<number, UnitBaseType>>({
+      default: SHIP_LIMITS_DEFAULT,
+      source: 'ships',
+      sort: 'price-desc',
+      defaultItemValue: 0,
+    }),
   },
   headerUI: 'isEnabled',
+  uiConfig: ctx => [
+    {
+      key: 'availableShips' as const,
+      label: 'Available Ships',
+      type: 'unit-list' as const,
+      mode: 'number' as const,
+      items: ctx.api.own.getUnitVariantsOptions({
+        combatMode: 'SPACE',
+        includeOnlyBaseTypes: true,
+      }),
+    },
+  ],
   invoke: [
     {
       timing: 'START_OF_COMBAT',
@@ -37,36 +74,84 @@ export const sleeperCell: Ability<Params> = {
         const { ships } = ctx.api.own.getAbilityConfig('SETTINGS')
         const shipsSet = new Set<UnitBaseType>(ships)
         for (const id of ids) {
-          const variantKey = ctx.api.opponent.getUnitVariantKey(id)
+          const variantKey =
+            ctx.api.own.getUnitVariantKey(id) ??
+            ctx.api.opponent.getUnitVariantKey(id)
           if (!variantKey) continue
           const { type } = parseVariantId(variantKey)
           if (shipsSet.has(type)) return true
         }
         return false
       },
-      call: (ctx, _params, ids) => {
+      call: (ctx, params, ids) => {
         const { ships } = ctx.api.own.getAbilityConfig('SETTINGS')
         const shipsSet = new Set<UnitBaseType>(ships)
-        const destroyed: Partial<Record<UnitBaseType, number>> = {}
+
+        const opponentDestroyed: Partial<Record<UnitBaseType, number>> = {}
+        const ownDestroyed: Partial<Record<UnitBaseType, number>> = {}
+
         for (const id of ids) {
-          const variantKey = ctx.api.opponent.getUnitVariantKey(id)
-          if (!variantKey) continue
-          const { type } = parseVariantId(variantKey)
-          if (!shipsSet.has(type)) continue
-          destroyed[type] = (destroyed[type] ?? 0) + 1
+          const ownKey = ctx.api.own.getUnitVariantKey(id)
+          if (ownKey) {
+            const { type } = parseVariantId(ownKey)
+            if (!shipsSet.has(type)) continue
+            ownDestroyed[type] = (ownDestroyed[type] ?? 0) + 1
+            continue
+          }
+          const oppKey = ctx.api.opponent.getUnitVariantKey(id)
+          if (oppKey) {
+            const { type } = parseVariantId(oppKey)
+            if (!shipsSet.has(type)) continue
+            opponentDestroyed[type] = (opponentDestroyed[type] ?? 0) + 1
+          }
         }
 
-        // Cap placement at unit limits
+        const availableMap = new Map<UnitBaseType, number>(
+          params.availableShips,
+        )
+
+        // Refund first: own destroyed ships return to reinforcements.
+        for (const [type, count] of Object.entries(ownDestroyed)) {
+          const baseType = type as UnitBaseType
+          const current = availableMap.get(baseType) ?? 0
+          availableMap.set(
+            baseType,
+            Math.min(UNIT_LIMITS[baseType], current + count),
+          )
+        }
+
+        // Place: capped by reinforcements available AND on-board UNIT_LIMITS.
         const toPlace: Partial<Record<UnitBaseType, number>> = {}
-        for (const [type, count] of Object.entries(destroyed)) {
-          const unitType = type as UnitBaseType
-          const existing = ctx.api.own.countUnits(unitType, {
+        for (const [type, count] of Object.entries(opponentDestroyed)) {
+          const baseType = type as UnitBaseType
+          const available = availableMap.get(baseType) ?? 0
+          if (available <= 0) continue
+          const existing = ctx.api.own.countUnits(baseType, {
             includeVariants: true,
           })
-          const canPlace = Math.max(0, UNIT_LIMITS[unitType] - existing)
-          if (canPlace > 0) toPlace[unitType] = Math.min(count, canPlace)
+          const onBoardCanPlace = Math.max(0, UNIT_LIMITS[baseType] - existing)
+          const placeCount = Math.min(count, available, onBoardCanPlace)
+          if (placeCount > 0) {
+            toPlace[baseType] = placeCount
+            availableMap.set(baseType, available - placeCount)
+          }
         }
-        ctx.api.own.placeUnits(toPlace)
+
+        if (Object.keys(toPlace).length > 0) {
+          ctx.api.own.placeUnits(toPlace)
+        }
+
+        const availabilityChanged =
+          Object.keys(ownDestroyed).length > 0 ||
+          Object.keys(toPlace).length > 0
+        if (availabilityChanged) {
+          ctx.api.own.updateAbilityConfig({
+            availableShips: Array.from(availableMap.entries()) as UnitList<
+              number,
+              UnitBaseType
+            >,
+          })
+        }
       },
     },
   ],
