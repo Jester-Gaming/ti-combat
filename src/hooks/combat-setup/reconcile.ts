@@ -321,10 +321,15 @@ function reconcileAbilityOrder(
 
       const currentOrder =
         (orderConfig[group.paramKey] as [string][] | undefined) ?? []
-      orderConfig[group.paramKey] = reconcileUnitListParam(
-        currentOrder,
-        validKeys,
-      )
+      const validSet = new Set(validKeys)
+      const kept = currentOrder.filter(([key]) => validSet.has(key))
+      const keptKeys = new Set(kept.map(([key]) => key))
+      const added: [string][] = validKeys
+        .filter(key => !keptKeys.has(key))
+        .map(key => [key])
+      // Newly enabled abilities lead — they're presumed to take precedence
+      // over the previously-ordered defaults.
+      orderConfig[group.paramKey] = [...added, ...kept]
     }
   }
 }

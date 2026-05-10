@@ -529,24 +529,33 @@ export class AbilitiesEngine {
     return side === 'attacker' ? this._attackerCtx : this._defenderCtx
   }
 
+  /** Enumerate enabled abilities (registered for this side) that have at
+   *  least one invoke matching `timing`. Iterates the side's deduped
+   *  ability list rather than `_invokes`, so unit abilities like
+   *  SUSTAIN_DAMAGE surface even when no unit currently carries them —
+   *  e.g. for the Resolve Order UI, which must still list them in case a
+   *  mid-combat effect places such a unit. */
   getAbilityKeysForTiming(
     side: CombatSide,
     timing: AbilityTiming | AbilityTiming[],
   ): { key: string; name: string }[] {
-    const timings = Array.isArray(timing) ? timing : [timing]
-    const s = this._combatState._invokes[side]
-    const seen = new Set<string>()
+    const timingSet = new Set(Array.isArray(timing) ? timing : [timing])
+    const combatMode = this._combatState.data.combatMode
+    const sideData = this._combatState.data[side]
     const results: { key: string; name: string }[] = []
-    for (const t of timings) {
-      for (const bucket of s.values()) {
-        const entries = bucket.get(t)
-        if (!entries) continue
-        for (const entry of entries) {
-          if (seen.has(entry.ability.key)) continue
-          seen.add(entry.ability.key)
-          results.push({ key: entry.ability.key, name: entry.ability.name })
-        }
-      }
+    for (const ability of this._abilities[side]) {
+      if (ability.context && ability.context !== combatMode) continue
+      const merged = resolveMergedParams(sideData, ability)
+      if (!merged) continue
+      if (
+        'uses' in merged &&
+        typeof merged.uses === 'number' &&
+        isFinite(merged.uses) &&
+        merged.uses <= 0
+      )
+        continue
+      if (!ability.invoke.some(inv => timingSet.has(inv.timing))) continue
+      results.push({ key: ability.key, name: ability.name })
     }
     return results
   }

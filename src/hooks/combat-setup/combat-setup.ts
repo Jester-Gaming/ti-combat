@@ -647,10 +647,8 @@ export class CombatSetup {
         this._combatMode,
         this._syncSnapshots,
       )
-      this.rebuildEngine()
-    } else {
-      this.refreshEngine()
     }
+    this.rebuildEngine()
   }
 
   private rebuildUnits(
@@ -676,7 +674,8 @@ export class CombatSetup {
       [side]: {
         ...this._stateData[side],
         faction,
-        units,
+        participatingUnits: units,
+        nonParticipatingUnits: '' as UnitIdList,
         unitType,
         unitState,
         unitStats: {
@@ -758,10 +757,5 @@ export class CombatSetup {
       this._unitAbilityKeys,
       this._factionOwnedKeys,
     )
-  }
-
-  private refreshEngine(): void {
-    const wrapState = CombatState.fromData(this._stateData, this._engine)
-    this._engine.setCombatState(wrapState)
   }
 }
