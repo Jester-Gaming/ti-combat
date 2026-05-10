@@ -2,6 +2,7 @@ import { z } from 'zod/mini'
 
 import nomadIcon from '@/assets/faction/nomad.svg?raw'
 import { type Ability, declareParam, makeVariantId } from '@/combat'
+import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { UnitType, UnitVariantId } from '@/types'
 import { getEffectiveStats } from '@/utils/get-simulation-units'
 
@@ -47,19 +48,27 @@ export const cavalry: Ability<Params> = {
         name: CAVALRY,
         unitType: params.unitType,
         participating: true,
-        statsFactory: stats => ({
-          ...stats,
-          COMBAT: [
-            memoriaStats.COMBAT![0],
-            memoriaStats.COMBAT![1],
-            (memoriaStats.COMBAT![2] ?? 0) + (stats.COMBAT![2] ?? 0),
-          ],
-          UNIT_ABILITIES: {
-            ...stats.UNIT_ABILITIES,
-            SUSTAIN_DAMAGE: memoriaStats.UNIT_ABILITIES?.SUSTAIN_DAMAGE,
-            AFB: memoriaStats.UNIT_ABILITIES?.AFB,
-          },
-        }),
+        statsFactory: stats => {
+          const hadSustain = stats.ABILITIES?.some(
+            a => a.key === 'SUSTAIN_DAMAGE',
+          )
+          return {
+            ...stats,
+            COMBAT: [
+              memoriaStats.COMBAT![0],
+              memoriaStats.COMBAT![1],
+              (memoriaStats.COMBAT![2] ?? 0) + (stats.COMBAT![2] ?? 0),
+            ],
+            UNIT_ABILITIES: {
+              ...stats.UNIT_ABILITIES,
+              SUSTAIN_DAMAGE: memoriaStats.UNIT_ABILITIES?.SUSTAIN_DAMAGE,
+              AFB: memoriaStats.UNIT_ABILITIES?.AFB,
+            },
+            ABILITIES: hadSustain
+              ? stats.ABILITIES
+              : [...(stats.ABILITIES ?? []), sustainDamage],
+          }
+        },
       },
     ]
   },

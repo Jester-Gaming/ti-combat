@@ -30,4 +30,29 @@ describe.forEachSide('CAVALRY', () => {
     // Regular cruiser: [7, 1]
     expect(pool.attacker).toContainDice('CRUISER', [7, 1])
   })
+
+  it('grants Sustain Damage to chosen ship and uses it in combat', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 1 },
+        abilities: {
+          CAVALRY: { isEnabled: true, unitType: 'CRUISER' },
+          SUSTAIN_DAMAGE: { spacePriority: [['CRUISER:Cavalry', true]] },
+        },
+      },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
+    })
+
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound({ attacker: 1 })
+
+    expect(t.abilityLog('SUSTAIN_DAMAGE')).not.toHaveLength(0)
+    const cavalry = t.attacker.units.CRUISER!.find(u =>
+      u.subtypes?.includes('Cavalry'),
+    )
+    expect(cavalry?.isDamaged).toBe(true)
+    expect(t.attacker.units.CRUISER).toHaveLength(1)
+  })
 })
