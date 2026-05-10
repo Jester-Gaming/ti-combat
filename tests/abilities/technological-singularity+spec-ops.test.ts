@@ -13,6 +13,7 @@ describe('TECHNOLOGICAL_SINGULARITY + SPEC_OPS', () => {
         abilities: {
           NEKRO_UNIT_FEDERATION_OF_SOL_INFANTRY: true,
           TECHNOLOGICAL_SINGULARITY: {
+            isEnabled: true,
             disableAbilityKey: 'NEKRO_UNIT_FEDERATION_OF_SOL_INFANTRY',
           },
         },

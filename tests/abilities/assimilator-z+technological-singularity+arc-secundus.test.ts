@@ -13,6 +13,7 @@ describe('ASSIMILATOR_Z + TECHNOLOGICAL_SINGULARITY + ARC_SECUNDUS', () => {
           ASSAULT_CANNON: true,
           PRE_DAMAGED: { isEnabled: true, damagedUnits: [['FLAGSHIP', 1]] },
           TECHNOLOGICAL_SINGULARITY: {
+            isEnabled: true,
             enableAbilityKey: 'NEKRO_FLAGSHIP_ARC_SECUNDUS',
           },
         },
@@ -44,6 +45,7 @@ describe('ASSIMILATOR_Z + TECHNOLOGICAL_SINGULARITY + ARC_SECUNDUS', () => {
         abilities: {
           PRE_DAMAGED: { isEnabled: true, damagedUnits: [['FLAGSHIP', 1]] },
           TECHNOLOGICAL_SINGULARITY: {
+            isEnabled: true,
             enableAbilityKey: 'NEKRO_FLAGSHIP_ARC_SECUNDUS',
           },
         },

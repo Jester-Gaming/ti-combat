@@ -12,6 +12,7 @@ describe('TECHNOLOGICAL_SINGULARITY + LETANI_WARRIOR + SPEC_OPS', () => {
         abilities: {
           NEKRO_UNIT_ARBOREC_INFANTRY: true,
           TECHNOLOGICAL_SINGULARITY: {
+            isEnabled: true,
             disableAbilityKey: 'NEKRO_UNIT_ARBOREC_INFANTRY',
             enableAbilityKey: 'NEKRO_UNIT_FEDERATION_OF_SOL_INFANTRY',
           },

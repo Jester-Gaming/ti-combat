@@ -28,6 +28,7 @@ const baseUnits = {
       UNIT_ABILITIES: {},
     },
     UPGRADED: {
+      NAME: 'Cruiser II',
       COMBAT: [6, 1],
       MOVE: 3,
       CAPACITY: 1,
@@ -47,6 +48,7 @@ const baseUnits = {
       ABILITIES: [sustainDamage],
     },
     UPGRADED: {
+      NAME: 'Dreadnought II',
       MOVE: 2,
       DIRECT_HIT_IMMUNE: true,
     },
@@ -63,6 +65,7 @@ const baseUnits = {
       },
     },
     UPGRADED: {
+      NAME: 'Destroyer II',
       COMBAT: [8, 1],
       UNIT_ABILITIES: {
         AFB: [6, 3],
@@ -82,6 +85,7 @@ const baseUnits = {
       ABILITIES: [planetaryShield],
     },
     UPGRADED: {
+      NAME: 'PDS II',
       UNIT_ABILITIES: {
         SPACE_CANNON: [5, 1],
       },
@@ -97,6 +101,7 @@ const baseUnits = {
       UNIT_ABILITIES: {},
     },
     UPGRADED: {
+      NAME: 'Carrier II',
       MOVE: 2,
       CAPACITY: 6,
     },
@@ -111,6 +116,7 @@ const baseUnits = {
       UNIT_ABILITIES: {},
     },
     UPGRADED: {
+      NAME: 'Fighter II',
       FLEET_POOL_COST: 1,
       CAPACITY_COST: null,
       COMBAT: [8, 1],
@@ -127,6 +133,7 @@ const baseUnits = {
       UNIT_ABILITIES: {},
     },
     UPGRADED: {
+      NAME: 'Infantry II',
       COMBAT: [7, 1],
     },
   },
@@ -138,7 +145,9 @@ const baseUnits = {
       CAPACITY: null,
       UNIT_ABILITIES: {},
     },
-    UPGRADED: {},
+    UPGRADED: {
+      NAME: 'Space Dock II',
+    },
   },
 } as const
 

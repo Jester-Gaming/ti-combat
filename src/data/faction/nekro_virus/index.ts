@@ -7,10 +7,12 @@ import type {
 } from '@/combat/abilities-engine/types'
 import { SHARED_UNIT_ABILITY_KEYS } from '@/data/abilities/general'
 import { sustainDamage } from '@/data/abilities/general/sustain-damage'
+import technology from '@/data/abilities/technology'
 import type { Faction, UnitBaseType, UnitDefinition } from '@/types'
 import { getEffectiveStats } from '@/utils/get-simulation-units'
 
 import { otherFactions } from '../other-factions'
+import { createGenericUnitUpgrades } from './generic-unit-upgrades'
 import { mordred } from './mordred'
 import { createTechnologicalSingularity } from './technological-singularity'
 import { theAlastor } from './the-alastor'
@@ -154,21 +156,47 @@ const unitAbilities = Object.entries(otherFactions)
       ),
   )
 
+// Conflict map for generic unit upgrades: each unit type maps to the
+// list of faction-unit ability keys that target the same unit type. If
+// any such ability is enabled at fire time, the generic upgrade is
+// skipped (e.g. Letani II already overrode INFANTRY).
+const genericUpgradeConflicts: Partial<Record<UnitBaseType, string[]>> = {}
+for (const a of unitAbilities) {
+  const ut = a.exclusiveGroup as UnitBaseType | undefined
+  if (!ut) continue
+  ;(genericUpgradeConflicts[ut] ??= []).push(a.key)
+}
+const genericUnitUpgrades = createGenericUnitUpgrades(genericUpgradeConflicts)
+
+const taggedGenericTechs = technology.map(a => ({
+  ability: a,
+  subcategory: 'TECHNOLOGY' as const,
+}))
+const taggedUnitUpgrades = genericUnitUpgrades.map(a => ({
+  ability: a,
+  subcategory: 'UNIT_UPGRADE' as const,
+}))
+const taggedTechnologies = technologyAbilities.map(a => ({
+  ability: a,
+  subcategory: 'FACTION_TECHNOLOGY' as const,
+}))
+const taggedUnits = unitAbilities.map(a => ({
+  ability: a,
+  subcategory: 'FACTION_UNIT' as const,
+}))
 const taggedFlagships = flagshipAbilities.map(a => ({
   ability: a,
   subcategory: 'FLAGSHIP' as const,
 }))
-const taggedTechnologies = technologyAbilities.map(a => ({
-  ability: a,
-  subcategory: 'TECHNOLOGY' as const,
-}))
-const taggedUnits = unitAbilities.map(a => ({
-  ability: a,
-  subcategory: 'UNIT' as const,
-}))
 
 const technologicalSingularity = createTechnologicalSingularity(
-  [...taggedFlagships, ...taggedTechnologies, ...taggedUnits],
+  [
+    ...taggedGenericTechs,
+    ...taggedUnitUpgrades,
+    ...taggedTechnologies,
+    ...taggedUnits,
+    ...taggedFlagships,
+  ],
   [...taggedTechnologies, ...taggedUnits],
   mordred,
 )
@@ -182,7 +210,8 @@ export const nekro_virus: Faction = {
   icon: nekroVirusIcon,
   abilities: {
     faction: [technologicalSingularity],
-    technology: [...technologyAbilities, ...unitAbilities],
+    technology: technologyAbilities,
+    unit: unitAbilities,
   },
   units: {
     FLAGSHIP: {

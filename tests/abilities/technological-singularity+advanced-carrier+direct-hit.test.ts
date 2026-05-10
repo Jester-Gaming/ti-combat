@@ -12,6 +12,7 @@ describe('TECHNOLOGICAL_SINGULARITY + ADVANCED_CARRIER + DIRECT_HIT', () => {
         abilities: {
           DIRECT_HIT: { uses: 1 },
           TECHNOLOGICAL_SINGULARITY: {
+            isEnabled: true,
             enableAbilityKey: 'NEKRO_UNIT_FEDERATION_OF_SOL_CARRIER',
           },
         },

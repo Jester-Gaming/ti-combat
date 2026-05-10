@@ -9,6 +9,7 @@ describe('TECHNOLOGICAL_SINGULARITY', () => {
       attacker: {
         faction: 'NEKRO_VIRUS',
         units: { CRUISER: 3 },
+        abilities: { TECHNOLOGICAL_SINGULARITY: true },
       },
       defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })

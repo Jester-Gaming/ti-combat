@@ -1,3 +1,4 @@
+import { extractDefaults } from '../../../combat/abilities-engine/declare-param'
 import type {
   Ability,
   AbilityCallContext,
@@ -17,12 +18,18 @@ type TSParams = {
   enableAbilityKey: string
   disableAbilityKey: string
   enableMordred: boolean
+  disableMordred: boolean
   opponentDestroyed?: boolean
 }
 
 type TaggedAbility = {
   ability: Ability
-  subcategory: 'FLAGSHIP' | 'TECHNOLOGY' | 'UNIT'
+  subcategory:
+    | 'TECHNOLOGY'
+    | 'UNIT_UPGRADE'
+    | 'FACTION_TECHNOLOGY'
+    | 'FACTION_UNIT'
+    | 'FLAGSHIP'
 }
 
 export function createTechnologicalSingularity(
@@ -42,6 +49,13 @@ export function createTechnologicalSingularity(
     [...enableAbilities, ...disableAbilities].map(e => [e.key, e]),
   )
 
+  // Map of enable-list keys → original ability, used to forward
+  // declareParamChange / declareSubtype at setup so the picked ability's
+  // declarations propagate (e.g. Hel Titan II → PDS as ground force).
+  const enableAbilityByKey = new Map<string, Ability>(
+    enableAbilityList.map(t => [t.ability.key, t.ability]),
+  )
+
   const mordredEntry = collectInvokes(mordredAbility)
 
   return {
@@ -50,20 +64,34 @@ export function createTechnologicalSingularity(
     description:
       "Once per combat, after 1 of your opponent's units is destroyed, you may gain 1 technology that is owned by that player.",
     params: {
-      isEnabled: true,
+      isEnabled: false,
       uses: Infinity,
       enableAbilityKey: NONE,
       disableAbilityKey: NONE,
       enableMordred: false,
+      disableMordred: false,
     },
     headerUI: 'isEnabled',
-    readOnly: true,
+    declareParamChange: (params, settings) => {
+      if (!params.isEnabled) return []
+      if (params.enableAbilityKey === NONE) return []
+      const target = enableAbilityByKey.get(params.enableAbilityKey)
+      if (!target?.declareParamChange) return []
+      const synth = {
+        ...extractDefaults(target),
+        [target.headerUI ?? 'isEnabled']: true,
+      } as Parameters<NonNullable<typeof target.declareParamChange>>[0]
+      return target.declareParamChange(synth, settings)
+    },
     uiConfig: ctx => {
       const disableGroups = buildSelectGroups(
         disableAbilities,
         ctx,
         enabled => enabled,
       )
+      const mordredEnabled = !!ctx.api.own.getAbilityConfig(
+        'MORDRED' as keyof AbilityConfigMap,
+      )?.isEnabled
       return [
         {
           key: 'enableAbilityKey' as const,
@@ -87,11 +115,17 @@ export function createTechnologicalSingularity(
               },
             ]
           : []),
-        {
-          key: 'enableMordred' as const,
-          label: 'Enable Mordred',
-          type: 'checkbox' as const,
-        },
+        mordredEnabled
+          ? {
+              key: 'disableMordred' as const,
+              label: 'Disable Mordred',
+              type: 'checkbox' as const,
+            }
+          : {
+              key: 'enableMordred' as const,
+              label: 'Enable Mordred',
+              type: 'checkbox' as const,
+            },
       ]
     },
     onParamSet: (currentParams, key, value) => {
@@ -157,6 +191,9 @@ export function createTechnologicalSingularity(
               )
             ctx.api.own.updateAbilityConfig('MORDRED', { isEnabled: true })
           }
+          if (params.disableMordred) {
+            ctx.api.own.updateAbilityConfig('MORDRED', { isEnabled: false })
+          }
         },
       },
     ],
@@ -165,7 +202,13 @@ export function createTechnologicalSingularity(
 
 function collectInvokes(
   ability: Ability,
-  subcategory?: 'FLAGSHIP' | 'TECHNOLOGY' | 'UNIT' | 'ABILITY',
+  subcategory?:
+    | 'TECHNOLOGY'
+    | 'UNIT_UPGRADE'
+    | 'FACTION_TECHNOLOGY'
+    | 'FACTION_UNIT'
+    | 'FLAGSHIP'
+    | 'ABILITY',
 ): SingularityAbilityEntry {
   const prepareCalls: ((
     ctx: AbilityCallContext,
@@ -191,9 +234,11 @@ function buildSelectGroups(
   filter: (isEnabled: boolean) => boolean,
 ): SelectGroup[] {
   const SUBCATEGORY_LABELS: Record<string, string> = {
-    FLAGSHIP: 'Flagship',
     TECHNOLOGY: 'Technology',
-    UNIT: 'Unit',
+    UNIT_UPGRADE: 'Unit Upgrade',
+    FACTION_TECHNOLOGY: 'Faction Technology',
+    FACTION_UNIT: 'Faction Unit',
+    FLAGSHIP: 'Flagship',
   }
   const grouped = new Map<string, { label: string; value: string }[]>()
   for (const entry of entries) {

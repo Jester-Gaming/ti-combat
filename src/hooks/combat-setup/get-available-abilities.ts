@@ -27,6 +27,7 @@ function tag(
 const FACTION_KEY_TO_SLOT = {
   faction: 'FACTION_ABILITY',
   technology: 'FACTION_TECHNOLOGY',
+  unit: 'FACTION_UNIT',
   promissory: 'PROMISSORY',
   agent: 'AGENT',
   commander: 'COMMANDER',

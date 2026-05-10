@@ -12,6 +12,7 @@ describe('TECHNOLOGICAL_SINGULARITY + ASSAULT_CANNON + HEL_TITAN + THE_ALASTOR',
         abilities: {
           ASSAULT_CANNON: true,
           TECHNOLOGICAL_SINGULARITY: {
+            isEnabled: true,
             enableAbilityKey: 'NEKRO_UNIT_TITANS_OF_UL_PDS',
           },
           ABILITY_ORDER: {
@@ -44,6 +45,7 @@ describe('TECHNOLOGICAL_SINGULARITY + ASSAULT_CANNON + HEL_TITAN + THE_ALASTOR',
         abilities: {
           ASSAULT_CANNON: true,
           TECHNOLOGICAL_SINGULARITY: {
+            isEnabled: true,
             enableAbilityKey: 'NEKRO_UNIT_TITANS_OF_UL_PDS',
           },
           ABILITY_ORDER: {
