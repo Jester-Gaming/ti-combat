@@ -73,7 +73,9 @@ export const impulseCore: Ability<Params> = {
         )
         if (!sacrifice || !target) return
 
-        ctx.api.opponent.addHits(1, [ctx.api.opponent.getUnitVariant(target)!])
+        ctx.api.opponent.addHits(1, [
+          ctx.api.opponent.getUnitVariantKey(target)!,
+        ])
         ctx.api.own.destroyUnits(sacrifice)
       },
     },

@@ -29,7 +29,7 @@ export const metaliVoidShielding: Ability = {
 
         ctx.api.own.modifyUnitState(target, { isDamaged: true })
         ctx.api.own.reduceHits(1)
-        ctx.logger?.log(ctx.api.own.getUnitVariant(target))
+        ctx.logger?.log(ctx.api.own.getUnitVariantKey(target))
         // Triggered steps pop LIFO — push AFTER first so WHEN runs first.
         ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', target)
         ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', target)

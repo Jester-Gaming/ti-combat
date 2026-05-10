@@ -55,7 +55,7 @@ export const courageousToTheEnd: Ability<Params> = {
           ctx.utils.getFlat(params.targetPriority),
         )
         return targets.every(targetId =>
-          targetEnabled.has(ctx.api.opponent.getUnitVariant(targetId)!),
+          targetEnabled.has(ctx.api.opponent.getUnitVariantKey(targetId)!),
         )
       },
       call: (ctx, params, ids) => {

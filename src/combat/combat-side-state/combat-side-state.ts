@@ -650,14 +650,6 @@ export class CombatSideState {
     return parseVariantId(key).type as UnitBaseType
   }
 
-  /** Get variant key for a UnitId (undefined if not tracked). */
-  static getUnitVariant(
-    s: SideStateData,
-    unitId: UnitId,
-  ): UnitType | undefined {
-    return s.unitType[unitId]
-  }
-
   /** Get all active base types (types with at least one alive unit). */
   static getActiveBaseTypes(s: SideStateData): UnitBaseType[] {
     const { participatingUnits, nonParticipatingUnits, unitType } = s

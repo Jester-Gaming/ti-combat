@@ -257,10 +257,6 @@ export class SideApi {
     return CombatSideState.getUnitBaseType(this._sideData, unitId)
   }
 
-  getUnitVariant(unitId: UnitId) {
-    return CombatSideState.getUnitVariant(this._sideData, unitId)
-  }
-
   isUnitAbilityLost(ability: UnitAbility, unitType: UnitType) {
     return CombatSideState.isRestricted(
       this.state,
