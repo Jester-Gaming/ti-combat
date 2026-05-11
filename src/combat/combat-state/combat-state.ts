@@ -26,6 +26,8 @@ import {
   getOpponentSide,
 } from '../combat-side-state/combat-side-state'
 import { type LogEntry, Logger } from '../logger'
+import { decodeKey } from '../reroll/distribution'
+import { foldRerolls, type QueuedSpecForSide } from '../reroll/fold-rerolls'
 import { canonicalizeUnitState } from '../utils/canonicalize-unit-state'
 import { sortUnitsByPriority } from '../utils/sort-units-by-priority'
 import { parseVariantId } from '../utils/unit-variant'
@@ -43,7 +45,11 @@ import type {
   UnitAbilityMeta,
 } from './types'
 import { isDiceRollContext } from './types'
-import { clampDistribution, getCombinedDiceDistribution } from './utils'
+import {
+  buildRollGroups,
+  clampDistribution,
+  getCombinedDiceDistribution,
+} from './utils'
 
 /** A state with its probability */
 export interface StateWithProbability {
@@ -148,6 +154,37 @@ function isSidePoolEmpty(pool: DicePool): boolean {
     if (entries && entries.length > 0) return false
   }
   return true
+}
+
+/** Apply a fold-rerolls usesDelta to live ability config. For each ability
+ *  key in `delta`, look up which side owns the ability (where the live `uses`
+ *  count is stored), read the current value (live overlay → base → default),
+ *  and rewrite the live entry with the decremented value. Branches that share
+ *  `liveAbilities` references with a sibling get a fresh entry per write so
+ *  the mutation doesn't leak. */
+function applyUsesDelta(
+  data: CombatStateData,
+  delta: Record<string, -1>,
+  ownerByKey: Map<string, CombatSide>,
+  defaultUsesByKey: Map<string, number>,
+): void {
+  for (const [key, d] of Object.entries(delta)) {
+    const ownerSide = ownerByKey.get(key)
+    if (ownerSide === undefined) continue
+    const sideData = data[ownerSide]
+    const baseUses = (sideData.abilities[key] as { uses?: number } | undefined)
+      ?.uses
+    sideData.liveAbilities = { ...sideData.liveAbilities }
+    const liveEntry =
+      (sideData.liveAbilities[key] as Record<string, unknown> | undefined) ?? {}
+    const currentUses =
+      typeof liveEntry.uses === 'number'
+        ? liveEntry.uses
+        : typeof baseUses === 'number'
+          ? baseUses
+          : (defaultUsesByKey.get(key) ?? 0)
+    sideData.liveAbilities[key] = { ...liveEntry, uses: currentUses + d }
+  }
 }
 
 /** Flatten a DicePool into DiceGroup[] for probability calculation */
@@ -887,7 +924,133 @@ export class CombatState {
       hitSource: ctx.hitSource,
     })
 
+    const queue = (ctx.rerollSpecQueue ?? []) as QueuedSpecForSide[]
+    ctx.rerollSpecQueue = undefined
+
+    if (queue.length > 0) {
+      return this.rollDiceOutcomesWithFold(
+        modifiedDice,
+        queue,
+        phase,
+        validTargets,
+        ctx.routing,
+      )
+    }
+
     return this.rollDiceOutcomes(modifiedDice, validTargets, phase, ctx.routing)
+  }
+
+  /** Fold-rerolls branching path. Used when REROLL_DICE_ROLL abilities have
+   *  queued one or more `RerollSpec`s onto the dice-roll group context.
+   *  Builds per-side `JointDist` cells via `foldRerolls`, then branches by
+   *  (usesDelta, attackerCell, defenderCell) — each branch clones state,
+   *  applies the usesDelta to `liveAbilities` on the ability-owner side, and
+   *  writes per-side totals into the opposite side's hit pools. */
+  private rollDiceOutcomesWithFold(
+    modifiedDice: SidedDiceData,
+    queue: QueuedSpecForSide[],
+    phase: MetaPhase[],
+    validTargets: { attacker: UnitType[]; defender: UnitType[] },
+    routing?: { attacker: CombatSide; defender: CombatSide },
+  ): StateWithProbability[] {
+    const metaPhase = innerMeta(phase)
+    const attLookups = {
+      variantKeyOf: (id: UnitId) => this.data.attacker.unitType[id] ?? '',
+    }
+    const defLookups = {
+      variantKeyOf: (id: UnitId) => this.data.defender.unitType[id] ?? '',
+    }
+    const attGroups = buildRollGroups(modifiedDice.attacker, attLookups)
+    const defGroups = buildRollGroups(modifiedDice.defender, defLookups)
+
+    const ownerByKey = new Map<string, CombatSide>()
+    const defaultUsesByKey = new Map<string, number>()
+    for (const q of queue) {
+      ownerByKey.set(q.abilityKey, q.abilityOwnerSide)
+      const ability = this._params
+        .getAbilities(q.abilityOwnerSide)
+        .find(a => a.key === q.abilityKey)
+      const defaultUses = (ability?.params as { uses?: unknown } | undefined)
+        ?.uses
+      if (typeof defaultUses === 'number') {
+        defaultUsesByKey.set(q.abilityKey, defaultUses)
+      }
+    }
+
+    const branches = foldRerolls(attGroups, defGroups, queue)
+
+    const baseInvokes = this._invokes
+    const baseAllInvokes = this._allInvokes
+    const baseData = this.data
+    const basePendingSteps = this.pendingSteps
+
+    const attackerHitTarget = routing?.attacker ?? 'defender'
+    const defenderHitTarget = routing?.defender ?? 'attacker'
+
+    const results: StateWithProbability[] = []
+    for (const branch of branches) {
+      for (const [attKey, attProb] of branch.attackerDist.cells) {
+        const attTotal = decodeKey(attKey).reduce((a, b) => a + b, 0)
+        for (const [defKey, defProb] of branch.defenderDist.cells) {
+          const defTotal = decodeKey(defKey).reduce((a, b) => a + b, 0)
+          const probability = branch.probability * attProb * defProb
+          if (probability === 0) continue
+
+          this._invokes = baseInvokes
+          this._invokesOwned = false
+          this._allInvokes = baseAllInvokes
+          this._allInvokesOwned = false
+
+          const branchData = cloneStateForBranch(baseData)
+          applyUsesDelta(
+            branchData,
+            branch.usesDelta,
+            ownerByKey,
+            defaultUsesByKey,
+          )
+          CombatSideState.addBaseHits(
+            branchData[attackerHitTarget],
+            attTotal,
+            validTargets[attackerHitTarget],
+          )
+          CombatSideState.addBaseHits(
+            branchData[defenderHitTarget],
+            defTotal,
+            validTargets[defenderHitTarget],
+          )
+
+          const branchLogger = this._logger?.fork()
+          branchLogger?.child(metaPhase).child('DICE_ROLL').log({
+            attacker: attTotal,
+            defender: defTotal,
+          })
+
+          let hitsToAttacker = 0
+          let hitsToDefender = 0
+          if (attackerHitTarget === 'attacker') hitsToAttacker += attTotal
+          else hitsToDefender += attTotal
+          if (defenderHitTarget === 'attacker') hitsToAttacker += defTotal
+          else hitsToDefender += defTotal
+          branchLogger?.child(metaPhase).child('DICE_HITS').log({
+            attacker: hitsToAttacker,
+            defender: hitsToDefender,
+          })
+
+          const branchState = CombatState.fromData(branchData, this._params)
+          branchState._logger = branchLogger
+          branchState.pendingSteps = clonePendingSteps(basePendingSteps)
+          results.push({ state: branchState, probability })
+        }
+      }
+    }
+
+    this.pendingSteps = basePendingSteps
+    this._invokes = baseInvokes
+    this._invokesOwned = true
+    this._allInvokes = baseAllInvokes
+    this._allInvokesOwned = true
+
+    return results
   }
 
   /** Convert engine-produced branches (each with its own data/invokes)
@@ -1150,7 +1313,16 @@ export function clonePendingSteps(steps: PendingStep[]): PendingStep[] {
 }
 
 function cloneStep(step: PhaseStep): PhaseStep {
-  if (step.kind !== 'timing' || !step.frame) return step
+  if (step.kind !== 'timing') return step
+  // Always clone timing steps so sibling branches that share `pendingSteps`
+  // can mutate `step.frame` (set by tryResolveOne pre-stamp) independently.
+  // Sharing the step object was previously safe because branching only ever
+  // produced one in-flight state at a time, but the per-group multiset path
+  // creates 4+ sibling branches whose dice-roll group entries reference the
+  // same inner steps via `s.steps.map(cloneStep)`. Without deep cloning, a
+  // sibling's leaked `step.frame` makes runAbilities treat the next sibling
+  // as a resume and skip `hasCallableInvoke`.
+  if (!step.frame) return { ...step }
 
   return {
     ...step,
@@ -1234,6 +1406,7 @@ function buildCombatDiceRollGroup(phase: MetaPhase[]): PhaseStepGroup {
     steps: [
       { kind: 'timing', timing: 'AFTER_DICE_ROLL', phase },
       { kind: 'method', fn: CombatState.prototype._rollDice, phase },
+      { kind: 'timing', timing: 'REROLL_DICE_ROLL', phase },
       { kind: 'timing', timing: 'BEFORE_DICE_ROLL', phase },
       { kind: 'method', fn: CombatState.prototype._collectDice, phase },
     ],
@@ -1277,6 +1450,7 @@ function buildUnitAbilityDiceRollGroup(
         }),
       },
       { kind: 'method', fn: CombatState.prototype._rollDice, phase },
+      { kind: 'timing', timing: 'REROLL_UNIT_ABILITY_ROLL', phase },
       {
         kind: 'timing',
         timing: 'BEFORE_UNIT_ABILITY_ROLL',

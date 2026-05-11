@@ -133,6 +133,7 @@ declare global {
     START_OF_COMBAT_ROUND: void
     ANNOUNCE_RETREAT_STEP: void
     BEFORE_DICE_ROLL: void
+    REROLL_DICE_ROLL: void
     AFTER_DICE_ROLL: void
     BEFORE_ASSIGN_HITS: void
     AFTER_ASSIGN_HITS_STEP: void
@@ -144,6 +145,7 @@ declare global {
     CLEANUP: void
 
     BEFORE_UNIT_ABILITY_ROLL: void
+    REROLL_UNIT_ABILITY_ROLL: void
     AFTER_UNIT_ABILITY_ROLL: void
 
     DESTROY: UnitId[]

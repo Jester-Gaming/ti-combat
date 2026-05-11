@@ -17,6 +17,7 @@ import type {
   RunAbilitiesOptions,
   SidedDiceData,
 } from '../abilities-engine'
+import type { QueuedSpecForSide } from '../reroll/fold-rerolls'
 // `PhaseStep` references `CombatState` in its method `fn` signature; the
 // import is type-only to avoid a runtime cycle.
 import type { CombatState, StateWithProbability } from './combat-state'
@@ -257,6 +258,9 @@ export interface DiceRollContext {
     attacker?: HitValueModifier[]
     defender?: HitValueModifier[]
   }
+  /** Reroll specs queued by REROLL_DICE_ROLL ability invokes. Consumed by
+   *  `_rollDice` to drive the fold-rerolls path. */
+  rerollSpecQueue?: QueuedSpecForSide[]
 }
 
 /** Type guard used by `SideApi.getDicePool` to recognize a dice-roll

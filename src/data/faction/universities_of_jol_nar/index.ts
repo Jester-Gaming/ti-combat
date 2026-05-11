@@ -2,6 +2,7 @@ import universitiesOfJolNarIcon from '@/assets/faction/universities_of_jol_nar.s
 import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
+import { agnlanOln } from './agnlan-oln'
 import { fragile } from './fragile'
 import { shieldPaling } from './shield-paling'
 
@@ -10,6 +11,7 @@ export const universities_of_jol_nar: Faction = {
   icon: universitiesOfJolNarIcon,
   abilities: {
     faction: [fragile],
+    commander: [agnlanOln],
   },
   units: {
     FLAGSHIP: {

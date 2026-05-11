@@ -21,8 +21,8 @@
 
 ### Barony of Letnev
 
-- [ ] **Munitions Reserves** (Faction Ability) — At the start of each round of space combat, you may spend 2 trade goods; you may reroll any number of your dice during that combat round.
-- [ ] **War Funding** (Promissory Note) — After you and your opponent roll dice during space combat: You may reroll all of your opponent's dice. You may reroll any number of your dice. Then, return this card to the Letnev player.
+- [x] **Munitions Reserves** (Faction Ability) — At the start of each round of space combat, you may spend 2 trade goods; you may reroll any number of your dice during that combat round.
+- [x] **War Funding** (Promissory Note) — After you and your opponent roll dice during space combat: You may reroll all of your opponent's dice. You may reroll any number of your dice. Then, return this card to the Letnev player.
 - [x] **L4 Disruptors** (Faction Technology) — During an invasion, units cannot use Space Cannon against your units.
 - [x] **Non-Euclidean Shielding** (Faction Technology) — When 1 of your units uses Sustain Damage, cancel 2 hits instead of 1.
 - [x] **Arc Secundus** (Flagship) — Other players' units in this system lose Planetary Shield. At the start of each space combat round, repair this ship.
@@ -157,7 +157,7 @@
 
 - [x] **Fragile** (Faction Ability) — Apply -1 to the result of each of your unit's combat rolls.
 - [ ] **J.N.S. Hylarim** (Flagship) — When making a combat roll for this ship, each result of 9 or 10, before applying modifiers, produces 2 additional hits.
-- [ ] **Agnlan Oln** (Commander) — After you roll dice for a unit ability: You may reroll any of those dice.
+- [x] **Agnlan Oln** (Commander) — After you roll dice for a unit ability: You may reroll any of those dice.
 - [x] **Shield Paling** (Mech) — Your infantry on this planet are not affected by your Fragile faction ability.
 
 ### Vuil'raith Cabal
@@ -197,13 +197,13 @@
 - [x] **Emergency Repairs** — At the start or end of a combat round: Repair all of your units that have Sustain Damage in the active system.
 - [x] **Experimental Battlestation** — After another player moves ships into a system during a tactical action: Choose 1 of your space docks that is either in or adjacent to that system. That space dock uses Space Cannon 5 (x3) against ships in the active system.
 - [x] **Fighter Prototype** — At the start of the first round of a space combat: Apply +2 to the result of each of your fighters' combat rolls during this combat round.
-- [ ] **Fire Team** — After your ground forces make combat rolls during a round of ground combat: Reroll any number of your dice.
+- [x] **Fire Team** — After your ground forces make combat rolls during a round of ground combat: Reroll any number of your dice.
 - [x] **Maneuvering Jets** (x4) — Before you assign hits produced by another player's Space Cannon roll: Cancel 1 hit.
 - [x] **Morale Boost** (x4) — At the start of a combat round: Apply +1 to the result of each of your unit's combat rolls during this combat round.
 - [x] **Shields Holding** (x4) — Before you assign hits to your ships during a space combat: Cancel up to 2 hits.
 - [x] **Blitz** — At the start of an invasion: Each of your non-fighter ships in the active system that do not have Bombardment gain Bombardment 6 until the end of the invasion.
 - [x] **Reflective Shielding** — When one of your ships uses Sustain Damage during combat: Produce 2 hits against your opponent's ships in the active system.
-- [ ] **Scramble Frequency** — After another player makes a Bombardment, Space Cannon, or Anti-Fighter Barrage roll: That player rerolls all of their dice.
+- [x] **Scramble Frequency** — After another player makes a Bombardment, Space Cannon, or Anti-Fighter Barrage roll: That player rerolls all of their dice.
 - [x] **Solar Flare** — After you activate a system: During this movement, other players cannot use Space Cannon against your ships.
 - [x] **Skilled Retreat** — At the start of a combat round: Move all of your ships from the active system into an adjacent system that does not contain another player's ships; the space combat ends in a draw. Then, place a command token from your reinforcements in that system.
 - [x] **Reveal Prototype** — At the start of a combat: Spend 4 resources to research a unit upgrade technology of the same type as 1 of your units that is participating in this combat.

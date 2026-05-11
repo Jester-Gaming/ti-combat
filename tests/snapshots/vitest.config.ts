@@ -8,7 +8,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ['tests/snapshots/**/duranium-sets-space.test.ts'],
+    include: ['tests/snapshots/**/*.test.ts'],
     globals: true,
     testTimeout: 100000,
   },

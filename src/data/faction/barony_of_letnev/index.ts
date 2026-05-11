@@ -6,15 +6,19 @@ import { arcSecundus } from './arc-secundus'
 import { dunlainReaper } from './dunlain-reaper'
 import { gravleashManeuvers } from './gravleash-maneuvers'
 import { l4Disruptors } from './l4-disruptors'
+import { munitionsReserves } from './munitions-reserves'
 import { nonEuclideanShielding } from './non-euclidean-shielding'
 import { viscountUnlenn } from './viscount-unlenn'
+import { warFunding } from './war-funding'
 
 export const barony_of_letnev: Faction = {
   name: 'Barony of Letnev',
   icon: baronyOfLetnevIcon,
   abilities: {
+    faction: [munitionsReserves],
     technology: [l4Disruptors, nonEuclideanShielding],
     agent: [viscountUnlenn],
+    promissory: [warFunding],
     breakthrough: [gravleashManeuvers],
   },
   units: {

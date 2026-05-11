@@ -1066,7 +1066,10 @@ export class AbilitiesEngine {
             t[side].add(entry.trackerKey)
           }
 
-          const shouldDecrementUses = !invoke.system
+          const shouldDecrementUses =
+            !invoke.system &&
+            timing !== 'REROLL_DICE_ROLL' &&
+            timing !== 'REROLL_UNIT_ABILITY_ROLL'
           ctx.upgradeForCall(ability, childLogger?.forSide(side))
 
           // Pre-stamp the dispatching step's frame with the post-invoke
@@ -1103,6 +1106,7 @@ export class AbilitiesEngine {
 
           try {
             inv.call(ctx, freshParams, context)
+
             if (shouldDecrementUses)
               decrementUses(state, side, ability.key, freshParams, this)
             ctx.resetAfterCall()

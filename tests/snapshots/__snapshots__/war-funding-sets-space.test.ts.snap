@@ -1,0 +1,1126 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`space combat — war funding units sets > 2D vs 2D 1`] = `
+[
+  {
+    "attacker": "",
+    "defender": "2D",
+    "probability": 0.001181187824,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2D",
+    "defender": "",
+    "probability": 0.011107049426,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "D, D-",
+    "probability": 0.017302489705,
+    "winner": "defender",
+  },
+  {
+    "attacker": "D, D-",
+    "defender": "",
+    "probability": 0.075288227239,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "2D-",
+    "probability": 0.091532888135,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "",
+    "probability": 0.137140931673,
+    "winner": "draw",
+  },
+  {
+    "attacker": "",
+    "defender": "D-",
+    "probability": 0.193782527053,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2D-",
+    "defender": "",
+    "probability": 0.205259852256,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "D-",
+    "defender": "",
+    "probability": 0.26740484669,
+    "winner": "attacker",
+  },
+]
+`;
+
+exports[`space combat — war funding units sets > 2D, 2F vs 2D, 2F 1`] = `
+[
+  {
+    "attacker": "",
+    "defender": "2D, 2F",
+    "probability": 0.000147464597,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "D, D-, 2F",
+    "probability": 0.002476684891,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2D, 2F",
+    "defender": "",
+    "probability": 0.003221361199,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "2D-, 2F",
+    "probability": 0.01639196174,
+    "winner": "defender",
+  },
+  {
+    "attacker": "D, D-, 2F",
+    "defender": "",
+    "probability": 0.025316842325,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "2D-, F",
+    "probability": 0.05375127517,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "",
+    "probability": 0.068107954739,
+    "winner": "draw",
+  },
+  {
+    "attacker": "2D-, 2F",
+    "defender": "",
+    "probability": 0.085545544994,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "2D-",
+    "probability": 0.104341067135,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "D-",
+    "probability": 0.124880997628,
+    "winner": "defender",
+  },
+  {
+    "attacker": "D-",
+    "defender": "",
+    "probability": 0.158698169851,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2D-, F",
+    "defender": "",
+    "probability": 0.16197334896,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2D-",
+    "defender": "",
+    "probability": 0.195147326772,
+    "winner": "attacker",
+  },
+]
+`;
+
+exports[`space combat — war funding units sets > 2D, 2F, 2PDS vs 2D, 2F, 2PDS 1`] = `
+[
+  {
+    "attacker": "2PDS",
+    "defender": "2D, 2F, 2PDS",
+    "probability": 0.000145790098,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "D, D-, 2F, 2PDS",
+    "probability": 0.002441786686,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2D, 2F, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.003169800179,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2D-, 2F, 2PDS",
+    "probability": 0.016141559795,
+    "winner": "defender",
+  },
+  {
+    "attacker": "D, D-, 2F, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.024307224023,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2D-, F, 2PDS",
+    "probability": 0.053439924278,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2PDS",
+    "probability": 0.070205129603,
+    "winner": "draw",
+  },
+  {
+    "attacker": "2D-, 2F, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.081814179872,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2D-, 2PDS",
+    "probability": 0.105558722742,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "D-, 2PDS",
+    "probability": 0.128105546994,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2D-, F, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.157353782969,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "D-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.162348177101,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2D-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.19496837566,
+    "winner": "attacker",
+  },
+]
+`;
+
+exports[`space combat — war funding units sets > 2D, 2PDS vs 2D, 2PDS 1`] = `
+[
+  {
+    "attacker": "2PDS",
+    "defender": "2D, 2PDS",
+    "probability": 0.001510080073,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2D, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.014287627173,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "D, D-, 2PDS",
+    "probability": 0.020924697782,
+    "winner": "defender",
+  },
+  {
+    "attacker": "D, D-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.085571177423,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2D-, 2PDS",
+    "probability": 0.101839927815,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2PDS",
+    "probability": 0.123077593002,
+    "winner": "draw",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "D-, 2PDS",
+    "probability": 0.191477570626,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2D-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.209429601971,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "D-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.251881724135,
+    "winner": "attacker",
+  },
+]
+`;
+
+exports[`space combat — war funding units sets > 2F vs 2F 1`] = `
+[
+  {
+    "attacker": "",
+    "defender": "",
+    "probability": 0.045045416895,
+    "winner": "draw",
+  },
+  {
+    "attacker": "",
+    "defender": "2F",
+    "probability": 0.15877026967,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "F",
+    "probability": 0.213474234997,
+    "winner": "defender",
+  },
+  {
+    "attacker": "F",
+    "defender": "",
+    "probability": 0.260687349751,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2F",
+    "defender": "",
+    "probability": 0.322022728686,
+    "winner": "attacker",
+  },
+]
+`;
+
+exports[`space combat — war funding units sets > 2F, 2PDS vs 2F, 2PDS 1`] = `
+[
+  {
+    "attacker": "2PDS",
+    "defender": "2PDS",
+    "probability": 0.104561240195,
+    "winner": "draw",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2F, 2PDS",
+    "probability": 0.131439535297,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2F, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.165839535297,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "F, 2PDS",
+    "probability": 0.279079844605,
+    "winner": "defender",
+  },
+  {
+    "attacker": "F, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.319079844605,
+    "winner": "attacker",
+  },
+]
+`;
+
+exports[`space combat — war funding units sets > 2PDS vs 2PDS 1`] = `
+[
+  {
+    "attacker": "2PDS",
+    "defender": "2PDS",
+    "probability": 1,
+    "winner": "draw",
+  },
+]
+`;
+
+exports[`space combat — war funding units sets > 2W vs 2W 1`] = `
+[
+  {
+    "attacker": "",
+    "defender": "2W",
+    "probability": 3.694e-9,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "W, W-",
+    "probability": 5.31922e-7,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "2W-",
+    "probability": 0.000031918145,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W",
+    "defender": "",
+    "probability": 0.000063925799,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "W-",
+    "probability": 0.001021519664,
+    "winner": "defender",
+  },
+  {
+    "attacker": "W, W-",
+    "defender": "",
+    "probability": 0.001534226147,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2W-",
+    "defender": "",
+    "probability": 0.015342386789,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "W-",
+    "defender": "",
+    "probability": 0.081827394078,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "",
+    "probability": 0.900178093762,
+    "winner": "draw",
+  },
+]
+`;
+
+exports[`space combat — war funding units sets > 2W, 2D vs 2W, 2D 1`] = `
+[
+  {
+    "attacker": "",
+    "defender": "2W, 2D",
+    "probability": 1e-11,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "2W, D, D-",
+    "probability": 1.567e-9,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "2W, 2D-",
+    "probability": 1.03483e-7,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "W, W-, 2D-",
+    "probability": 0.000003787128,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W, 2D",
+    "defender": "",
+    "probability": 0.000005684302,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "2W-, 2D-",
+    "probability": 0.000083318535,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W, D, D-",
+    "defender": "",
+    "probability": 0.000153820166,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "2W-, D-",
+    "probability": 0.001116571664,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W, 2D-",
+    "defender": "",
+    "probability": 0.001796965098,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "2W-",
+    "probability": 0.008798123786,
+    "winner": "defender",
+  },
+  {
+    "attacker": "W, W-, 2D-",
+    "defender": "",
+    "probability": 0.011822957875,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "W-",
+    "probability": 0.037311587862,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W-, 2D-",
+    "defender": "",
+    "probability": 0.047918418596,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2W-, D-",
+    "defender": "",
+    "probability": 0.12305593072,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2W-",
+    "defender": "",
+    "probability": 0.199616795529,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "W-",
+    "defender": "",
+    "probability": 0.203867688136,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "",
+    "probability": 0.364448245545,
+    "winner": "draw",
+  },
+]
+`;
+
+exports[`space combat — war funding units sets > 2W, 2D, 2F vs 2W, 2D, 2F 1`] = `
+[
+  {
+    "attacker": "",
+    "defender": "2W, 2D, 2F",
+    "probability": 0,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "2W, D, D-, 2F",
+    "probability": 2.8e-11,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "2W, 2D-, 2F",
+    "probability": 1.865e-9,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "W, W-, 2D-, 2F",
+    "probability": 6.991e-8,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W, 2D, 2F",
+    "defender": "",
+    "probability": 4.85018e-7,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "2W-, 2D-, 2F",
+    "probability": 0.000001595714,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W, D, D-, 2F",
+    "defender": "",
+    "probability": 0.0000135314,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "2W-, 2D-, F",
+    "probability": 0.000022722663,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W, 2D-, 2F",
+    "defender": "",
+    "probability": 0.000165117296,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "2W-, 2D-",
+    "probability": 0.000200171488,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "2W-, D-",
+    "probability": 0.001072958235,
+    "winner": "defender",
+  },
+  {
+    "attacker": "W, W-, 2D-, 2F",
+    "defender": "",
+    "probability": 0.001160031528,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "2W-",
+    "probability": 0.003664239029,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W-, 2D-, 2F",
+    "defender": "",
+    "probability": 0.005221839995,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "W-",
+    "probability": 0.0098562644,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W-, 2D-, F",
+    "defender": "",
+    "probability": 0.016033370981,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2W-, 2D-",
+    "defender": "",
+    "probability": 0.03572952269,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2W-, D-",
+    "defender": "",
+    "probability": 0.063075447779,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2W-",
+    "defender": "",
+    "probability": 0.096823140424,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "W-",
+    "defender": "",
+    "probability": 0.132860620082,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "",
+    "probability": 0.634098869477,
+    "winner": "draw",
+  },
+]
+`;
+
+exports[`space combat — war funding units sets > 2W, 2D, 2F, 2PDS vs 2W, 2D, 2F, 2PDS 1`] = `
+[
+  {
+    "attacker": "2PDS",
+    "defender": "2W, 2D, 2F, 2PDS",
+    "probability": 1e-12,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W, D, D-, 2F, 2PDS",
+    "probability": 1.28e-10,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W, 2D-, 2F, 2PDS",
+    "probability": 8.667e-9,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "W, W-, 2D-, 2F, 2PDS",
+    "probability": 3.28786e-7,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W, 2D, 2F, 2PDS",
+    "defender": "2PDS",
+    "probability": 6.52786e-7,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W-, 2D-, 2F, 2PDS",
+    "probability": 0.00000762127,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W, D, D-, 2F, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.000019308117,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W-, 2D-, F, 2PDS",
+    "probability": 0.00011072988,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W, 2D-, 2F, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.000252257036,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W-, 2D-, 2PDS",
+    "probability": 0.000998983697,
+    "winner": "defender",
+  },
+  {
+    "attacker": "W, W-, 2D-, 2F, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.001916388766,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W-, D-, 2PDS",
+    "probability": 0.005430083358,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W-, 2D-, 2F, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.009388113598,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W-, 2PDS",
+    "probability": 0.017365451,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W-, 2D-, F, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.031153105991,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "W-, 2PDS",
+    "probability": 0.033649883042,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W-, 2D-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.071929849102,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2W-, D-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.118150164454,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "W-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.140520485025,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2W-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.143549818407,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2PDS",
+    "probability": 0.42555676689,
+    "winner": "draw",
+  },
+]
+`;
+
+exports[`space combat — war funding units sets > 2W, 2D, 2PDS vs 2W, 2D, 2PDS 1`] = `
+[
+  {
+    "attacker": "2PDS",
+    "defender": "2W, 2D, 2PDS",
+    "probability": 1e-11,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W, D, D-, 2PDS",
+    "probability": 1.547e-9,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W, 2D-, 2PDS",
+    "probability": 1.03767e-7,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W, 2D, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.000002141445,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "W, W-, 2D-, 2PDS",
+    "probability": 0.000003878356,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W, D, D-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.000062134818,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W-, 2D-, 2PDS",
+    "probability": 0.000087962768,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W, 2D-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.000791815358,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W-, D-, 2PDS",
+    "probability": 0.001235362406,
+    "winner": "defender",
+  },
+  {
+    "attacker": "W, W-, 2D-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.005818416788,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W-, 2PDS",
+    "probability": 0.010524643634,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W-, 2D-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.027215992412,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "W-, 2PDS",
+    "probability": 0.051454297272,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W-, D-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.084439802527,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2W-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.175791124697,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "W-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.243563948644,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2PDS",
+    "probability": 0.39900837355,
+    "winner": "draw",
+  },
+]
+`;
+
+exports[`space combat — war funding units sets > 2W, 2F vs 2W, 2F 1`] = `
+[
+  {
+    "attacker": "",
+    "defender": "2W, 2F",
+    "probability": 6.98e-10,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "W, W-, 2F",
+    "probability": 1.01394e-7,
+    "winner": "defender",
+  },
+  {
+    "attacker": "",
+    "defender": "2W-, 2F",
+    "probability": 0.000006154713,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W, 2F",
+    "defender": "",
+    "probability": 0.000036931697,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "2W-, F",
+    "probability": 0.000200394256,
+    "winner": "defender",
+  },
+  {
+    "attacker": "W, W-, 2F",
+    "defender": "",
+    "probability": 0.000905179843,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "2W-",
+    "probability": 0.003711808799,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W-, 2F",
+    "defender": "",
+    "probability": 0.009319167357,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "W-",
+    "probability": 0.037683527594,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W-, F",
+    "defender": "",
+    "probability": 0.051885434333,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2W-",
+    "defender": "",
+    "probability": 0.166907062042,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "W-",
+    "defender": "",
+    "probability": 0.304827364657,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "",
+    "defender": "",
+    "probability": 0.424516872618,
+    "winner": "draw",
+  },
+]
+`;
+
+exports[`space combat — war funding units sets > 2W, 2F, 2PDS vs 2W, 2F, 2PDS 1`] = `
+[
+  {
+    "attacker": "2PDS",
+    "defender": "2W, 2F, 2PDS",
+    "probability": 2.98e-10,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "W, W-, 2F, 2PDS",
+    "probability": 4.3899e-8,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W-, 2F, 2PDS",
+    "probability": 0.000002714029,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W, 2F, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.000009939357,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W-, F, 2PDS",
+    "probability": 0.000090764958,
+    "winner": "defender",
+  },
+  {
+    "attacker": "W, W-, 2F, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.000263419517,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W-, 2PDS",
+    "probability": 0.001754325619,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W-, 2F, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.003003117372,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2W-, F, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.019195190405,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "W-, 2PDS",
+    "probability": 0.019245897087,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.075130014488,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "W-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.184680277317,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2PDS",
+    "probability": 0.696624295654,
+    "winner": "draw",
+  },
+]
+`;
+
+exports[`space combat — war funding units sets > 2W, 2PDS vs 2W, 2PDS 1`] = `
+[
+  {
+    "attacker": "2PDS",
+    "defender": "2W, 2PDS",
+    "probability": 9.9e-10,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "W, W-, 2PDS",
+    "probability": 1.44518e-7,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2W-, 2PDS",
+    "probability": 0.000008838594,
+    "winner": "defender",
+  },
+  {
+    "attacker": "2W, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.000015995075,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "W-, 2PDS",
+    "probability": 0.00029094057,
+    "winner": "defender",
+  },
+  {
+    "attacker": "W, W-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.0004158724,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2W-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.004622590408,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "W-, 2PDS",
+    "defender": "2PDS",
+    "probability": 0.028535396638,
+    "winner": "attacker",
+  },
+  {
+    "attacker": "2PDS",
+    "defender": "2PDS",
+    "probability": 0.966110220809,
+    "winner": "draw",
+  },
+]
+`;

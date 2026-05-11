@@ -36,6 +36,7 @@ import type {
 import { isDiceRollContext } from '../../combat-state/types'
 import { getDiceOutcomes } from '../../combat-state/utils'
 import type { Logger } from '../../logger'
+import type { RerollSpec } from '../../reroll/types'
 import { canonicalizeUnitState } from '../../utils/canonicalize-unit-state'
 import type {
   AbilitiesEngine,
@@ -693,6 +694,29 @@ export class SideApi {
       ...existing,
       [diceGroup[0], diceGroup[1], diceGroup[2] ?? 0, unit],
     ]
+  }
+
+  /** Schedule a reroll for this side. Only valid during REROLL_DICE_ROLL.
+   *  Queues a `RerollSpec` onto the dice-roll group's `rerollSpecQueue`;
+   *  `_rollDice` folds the queue into the per-side dice distributions before
+   *  rolling, producing one `JointBranch` per (used/not-used, used/not-used)
+   *  combination of the consume predicates. */
+  reroll(spec: RerollSpec): void {
+    const ctx = this._ctx._abilitiesParams.combatState.currentGroupData
+    if (!isDiceRollContext(ctx)) {
+      throw new Error('reroll() called outside a dice-roll group')
+    }
+    const abilityKey = this._ctx.ability?.key
+    if (abilityKey === undefined) {
+      throw new Error('reroll() called outside an ability context')
+    }
+    const queue = (ctx.rerollSpecQueue ??= [])
+    queue.push({
+      side: this._side,
+      abilityKey,
+      abilityOwnerSide: this._ctx.side,
+      spec,
+    })
   }
 }
 
