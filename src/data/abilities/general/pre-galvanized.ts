@@ -57,6 +57,7 @@ export const preGalvanized: Ability<Params> = {
         includeOnlyBaseTypes: true,
         includeNonParticipating: true,
       },
+      limit: 'IN_COMBAT',
     }),
     reinforcementTokens: 7,
   },

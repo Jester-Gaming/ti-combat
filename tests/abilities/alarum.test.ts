@@ -163,9 +163,9 @@ describe.forEachSide('Alarum', () => {
         faction: 'RAL_NEL',
         units: { MECH: 1, INFANTRY: 1 },
         abilities: {
-          // 4 buffer entries — if a freshly-placed Mech also fired its
-          // Alarum it would consume more than 2 from the pool. The
-          // expectation below verifies only 2 were taken.
+          // EXTRA clamps the pool to UNIT_LIMITS.MECH - 1 in-combat = 3.
+          // Starting Mech places 2 (pool → 1). If a newly-placed Mech also
+          // fired, it would consume the remaining 1 (pool → 0).
           ALARUM: { isEnabled: true, availableUnits: [['MECH', 4]] },
         },
       },
@@ -181,6 +181,6 @@ describe.forEachSide('Alarum', () => {
     const remaining = t.state.attacker.abilities.ALARUM!
       .availableUnits as Array<[string, number]>
     const mechRemaining = remaining.find(([k]) => k === 'MECH')?.[1]
-    expect(mechRemaining).toBe(2) // 4 - 2 = 2; if double-firing happened, would be 0
+    expect(mechRemaining).toBe(1) // 3 - 2 = 1; if double-firing happened, would be 0
   })
 })

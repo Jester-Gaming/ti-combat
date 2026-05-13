@@ -34,6 +34,7 @@ export const ghomSekkus: Ability<Params> = {
         include: ['MECH', 'INFANTRY'],
         includeNonParticipating: true,
       },
+      limit: 'EXTRA',
     }),
   },
   headerUI: 'isEnabled',

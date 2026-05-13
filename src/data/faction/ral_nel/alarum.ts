@@ -37,6 +37,7 @@ export const alarum: Ability<Params> = {
         include: ['MECH', 'INFANTRY'],
         includeNonParticipating: true,
       },
+      limit: 'EXTRA',
     }),
     firedRoundIds: [] as UnitId[],
   },

@@ -138,11 +138,15 @@ function inheritedValue(
  *  - Adds missing keys at their natural validList position. Subtype
  *    variants inherit their parent's value when the parent is present;
  *    otherwise the entry is built with `defaultItemValue` (or as a
- *    length-1 tuple `[key]` when `defaultItemValue` is omitted). */
+ *    length-1 tuple `[key]` when `defaultItemValue` is omitted).
+ *  - When `maxFor` is supplied, numeric values are clamped to the returned
+ *    maximum (both kept entries and newly inserted ones). Non-finite maxes
+ *    (Infinity) are treated as no-clamp. */
 export function reconcileUnitListParam(
   current: readonly (UnitListEntry | string)[],
   validList: readonly string[],
   defaultItemValue?: unknown,
+  maxFor?: (variantKey: string) => number,
 ): UnitListEntry[] {
   // Order-mode lists round-trip through the URL as flat string arrays —
   // normalize those to 1-tuples here so reconcile treats both shapes
@@ -155,12 +159,28 @@ export function reconcileUnitListParam(
   const keptKeys = new Set(kept.map(entry => entry[0]))
   const newKeys = validList.filter(key => !keptKeys.has(key))
 
-  if (newKeys.length === 0)
-    return kept.map(entry => [...entry] as UnitListEntry)
+  const clamp = (key: string, value: unknown): unknown => {
+    if (!maxFor) return value
+    if (typeof value !== 'number') return value
+    const max = maxFor(key)
+    if (!Number.isFinite(max)) return value
+    return value > max ? max : value
+  }
 
-  const result: UnitListEntry[] = kept.map(entry => [...entry] as UnitListEntry)
+  if (newKeys.length === 0)
+    return kept.map(entry => {
+      const copy = [...entry] as UnitListEntry
+      if (copy.length === 2) copy[1] = clamp(copy[0], copy[1])
+      return copy
+    })
+
+  const result: UnitListEntry[] = kept.map(entry => {
+    const copy = [...entry] as UnitListEntry
+    if (copy.length === 2) copy[1] = clamp(copy[0], copy[1])
+    return copy
+  })
   const valuesByKey = new Map<string, unknown>(
-    kept.map(entry => [entry[0], entry[1]]),
+    result.map(entry => [entry[0], entry[1]]),
   )
 
   for (const newKey of newKeys) {
@@ -175,14 +195,14 @@ export function reconcileUnitListParam(
     const inherited = inheritedValue(newKey, valuesByKey)
     let entry: UnitListEntry
     if (inherited !== NO_PARENT) {
-      entry = [newKey, inherited]
+      entry = [newKey, clamp(newKey, inherited)]
     } else if (defaultItemValue !== undefined) {
-      entry = [newKey, defaultItemValue]
+      entry = [newKey, clamp(newKey, defaultItemValue)]
     } else {
       entry = [newKey]
     }
     result.splice(insertAt, 0, entry)
-    valuesByKey.set(newKey, entry[1])
+    valuesByKey.set(newKey, entry.length === 2 ? entry[1] : undefined)
   }
 
   return result

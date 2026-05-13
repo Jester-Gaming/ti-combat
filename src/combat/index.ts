@@ -22,6 +22,7 @@ export {
 export {
   extractDefaults,
   extractSyncSources,
+  type ParamLimit,
 } from './abilities-engine/declare-param'
 export { CombatEngine } from './combat-engine'
 export {

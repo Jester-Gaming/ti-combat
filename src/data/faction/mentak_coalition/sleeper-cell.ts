@@ -46,6 +46,7 @@ export const sleeperCell: Ability<Params> = {
       sort: 'price-desc',
       defaultItemValue: 0,
       filter: { combatMode: 'SPACE', includeOnlyBaseTypes: true },
+      limit: 'EXTRA',
     }),
   },
   headerUI: 'isEnabled',

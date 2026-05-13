@@ -45,6 +45,7 @@ import type {
 } from '../abilities-engine'
 import type { DeclaredParamValue } from '../declare-param'
 import { isDeclaredParam } from '../declare-param'
+import { resolveVariantLimit } from '../param-limit'
 import type {
   Ability,
   AbilityBaseParams,
@@ -198,25 +199,44 @@ export class SideApi {
   getUnitVariantsOptions(paramKey: string): {
     label: string
     value: UnitType
+    max?: number
   }[]
   getUnitVariantsOptions(arg?: ParamFilter | string) {
-    const filter = typeof arg === 'string' ? this._resolveParamFilter(arg) : arg
+    if (typeof arg === 'string') {
+      const declared = this._resolveDeclaredParam(arg)
+      const filter = declared?.filter
+      const items = CombatSideState.getUnitVariantOptions(
+        this._sideData,
+        this.state.combatMode,
+        filter,
+      )
+      if (!declared?.limit) return items
+      const limit = declared.limit
+      const s = this._sideData
+      return items.map(item => ({
+        ...item,
+        max: resolveVariantLimit(limit, s, item.value),
+      }))
+    }
     return CombatSideState.getUnitVariantOptions(
       this._sideData,
       this.state.combatMode,
-      filter,
+      arg,
     )
   }
 
-  /** Resolve the `ParamFilter` declared on the running ability for `paramKey`.
-   *  The wrapped `DeclaredParamValue` lives on the ability spec — extracted
-   *  here so `getUnitVariantsOptions(paramKey)` can mirror reconcile's view. */
-  private _resolveParamFilter(paramKey: string): ParamFilter | undefined {
+  /** Look up the wrapped `DeclaredParamValue` for `paramKey` on the running
+   *  ability. Mirrors reconcile's view so `getUnitVariantsOptions(paramKey)`
+   *  can read `filter` and `limit`. Returns undefined when there is no
+   *  active ability (the UI sets `ctx.ability` before calling `uiConfig`). */
+  private _resolveDeclaredParam(
+    paramKey: string,
+  ): DeclaredParamValue<unknown> | undefined {
     const ability = this._ctx.ability
     if (!ability) return undefined
     const raw = (ability.params as Record<string, unknown>)[paramKey]
     if (!isDeclaredParam(raw)) return undefined
-    return (raw as DeclaredParamValue<unknown>).filter
+    return raw as DeclaredParamValue<unknown>
   }
 
   findUnitByPriority(

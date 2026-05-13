@@ -23,6 +23,7 @@ export const preDamaged: Ability<Params> = {
       source: 'units',
       default: [],
       filter: { exclude: ['FIGHTER'] },
+      limit: 'IN_COMBAT',
     }),
   },
   uiConfig: ctx => {

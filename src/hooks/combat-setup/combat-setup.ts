@@ -156,6 +156,7 @@ export class CombatSetup {
       this._sideAbilities,
       this._combatMode,
       this._syncSnapshots,
+      this._stateData,
     )
 
     const wrapState = CombatState.fromDataStandalone(
@@ -260,6 +261,7 @@ export class CombatSetup {
       this._sideAbilities,
       this._combatMode,
       this._syncSnapshots,
+      this._stateData,
     )
     this.rebuildEngine()
   }
@@ -296,6 +298,7 @@ export class CombatSetup {
       this._sideAbilities,
       this._combatMode,
       this._syncSnapshots,
+      this._stateData,
     )
     // Force new stateData reference so React memoization triggers
     this._stateData = { ...this._stateData }
@@ -313,6 +316,7 @@ export class CombatSetup {
       this._sideAbilities,
       this._combatMode,
       this._syncSnapshots,
+      this._stateData,
     )
     this.rebuildEngine()
   }
@@ -342,6 +346,7 @@ export class CombatSetup {
       this._sideAbilities,
       this._combatMode,
       this._syncSnapshots,
+      this._stateData,
     )
     this.rebuildEngine()
   }
@@ -358,6 +363,7 @@ export class CombatSetup {
       this._sideAbilities,
       this._combatMode,
       this._syncSnapshots,
+      this._stateData,
     )
     // Force new stateData reference so React memoization triggers
     this._stateData = { ...this._stateData }
@@ -437,6 +443,7 @@ export class CombatSetup {
       this._sideAbilities,
       this._combatMode,
       this._syncSnapshots,
+      this._stateData,
     )
     this.rebuildEngine()
   }
@@ -469,6 +476,8 @@ export class CombatSetup {
       freshAbilities,
       this._sideAbilities,
       this._combatMode,
+      undefined,
+      this._stateData,
     )
 
     return {
@@ -544,6 +553,7 @@ export class CombatSetup {
       this._sideAbilities,
       this._combatMode,
       this._syncSnapshots,
+      this._stateData,
     )
 
     // Apply URL ability params on top of reconciled defaults
@@ -588,6 +598,7 @@ export class CombatSetup {
       this._sideAbilities,
       this._combatMode,
       this._syncSnapshots,
+      this._stateData,
     )
     this.rebuildEngine()
   }
@@ -641,13 +652,14 @@ export class CombatSetup {
       )
       this._sideRegistered[side] = regUpd
       this._sideAbilities[side] = flattenUnique(regUpd)
-      reconcileAbilitiesConfig(
-        this._abilities,
-        this._sideAbilities,
-        this._combatMode,
-        this._syncSnapshots,
-      )
     }
+    reconcileAbilitiesConfig(
+      this._abilities,
+      this._sideAbilities,
+      this._combatMode,
+      this._syncSnapshots,
+      this._stateData,
+    )
     this.rebuildEngine()
   }
 

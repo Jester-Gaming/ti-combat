@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import { UNIT_LIMITS } from '@/constants/units'
+
 import { combatTest } from '../utils/combat-test'
 
 describe.forEachSide('SLEEPER_CELL', () => {
@@ -245,5 +247,32 @@ describe.forEachSide('SLEEPER_CELL', () => {
     const availableShips =
       t.state.attacker.abilities.SLEEPER_CELL?.availableShips
     expect(availableShips).toContainEqual(['CRUISER', 1])
+  })
+
+  it('clamps availableShips entries to remaining reinforcement headroom (EXTRA)', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'MENTAK_COALITION',
+        units: { CRUISER: 2 },
+        abilities: {
+          SLEEPER_CELL: {
+            isEnabled: true,
+            // EXTRA cap = UNIT_LIMITS.CRUISER - 2 in combat = 6.
+            availableShips: [['CRUISER', 99]],
+          },
+        },
+      },
+      defender: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 1 },
+      },
+    })
+
+    t.advanceTo('SPACE_COMBAT')
+
+    const availableShips =
+      t.state.attacker.abilities.SLEEPER_CELL?.availableShips
+    expect(availableShips).toContainEqual(['CRUISER', UNIT_LIMITS.CRUISER - 2])
   })
 })

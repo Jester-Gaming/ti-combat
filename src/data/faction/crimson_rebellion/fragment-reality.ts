@@ -29,6 +29,7 @@ export const fragmentReality: Ability<Params> = {
       source: 'ships',
       defaultItemValue: 0,
       filter: { combatMode: 'SPACE', includeOnlyBaseTypes: true },
+      limit: 'EXTRA',
     }),
   },
   headerUI: 'isEnabled',

@@ -18,6 +18,7 @@ import type {
 import type { Logger } from '../logger'
 import type { AbilitySlot } from './ability-slot'
 import type { SideApi } from './api/ability-api'
+import type { ParamLimit } from './param-limit'
 
 export type { AbilitySlot }
 
@@ -56,6 +57,9 @@ export interface SyncSourceConfig<
   defaultItemValue?: unknown
   compute?: (value: SettingsParams[K]) => unknown
   filter?: ParamFilter
+  /** See `declareParam.limit`. Threaded through so reconcile can clamp
+   *  stored values to the per-variant max. */
+  limit?: ParamLimit
 }
 
 export interface DeclaredSubtype {

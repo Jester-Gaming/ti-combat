@@ -4,6 +4,7 @@ import {
   extractDefaults,
   extractSyncSources,
 } from '@/combat/abilities-engine/declare-param'
+import { resolveVariantLimit } from '@/combat/abilities-engine/param-limit'
 import type {
   Ability,
   AbilityBaseParams,
@@ -14,10 +15,12 @@ import type {
 } from '@/combat/abilities-engine/types'
 import type {
   CombatMode,
+  CombatStateData,
   SideAbilitiesConfig,
+  SideStateData,
 } from '@/combat/combat-state/types'
 import { GROUND_FORCES, SHIPS } from '@/constants/units'
-import type { CombatSide, UnitBaseType } from '@/types'
+import type { CombatSide, UnitBaseType, UnitIdList } from '@/types'
 
 import {
   expandWithSubtypes,
@@ -28,6 +31,21 @@ import {
 
 type AbilitiesConfig = Record<CombatSide, SideAbilitiesConfig>
 type SideConfig = SideAbilitiesConfig
+
+// UNIT_LIMIT only reads UNIT_LIMITS[base] and never touches unit state,
+// so a fully-empty side is safe for the simulation-path caller that has
+// no live state available.
+const EMPTY_SIDE_FOR_STATIC: SideStateData = {
+  faction: 'sol' as never,
+  participatingUnits: '' as UnitIdList,
+  nonParticipatingUnits: '' as UnitIdList,
+  unitType: {},
+  unitState: {},
+  unitStats: {} as never,
+  hitPools: [],
+  abilities: {},
+  liveAbilities: {},
+}
 
 /** Tracks the last-seen valid list per sync-source param, so reconciliation
  *  can distinguish "user unchecked this" from "genuinely new item." */
@@ -95,10 +113,11 @@ export function reconcileAbilitiesConfig(
   abilities: Record<CombatSide, Ability[]>,
   combatMode: CombatMode,
   syncSnapshots?: SyncSnapshots,
+  state?: Pick<CombatStateData, 'attacker' | 'defender'>,
 ): void {
   resetBaseGroups(config, abilities)
   ensureConsumerDefaults(config, abilities)
-  reconcileSyncAll(config, abilities, syncSnapshots)
+  reconcileSyncAll(config, abilities, syncSnapshots, state)
   // Subtype declarations may depend on params that are themselves
   // sync-source params (e.g. PRE_GALVANIZED.galvanizedUnits is sourced from
   // `units`). The collectDeclaredSubtypes pass inside `resetBaseGroups`
@@ -106,7 +125,7 @@ export function reconcileAbilitiesConfig(
   // if the result changed, re-run sync so consumer params (Ghom Sek'kus,
   // Alarum, etc.) pick up the freshly-declared subtype variants.
   if (refreshDeclaredSubtypes(config, abilities)) {
-    reconcileSyncAll(config, abilities, syncSnapshots)
+    reconcileSyncAll(config, abilities, syncSnapshots, state)
   }
   reconcileAbilityOrder(config, abilities, combatMode)
 }
@@ -232,6 +251,7 @@ function reconcileSyncAll(
   config: AbilitiesConfig,
   abilities: Record<CombatSide, Ability[]>,
   syncSnapshots?: SyncSnapshots,
+  state?: Pick<CombatStateData, 'attacker' | 'defender'>,
 ): void {
   // Pass 1: Reconcile SETTINGS computed params for both sides
   // Must happen before consumers so cross-side sources
@@ -249,6 +269,7 @@ function reconcileSyncAll(
       subtypes,
       side,
       syncSnapshots,
+      state,
     )
   }
 
@@ -273,6 +294,7 @@ function reconcileSyncAll(
       oppSubtypes,
       side,
       syncSnapshots,
+      state,
     )
   }
 }
@@ -414,6 +436,7 @@ function reconcileSyncSources(
   opponentSubtypes: DeclaredSubtype[],
   side: CombatSide,
   syncSnapshots?: SyncSnapshots,
+  state?: Pick<CombatStateData, 'attacker' | 'defender'>,
 ): void {
   for (const ability of abilities) {
     const syncSources = extractSyncSources(ability)
@@ -445,10 +468,36 @@ function reconcileSyncSources(
       const currentValue = abilityParams[config.key]
 
       if (Array.isArray(currentValue)) {
+        const targetSide =
+          config.side === 'own'
+            ? side
+            : side === 'attacker'
+              ? 'defender'
+              : 'attacker'
+        const sideData: SideStateData | undefined = state?.[targetSide]
+        const limit = config.limit
+        // UNIT_LIMIT doesn't read state, so the static fallback covers the
+        // simulation path that calls reconcile without a state. IN_COMBAT
+        // silently no-ops without state — values arriving from the UI hook
+        // are already clamped before serialization.
+        const maxFor = limit
+          ? sideData
+            ? (variantKey: string) =>
+                resolveVariantLimit(limit, sideData, variantKey as never)
+            : limit === 'UNIT_LIMIT'
+              ? (variantKey: string) =>
+                  resolveVariantLimit(
+                    limit,
+                    EMPTY_SIDE_FOR_STATIC,
+                    variantKey as never,
+                  )
+              : undefined
+          : undefined
         abilityParams[config.key] = reconcileUnitListParam(
           currentValue as ([string] | [string, unknown])[],
           validList,
           config.defaultItemValue,
+          maxFor,
         )
         if (syncSnapshots) {
           const snapshotKey = `${side}:${ability.key}:${config.key}`
@@ -506,6 +555,77 @@ export function restoreConsumerParams(
       const synced = config[side][ability.key]
       if (!synced) continue
       Object.assign(synced, userParams)
+    }
+  }
+}
+
+/**
+ * Clamp numeric `UnitList<number>` entries in-place for any declared param
+ * with `limit`. Called after `restoreConsumerParams` to enforce caps without
+ * re-expanding the valid list (which would otherwise add missing entries
+ * and break order-mode params / user-trimmed lists).
+ *
+ * Without `state`, only `UNIT_LIMIT` is enforced (the cap is state-independent).
+ * With `state`, `IN_COMBAT` and `EXTRA` are clamped as well — used by
+ * `buildCombatState` after the per-side state is constructed, so test setups
+ * that bypass the UI hook still get the same clamp.
+ */
+export function clampLimitParams(
+  config: AbilitiesConfig,
+  abilities: Record<CombatSide, Ability[]>,
+  state?: Pick<CombatStateData, 'attacker' | 'defender'>,
+): void {
+  for (const side of ['attacker', 'defender'] as const) {
+    for (const ability of abilities[side]) {
+      const syncSources = extractSyncSources(ability)
+      if (!syncSources) continue
+      const abilityParams = config[side][ability.key]
+      if (!abilityParams) continue
+
+      for (const src of syncSources) {
+        if (!src.limit) continue
+        const value = abilityParams[src.key]
+        if (!Array.isArray(value)) continue
+
+        const targetSide =
+          src.side === 'own'
+            ? side
+            : side === 'attacker'
+              ? 'defender'
+              : 'attacker'
+        const sideData = state?.[targetSide]
+        // IN_COMBAT / EXTRA need real state. Without it, skip — the UI hook
+        // is responsible for clamping those before they reach this path.
+        if (src.limit !== 'UNIT_LIMIT' && !sideData) continue
+        const resolverSide = sideData ?? EMPTY_SIDE_FOR_STATIC
+
+        let changed = false
+        const clamped = (value as ([string] | [string, unknown])[]).map(
+          entry => {
+            if (entry.length !== 2 || typeof entry[1] !== 'number') return entry
+            const max = resolveVariantLimit(
+              src.limit!,
+              resolverSide,
+              entry[0] as never,
+            )
+            if (Number.isFinite(max) && (entry[1] as number) > max) {
+              changed = true
+              return [entry[0], max] as [string, number]
+            }
+            return entry
+          },
+        )
+
+        if (changed) {
+          if (Object.isFrozen(abilityParams)) {
+            const unfrozen = { ...abilityParams }
+            config[side][ability.key] = unfrozen
+            unfrozen[src.key] = clamped
+          } else {
+            abilityParams[src.key] = clamped
+          }
+        }
+      }
     }
   }
 }

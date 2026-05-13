@@ -20,6 +20,7 @@ import type {
 } from '../../combat/combat-state/types'
 import { nextUnitIds } from '../../combat/utils/unit-id'
 import { prepareSimulationConfig } from './prepare-simulation-config'
+import { clampLimitParams } from './reconcile'
 
 // ============================================================================
 // CONFIG TYPES
@@ -170,6 +171,28 @@ export function buildCombatState(config: CombatStateConfig): CombatState {
     config.defender,
     abilitiesConfig.defender,
     gen,
+  )
+
+  // Stateful clamp pass: with real per-side state now built, clamp IN_COMBAT
+  // and EXTRA values that bypassed the UI hook (e.g. tests that hand-feed
+  // over-limit values via `buildCombatState`).
+  const flatAbilities = {
+    attacker: sideAbilities.attacker.registered.map(r => r.ability),
+    defender: sideAbilities.defender.registered.map(r => r.ability),
+  }
+  const dedupe = (
+    arr: import('../../combat/abilities-engine/types').Ability[],
+  ) => {
+    const seen = new Set<string>()
+    return arr.filter(a => (seen.has(a.key) ? false : (seen.add(a.key), true)))
+  }
+  clampLimitParams(
+    abilitiesConfig,
+    {
+      attacker: dedupe(flatAbilities.attacker),
+      defender: dedupe(flatAbilities.defender),
+    },
+    { attacker: attackerSide, defender: defenderSide },
   )
 
   config.prepareAbilities?.({

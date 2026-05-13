@@ -84,17 +84,6 @@
   pointer-events: auto;
 }
 
-/* Disabled + button stays visible-dimmed so the layout doesn't shift when
- * the value reaches max. The disabled − button is intentionally NOT revealed
- * — when value is already at min there's no useful decrement, so we omit
- * the dead control rather than show a dimmed one. (Touch mode below opts
- * back into showing both, so static-layout rows don't change width as the
- * value moves between extremes.) */
-.wrapper:hover .stepUp:disabled,
-.wrapper:focus-within .stepUp:disabled {
-  opacity: 30%;
-}
-
 /* Reveal #2: an ancestor (e.g. the ability row) set --show-steppers: 1.
  * CSS style container queries match the nearest ancestor whose computed style
  * has the custom property — every element is a default style container, so no
@@ -108,10 +97,6 @@
   .wrapper .step:not(:disabled) {
     opacity: 100%;
     pointer-events: auto;
-  }
-
-  .wrapper .stepUp:disabled {
-    opacity: 30%;
   }
 }
 
@@ -130,10 +115,6 @@
     opacity: 100%;
     pointer-events: auto;
   }
-
-  .wrapper .step:disabled {
-    opacity: 30%;
-  }
 }
 
 /* Touch / no-hover devices: same static treatment as the opt-in above. */
@@ -146,9 +127,5 @@
   .wrapper .step:not(:disabled) {
     opacity: 100%;
     pointer-events: auto;
-  }
-
-  .wrapper .step:disabled {
-    opacity: 30%;
   }
 }

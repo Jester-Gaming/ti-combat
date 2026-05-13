@@ -32,6 +32,7 @@ export const overwingZeta: Ability<Params> = {
         combatMode: 'SPACE',
         includeOnlyBaseTypes: true,
       },
+      limit: 'UNIT_LIMIT',
     }),
   },
   headerUI: 'isEnabled',

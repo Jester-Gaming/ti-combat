@@ -14,6 +14,7 @@ import {
   getUnitDefinitionAbilityKeys,
 } from './get-available-abilities'
 import {
+  clampLimitParams,
   reconcileAbilitiesConfig,
   resetSettingsToBase,
   restoreConsumerParams,
@@ -81,6 +82,11 @@ export function prepareSimulationConfig(
   const savedParams = snapshotConsumerParams(config, abilities)
   reconcileAbilitiesConfig(config, abilities, combatMode)
   restoreConsumerParams(config, abilities, savedParams)
+  // After restore, sync-source params with declared limits may carry
+  // user-supplied values that exceed the cap. Clamp them in place without
+  // re-expanding the valid list so that order-mode params (single-element
+  // tuples) and user-trimmed lists are not affected.
+  clampLimitParams(config, abilities)
   resetSettingsToBase(config, abilities)
 
   return {

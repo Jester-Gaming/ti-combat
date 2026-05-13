@@ -12,6 +12,7 @@ import type {
   UnitVariantId,
 } from '@/types'
 
+import { countUnitsByBaseType } from '../abilities-engine/param-limit'
 import type {
   DeclaredSubtype,
   DicePool,
@@ -1393,13 +1394,7 @@ export class CombatSideState {
 
       const baseType = parseVariantId(vKey).type as UnitBaseType
 
-      let existing = 0
-      for (const id of s.participatingUnits) {
-        if (parseVariantId(s.unitType[id]).type === baseType) existing++
-      }
-      for (const id of s.nonParticipatingUnits) {
-        if (parseVariantId(s.unitType[id]).type === baseType) existing++
-      }
+      const existing = countUnitsByBaseType(s, baseType)
 
       const limit = UNIT_LIMITS[baseType]
       if (existing + count > limit) {

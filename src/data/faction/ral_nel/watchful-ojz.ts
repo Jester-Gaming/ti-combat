@@ -24,6 +24,7 @@ export const watchfulOjz: Ability<Params> = {
       source: 'spaceCombatParticipating',
       defaultItemValue: 0,
       filter: { combatMode: 'SPACE' },
+      limit: 'IN_COMBAT',
     }),
   },
   headerUI: 'isEnabled',
