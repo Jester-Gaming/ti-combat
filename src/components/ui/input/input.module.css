@@ -1,3 +1,15 @@
+/* Wrapper sizes itself to its child input so the input occupies exactly the
+ * same layout slot as the bare element it replaces. Step buttons are
+ * fixed-positioned via CSS anchor positioning (see `.step` below) and
+ * therefore don't contribute to layout — but they are still DOM descendants
+ * of `.wrapper`, so `:hover`, `:focus-within`, and the `--show-steppers`
+ * style-container query continue to work. */
+.wrapper {
+  display: inline-flex;
+  flex-shrink: 0;
+  position: relative;
+}
+
 .input {
   width: calc(var(--control-size) * 1.25);
   height: var(--control-size);
@@ -33,4 +45,110 @@
 .input_active {
   background-color: var(--color-accent-30);
   border-color: var(--color-accent-70, var(--color-text-main));
+}
+
+/* Stepper visual styling comes from ButtonIcon; `.step` only handles
+ * position and visibility. `position: fixed` + CSS anchor positioning lets
+ * the buttons escape any `overflow: hidden` ancestor (e.g. the abilities
+ * side panel) and render anchored to the input itself. `position-anchor` is
+ * set inline on each button via React style. The `.wrapper .step` selectors
+ * are needed for two reasons: (1) raise specificity above ButtonIcon's
+ * `.button { position: relative }` so `position: fixed` wins, and (2)
+ * override ButtonIcon's `:disabled { opacity: 30% }` in the hidden state. */
+.wrapper .step {
+  position: fixed;
+  pointer-events: none;
+  transition: opacity 0.12s ease;
+  display: none;
+}
+
+.wrapper .step,
+.wrapper .step:disabled {
+  opacity: 0%;
+}
+
+.wrapper .stepDown {
+  inset: anchor(top) anchor(left) auto auto;
+  margin-right: var(--space-1);
+}
+
+.wrapper .stepUp {
+  inset: anchor(top) auto auto anchor(right);
+  margin-left: var(--space-1);
+}
+
+/* Reveal #1: wrapper itself is hovered or focused. */
+.wrapper:hover .step:not(:disabled),
+.wrapper:focus-within .step:not(:disabled) {
+  opacity: 100%;
+  pointer-events: auto;
+}
+
+/* Disabled + button stays visible-dimmed so the layout doesn't shift when
+ * the value reaches max. The disabled − button is intentionally NOT revealed
+ * — when value is already at min there's no useful decrement, so we omit
+ * the dead control rather than show a dimmed one. (Touch mode below opts
+ * back into showing both, so static-layout rows don't change width as the
+ * value moves between extremes.) */
+.wrapper:hover .stepUp:disabled,
+.wrapper:focus-within .stepUp:disabled {
+  opacity: 30%;
+}
+
+/* Reveal #2: an ancestor (e.g. the ability row) set --show-steppers: 1.
+ * CSS style container queries match the nearest ancestor whose computed style
+ * has the custom property — every element is a default style container, so no
+ * `container-name` / `container-type` is needed. The wrapper inherits the
+ * value from its ancestor and the query matches. */
+@container style(--show-steppers: 1) {
+  .wrapper .step {
+    display: flex;
+  }
+
+  .wrapper .step:not(:disabled) {
+    opacity: 100%;
+    pointer-events: auto;
+  }
+
+  .wrapper .stepUp:disabled {
+    opacity: 30%;
+  }
+}
+
+/* Ancestor opt-in to static layout (e.g. `.configItemLabel` inner number
+ * rows): buttons flow inline next to the input instead of overlaying via
+ * anchor positioning. Both buttons stay visible-dimmed when disabled so the
+ * row width is stable as the value moves between extremes. The DOM order
+ * ([−][input][+]) gives the natural visual order. */
+@container style(--stepper-static: 1) {
+  .wrapper .step {
+    display: flex;
+    position: static;
+  }
+
+  .wrapper .step:not(:disabled) {
+    opacity: 100%;
+    pointer-events: auto;
+  }
+
+  .wrapper .step:disabled {
+    opacity: 30%;
+  }
+}
+
+/* Touch / no-hover devices: same static treatment as the opt-in above. */
+@media (hover: none) {
+  .wrapper .step {
+    display: flex;
+    position: static;
+  }
+
+  .wrapper .step:not(:disabled) {
+    opacity: 100%;
+    pointer-events: auto;
+  }
+
+  .wrapper .step:disabled {
+    opacity: 30%;
+  }
 }

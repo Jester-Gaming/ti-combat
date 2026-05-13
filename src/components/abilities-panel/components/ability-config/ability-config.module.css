@@ -50,6 +50,10 @@
   align-items: center;
   gap: var(--space-1-5);
   padding: calc(var(--space-2) - 1px);
+
+  &:hover:not(:has(.descriptionIcon:hover)) {
+    --show-steppers: 1;
+  }
 }
 
 .collapseButton {
@@ -151,6 +155,9 @@
 }
 
 .configItemLabel {
+  --show-steppers: 1;
+  --stepper-static: 1;
+
   display: flex;
   cursor: pointer;
   align-items: center;

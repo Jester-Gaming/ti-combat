@@ -60,7 +60,13 @@ export function UnitControls({
       </ButtonIcon>
 
       <div className={clsx('theme-reset', styles.input)}>
-        <Input value={count} min={0} max={limit} onChange={onCountChange} />
+        <Input
+          value={count}
+          min={0}
+          max={limit}
+          onChange={onCountChange}
+          steppers={false}
+        />
       </div>
 
       <ButtonIcon

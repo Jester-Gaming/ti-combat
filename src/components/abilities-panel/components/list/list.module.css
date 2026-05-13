@@ -22,6 +22,8 @@
     background-color 0.15s;
 
   &:hover {
+    --show-steppers: 1;
+
     border-color: var(--color-accent-70);
   }
 }
@@ -73,7 +75,7 @@
 }
 
 .right {
-  width: var(--control-size);
+  min-width: var(--control-size);
   height: var(--control-size);
   display: flex;
   align-items: center;
