@@ -1,10 +1,17 @@
 import baronyOfLetnevIcon from '@/assets/faction/barony_of_letnev.svg?raw'
 import type { Ability } from '@/combat'
-import { type RerollStrategy, strategyToPredicate } from '@/combat/reroll'
+import {
+  buildRerollStrategy,
+  type RerollStrategy,
+  rerollStrategyConfig,
+  strategyToPredicate,
+} from '@/combat/reroll'
 
 type Params = {
-  ownStrategy: RerollStrategy
-  opponentStrategy: RerollStrategy
+  ownStrategyKind: RerollStrategy['kind']
+  ownStrategyThreshold: number
+  opponentStrategyKind: RerollStrategy['kind']
+  opponentStrategyThreshold: number
 }
 
 declare global {
@@ -23,29 +30,49 @@ export const warFunding: Ability<Params> = {
   params: {
     isEnabled: false,
     uses: 1,
-    ownStrategy: { kind: 'ALWAYS' },
-    opponentStrategy: { kind: 'NEVER' },
+    ownStrategyKind: 'ALWAYS',
+    ownStrategyThreshold: 0,
+    opponentStrategyKind: 'IF_HITS_PERCENT_GE',
+    opponentStrategyThreshold: 50,
   },
   headerUI: 'isEnabled',
+  uiConfig: (_ctx, params) => [
+    ...rerollStrategyConfig<Params>(
+      'ownStrategyKind',
+      'ownStrategyThreshold',
+      params.ownStrategyKind,
+      'Own dice',
+    ),
+    ...rerollStrategyConfig<Params>(
+      'opponentStrategyKind',
+      'opponentStrategyThreshold',
+      params.opponentStrategyKind,
+      'Opponent dice',
+    ),
+  ],
   invoke: [
     {
       timing: 'REROLL_DICE_ROLL',
       isCallable: params =>
-        params.ownStrategy.kind !== 'NEVER' ||
-        params.opponentStrategy.kind !== 'NEVER',
+        params.ownStrategyKind !== 'NEVER' ||
+        params.opponentStrategyKind !== 'NEVER',
       call: (ctx, params) => {
-        if (params.ownStrategy.kind !== 'NEVER') {
-          ctx.api.own.reroll({
-            target: 'MISSES',
-            rerollIf: strategyToPredicate(params.ownStrategy, 'own'),
-          })
-        }
-        if (params.opponentStrategy.kind !== 'NEVER') {
-          ctx.api.opponent.reroll({
-            target: 'ALL',
-            rerollIf: strategyToPredicate(params.opponentStrategy, 'opponent'),
-          })
-        }
+        const ownStrategy = buildRerollStrategy(
+          params.ownStrategyKind,
+          params.ownStrategyThreshold,
+        )
+        ctx.api.own.reroll({
+          target: 'MISSES',
+          rerollIf: strategyToPredicate(ownStrategy),
+        })
+        const strategy = buildRerollStrategy(
+          params.opponentStrategyKind,
+          params.opponentStrategyThreshold,
+        )
+        ctx.api.opponent.reroll({
+          target: 'ALL',
+          rerollIf: strategyToPredicate(strategy),
+        })
       },
     },
   ],

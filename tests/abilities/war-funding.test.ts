@@ -12,8 +12,8 @@ describe('WAR_FUNDING', () => {
         abilities: {
           WAR_FUNDING: {
             isEnabled: true,
-            ownStrategy: { kind: 'ALWAYS' },
-            opponentStrategy: { kind: 'ALWAYS' },
+            ownStrategyKind: 'ALWAYS',
+            opponentStrategyKind: 'ALWAYS',
           },
         },
       },
@@ -36,8 +36,8 @@ describe('WAR_FUNDING', () => {
         abilities: {
           WAR_FUNDING: {
             isEnabled: true,
-            ownStrategy: { kind: 'NEVER' },
-            opponentStrategy: { kind: 'NEVER' },
+            ownStrategyKind: 'NEVER',
+            opponentStrategyKind: 'NEVER',
           },
         },
       },
@@ -60,8 +60,8 @@ describe('WAR_FUNDING', () => {
         abilities: {
           WAR_FUNDING: {
             isEnabled: true,
-            ownStrategy: { kind: 'ALWAYS' },
-            opponentStrategy: { kind: 'NEVER' },
+            ownStrategyKind: 'ALWAYS',
+            opponentStrategyKind: 'NEVER',
           },
         },
       },
@@ -85,8 +85,8 @@ describe('WAR_FUNDING', () => {
         abilities: {
           WAR_FUNDING: {
             isEnabled: true,
-            ownStrategy: { kind: 'ALWAYS' },
-            opponentStrategy: { kind: 'ALWAYS' },
+            ownStrategyKind: 'ALWAYS',
+            opponentStrategyKind: 'ALWAYS',
           },
         },
       },

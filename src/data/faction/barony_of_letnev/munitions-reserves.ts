@@ -1,7 +1,15 @@
 import type { Ability } from '@/combat'
+import {
+  buildRerollStrategy,
+  type RerollStrategy,
+  rerollStrategyConfig,
+  strategyToPredicate,
+} from '@/combat/reroll'
 
 type Params = {
   _useThisRound: boolean
+  ownStrategyKind: RerollStrategy['kind']
+  ownStrategyThreshold: number
 }
 
 declare global {
@@ -20,8 +28,17 @@ export const munitionsReserves: Ability<Params> = {
     isEnabled: true,
     uses: 0,
     _useThisRound: false,
+    ownStrategyKind: 'ALWAYS',
+    ownStrategyThreshold: 0,
   },
   headerUI: 'uses',
+  uiConfig: (_ctx, params) =>
+    rerollStrategyConfig<Params>(
+      'ownStrategyKind',
+      'ownStrategyThreshold',
+      params.ownStrategyKind,
+      'Own dice',
+    ),
   invoke: [
     {
       timing: 'START_OF_COMBAT_ROUND',
@@ -32,9 +49,18 @@ export const munitionsReserves: Ability<Params> = {
     {
       timing: 'REROLL_DICE_ROLL',
       system: true,
-      isCallable: params => params._useThisRound,
-      call: ctx => {
-        ctx.api.own.reroll({ target: 'MISSES', consumeUseIf: () => false })
+      isCallable: params =>
+        params._useThisRound && params.ownStrategyKind !== 'NEVER',
+      call: (ctx, params) => {
+        const strategy = buildRerollStrategy(
+          params.ownStrategyKind,
+          params.ownStrategyThreshold,
+        )
+        ctx.api.own.reroll({
+          target: 'MISSES',
+          rerollIf: strategyToPredicate(strategy),
+          consumeUseIf: () => false,
+        })
       },
     },
     {

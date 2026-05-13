@@ -1,6 +1,23 @@
-import type { Ability } from '../../../combat/abilities-engine/types'
+import type { Ability } from '@/combat'
+import {
+  buildRerollStrategy,
+  type RerollStrategy,
+  rerollStrategyConfig,
+  strategyToPredicate,
+} from '@/combat/reroll'
 
-export const fireTeam: Ability = {
+type Params = {
+  ownStrategyKind: RerollStrategy['kind']
+  ownStrategyThreshold: number
+}
+
+declare global {
+  interface AbilityConfigMap {
+    FIRE_TEAM: Params
+  }
+}
+
+export const fireTeam: Ability<Params> = {
   key: 'FIRE_TEAM',
   name: 'Fire Team',
   description:
@@ -9,13 +26,30 @@ export const fireTeam: Ability = {
   params: {
     isEnabled: false,
     uses: 1,
+    ownStrategyKind: 'ALWAYS',
+    ownStrategyThreshold: 0,
   },
   headerUI: 'isEnabled',
+  uiConfig: (_ctx, params) =>
+    rerollStrategyConfig<Params>(
+      'ownStrategyKind',
+      'ownStrategyThreshold',
+      params.ownStrategyKind,
+      'Own dice',
+    ),
   invoke: [
     {
       timing: 'REROLL_DICE_ROLL',
-      call: ctx => {
-        ctx.api.own.reroll({ target: 'MISSES' })
+      isCallable: params => params.ownStrategyKind !== 'NEVER',
+      call: (ctx, params) => {
+        const strategy = buildRerollStrategy(
+          params.ownStrategyKind,
+          params.ownStrategyThreshold,
+        )
+        ctx.api.own.reroll({
+          target: 'MISSES',
+          rerollIf: strategyToPredicate(strategy),
+        })
       },
     },
   ],

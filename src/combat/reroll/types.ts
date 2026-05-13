@@ -3,9 +3,10 @@ import type { UnitId, UnitType } from '@/types'
 export type RerollStrategy =
   | { kind: 'NEVER' }
   | { kind: 'ALWAYS' }
-  | { kind: 'IF_HITS_LE'; threshold: number }
-  | { kind: 'IF_HITS_GE'; threshold: number }
-  | { kind: 'IF_BAD_OUTCOME'; pct: number }
+  | { kind: 'IF_HITS_AMOUNT_LE'; threshold: number }
+  | { kind: 'IF_HITS_AMOUNT_GE'; threshold: number }
+  | { kind: 'IF_HITS_PERCENT_LE'; threshold: number }
+  | { kind: 'IF_HITS_PERCENT_GE'; threshold: number }
 
 export interface GroupRoll {
   source: UnitType

@@ -1,6 +1,23 @@
-import type { Ability } from '../../../combat/abilities-engine/types'
+import type { Ability } from '@/combat'
+import {
+  buildRerollStrategy,
+  type RerollStrategy,
+  rerollStrategyConfig,
+  strategyToPredicate,
+} from '@/combat/reroll'
 
-export const scrambleFrequency: Ability = {
+type Params = {
+  opponentStrategyKind: RerollStrategy['kind']
+  opponentStrategyThreshold: number
+}
+
+declare global {
+  interface AbilityConfigMap {
+    SCRAMBLE_FREQUENCY: Params
+  }
+}
+
+export const scrambleFrequency: Ability<Params> = {
   key: 'SCRAMBLE_FREQUENCY',
   name: 'Scramble Frequency',
   description:
@@ -8,13 +25,30 @@ export const scrambleFrequency: Ability = {
   params: {
     isEnabled: false,
     uses: 1,
+    opponentStrategyKind: 'IF_HITS_PERCENT_GE',
+    opponentStrategyThreshold: 50,
   },
   headerUI: 'isEnabled',
+  uiConfig: (_ctx, params) =>
+    rerollStrategyConfig<Params>(
+      'opponentStrategyKind',
+      'opponentStrategyThreshold',
+      params.opponentStrategyKind,
+      'Opponent dice',
+    ),
   invoke: [
     {
       timing: 'REROLL_UNIT_ABILITY_ROLL',
-      call: ctx => {
-        ctx.api.opponent.reroll({ target: 'ALL' })
+      isCallable: params => params.opponentStrategyKind !== 'NEVER',
+      call: (ctx, params) => {
+        const strategy = buildRerollStrategy(
+          params.opponentStrategyKind,
+          params.opponentStrategyThreshold,
+        )
+        ctx.api.opponent.reroll({
+          target: 'ALL',
+          rerollIf: strategyToPredicate(strategy),
+        })
       },
     },
   ],

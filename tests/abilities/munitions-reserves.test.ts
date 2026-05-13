@@ -13,7 +13,7 @@ describe('MUNITIONS_RESERVES', () => {
           MUNITIONS_RESERVES: {
             isEnabled: true,
             uses: 1,
-            ownStrategy: { kind: 'ALWAYS' },
+            ownStrategyKind: 'ALWAYS',
           },
         },
       },
@@ -47,7 +47,7 @@ describe('MUNITIONS_RESERVES', () => {
         abilities: {
           MUNITIONS_RESERVES: {
             isEnabled: true,
-            ownStrategy: { kind: 'NEVER' },
+            ownStrategyKind: 'NEVER',
           },
         },
       },
@@ -70,7 +70,7 @@ describe('MUNITIONS_RESERVES', () => {
         abilities: {
           MUNITIONS_RESERVES: {
             isEnabled: true,
-            ownStrategy: { kind: 'ALWAYS' },
+            ownStrategyKind: 'ALWAYS',
           },
         },
       },
@@ -90,7 +90,8 @@ describe('MUNITIONS_RESERVES', () => {
         abilities: {
           MUNITIONS_RESERVES: {
             isEnabled: true,
-            ownStrategy: { kind: 'IF_HITS_LE', threshold: 0 },
+            ownStrategyKind: 'IF_HITS_AMOUNT_LE',
+            ownStrategyThreshold: 0,
           },
         },
       },
