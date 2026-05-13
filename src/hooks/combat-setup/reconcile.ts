@@ -457,7 +457,7 @@ function reconcileSyncSources(
         continue
       }
 
-      const validList = buildValidList(
+      let validList = buildValidList(
         config,
         ownSettings,
         opponentSettings,
@@ -493,6 +493,9 @@ function reconcileSyncSources(
                   )
               : undefined
           : undefined
+        if (config.filter?.includeOnlyAvailable && maxFor) {
+          validList = validList.filter(k => maxFor(k) > 0)
+        }
         abilityParams[config.key] = reconcileUnitListParam(
           currentValue as ([string] | [string, unknown])[],
           validList,
@@ -600,21 +603,30 @@ export function clampLimitParams(
         const resolverSide = sideData ?? EMPTY_SIDE_FOR_STATIC
 
         let changed = false
-        const clamped = (value as ([string] | [string, unknown])[]).map(
-          entry => {
-            if (entry.length !== 2 || typeof entry[1] !== 'number') return entry
-            const max = resolveVariantLimit(
-              src.limit!,
-              resolverSide,
-              entry[0] as never,
-            )
-            if (Number.isFinite(max) && (entry[1] as number) > max) {
-              changed = true
-              return [entry[0], max] as [string, number]
-            }
-            return entry
-          },
-        )
+        const dropOnZero = src.filter?.includeOnlyAvailable === true
+        const entries = value as ([string] | [string, unknown])[]
+        const clamped: ([string] | [string, unknown])[] = []
+        for (const entry of entries) {
+          const max = resolveVariantLimit(
+            src.limit!,
+            resolverSide,
+            entry[0] as never,
+          )
+          if (dropOnZero && Number.isFinite(max) && max <= 0) {
+            changed = true
+            continue
+          }
+          if (entry.length !== 2 || typeof entry[1] !== 'number') {
+            clamped.push(entry)
+            continue
+          }
+          if (Number.isFinite(max) && (entry[1] as number) > max) {
+            changed = true
+            clamped.push([entry[0], max] as [string, number])
+          } else {
+            clamped.push(entry)
+          }
+        }
 
         if (changed) {
           if (Object.isFrozen(abilityParams)) {

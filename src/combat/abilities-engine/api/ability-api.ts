@@ -213,10 +213,13 @@ export class SideApi {
       if (!declared?.limit) return items
       const limit = declared.limit
       const s = this._sideData
-      return items.map(item => ({
+      const withMax = items.map(item => ({
         ...item,
         max: resolveVariantLimit(limit, s, item.value),
       }))
+      return declared.filter?.includeOnlyAvailable
+        ? withMax.filter(item => item.max > 0)
+        : withMax
     }
     return CombatSideState.getUnitVariantOptions(
       this._sideData,

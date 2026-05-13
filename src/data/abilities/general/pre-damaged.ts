@@ -22,24 +22,18 @@ export const preDamaged: Ability<Params> = {
     damagedUnits: declareParam<UnitList<number>>({
       source: 'units',
       default: [],
-      filter: { exclude: ['FIGHTER'] },
+      filter: { exclude: ['FIGHTER'], includeOnlyAvailable: true },
       limit: 'IN_COMBAT',
     }),
   },
-  uiConfig: ctx => {
-    const items = ctx.api.own.getUnitVariantsOptions('damagedUnits')
-
-    return items.length > 0
-      ? [
-          {
-            key: 'damagedUnits',
-            type: 'unit-list',
-            mode: 'number',
-            items,
-          },
-        ]
-      : []
-  },
+  uiConfig: ctx => [
+    {
+      key: 'damagedUnits',
+      type: 'unit-list',
+      mode: 'number',
+      items: ctx.api.own.getUnitVariantsOptions('damagedUnits'),
+    },
+  ],
   invoke: [
     {
       timing: 'PREPARE',

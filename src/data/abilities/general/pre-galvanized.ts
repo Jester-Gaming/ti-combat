@@ -7,6 +7,7 @@ import {
   declareParam,
   parseVariantId,
 } from '@/combat'
+import { UNIT_TYPES } from '@/constants/units'
 import type {
   UnitBaseType,
   UnitId,
@@ -56,17 +57,17 @@ export const preGalvanized: Ability<Params> = {
       filter: {
         includeOnlyBaseTypes: true,
         includeNonParticipating: true,
+        includeOnlyAvailable: true,
       },
       limit: 'IN_COMBAT',
     }),
     reinforcementTokens: 7,
   },
   declareSubtype: params => {
-    const subtypes: DeclaredSubtype[] = []
-    for (const [unitType, count] of params.galvanizedUnits) {
-      subtypes.push(declareGalvanizeUnits(unitType, count > 0))
-    }
-    return subtypes
+    const counts = new Map(params.galvanizedUnits)
+    return UNIT_TYPES.map(unitType =>
+      declareGalvanizeUnits(unitType, (counts.get(unitType) ?? 0) > 0),
+    )
   },
   uiConfig: ctx => [
     {

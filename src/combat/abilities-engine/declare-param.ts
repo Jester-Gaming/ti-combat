@@ -40,7 +40,10 @@ interface DeclaredParamOptions<
    *  - `'EXTRA'` caps at the remaining reinforcement headroom
    *    (`UNIT_LIMITS[baseType] - IN_COMBAT`, never below 0).
    *  Surfaces in the UI as `items[].max` and clamps stored values during
-   *  reconcile. Ignored for non-`UnitList<number>` shapes. */
+   *  reconcile. Ignored for non-`UnitList<number>` shapes.
+   *
+   *  Pair with `filter: { includeOnlyAvailable: true }` to also drop variants
+   *  whose cap currently resolves to 0 from the UI and stored list. */
   limit?: ParamLimit
 }
 

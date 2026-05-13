@@ -41,6 +41,10 @@ export interface ParamFilter {
   combatMode?: CombatMode
   includeNonParticipating?: boolean
   includeOnlyBaseTypes?: boolean
+  /** When true, variants whose per-variant `limit` (set on the owning
+   *  `declareParam`) resolves to 0 are dropped. No-op when `limit` is unset
+   *  or when the filter is used standalone (no associated paramKey). */
+  includeOnlyAvailable?: boolean
 }
 
 export interface SyncSourceConfig<
