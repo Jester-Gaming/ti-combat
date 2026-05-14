@@ -12,6 +12,7 @@ import {
   type CombatMode,
   extractDefaults,
 } from '@/combat'
+import type { UIConfigItem } from '@/combat/abilities-engine/types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Tooltip } from '@/components/ui/tooltip'
@@ -47,23 +48,28 @@ export function AbilityConfig({
   const defaults = useMemo(() => extractDefaults(ability), [ability])
   const headerUiRef = useRef<HTMLInputElement>(null)
 
-  const uiConfigItems = useMemo(() => {
+  const uiConfigItems = useMemo((): UIConfigItem[] | undefined => {
+    let items: UIConfigItem[] | undefined
     if (typeof ability.uiConfig !== 'function') {
-      return ability.uiConfig
+      items = ability.uiConfig
+    } else {
+      const effectiveParams = { ...defaults, ...params }
+      // Set the running ability on the shared context so `ctx.this` and any
+      // SideApi lookups (e.g. `getUnitVariantsOptions(paramKey)`) resolve to
+      // this ability's spec. uiConfig is synchronous, so the surrounding
+      // try/finally restores the previous value before any other rendering.
+      const ctx = readContext as AbilityReadContext & { ability?: Ability }
+      const prev = ctx.ability
+      ctx.ability = ability
+      try {
+        items = ability.uiConfig(ctx, effectiveParams)
+      } finally {
+        ctx.ability = prev
+      }
     }
-    const effectiveParams = { ...defaults, ...params }
-    // Set the running ability on the shared context so `ctx.this` and any
-    // SideApi lookups (e.g. `getUnitVariantsOptions(paramKey)`) resolve to
-    // this ability's spec. uiConfig is synchronous, so the surrounding
-    // try/finally restores the previous value before any other rendering.
-    const ctx = readContext as AbilityReadContext & { ability?: Ability }
-    const prev = ctx.ability
-    ctx.ability = ability
-    try {
-      return ability.uiConfig(ctx, effectiveParams)
-    } finally {
-      ctx.ability = prev
-    }
+    return items?.filter(
+      item => item.type !== 'unit-list' || item.items.length > 0,
+    )
   }, [ability, defaults, readContext, params])
 
   useEffect(() => {
