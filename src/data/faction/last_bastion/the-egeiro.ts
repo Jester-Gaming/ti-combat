@@ -23,7 +23,7 @@ export const theEgeiro: Ability<Params> = {
     {
       timing: 'BEFORE_DICE_ROLL',
       call: (ctx, params) => {
-        ctx.api.own.modifyHitValue(-params.nonHomeSystems, ctx.getUnit())
+        ctx.api.own.applyBonusToResult(params.nonHomeSystems, ctx.getUnit())
       },
     },
   ],

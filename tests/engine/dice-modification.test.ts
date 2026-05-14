@@ -8,13 +8,13 @@ import { combatTest } from '../utils/combat-test'
  * Engine tests: verify that dice-modifying abilities compose correctly.
  *
  * Four combinations:
- *   1. modifyHitValue + modifyHitValue  (both lower hit value)
- *   2. modifyHitValue + addDiceCount    (lower hit value + extra die)
- *   3. addDiceCount   + modifyHitValue  (extra die + lower hit value)
+ *   1. applyBonusToResult + applyBonusToResult  (both lower hit value)
+ *   2. applyBonusToResult + addDiceCount        (lower hit value + extra die)
+ *   3. addDiceCount       + applyBonusToResult  (extra die + lower hit value)
  *   4. addDiceCount   + addDiceCount    (both add extra dice)
  */
 
-const modifyHitValueA: Ability = {
+const applyBonusA: Ability = {
   key: 'TEST_MODIFY_HIT_A',
   name: 'Test Modify Hit A',
   params: { isEnabled: false, uses: Infinity },
@@ -22,13 +22,13 @@ const modifyHitValueA: Ability = {
     {
       timing: 'START_OF_COMBAT_ROUND',
       call: ctx => {
-        ctx.api.own.modifyHitValue(-1)
+        ctx.api.own.applyBonusToResult(1)
       },
     },
   ],
 }
 
-const modifyHitValueB: Ability = {
+const applyBonusB: Ability = {
   key: 'TEST_MODIFY_HIT_B',
   name: 'Test Modify Hit B',
   params: { isEnabled: false, uses: Infinity },
@@ -36,7 +36,7 @@ const modifyHitValueB: Ability = {
     {
       timing: 'START_OF_COMBAT_ROUND',
       call: ctx => {
-        ctx.api.own.modifyHitValue(-1)
+        ctx.api.own.applyBonusToResult(1)
       },
     },
   ],
@@ -75,7 +75,7 @@ const addDiceCountB: Ability = {
 describe('engine: dice modification interactions', () => {
   // Cruiser: combat value 7, rolls 1 die
 
-  it('modifyHitValue + modifyHitValue: both lower hit value', () => {
+  it('applyBonusToResult + applyBonusToResult: both lower hit value', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {
@@ -84,7 +84,7 @@ describe('engine: dice modification interactions', () => {
         abilities: { TEST_MODIFY_HIT_A: true, TEST_MODIFY_HIT_B: true },
       },
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
-      customAbilities: [modifyHitValueA, modifyHitValueB],
+      customAbilities: [applyBonusA, applyBonusB],
     })
 
     t.advanceTo('SPACE_COMBAT')
@@ -95,7 +95,7 @@ describe('engine: dice modification interactions', () => {
     expect(pool.attacker).toContainDice('CRUISER', [5, 1])
   })
 
-  it('modifyHitValue + addDiceCount: lower hit value and extra die', () => {
+  it('applyBonusToResult + addDiceCount: lower hit value and extra die', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {
@@ -104,7 +104,7 @@ describe('engine: dice modification interactions', () => {
         abilities: { TEST_MODIFY_HIT_A: true, TEST_ADD_DICE_A: true },
       },
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
-      customAbilities: [modifyHitValueA, addDiceCountA],
+      customAbilities: [applyBonusA, addDiceCountA],
     })
 
     t.advanceTo('SPACE_COMBAT')
@@ -115,7 +115,7 @@ describe('engine: dice modification interactions', () => {
     expect(pool.attacker).toContainDice('CRUISER', [6, 2])
   })
 
-  it('addDiceCount + modifyHitValue: extra die and lower hit value', () => {
+  it('addDiceCount + applyBonusToResult: extra die and lower hit value', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {
@@ -124,7 +124,7 @@ describe('engine: dice modification interactions', () => {
         abilities: { TEST_ADD_DICE_B: true, TEST_MODIFY_HIT_B: true },
       },
       defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
-      customAbilities: [addDiceCountB, modifyHitValueB],
+      customAbilities: [addDiceCountB, applyBonusB],
     })
 
     t.advanceTo('SPACE_COMBAT')

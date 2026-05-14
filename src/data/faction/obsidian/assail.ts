@@ -14,13 +14,13 @@ export const assail: Ability = {
     {
       timing: 'BEFORE_DICE_ROLL',
       call: ctx => {
-        ctx.api.own.modifyHitValue(-1)
+        ctx.api.own.applyBonusToResult(1)
       },
     },
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       call: ctx => {
-        ctx.api.own.modifyHitValue(-1)
+        ctx.api.own.applyBonusToResult(1)
       },
     },
   ],

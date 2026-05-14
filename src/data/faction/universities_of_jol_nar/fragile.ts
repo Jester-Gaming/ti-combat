@@ -29,9 +29,9 @@ export const fragile: Ability<Params> = {
       timing: 'BEFORE_DICE_ROLL',
       call: (ctx, params) => {
         if (params.excludeUnits.length === 0) {
-          ctx.api.own.modifyHitValue(1)
+          ctx.api.own.applyBonusToResult(-1)
         } else {
-          ctx.api.own.modifyHitValue(1, { exclude: params.excludeUnits })
+          ctx.api.own.applyBonusToResult(-1, { exclude: params.excludeUnits })
         }
       },
     },

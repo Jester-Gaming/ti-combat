@@ -14,7 +14,7 @@ export const moraleBoost: Ability = {
     {
       timing: 'START_OF_COMBAT_ROUND',
       call: ctx => {
-        ctx.api.own.modifyHitValue(-1)
+        ctx.api.own.applyBonusToResult(1)
       },
     },
   ],

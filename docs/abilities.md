@@ -283,10 +283,10 @@ modifyUnitState(unitId: UnitId, updates: Partial<UnitState>): void // Modify per
 ```typescript
 reduceHits(amount: number): void
 addHits(hits: number, validTargets: UnitType[]): void
-modifyHitValue(amount: number): void                             // All dice
-modifyHitValue(amount: number, unit: UnitId): void               // By UnitId
-modifyHitValue(amount: number, source: UnitType): void           // By unit type
-modifyHitValue(amount: number, filter: (source: UnitType) => boolean): void
+applyBonusToResult(amount: number): void                             // All dice
+applyBonusToResult(amount: number, unit: UnitId): void               // By UnitId
+applyBonusToResult(amount: number, source: UnitType): void           // By unit type
+applyBonusToResult(amount: number, filter: (source: UnitType) => boolean): void
 ```
 
 #### Unit Ability Restrictions

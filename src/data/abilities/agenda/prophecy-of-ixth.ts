@@ -14,7 +14,7 @@ export const prophecyOfIxth: Ability = {
     {
       timing: 'BEFORE_DICE_ROLL',
       call: ctx => {
-        ctx.api.own.modifyHitValue(-1, 'FIGHTER')
+        ctx.api.own.applyBonusToResult(1, 'FIGHTER')
       },
     },
   ],

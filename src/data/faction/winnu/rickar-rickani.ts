@@ -17,7 +17,7 @@ export const rickarRickani: Ability = {
     {
       timing: 'BEFORE_DICE_ROLL',
       call: ctx => {
-        ctx.api.own.modifyHitValue(-2)
+        ctx.api.own.applyBonusToResult(2)
       },
     },
   ],

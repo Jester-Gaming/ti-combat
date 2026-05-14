@@ -22,7 +22,7 @@ export const imperator: Ability<Params> = {
     {
       timing: 'BEFORE_DICE_ROLL',
       call: (ctx, params) => {
-        ctx.api.own.modifyHitValue(-params.supportCount)
+        ctx.api.own.applyBonusToResult(params.supportCount)
       },
     },
   ],

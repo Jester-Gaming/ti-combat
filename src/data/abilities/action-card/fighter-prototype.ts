@@ -15,7 +15,7 @@ export const fighterPrototype: Ability = {
     {
       timing: 'START_OF_COMBAT',
       call: ctx => {
-        ctx.api.own.modifyHitValue(-2, 'FIGHTER')
+        ctx.api.own.applyBonusToResult(2, 'FIGHTER')
       },
     },
   ],

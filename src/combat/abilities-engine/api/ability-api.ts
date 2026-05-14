@@ -618,11 +618,11 @@ export class SideApi {
     }
   }
 
-  modifyHitValue(amount: number, target?: unknown): void {
+  applyBonusToResult(amount: number, target?: unknown): void {
     CombatSideState.addHitValueModifier(
       this._ctx._abilitiesParams.combatState.pendingSteps,
       this._side,
-      amount,
+      -amount,
       target,
       this._ctx.meta,
     )

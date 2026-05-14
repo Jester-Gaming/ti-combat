@@ -47,7 +47,7 @@ export const gravleashManeuvers: Ability<Params> = {
         )
 
         if (shipTypeCount > 0 && target !== undefined) {
-          ctx.api.own.modifyHitValue(-shipTypeCount, target)
+          ctx.api.own.applyBonusToResult(shipTypeCount, target)
         }
       },
     },

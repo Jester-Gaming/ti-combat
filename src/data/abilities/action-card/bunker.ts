@@ -17,7 +17,7 @@ export const bunker: Ability = {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: 'BOMBARDMENT',
       call: ctx => {
-        ctx.api.opponent.modifyHitValue(4)
+        ctx.api.opponent.applyBonusToResult(-4)
       },
     },
   ],

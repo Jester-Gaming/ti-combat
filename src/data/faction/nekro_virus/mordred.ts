@@ -14,7 +14,7 @@ export const mordred: Ability = {
     {
       timing: 'BEFORE_DICE_ROLL',
       call: ctx => {
-        ctx.api.own.modifyHitValue(-2, ctx.getUnit())
+        ctx.api.own.applyBonusToResult(2, ctx.getUnit())
       },
     },
   ],

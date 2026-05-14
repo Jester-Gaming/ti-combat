@@ -252,7 +252,7 @@ export interface DiceRollContext {
   dicePool?: SidedDiceData
   validTargets?: { attacker: UnitType[]; defender: UnitType[] }
   /** Hit-value modifiers queued for this dice roll, per side. Written by
-   *  `modifyHitValue` during START_OF_COMBAT / BEFORE_(UNIT_ABILITY_)?DICE_ROLL
+   *  `applyBonusToResult` during START_OF_COMBAT / BEFORE_(UNIT_ABILITY_)?DICE_ROLL
    *  timings and consumed by `_rollDice`. Dropped when the group drains. */
   hitValueModifiers?: {
     attacker?: HitValueModifier[]

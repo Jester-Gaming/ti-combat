@@ -19,7 +19,7 @@ export const cmorranNorr: Ability = {
         const ships = settings?.ships ?? []
         for (const shipType of ships) {
           if (shipType === 'FLAGSHIP') continue
-          ctx.api.own.modifyHitValue(-1, shipType)
+          ctx.api.own.applyBonusToResult(1, shipType)
         }
       },
     },
