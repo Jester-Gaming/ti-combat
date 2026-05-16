@@ -23,7 +23,7 @@ export const gravleashManeuvers: Ability<Params> = {
     shipPriority: declareParam<UnitList>({
       default: [],
       source: 'ships',
-      side: 'opponent',
+      sort: 'price-desc',
       filter: { combatMode: 'SPACE' },
     }),
   },
