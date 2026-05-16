@@ -18,7 +18,7 @@ export const raidFormation: Ability<Params> = {
       default: [],
       source: 'nonFighterShips',
       side: 'opponent',
-      filter: { combatMode: 'SPACE', exclude: ['FIGHTER'] },
+      filter: { combatMode: 'SPACE' },
     }),
   },
   uiConfig: ctx => [

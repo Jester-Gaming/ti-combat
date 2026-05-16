@@ -16,7 +16,7 @@ export const directHit: Ability<Params> = {
     uses: 0,
     targets: declareParam<UnitList<boolean>>({
       default: [],
-      source: 'ships',
+      source: 'nonFighterShips',
       side: 'opponent',
       defaultItemValue: true,
       filter: {

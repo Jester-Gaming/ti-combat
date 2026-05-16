@@ -921,10 +921,15 @@ export class CombatSideState {
     s: SideStateData,
     mode: CombatMode,
     filter?: ParamFilter,
+    sourceBaseTypes?: readonly UnitBaseType[],
   ): UnitType[] {
-    const baseTypes = filter?.includeNonParticipating
+    let baseTypes = filter?.includeNonParticipating
       ? CombatSideState.getAllUnitTypes()
       : CombatSideState.getParticipatingUnitTypes(s, filter?.combatMode ?? mode)
+    if (sourceBaseTypes) {
+      const allowed = new Set<string>(sourceBaseTypes)
+      baseTypes = baseTypes.filter(b => allowed.has(b))
+    }
     const settings = CombatSideState.getLiveParams(s, 'SETTINGS')
     const allDeclaredSubtypes = (settings?.subtypes ?? []) as DeclaredSubtype[]
     let declaredSubtypes = filterDeclaredSubtypes(allDeclaredSubtypes, filter)
@@ -964,8 +969,14 @@ export class CombatSideState {
     s: SideStateData,
     mode: CombatMode,
     filter?: ParamFilter,
+    sourceBaseTypes?: readonly UnitBaseType[],
   ): { label: string; value: UnitType }[] {
-    return CombatSideState.getUnitVariants(s, mode, filter).map(id => ({
+    return CombatSideState.getUnitVariants(
+      s,
+      mode,
+      filter,
+      sourceBaseTypes,
+    ).map(id => ({
       label: getVariantDisplayName(id),
       value: id,
     }))

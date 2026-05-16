@@ -205,10 +205,16 @@ export class SideApi {
     if (typeof arg === 'string') {
       const declared = this._resolveDeclaredParam(arg)
       const filter = declared?.filter
+      const sourceBaseTypes = declared?.source
+        ? (CombatSideState.getLiveParams(this._sideData, 'SETTINGS')?.[
+            declared.source
+          ] as readonly UnitBaseType[] | undefined)
+        : undefined
       const items = CombatSideState.getUnitVariantOptions(
         this._sideData,
         this.state.combatMode,
         filter,
+        sourceBaseTypes,
       )
       if (!declared?.limit) return items
       const limit = declared.limit

@@ -34,7 +34,6 @@ export const cavalry: Ability<Params> = {
       default: 'DESTROYER',
       source: 'nonFighterShips',
       filter: {
-        exclude: ['FIGHTER'],
         excludeSubtypeSource: ['CAVALRY'],
         combatMode: 'SPACE',
       },

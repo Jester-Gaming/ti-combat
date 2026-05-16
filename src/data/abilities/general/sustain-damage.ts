@@ -36,13 +36,13 @@ export const sustainDamage: Ability<Params> = {
       default: [],
       source: 'nonFighterShips',
       defaultItemValue: true,
-      filter: { exclude: ['FIGHTER'], combatMode: 'SPACE' },
+      filter: { combatMode: 'SPACE' },
     }),
     groundPriority: declareParam<UnitList<boolean>>({
       default: [],
       source: 'groundForces',
       defaultItemValue: true,
-      filter: { exclude: ['FIGHTER'], combatMode: 'GROUND' },
+      filter: { combatMode: 'GROUND' },
     }),
   },
   sort: (params, ctx, unitIds) => {

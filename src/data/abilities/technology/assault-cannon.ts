@@ -26,7 +26,7 @@ export const assaultCannon: Ability<Params> = {
       default: [],
       source: 'nonFighterShips',
       side: 'opponent',
-      filter: { combatMode: 'SPACE', exclude: ['FIGHTER'] },
+      filter: { combatMode: 'SPACE' },
     }),
   },
   headerUI: 'isEnabled',
