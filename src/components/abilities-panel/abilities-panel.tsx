@@ -6,10 +6,12 @@ import type {
   CombatMode,
   RegisteredAbility,
 } from '@/combat'
-import { SLOT_DISPLAY, SLOT_ORDER } from '@/combat'
+import { extractDefaults, SLOT_DISPLAY, SLOT_ORDER } from '@/combat'
 
 import styles from './abilities-panel.module.css'
 import { AbilityConfig } from './components/ability-config'
+
+export type AbilityFilterMode = 'all' | 'same' | 'enabled'
 
 interface AbilitiesPanelProps {
   abilities: RegisteredAbility[]
@@ -18,11 +20,29 @@ interface AbilitiesPanelProps {
   params: Record<string, Record<string, unknown>>
   onParamsChange: (abilityName: string, params: Record<string, unknown>) => void
   searchQuery?: string
+  filterMode: AbilityFilterMode
 }
 
 function hasUI(reg: RegisteredAbility): boolean {
   const a = reg.ability
   return !!a.headerUI || (a.uiConfig?.length ?? 0) > 0
+}
+
+function isAbilityEnabled(
+  reg: RegisteredAbility,
+  params: Record<string, unknown> | undefined,
+): boolean {
+  const merged = { ...extractDefaults(reg.ability), ...params }
+  const isEnabled = merged.isEnabled
+  const uses = merged.uses
+  return isEnabled === true && (typeof uses !== 'number' || uses > 0)
+}
+
+function isInCurrentMode(
+  reg: RegisteredAbility,
+  combatMode: CombatMode,
+): boolean {
+  return !reg.ability.context || reg.ability.context === combatMode
 }
 
 function isSubsequence(word: string, needle: string): boolean {
@@ -97,12 +117,18 @@ export function AbilitiesPanel({
   params,
   onParamsChange,
   searchQuery,
+  filterMode,
 }: AbilitiesPanelProps): React.ReactElement {
   const normalizedQuery = searchQuery?.trim().toLowerCase() ?? ''
   const visible = pipe(
     abilities,
     filter(hasUI),
     filter(reg => !normalizedQuery || matchesSearch(reg, normalizedQuery)),
+    filter(reg => {
+      if (filterMode === 'all') return true
+      if (filterMode === 'same') return isInCurrentMode(reg, combatMode)
+      return isAbilityEnabled(reg, params[reg.ability.key])
+    }),
   )
 
   const byCategory = groupBy(visible, reg => SLOT_DISPLAY[reg.slot].category)

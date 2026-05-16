@@ -7,12 +7,16 @@ import {
 import { clsx } from 'clsx'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { AbilitiesPanel } from '@/components/abilities-panel'
+import {
+  AbilitiesPanel,
+  type AbilityFilterMode,
+} from '@/components/abilities-panel'
 import { BattleCard } from '@/components/battle-card'
 import { useToast } from '@/components/toast'
 import { ButtonIcon } from '@/components/ui/button-icon'
 import { GlassCard } from '@/components/ui/glass-card'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { ToggleGroup } from '@/components/ui/toggle-group'
 import { useCombatSetup } from '@/hooks/use-combat-setup'
 import { useSimulation } from '@/hooks/use-simulation'
 import { useUrlSync } from '@/hooks/use-url-sync'
@@ -22,6 +26,34 @@ import { getUnitConfig } from '@/utils/get-unit-config'
 import { ButtonIconPlain } from '../ui/button-icon-plain'
 import { Divider } from '../ui/divider'
 import styles from './combat-simulator.module.css'
+
+const FILTER_MODE_VALUES: readonly AbilityFilterMode[] = [
+  'all',
+  'same',
+  'enabled',
+]
+
+const FILTER_OPTIONS: { value: AbilityFilterMode; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'same', label: 'Same mode' },
+  { value: 'enabled', label: 'Enabled' },
+]
+
+function filterModeStorageKey(side: CombatSide): string {
+  return `abilities-filter-mode-${side}`
+}
+
+function loadFilterMode(side: CombatSide): AbilityFilterMode {
+  try {
+    const raw = localStorage.getItem(filterModeStorageKey(side))
+    if (raw && (FILTER_MODE_VALUES as readonly string[]).includes(raw)) {
+      return raw as AbilityFilterMode
+    }
+  } catch {
+    // ignore storage access errors
+  }
+  return 'same'
+}
 
 interface CombatSimulatorProps {
   className?: string
@@ -63,6 +95,18 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     defender: false,
   })
   const [searchQuery, setSearchQuery] = useState('')
+  const [attackerFilterMode, setAttackerFilterMode] =
+    useState<AbilityFilterMode>(() => loadFilterMode('attacker'))
+  const [defenderFilterMode, setDefenderFilterMode] =
+    useState<AbilityFilterMode>(() => loadFilterMode('defender'))
+
+  useEffect(() => {
+    localStorage.setItem(filterModeStorageKey('attacker'), attackerFilterMode)
+  }, [attackerFilterMode])
+  useEffect(() => {
+    localStorage.setItem(filterModeStorageKey('defender'), defenderFilterMode)
+  }, [defenderFilterMode])
+
   const attackerSearchRef = useRef<HTMLInputElement>(null)
   const defenderSearchRef = useRef<HTMLInputElement>(null)
 
@@ -224,32 +268,50 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
 
   const attackerAbilitiesElement = (
     <div className={clsx(styles.abilities, 'theme-attacker')}>
-      {renderAbilitiesHeader('attacker', 'Attacker Abilities')}
-      <AbilitiesPanel
-        abilities={attackerAbilities}
-        readContext={attackerReadContext}
-        combatMode={combatMode}
-        params={abilities.attacker}
-        onParamsChange={(abilityName, params) =>
-          setAbilityParam('attacker', abilityName, params)
-        }
-        searchQuery={searchQuery}
+      <div className={styles.scrollArea}>
+        {renderAbilitiesHeader('attacker', 'Attacker Abilities')}
+        <AbilitiesPanel
+          abilities={attackerAbilities}
+          readContext={attackerReadContext}
+          combatMode={combatMode}
+          params={abilities.attacker}
+          onParamsChange={(abilityName, params) =>
+            setAbilityParam('attacker', abilityName, params)
+          }
+          searchQuery={searchQuery}
+          filterMode={attackerFilterMode}
+        />
+      </div>
+      <ToggleGroup
+        className={styles.filterToggle}
+        options={FILTER_OPTIONS}
+        value={attackerFilterMode}
+        onChange={setAttackerFilterMode}
       />
     </div>
   )
 
   const defenderAbilitiesElement = (
     <div className={clsx(styles.abilities, 'theme-defender')}>
-      {renderAbilitiesHeader('defender', 'Defender Abilities')}
-      <AbilitiesPanel
-        abilities={defenderAbilities}
-        readContext={defenderReadContext}
-        combatMode={combatMode}
-        params={abilities.defender}
-        onParamsChange={(abilityName, params) =>
-          setAbilityParam('defender', abilityName, params)
-        }
-        searchQuery={searchQuery}
+      <div className={styles.scrollArea}>
+        {renderAbilitiesHeader('defender', 'Defender Abilities')}
+        <AbilitiesPanel
+          abilities={defenderAbilities}
+          readContext={defenderReadContext}
+          combatMode={combatMode}
+          params={abilities.defender}
+          onParamsChange={(abilityName, params) =>
+            setAbilityParam('defender', abilityName, params)
+          }
+          searchQuery={searchQuery}
+          filterMode={defenderFilterMode}
+        />
+      </div>
+      <ToggleGroup
+        className={styles.filterToggle}
+        options={FILTER_OPTIONS}
+        value={defenderFilterMode}
+        onChange={setDefenderFilterMode}
       />
     </div>
   )
@@ -310,12 +372,16 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
 
       {/* Attacker abilities sheet (mobile) */}
       <Sheet open={attackerSheetOpen} onOpenChange={setAttackerSheetOpen}>
-        <SheetContent side="left">{attackerAbilitiesElement}</SheetContent>
+        <SheetContent side="left" className={styles.abilitiesSheet}>
+          {attackerAbilitiesElement}
+        </SheetContent>
       </Sheet>
 
       {/* Defender abilities sheet (mobile) */}
       <Sheet open={defenderSheetOpen} onOpenChange={setDefenderSheetOpen}>
-        <SheetContent side="right">{defenderAbilitiesElement}</SheetContent>
+        <SheetContent side="right" className={styles.abilitiesSheet}>
+          {defenderAbilitiesElement}
+        </SheetContent>
       </Sheet>
     </main>
   )

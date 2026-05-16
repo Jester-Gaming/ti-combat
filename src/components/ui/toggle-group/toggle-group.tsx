@@ -11,15 +11,17 @@ interface ToggleGroupProps<T extends string> {
   options: ToggleGroupOption<T>[]
   value: T
   onChange: (value: T) => void
+  className?: string
 }
 
 export function ToggleGroup<T extends string>({
   options,
   value,
   onChange,
+  className,
 }: ToggleGroupProps<T>) {
   return (
-    <div className={styles.group}>
+    <div className={clsx(styles.group, className)}>
       {options.map(option => (
         <button
           key={option.value}
