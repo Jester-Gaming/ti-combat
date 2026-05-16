@@ -1,6 +1,6 @@
 import { z } from 'zod/mini'
 
-import { type Ability, declareParam, parseVariantId } from '@/combat'
+import { type Ability, declareParam } from '@/combat'
 import type { UnitList } from '@/types'
 import { UnitListBooleanSchema } from '@/types'
 
@@ -67,7 +67,7 @@ export const devotion: Ability<Params> = {
               includeVariants: false,
             }) !== undefined
           ) {
-            ctx.api.opponent.addHits(1, [parseVariantId(variant).type])
+            ctx.api.opponent.addHits(1, [variant])
             ctx.api.own.destroyUnits(sacrifice)
             return
           }
