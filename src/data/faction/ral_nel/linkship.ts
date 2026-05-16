@@ -1,6 +1,6 @@
 import { z } from 'zod/mini'
 
-import { type Ability, declareParam, parseVariantId } from '@/combat'
+import { type Ability, declareParam } from '@/combat'
 import type { SideApi } from '@/combat/abilities-engine/api/ability-api'
 import type { DiceGroup, UnitBaseType, UnitList, UnitType } from '@/types'
 import { UnitListNumberSchema } from '@/types'
@@ -124,8 +124,7 @@ function findBestSpaceCannon(
   let best: { key: string; sc: DiceGroup } | null = null
   for (const [key, count] of params.structures) {
     if (count <= 0) continue
-    const { type } = parseVariantId(key as UnitType)
-    const sc = api.getUnitStats(type)?.UNIT_ABILITIES?.SPACE_CANNON
+    const sc = api.getUnitStats(key as UnitType)?.UNIT_ABILITIES?.SPACE_CANNON
     if (sc && (!best || expectedHits(sc) > expectedHits(best.sc))) {
       best = { key, sc: [...sc] as DiceGroup }
     }
