@@ -13,6 +13,7 @@
   position: sticky;
   top: var(--space-6);
   overflow: hidden auto;
+  scrollbar-gutter: stable;
   border-radius: var(--radius-lg);
   padding: var(--space-4) calc(var(--space-4) - var(--scrollbar-width))
     var(--space-4) var(--space-4);
@@ -53,8 +54,15 @@
   margin-bottom: var(--space-4);
 }
 
-.title {
+.headerRow {
   position: relative;
+  display: flex;
+  align-items: center;
+  min-height: var(--space-6);
+  margin-bottom: var(--space-4);
+}
+
+.title {
   flex: 1;
   margin: 0;
   text-align: center;
@@ -64,14 +72,44 @@
   text-transform: uppercase;
   font-family: var(--font-heading);
   color: var(--color-accent);
-  margin-bottom: var(--space-4);
 }
 
-.resetAbilitiesButton {
+.titleActions {
   position: absolute;
   top: 50%;
   right: 0;
   transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.searchLeading {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  color: var(--color-text-muted);
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0 var(--space-6);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-text-main);
+  background: transparent;
+  border: none;
+  outline: none;
+
+  &::placeholder {
+    color: var(--color-text-muted);
+  }
 }
 
 .centerColumn {

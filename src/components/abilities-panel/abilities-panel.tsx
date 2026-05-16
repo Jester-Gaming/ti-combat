@@ -17,11 +17,41 @@ interface AbilitiesPanelProps {
   combatMode: CombatMode
   params: Record<string, Record<string, unknown>>
   onParamsChange: (abilityName: string, params: Record<string, unknown>) => void
+  searchQuery?: string
 }
 
 function hasUI(reg: RegisteredAbility): boolean {
   const a = reg.ability
   return !!a.headerUI || (a.uiConfig?.length ?? 0) > 0
+}
+
+function isSubsequence(word: string, needle: string): boolean {
+  let i = 0
+  for (let w = 0; w < word.length && i < needle.length; w++) {
+    if (word[w] === needle[i]) i++
+  }
+  return i === needle.length
+}
+
+function fuzzyMatch(haystack: string, needle: string): boolean {
+  if (haystack.includes(needle)) return true
+  for (const word of haystack.split(/\s+/)) {
+    if (word && isSubsequence(word, needle)) return true
+  }
+  return false
+}
+
+function matchesSearch(reg: RegisteredAbility, query: string): boolean {
+  const haystack = [
+    reg.ability.name,
+    reg.ability.description ?? '',
+    SLOT_DISPLAY[reg.slot].category,
+    SLOT_DISPLAY[reg.slot].subcategory ?? '',
+  ]
+    .join(' ')
+    .toLowerCase()
+  const tokens = query.split(/\s+/).filter(Boolean)
+  return tokens.every(token => fuzzyMatch(haystack, token))
 }
 
 function slotIndex(slot: AbilitySlot): number {
@@ -66,8 +96,14 @@ export function AbilitiesPanel({
   combatMode,
   params,
   onParamsChange,
+  searchQuery,
 }: AbilitiesPanelProps): React.ReactElement {
-  const visible = pipe(abilities, filter(hasUI))
+  const normalizedQuery = searchQuery?.trim().toLowerCase() ?? ''
+  const visible = pipe(
+    abilities,
+    filter(hasUI),
+    filter(reg => !normalizedQuery || matchesSearch(reg, normalizedQuery)),
+  )
 
   const byCategory = groupBy(visible, reg => SLOT_DISPLAY[reg.slot].category)
 

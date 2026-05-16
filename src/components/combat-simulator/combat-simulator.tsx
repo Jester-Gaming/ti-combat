@@ -1,6 +1,11 @@
-import { GearIcon, ResetIcon } from '@radix-ui/react-icons'
+import {
+  Cross1Icon,
+  GearIcon,
+  MagnifyingGlassIcon,
+  ResetIcon,
+} from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { AbilitiesPanel } from '@/components/abilities-panel'
 import { BattleCard } from '@/components/battle-card'
@@ -53,6 +58,29 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
 
   const [attackerSheetOpen, setAttackerSheetOpen] = useState(false)
   const [defenderSheetOpen, setDefenderSheetOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState<Record<CombatSide, boolean>>({
+    attacker: false,
+    defender: false,
+  })
+  const [searchQuery, setSearchQuery] = useState('')
+  const attackerSearchRef = useRef<HTMLInputElement>(null)
+  const defenderSearchRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (searchOpen.attacker) attackerSearchRef.current?.focus()
+  }, [searchOpen.attacker])
+  useEffect(() => {
+    if (searchOpen.defender) defenderSearchRef.current?.focus()
+  }, [searchOpen.defender])
+
+  const openSearch = (side: CombatSide) =>
+    setSearchOpen(prev => ({ ...prev, [side]: true }))
+  const closeSearch = (side: CombatSide) =>
+    setSearchOpen(prev => {
+      const next = { ...prev, [side]: false }
+      if (!next.attacker && !next.defender) setSearchQuery('')
+      return next
+    })
 
   const attackerConfig = useMemo(
     () => getUnitConfig(attackerFaction),
@@ -139,22 +167,64 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     setUpgraded(side, unit, !isUpgraded(side, unit))
   }
 
+  const renderAbilitiesHeader = (side: CombatSide, label: string) => (
+    <div className={styles.header}>
+      <div className={styles.headerRow}>
+        {searchOpen[side] ? (
+          <>
+            <span className={styles.searchLeading}>
+              <MagnifyingGlassIcon />
+            </span>
+            <input
+              ref={side === 'attacker' ? attackerSearchRef : defenderSearchRef}
+              type="text"
+              className={styles.searchInput}
+              placeholder="Search abilities..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Escape') closeSearch(side)
+              }}
+            />
+            <div className={styles.titleActions}>
+              <ButtonIconPlain
+                type="button"
+                onClick={() => closeSearch(side)}
+                title="Close search"
+              >
+                <Cross1Icon />
+              </ButtonIconPlain>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className={styles.title}>{label}</h2>
+            <div className={styles.titleActions}>
+              <ButtonIconPlain
+                type="button"
+                onClick={() => openSearch(side)}
+                title="Search abilities"
+              >
+                <MagnifyingGlassIcon />
+              </ButtonIconPlain>
+              <ButtonIconPlain
+                type="button"
+                onClick={() => resetAbilities(side)}
+                title={`Reset ${side} abilities to defaults`}
+              >
+                <ResetIcon />
+              </ButtonIconPlain>
+            </div>
+          </>
+        )}
+      </div>
+      <Divider />
+    </div>
+  )
+
   const attackerAbilitiesElement = (
     <div className={clsx(styles.abilities, 'theme-attacker')}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>
-          Attacker Abilities
-          <ButtonIconPlain
-            type="button"
-            className={clsx(styles.resetAbilitiesButton)}
-            onClick={() => resetAbilities('attacker')}
-            title="Reset attacker abilities to defaults"
-          >
-            <ResetIcon />
-          </ButtonIconPlain>
-        </h2>
-        <Divider />
-      </div>
+      {renderAbilitiesHeader('attacker', 'Attacker Abilities')}
       <AbilitiesPanel
         abilities={attackerAbilities}
         readContext={attackerReadContext}
@@ -163,26 +233,14 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
         onParamsChange={(abilityName, params) =>
           setAbilityParam('attacker', abilityName, params)
         }
+        searchQuery={searchQuery}
       />
     </div>
   )
 
   const defenderAbilitiesElement = (
     <div className={clsx(styles.abilities, 'theme-defender')}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>
-          Defender Abilities
-          <ButtonIconPlain
-            className={clsx(styles.resetAbilitiesButton)}
-            onClick={() => resetAbilities('defender')}
-            title="Reset defender abilities to defaults"
-          >
-            <ResetIcon />
-          </ButtonIconPlain>
-        </h2>
-
-        <Divider />
-      </div>
+      {renderAbilitiesHeader('defender', 'Defender Abilities')}
       <AbilitiesPanel
         abilities={defenderAbilities}
         readContext={defenderReadContext}
@@ -191,6 +249,7 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
         onParamsChange={(abilityName, params) =>
           setAbilityParam('defender', abilityName, params)
         }
+        searchQuery={searchQuery}
       />
     </div>
   )
