@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Ability } from '@/combat'
-import type { UnitId } from '@/types'
 
 import { combatTest } from '../utils/combat-test'
 
@@ -38,7 +37,7 @@ const addCustomDiceAtSC: Ability = {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: ['SPACE_CANNON_OFFENSE', 'SPACE_CANNON_DEFENSE'],
       call: ctx => {
-        ctx.api.own.addDiceGroup('TEST_CUSTOM_SC_DICE', '' as UnitId, [5, 3])
+        ctx.api.own.addDiceGroup([5, 3])
       },
     },
   ],

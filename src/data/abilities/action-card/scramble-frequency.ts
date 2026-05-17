@@ -4,7 +4,7 @@ import {
   type RerollStrategy,
   rerollStrategyConfig,
   strategyToPredicate,
-} from '@/combat/reroll'
+} from '@/combat/dice-math/reroll-strategy'
 
 type Params = {
   opponentStrategyKind: RerollStrategy['kind']
@@ -45,7 +45,7 @@ export const scrambleFrequency: Ability<Params> = {
           params.opponentStrategyKind,
           params.opponentStrategyThreshold,
         )
-        ctx.api.opponent.reroll({
+        ctx.api.opponent.declareReroll({
           target: 'ALL',
           rerollIf: strategyToPredicate(strategy),
         })

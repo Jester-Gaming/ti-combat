@@ -1,7 +1,6 @@
 import type {
   CombatSide,
   DiceGroup,
-  SourcedDiceGroup,
   UnitBaseType,
   UnitId,
   UnitStats,
@@ -12,6 +11,7 @@ import type {
 import type {
   CombatMode,
   CombatStateData,
+  HitSource,
   MetaPhase,
   UnitAbilityMeta,
 } from '../combat-state/types'
@@ -124,11 +124,11 @@ export interface OwnOpponentContext<T> {
   opponent: T
 }
 
-// Dice pool: keyed by unit type or ability name
-export type DicePool = Partial<Record<string, SourcedDiceGroup[]>>
-
-// Sided version for external API
-export type SidedDiceData = SidedContext<DicePool>
+// Dice pool: kept as the DICE_POOL log shape only — the dice-roll
+// pipeline now uses `SideDiceCollection` end-to-end. Tests read this
+// shape via `t.dicePool()`. Each entry is `[hitValue, totalDpu]` (dpu
+// already includes any bonus dice).
+export type DicePool = Partial<Record<string, DiceGroup[]>>
 
 // Single source of truth — map timing to context type (external API uses sided format).
 // void = no context, other type = required context.
@@ -152,9 +152,12 @@ declare global {
     CLEANUP_ROUND: void
     CLEANUP: void
 
+    AFTER_DICE_ROLL_STEP: void
+
     BEFORE_UNIT_ABILITY_ROLL: void
     REROLL_UNIT_ABILITY_ROLL: void
     AFTER_UNIT_ABILITY_ROLL: void
+    AFTER_UNIT_ABILITY_ROLL_STEP: void
 
     DESTROY: UnitId[]
     WHEN_DESTROY: UnitId[]
@@ -220,6 +223,18 @@ export interface AbilityReadContext {
   ): { key: string; name: string }[]
   /** Returns true if the current side's faction owns this ability (faction or unit ability). */
   isOwner(): boolean
+  /** Phase stack of the current dice-roll group. Throws outside a dice-roll group. */
+  readonly currentDiceRollPhase: MetaPhase[]
+  /** Sides firing in the current dice-roll group. Throws outside one. */
+  readonly currentDiceRollFiring: CombatSide[]
+  /** Hit source of the current dice-roll group. Throws outside one. */
+  readonly currentDiceRollHitSource: HitSource
+  /** Hit-routing overrides for the current dice-roll group, if any. Throws outside one. */
+  readonly currentDiceRollRouting:
+    | { attacker: CombatSide; defender: CombatSide }
+    | undefined
+  /** Whether the current dice-roll group is a unit-ability roll. Throws outside one. */
+  readonly currentDiceRollIsUnitAbility: boolean
 }
 
 /** Mutable context for call (Immer draft, full API) */
@@ -254,6 +269,28 @@ export interface AbilityCallContext {
   ): { key: string; name: string }[]
   /** Returns true if the current side's faction owns this ability (faction or unit ability). */
   isOwner(): boolean
+  /** Phase stack of the current dice-roll group. Throws outside a dice-roll group. */
+  readonly currentDiceRollPhase: MetaPhase[]
+  /** Sides firing in the current dice-roll group. Throws outside one. */
+  readonly currentDiceRollFiring: CombatSide[]
+  /** Hit source of the current dice-roll group. Throws outside one. */
+  readonly currentDiceRollHitSource: HitSource
+  /** Hit-routing overrides for the current dice-roll group, if any. Throws outside one. */
+  readonly currentDiceRollRouting:
+    | { attacker: CombatSide; defender: CombatSide }
+    | undefined
+  /** Whether the current dice-roll group is a unit-ability roll. Throws outside one. */
+  readonly currentDiceRollIsUnitAbility: boolean
+  /** Side-abstract reroll declaration (docs/dice-math.md §2). */
+  declareReroll(spec: {
+    OWN?: Omit<import('../dice-math/types').RerollTargetSpec, 'key'>
+    OPPONENT?: Omit<import('../dice-math/types').RerollTargetSpec, 'key'>
+  }): void
+  /** Side-abstract ADDITIONAL_HIT_POOL declaration (docs/dice-math.md §2). */
+  declareHitPoolTransform(spec: {
+    OWN?: import('../dice-math/types').AdditionalHitPoolTargetSpec
+    OPPONENT?: import('../dice-math/types').AdditionalHitPoolTargetSpec
+  }): void
   /** Override the next meta-phase transition. The current round's remaining
    *  steps still complete normally; the override fires when the script's
    *  closing transition step runs. Pass `'COMPLETE'` to run end-of-combat

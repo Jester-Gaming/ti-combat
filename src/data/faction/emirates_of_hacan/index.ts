@@ -2,6 +2,8 @@ import emiratesOfHacanIcon from '@/assets/faction/emirates_of_hacan.svg?raw'
 import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
+import { wrathOfKenara } from './wrath-of-kenara'
+
 export const emirates_of_hacan: Faction = {
   name: 'Emirates of Hacan',
   icon: emiratesOfHacanIcon,
@@ -19,7 +21,7 @@ export const emirates_of_hacan: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [sustainDamage, wrathOfKenara],
       },
     },
     MECH: {

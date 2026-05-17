@@ -19,7 +19,7 @@ export const valkyrieParticleWeave: Ability = {
         return ctx.api.own.getPendingHits() >= 1
       },
       call: ctx => {
-        ctx.api.opponent.addHits(1, [])
+        ctx.api.opponent.addHits(1)
       },
     },
   ],

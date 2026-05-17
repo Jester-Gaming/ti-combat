@@ -15,7 +15,6 @@ function makeSide(units: Record<string, UnitType>): SideStateData {
     unitType: units as Record<string, UnitType>,
     unitState: {},
     unitStats: {} as never,
-    hitPools: [],
     abilities: {},
     liveAbilities: {},
   }

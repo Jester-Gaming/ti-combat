@@ -5,7 +5,7 @@ export interface UnitSelection {
 
 export type CombatSide = 'attacker' | 'defender'
 
-export type { DiceGroup, SourcedDiceGroup } from './die'
+export type { DiceGroup } from './die'
 export type { Faction, FactionKey } from './faction'
 export {
   UnitListBooleanSchema,

@@ -1,4 +1,6 @@
 export {
+  buildCombatDiceRollGroup,
+  buildUnitAbilityDiceRollGroup,
   cloneStateForBranch,
   CombatState,
   type StateWithProbability,

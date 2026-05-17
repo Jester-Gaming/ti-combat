@@ -2,11 +2,7 @@ import { z } from 'zod/mini'
 
 import type { Ability } from '../../../combat/abilities-engine/types'
 
-type Params = {
-  strategy: 'BEST' | 'WORST'
-}
-
-export const plasmaScoring: Ability<Params> = {
+export const plasmaScoring: Ability = {
   key: 'PLASMA_SCORING',
   name: 'Plasma Scoring',
   description:
@@ -17,18 +13,14 @@ export const plasmaScoring: Ability<Params> = {
   params: {
     isEnabled: false,
     uses: Infinity,
-    strategy: 'BEST',
   },
   headerUI: 'isEnabled',
   invoke: [
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: ['BOMBARDMENT', 'SPACE_CANNON_OFFENSE', 'SPACE_CANNON_DEFENSE'],
-      isCallable: (_params, ctx) => {
-        return !ctx.api.own.isDicePoolEmpty()
-      },
-      call: (ctx, params) => {
-        ctx.api.own.addDiceCount(1, params.strategy)
+      call: ctx => {
+        ctx.api.own.addDiceCount(1, 'BEST')
       },
     },
   ],

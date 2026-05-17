@@ -19,8 +19,8 @@ describe.forEachSide('LINKSHIP_2', () => {
     const pool = t.dicePool()
 
     // Linkship II: all 3 destroyers fire SC using the 1 PDS
-    expect(pool.defender.DESTROYER).toHaveLength(3)
-    expect(pool.defender).toContainDice('DESTROYER', [6, 1])
+    expect(pool.defender.LINKSHIP_2).toHaveLength(3)
+    expect(pool.defender).toContainDice('LINKSHIP_2', [6, 1])
   })
 
   it('is capped by linkship count', () => {
@@ -39,7 +39,7 @@ describe.forEachSide('LINKSHIP_2', () => {
     const pool = t.dicePool()
 
     // 1 linkship, 3 PDS structures → 1 SC dice group
-    expect(pool.defender.DESTROYER).toHaveLength(1)
+    expect(pool.defender.LINKSHIP_2).toHaveLength(1)
   })
 
   it('works without structures in the units list', () => {
@@ -58,8 +58,8 @@ describe.forEachSide('LINKSHIP_2', () => {
     const pool = t.dicePool()
 
     // No PDS in units list, but SC value derived from faction config
-    expect(pool.defender.DESTROYER).toHaveLength(1)
-    expect(pool.defender).toContainDice('DESTROYER', [6, 1])
+    expect(pool.defender.LINKSHIP_2).toHaveLength(1)
+    expect(pool.defender).toContainDice('LINKSHIP_2', [6, 1])
   })
 
   it('uses best SC source among structures', () => {
@@ -81,6 +81,6 @@ describe.forEachSide('LINKSHIP_2', () => {
     const pool = t.dicePool()
 
     // Linkship uses Space Dock's SC [5, 2] (better than PDS [6, 1])
-    expect(pool.defender).toContainDice('DESTROYER', [5, 2])
+    expect(pool.defender).toContainDice('LINKSHIP_2', [5, 2])
   })
 })

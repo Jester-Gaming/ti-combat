@@ -43,7 +43,6 @@ function buildSide(
     unitType,
     unitState: {},
     unitStats,
-    hitPools: [],
     abilities: {},
     liveAbilities: {},
   }
@@ -58,7 +57,6 @@ const emptySide = (
   unitType: {},
   unitState: {},
   unitStats: {} as SideStateData['unitStats'],
-  hitPools: [],
   abilities: {},
   liveAbilities: {},
 })

@@ -22,7 +22,7 @@ describe.forEachSide('LIGHTRAIL_ORDNANCE + LINKSHIP_1', () => {
 
     // Lightrail Ordnance upgrades Space Dock SC to [5, 2]
     // Linkship reads that enhanced value
-    expect(pool.defender.DESTROYER).toHaveLength(1)
-    expect(pool.defender).toContainDice('DESTROYER', [5, 2])
+    expect(pool.defender.LINKSHIP_1).toHaveLength(1)
+    expect(pool.defender).toContainDice('LINKSHIP_1', [5, 2])
   })
 })

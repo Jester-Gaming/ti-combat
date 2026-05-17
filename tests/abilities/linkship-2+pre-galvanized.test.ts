@@ -26,7 +26,7 @@ describe.forEachSide('LINKSHIP_2 + PRE_GALVANIZED', () => {
 
     // Linkship II triggers SC off a Galvanized PDS — must roll the galvanized
     // SC [6, 1, 1] (base+bonus = 2 dice total), not the base PDS [6, 1].
-    expect(pool.defender.DESTROYER).toHaveLength(1)
-    expect(pool.defender).toContainDice('DESTROYER', [6, 2])
+    expect(pool.defender.LINKSHIP_2).toHaveLength(1)
+    expect(pool.defender).toContainDice('LINKSHIP_2', [6, 2])
   })
 })

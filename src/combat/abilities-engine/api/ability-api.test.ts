@@ -1,0 +1,344 @@
+import { beforeEach, describe, expect, it } from 'vitest'
+
+import type { UnitIdList } from '@/types'
+
+import {
+  buildCombatDiceRollGroup,
+  buildUnitAbilityDiceRollGroup,
+  CombatState,
+} from '../../combat-state/combat-state'
+import type {
+  CombatStateData,
+  DiceRollContext,
+  PhaseStep,
+  SideStateData,
+} from '../../combat-state/types'
+import { isDiceRollContext } from '../../combat-state/types'
+import type { Ability } from '../types'
+import { AbilityContext } from './ability-api'
+
+function makeSide(): SideStateData {
+  return {
+    faction: 'FEDERATION_OF_SOL',
+    participatingUnits: '' as UnitIdList,
+    nonParticipatingUnits: '' as UnitIdList,
+    unitType: {},
+    unitState: {},
+    unitStats: {} as SideStateData['unitStats'],
+    abilities: {},
+    liveAbilities: {},
+  }
+}
+
+function makeCombatState(): CombatState {
+  const data: CombatStateData = {
+    attacker: makeSide(),
+    defender: makeSide(),
+    combatMode: 'SPACE',
+  }
+  return CombatState.fromDataStandalone(data)
+}
+
+function makeAbility(key = 'TEST_ABILITY'): Ability {
+  return {
+    key,
+    name: 'Test Ability',
+    params: { isEnabled: true, uses: Infinity },
+    invoke: [],
+  }
+}
+
+/** Push a dice-roll group on top of pendingSteps so `currentGroupData`
+ *  returns a `DiceRollContext`. */
+function pushDiceRollGroup(cs: CombatState): DiceRollContext {
+  cs.pendingSteps.push(buildCombatDiceRollGroup({ phase: ['SPACE_COMBAT'] }))
+  const ctx = cs.currentGroupData
+  if (!isDiceRollContext(ctx)) throw new Error('expected DiceRollContext')
+  return ctx
+}
+
+function withAbility(
+  cs: CombatState,
+  side: 'attacker' | 'defender' = 'attacker',
+) {
+  // AbilityContext owns the ability; `ctx.api.own` is the SideApi bound to
+  // `side`. (`opponent` is the other side regardless of which we pass in.)
+  const ctx = new AbilityContext(side, cs.params)
+  const ability = makeAbility()
+  ctx.upgradeForCall(ability)
+  return { ctx, api: ctx.api.own, ability }
+}
+
+describe('SideApi.declareRollTrigger', () => {
+  let cs: CombatState
+  beforeEach(() => {
+    cs = makeCombatState()
+  })
+
+  it('throws when called outside a dice-roll group', () => {
+    const { api } = withAbility(cs)
+    expect(() =>
+      api.declareRollTrigger({
+        unitType: [],
+        faces: [10],
+        effect: () => {},
+      }),
+    ).toThrow(/dice-roll group/)
+  })
+
+  it('throws when called outside an ability context', () => {
+    pushDiceRollGroup(cs)
+    const ctx = new AbilityContext('attacker', cs.params)
+    const api = ctx.api.own
+    expect(() =>
+      api.declareRollTrigger({
+        unitType: [],
+        faces: [10],
+        effect: () => {},
+      }),
+    ).toThrow(/ability context/)
+  })
+
+  it('pushes a fully-filled entry with slotId 0 on first call', () => {
+    const ctx = pushDiceRollGroup(cs)
+    const { api, ability } = withAbility(cs, 'attacker')
+    const effect = () => {}
+    api.declareRollTrigger({ unitType: [], faces: [10], effect })
+    expect(ctx.modifiers).toEqual([
+      {
+        type: 'ROLL_TRIGGER',
+        slotId: 0,
+        side: 'attacker',
+        abilityKey: ability.key,
+        unitType: [],
+        faces: [10],
+        effect,
+      },
+    ])
+  })
+
+  it('assigns slotId 1 to a second call', () => {
+    const ctx = pushDiceRollGroup(cs)
+    const { api } = withAbility(cs, 'attacker')
+    api.declareRollTrigger({ unitType: [], faces: [10], effect: () => {} })
+    api.declareRollTrigger({ unitType: [], faces: [9], effect: () => {} })
+    expect(ctx.modifiers).toHaveLength(2)
+    expect(ctx.modifiers![0].slotId).toBe(0)
+    expect(ctx.modifiers![1].slotId).toBe(1)
+  })
+})
+
+describe('SideApi.applyConditionalBonusToResult', () => {
+  let cs: CombatState
+  beforeEach(() => {
+    cs = makeCombatState()
+  })
+
+  it('throws when called outside a dice-roll group', () => {
+    const { api } = withAbility(cs)
+    expect(() =>
+      api.applyConditionalBonusToResult({ unit: 'ALL_OWN', amount: 1 }),
+    ).toThrow(/dice-roll group/)
+  })
+
+  it('throws when called outside an ability context', () => {
+    pushDiceRollGroup(cs)
+    const ctx = new AbilityContext('attacker', cs.params)
+    const api = ctx.api.own
+    expect(() =>
+      api.applyConditionalBonusToResult({ unit: 'ALL_OWN', amount: 1 }),
+    ).toThrow(/ability context/)
+  })
+
+  it('pushes a filled entry with slotId 0', () => {
+    const ctx = pushDiceRollGroup(cs)
+    const { api, ability } = withAbility(cs, 'defender')
+    api.applyConditionalBonusToResult({ unit: 'ALL_OWN', amount: 2 })
+    expect(ctx.modifiers).toEqual([
+      {
+        type: 'CONDITIONAL_MODIFIER',
+        slotId: 0,
+        side: 'defender',
+        abilityKey: ability.key,
+        unit: 'ALL_OWN',
+        amount: 2,
+      },
+    ])
+  })
+
+  it('assigns slotId 1 to a second call', () => {
+    const ctx = pushDiceRollGroup(cs)
+    const { api } = withAbility(cs)
+    api.applyConditionalBonusToResult({ unit: 'ALL_OWN', amount: 1 })
+    api.applyConditionalBonusToResult({ unit: 'ALL_OPPONENT', amount: -1 })
+    expect(ctx.modifiers).toHaveLength(2)
+    expect(ctx.modifiers![1].slotId).toBe(1)
+  })
+})
+
+describe('SideApi.declareReroll', () => {
+  let cs: CombatState
+  beforeEach(() => {
+    cs = makeCombatState()
+  })
+
+  it('throws when called outside a dice-roll group', () => {
+    const { api } = withAbility(cs)
+    expect(() => api.declareReroll({ target: 'MISSES' })).toThrow(
+      /dice-roll group/,
+    )
+  })
+
+  it('throws when called outside an ability context', () => {
+    pushDiceRollGroup(cs)
+    const ctx = new AbilityContext('attacker', cs.params)
+    const api = ctx.api.own
+    expect(() => api.declareReroll({ target: 'MISSES' })).toThrow(
+      /ability context/,
+    )
+  })
+
+  it('pushes a filled entry with slotId 0', () => {
+    const ctx = pushDiceRollGroup(cs)
+    const { api, ability } = withAbility(cs, 'attacker')
+    api.declareReroll({ target: 'MISSES' })
+    expect(ctx.modifiers).toHaveLength(1)
+    expect(ctx.modifiers![0]).toMatchObject({
+      type: 'REROLL',
+      slotId: 0,
+      side: 'attacker',
+      abilityKey: ability.key,
+      target: 'MISSES',
+    })
+  })
+
+  it('assigns slotId 1 to a second call', () => {
+    const ctx = pushDiceRollGroup(cs)
+    const { api } = withAbility(cs)
+    api.declareReroll({ target: 'MISSES' })
+    api.declareReroll({ target: 'MISSES' })
+    expect(ctx.modifiers).toHaveLength(2)
+    expect(ctx.modifiers![1].slotId).toBe(1)
+  })
+})
+
+describe('SideApi.discardCurrentGroupScript', () => {
+  it('pops the top dice-roll group and clears hitPool on both sides', () => {
+    const cs = makeCombatState()
+    pushDiceRollGroup(cs)
+    cs.data.attacker.hitPool = { base: 1, additional: 0, custom: [] }
+    cs.data.defender.hitPool = { base: 2, additional: 0, custom: [] }
+    const { api } = withAbility(cs, 'attacker')
+    api.discardCurrentGroupScript()
+    expect(cs.pendingSteps).toHaveLength(0)
+    expect(cs.data.attacker.hitPool).toBeUndefined()
+    expect(cs.data.defender.hitPool).toBeUndefined()
+  })
+
+  it('still clears hitPool when top is not a group', () => {
+    const cs = makeCombatState()
+    const step: PhaseStep = {
+      kind: 'timing',
+      timing: 'START_OF_COMBAT_ROUND',
+      phase: ['SPACE_COMBAT'],
+    }
+    cs.pendingSteps.push(step)
+    cs.data.attacker.hitPool = { base: 1, additional: 0, custom: [] }
+    const { api } = withAbility(cs)
+    api.discardCurrentGroupScript()
+    // Standalone step is left in place — only groups get popped.
+    expect(cs.pendingSteps).toEqual([step])
+    expect(cs.data.attacker.hitPool).toBeUndefined()
+  })
+})
+
+describe('SideApi.pushSteps', () => {
+  it('appends steps in execution order (LIFO via pushScript)', () => {
+    const cs = makeCombatState()
+    const stepA: PhaseStep = {
+      kind: 'timing',
+      timing: 'START_OF_COMBAT_ROUND',
+      phase: ['SPACE_COMBAT'],
+    }
+    const stepB: PhaseStep = {
+      kind: 'timing',
+      timing: 'END_OF_COMBAT_ROUND',
+      phase: ['SPACE_COMBAT'],
+    }
+    const { api } = withAbility(cs)
+    api.pushSteps([stepA, stepB])
+    // pushScript reverses execution order, so stepA ends up on top
+    // (pops first), then stepB.
+    expect(cs.pendingSteps).toHaveLength(2)
+    expect(cs.peekStep()).toBe(stepA)
+  })
+})
+
+describe('AbilityContext dice-roll group getters', () => {
+  let cs: CombatState
+  beforeEach(() => {
+    cs = makeCombatState()
+  })
+
+  it('currentDiceRollPhase returns the group phase inside; throws outside', () => {
+    const { ctx } = withAbility(cs)
+    expect(() => ctx.currentDiceRollPhase).toThrow(/dice-roll group/)
+    pushDiceRollGroup(cs)
+    expect(ctx.currentDiceRollPhase).toEqual(['SPACE_COMBAT'])
+  })
+
+  it('currentDiceRollFiring returns DiceRollContext.firing; throws outside', () => {
+    const { ctx } = withAbility(cs)
+    expect(() => ctx.currentDiceRollFiring).toThrow(/dice-roll group/)
+    pushDiceRollGroup(cs)
+    expect(ctx.currentDiceRollFiring).toEqual(['attacker', 'defender'])
+  })
+
+  it('currentDiceRollHitSource returns DiceRollContext.hitSource; throws outside', () => {
+    const { ctx } = withAbility(cs)
+    expect(() => ctx.currentDiceRollHitSource).toThrow(/dice-roll group/)
+    pushDiceRollGroup(cs)
+    expect(ctx.currentDiceRollHitSource).toBe('COMBAT')
+  })
+
+  it('currentDiceRollRouting returns DiceRollContext.routing; throws outside', () => {
+    const { ctx } = withAbility(cs)
+    expect(() => ctx.currentDiceRollRouting).toThrow(/dice-roll group/)
+    // Default group has no routing.
+    pushDiceRollGroup(cs)
+    expect(ctx.currentDiceRollRouting).toBeUndefined()
+
+    // Replace top with a unit-ability group that carries routing
+    // (combat rolls never carry routing).
+    cs.pendingSteps.pop()
+    cs.pendingSteps.push(
+      buildUnitAbilityDiceRollGroup({
+        phase: ['SPACE_CANNON_OFFENSE'],
+        firing: ['attacker'],
+        hitSource: 'SPACE_CANNON',
+        routing: { attacker: 'attacker', defender: 'attacker' },
+      }),
+    )
+    expect(ctx.currentDiceRollRouting).toEqual({
+      attacker: 'attacker',
+      defender: 'attacker',
+    })
+  })
+
+  it('currentDiceRollIsUnitAbility returns DiceRollContext.isUnitAbility; throws outside', () => {
+    const { ctx } = withAbility(cs)
+    expect(() => ctx.currentDiceRollIsUnitAbility).toThrow(/dice-roll group/)
+    pushDiceRollGroup(cs)
+    expect(ctx.currentDiceRollIsUnitAbility).toBe(false)
+
+    cs.pendingSteps.pop()
+    cs.pendingSteps.push(
+      buildUnitAbilityDiceRollGroup({
+        phase: ['AFB'],
+        firing: ['attacker'],
+        hitSource: 'AFB',
+      }),
+    )
+    expect(ctx.currentDiceRollIsUnitAbility).toBe(true)
+  })
+})

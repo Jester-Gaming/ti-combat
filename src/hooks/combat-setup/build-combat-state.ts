@@ -123,7 +123,6 @@ function buildSideState(
       import('@/types').UnitType,
       UnitStatsEntry
     >,
-    hitPools: [],
     abilities,
     liveAbilities: {},
   }

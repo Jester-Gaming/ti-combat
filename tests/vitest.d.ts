@@ -1,5 +1,7 @@
 import type { SuiteAPI, TestAPI } from 'vitest'
 
+import type { StateWithProbability } from '@/combat'
+
 declare module 'vitest' {
   interface ForEachSideIt {
     forEachSide(name: string, fn: () => void | Promise<void>): void
@@ -18,6 +20,16 @@ declare module 'vitest' {
   interface AsymmetricMatchersContaining extends CustomMatchers {}
 }
 
+interface BranchSpec<X> {
+  value: X
+  predicate?: (branch: StateWithProbability) => boolean
+  probability: number
+}
+
 interface CustomMatchers<R = unknown> {
   toContainDice(source: string, ...expected: [number, number][]): R
+  toHaveBranches<X>(
+    extractor: (branch: StateWithProbability) => X,
+    specs: BranchSpec<X>[],
+  ): R
 }

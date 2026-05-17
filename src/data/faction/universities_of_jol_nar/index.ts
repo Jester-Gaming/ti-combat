@@ -4,6 +4,7 @@ import type { Faction } from '@/types'
 
 import { agnlanOln } from './agnlan-oln'
 import { fragile } from './fragile'
+import { jnsHylarim } from './jns-hylarim'
 import { shieldPaling } from './shield-paling'
 
 export const universities_of_jol_nar: Faction = {
@@ -27,7 +28,7 @@ export const universities_of_jol_nar: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [jnsHylarim, sustainDamage],
       },
     },
     MECH: {

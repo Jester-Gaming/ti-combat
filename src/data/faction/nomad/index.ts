@@ -5,6 +5,7 @@ import type { Faction } from '@/types'
 import { cavalry } from './cavalry'
 import { quantumManipulator } from './quantum-manipulator'
 import { temporalCommandSuite } from './temporal-command-suite'
+import { thundarian } from './thundarian'
 
 export const nomad: Faction = {
   name: 'Nomad',
@@ -13,6 +14,7 @@ export const nomad: Faction = {
     faction: [],
     technology: [temporalCommandSuite],
     promissory: [cavalry],
+    agent: [thundarian],
   },
   units: {
     FLAGSHIP: {

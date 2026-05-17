@@ -38,7 +38,8 @@ export class CombatEngine {
     // keys are all currently in-progress.
     const subtreeCache = new Map<string, ExpansionResult>()
     const inProgress = new Set<string>()
-    let counter = 1
+    let nodes = 1
+    let finalNodes = 1
 
     const mode = initialState.combatMode
     const initialMeta: MetaPhase = getInitialMetaPhase(mode)
@@ -134,6 +135,7 @@ export class CombatEngine {
           console.warn(`Exceed ${this.maxRounds} rounds`)
         }
         if (state.isFinished() || round > this.maxRounds) {
+          finalNodes++
           const leaf = makeLeafOutcome(state)
           return finalize({ outcomes: leaf, deferred: new Map() })
         }
@@ -152,7 +154,7 @@ export class CombatEngine {
 
         const outcomes = state.advance()
 
-        counter += outcomes.length
+        nodes += outcomes.length
         if (outcomes.length === 1 && outcomes[0].state === state) {
           continue
         }
@@ -201,7 +203,8 @@ export class CombatEngine {
     const result = expandNode(initialState, 0, initialMeta)
     if ('cycleTo' in result) return []
     console.log('Unique states =', subtreeCache.size)
-    console.log('Unique nodes =', counter)
+    console.log('Unique nodes =', nodes)
+    console.log('Final nodes =', finalNodes)
     return outcomeRecordToArray(result.outcomes)
   }
 }

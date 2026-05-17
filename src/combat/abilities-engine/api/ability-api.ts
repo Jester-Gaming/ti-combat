@@ -4,7 +4,6 @@ import type {
   CombatSide,
   DiceGroup,
   FactionKey,
-  SourcedDiceGroup,
   UnitAbility,
   UnitBaseType,
   UnitId,
@@ -27,16 +26,26 @@ import {
 import type {
   CombatMode,
   CombatStateData,
-  HitPool,
+  DiceRollContext,
+  HitSource,
   MetaPhase,
   PendingStep,
   SideStateData,
   UnitAbilityMeta,
 } from '../../combat-state/types'
 import { isDiceRollContext } from '../../combat-state/types'
-import { getDiceOutcomes } from '../../combat-state/utils'
+import type {
+  AdditionalHitPoolTargetSpec,
+  ConditionalModifierDecl,
+  CustomRollDecl,
+  ModifierDecl,
+  RerollDecl,
+  RerollTargetSpec,
+  RollTriggerDecl,
+  SideDiceCollection,
+} from '../../dice-math/types'
+import { getDiceOutcomes } from '../../dice-math/utils/get-dice-outcomes'
 import type { Logger } from '../../logger'
-import type { RerollSpec } from '../../reroll/types'
 import { canonicalizeUnitState } from '../../utils/canonicalize-unit-state'
 import type {
   AbilitiesEngine,
@@ -50,11 +59,9 @@ import type {
   Ability,
   AbilityBaseParams,
   AbilityTiming,
-  DicePool,
   OwnOpponentContext,
   ParamFilter,
   RuntimeAbilityList,
-  SidedDiceData,
 } from '../types'
 import { type AbilityUtils, abilityUtils } from './ability-utils'
 
@@ -274,15 +281,15 @@ export class SideApi {
     )
   }
 
-  /** Simulate resolving a HitPool against this side's current units —
-   *  returns the UnitIds that would be destroyed, in sacrifice order.
-   *  Non-destructive. */
-  getAssignHitsTargets(hitPool: HitPool): UnitId[] {
+  /** Simulate resolving N unrestricted hits against this side's current
+   *  units — returns the UnitIds that would be destroyed, in sacrifice
+   *  order. Non-destructive. */
+  getAssignHitsTargets(hits: number): UnitId[] {
     const dirty = this._sideData._needsCanonicalize
     if (dirty) {
       canonicalizeUnitState(this._sideData, dirty)
     }
-    return CombatSideState.getAssignHitsTargets(this._sideData, hitPool)
+    return CombatSideState.getAssignHitsTargets(this._sideData, hits)
   }
 
   getUnitStats(unitTypeOrId: string | UnitId) {
@@ -444,12 +451,46 @@ export class SideApi {
     CombatSideState.reduceHits(this._sideData, amount)
   }
 
-  addHits(hits: number, validTargets: UnitType[]) {
+  /** Merge a custom (ability-keyed) sub-pool's hits into the main pool's
+   *  `base` and drop the entry. Used by restricted-pool abilities (e.g.
+   *  [0.0.1]) when the producing unit is destroyed mid-round. */
+  liftHitPoolRestriction(abilityKey: string): void {
+    CombatSideState.liftHitPoolRestriction(this._sideData, abilityKey)
+  }
+
+  /** Two overloads:
+   *  - `addHits(n)`: adds N unrestricted ability hits to this side's
+   *    main pool's `additional` slot (creates the pool if absent).
+   *  - `addHits(n, types)`: creates a single restricted custom entry
+   *    keyed to the calling ability, with `unitPriority = types` in the
+   *    caller-given order. The landing side's `hitPool` must be
+   *    undefined at call time (throws otherwise).
+   *  Either form, when called while no pool exists on either side,
+   *  schedules an inline assign-hits step (the `wasEmpty` path).
+   *  Otherwise the in-flight dice-roll group's existing `ASSIGN_HITS`
+   *  step drains everything together. */
+  addHits(hits: number): void
+  addHits(hits: number, validTargets: UnitType[]): void
+  addHits(hits: number, validTargets?: UnitType[]): void {
     const data = this.state
     const wasEmpty =
-      data.attacker.hitPools.length === 0 && data.defender.hitPools.length === 0
-    CombatSideState.addHits(this._sideData, hits, validTargets)
-    if (wasEmpty) this._ctx._assignHits()
+      data.attacker.hitPool === undefined && data.defender.hitPool === undefined
+    if (validTargets !== undefined && validTargets.length > 0) {
+      if (this._sideData.hitPool !== undefined) {
+        throw new Error(
+          'addHits(n, validTargets) requires an empty hit pool on the landing side',
+        )
+      }
+      const key = this._ctx.ability?.key ?? '__ADDED__'
+      CombatSideState.addCustomHits(this._sideData, hits, key, [
+        ...validTargets,
+      ])
+    } else {
+      CombatSideState.addHits(this._sideData, hits)
+    }
+    if (wasEmpty && this._sideData.hitPool !== undefined) {
+      this._ctx._assignHits()
+    }
   }
 
   setUnitAbilityLost(
@@ -624,128 +665,207 @@ export class SideApi {
     }
   }
 
-  applyBonusToResult(amount: number, target?: unknown): void {
-    CombatSideState.addHitValueModifier(
-      this._ctx._abilitiesParams.combatState.pendingSteps,
-      this._side,
-      -amount,
-      target,
-      this._ctx.meta,
-    )
-  }
-
-  /** True if this side's dice pool has no dice. Only meaningful during
-   *  BEFORE_DICE_ROLL / BEFORE_UNIT_ABILITY_ROLL; returns true otherwise. */
-  isDicePoolEmpty(): boolean {
-    const pool = this._ctx.getDicePool(this._side)
-    if (!pool) return true
-    for (const dice of Object.values(pool)) {
-      if (dice && dice.length > 0) return false
-    }
-    return true
-  }
-
-  /** Add `count` to an existing dice group's bonus. Without a target, or with
-   *  `'BEST'` / `'WORST'`, modifies the die with the best / worst hit value.
-   *  With a `UnitId`, modifies that unit's die. Only valid during
-   *  BEFORE_DICE_ROLL / BEFORE_UNIT_ABILITY_ROLL. */
-  addDiceCount(count: number, target?: 'BEST' | 'WORST' | UnitId): void {
-    const pool = this._ctx.getDicePool(this._side)
-    if (!pool) return
-    // UnitId is a single-char packed token; 'BEST'/'WORST' are multi-char.
-    if (typeof target === 'string' && target !== 'BEST' && target !== 'WORST') {
-      for (const dice of Object.values(pool)) {
-        if (!dice) continue
-        for (let i = 0; i < dice.length; i++) {
-          if (dice[i][3] === target) {
-            dice[i] = [dice[i][0], dice[i][1], dice[i][2] + count, dice[i][3]]
-            return
-          }
-        }
-      }
-      return
-    }
-
-    const isBest = target === undefined || target === 'BEST'
-    let bestType: UnitBaseType | undefined
-    let bestIndex = -1
-    let bestHitValue = isBest ? Infinity : -Infinity
-
-    for (const [type, dice] of Object.entries(pool)) {
-      if (!dice) continue
-      for (let i = 0; i < dice.length; i++) {
-        const hitValue = dice[i][0]
-        const better = isBest
-          ? hitValue < bestHitValue
-          : hitValue > bestHitValue
-        if (better) {
-          bestHitValue = hitValue
-          bestType = type as UnitBaseType
-          bestIndex = i
-        }
-      }
-    }
-
-    if (bestType !== undefined && bestIndex >= 0) {
-      const dice = pool[bestType]!
-      dice[bestIndex] = [
-        dice[bestIndex][0],
-        dice[bestIndex][1],
-        dice[bestIndex][2] + count,
-        dice[bestIndex][3],
-      ]
-    }
-  }
-
-  /** Overwrite the dice count for the group belonging to `unit`. Only valid
-   *  during BEFORE_DICE_ROLL / BEFORE_UNIT_ABILITY_ROLL. */
-  setDiceCount(count: number, unit: UnitId): void {
-    const pool = this._ctx.getDicePool(this._side)
-    if (!pool) return
-    for (const dice of Object.values(pool)) {
-      if (!dice) continue
-      for (let i = 0; i < dice.length; i++) {
-        if (dice[i][3] === unit) {
-          dice[i] = [dice[i][0], count, dice[i][2], dice[i][3]]
-          return
-        }
-      }
-    }
-  }
-
-  /** Append a new dice group under `source`. Only valid during
-   *  BEFORE_DICE_ROLL / BEFORE_UNIT_ABILITY_ROLL. */
-  addDiceGroup(source: string, unit: UnitId, diceGroup: DiceGroup): void {
-    const pool = this._ctx.getDicePool(this._side)
-    if (!pool) return
-    const existing = pool[source] ?? []
-    pool[source] = [
-      ...existing,
-      [diceGroup[0], diceGroup[1], diceGroup[2] ?? 0, unit],
-    ]
-  }
-
-  /** Schedule a reroll for this side. Only valid during REROLL_DICE_ROLL.
-   *  Queues a `RerollSpec` onto the dice-roll group's `rerollSpecQueue`;
-   *  `_rollDice` folds the queue into the per-side dice distributions before
-   *  rolling, producing one `JointBranch` per (used/not-used, used/not-used)
-   *  combination of the consume predicates. */
-  reroll(spec: RerollSpec): void {
-    const ctx = this._ctx._abilitiesParams.combatState.currentGroupData
-    if (!isDiceRollContext(ctx)) {
-      throw new Error('reroll() called outside a dice-roll group')
-    }
+  /** Apply `+amount` to a side's dice results for this dice-roll group.
+   *  `target` selects scope:
+   *   - omitted — every variant on the side
+   *   - `UnitType` (variant key or base type) — only that variant
+   *   - `{ exclude: UnitBaseType[] }` — every variant except those listed
+   *   - `{ singleUnit: UnitType }` — exactly one unit of that variant
+   *     key (split out of the variant's bucket by matching dpu against
+   *     the variant's natural stats; useful for Gravleash-style "1 of
+   *     your ship's rolls")
+   *
+   *  Idempotent per `(abilityKey, target)`: a second call from the
+   *  same ability with the same target is silently dropped.
+   *
+   *  Callable from non-dice-roll timings (e.g. START_OF_COMBAT) — the
+   *  declaration is queued onto the pending dice-roll group for the
+   *  current meta.
+   */
+  applyBonusToResult(
+    amount: number,
+    target?: UnitType | { exclude: UnitBaseType[] } | { singleUnit: UnitType },
+  ): void {
     const abilityKey = this._ctx.ability?.key
     if (abilityKey === undefined) {
-      throw new Error('reroll() called outside an ability context')
+      throw new Error('applyBonusToResult called outside an ability context')
     }
-    const queue = (ctx.rerollSpecQueue ??= [])
-    queue.push({
+    const meta = this._ctx.meta
+    const groupCtx = findPendingDiceRollGroup(
+      this._ctx._abilitiesParams.combatState.pendingSteps,
+      meta,
+    )
+    if (!groupCtx) {
+      throw new Error(
+        `applyBonusToResult: no pending dice-roll group for meta ${meta}`,
+      )
+    }
+    const list = (groupCtx.modifiers ??= [])
+    const unitType =
+      target !== undefined && typeof target === 'string' ? target : undefined
+    const singleUnit =
+      target !== undefined &&
+      typeof target === 'object' &&
+      'singleUnit' in target
+        ? target.singleUnit
+        : undefined
+    const excludeUnitTypes =
+      target !== undefined && typeof target === 'object' && 'exclude' in target
+        ? target.exclude
+        : undefined
+    if (
+      list.some(
+        m =>
+          m.type === 'HIT_VALUE' &&
+          m.side === this._side &&
+          m.abilityKey === abilityKey &&
+          m.unitType === unitType &&
+          m.singleUnit === singleUnit &&
+          arraysEqual(m.excludeUnitTypes, excludeUnitTypes),
+      )
+    ) {
+      return
+    }
+    list.push({
+      type: 'HIT_VALUE',
+      slotId: list.length,
       side: this._side,
       abilityKey,
-      abilityOwnerSide: this._ctx.side,
-      spec,
+      amount: -amount,
+      unitType,
+      singleUnit,
+      excludeUnitTypes,
     })
+  }
+
+  /** Declare "+`count` dice to one unit in the variant with the best
+   *  (default / `'BEST'`) or worst (`'WORST'`) hit value." Consumed at
+   *  roll time. Only valid during BEFORE_DICE_ROLL / BEFORE_UNIT_ABILITY_ROLL. */
+  addDiceCount(count: number, target: 'BEST' | 'WORST' = 'BEST'): void {
+    pushModifier(this._ctx, this._side, list => ({
+      type: 'ADD_DICE_COUNT',
+      slotId: list.length,
+      side: this._side,
+      abilityKey: this._ctx.ability!.key,
+      count,
+      target,
+    }))
+  }
+
+  /** Declare an override of the variant's *base* dice count, preserving any
+   *  bonus dice contributed by stats / earlier abilities. Salai Sai Corian's
+   *  dynamic flagship dice count uses this. Only valid during
+   *  BEFORE_DICE_ROLL / BEFORE_UNIT_ABILITY_ROLL. */
+  setDiceCount(count: number, unitType: UnitType): void {
+    pushModifier(this._ctx, this._side, list => ({
+      type: 'SET_DICE_COUNT',
+      slotId: list.length,
+      side: this._side,
+      abilityKey: this._ctx.ability!.key,
+      count,
+      unitType,
+    }))
+  }
+
+  /** Declare an additional dice group keyed under the current ability's key.
+   *  Only valid during BEFORE_DICE_ROLL / BEFORE_UNIT_ABILITY_ROLL. The
+   *  `diceGroup` is `[hitValue, baseDice, bonusDice?]`; the resulting entry
+   *  uses `baseDice + bonusDice` as `dicePerUnit`. */
+  addDiceGroup(diceGroup: DiceGroup): void {
+    const [hitValue, baseDice, bonusDice = 0] = diceGroup
+    const dpu = baseDice + bonusDice
+    if (dpu <= 0) return
+    pushModifier(this._ctx, this._side, list => ({
+      type: 'ADD_DICE_GROUP',
+      slotId: list.length,
+      side: this._side,
+      abilityKey: this._ctx.ability!.key,
+      hitValue,
+      dpu,
+    }))
+  }
+
+  /** Queue a roll-trigger declaration on the current dice-roll group.
+   *  Consumed by the dice-math kernel inside `_rollDice`. */
+  declareRollTrigger(
+    spec: Omit<RollTriggerDecl, 'type' | 'slotId' | 'side' | 'abilityKey'>,
+  ): void {
+    pushModifier(this._ctx, this._side, list => ({
+      type: 'ROLL_TRIGGER',
+      slotId: list.length,
+      side: this._side,
+      abilityKey: this._ctx.ability!.key,
+      ...spec,
+    }))
+  }
+
+  /** Queue a conditional hit-value modifier on the current dice-roll group. */
+  applyConditionalBonusToResult(
+    spec: Omit<
+      ConditionalModifierDecl,
+      'type' | 'slotId' | 'side' | 'abilityKey'
+    >,
+  ): void {
+    pushModifier(this._ctx, this._side, list => ({
+      type: 'CONDITIONAL_MODIFIER',
+      slotId: list.length,
+      side: this._side,
+      abilityKey: this._ctx.ability!.key,
+      ...spec,
+    }))
+  }
+
+  /** Queue a reroll declaration on the current dice-roll group. */
+  declareReroll(
+    spec: Omit<RerollDecl, 'type' | 'slotId' | 'side' | 'abilityKey'>,
+  ): void {
+    pushModifier(this._ctx, this._side, list => ({
+      type: 'REROLL',
+      slotId: list.length,
+      side: this._side,
+      abilityKey: this._ctx.ability!.key,
+      ...spec,
+    }))
+  }
+
+  /** Queue a CUSTOM_ROLL declaration on the current dice-roll group.
+   *  Replaces the natural per-unit binomial PMF for any dice-collection
+   *  entry whose `(hitValue, dpu)` passes `shouldTransform`. */
+  declareCustomRoll(
+    spec: Omit<CustomRollDecl, 'type' | 'slotId' | 'side' | 'abilityKey'>,
+  ): void {
+    pushModifier(this._ctx, this._side, list => ({
+      type: 'CUSTOM_ROLL',
+      slotId: list.length,
+      side: this._side,
+      abilityKey: this._ctx.ability!.key,
+      ...spec,
+    }))
+  }
+
+  /** Drop the top dice-roll group from the script and clear each side's
+   *  `hitPool` — the just-rolled pool (plus anything AFTER_DICE_ROLL
+   *  appended on top) is the only thing in there at this point. Earlier
+   *  `addHits` calls in the round were already drained inline by
+   *  `_assignHits` via the `wasEmpty` path, so there's nothing
+   *  pre-existing to preserve. Used by abilities that cancel the current
+   *  roll's commit (e.g. Thundarian's restart). */
+  discardCurrentGroupScript(): void {
+    const cs = this._ctx._abilitiesParams.combatState
+    const top = cs.pendingSteps[cs.pendingSteps.length - 1]
+    if (top?.kind === 'group') cs.pendingSteps.pop()
+    for (const side of ['attacker', 'defender'] as const) {
+      const sideData = cs.data[side]
+      if (sideData.hitPool === undefined) continue
+      sideData.hitPool = undefined
+      sideData._hitPoolShared = false
+    }
+  }
+
+  /** Append script steps to the pending-steps stack. The steps are stored
+   *  in execution order — `pushScript` reverses for the LIFO stack. */
+  pushSteps(steps: PendingStep[]): void {
+    this._ctx._abilitiesParams.combatState.pushScript(steps)
   }
 }
 
@@ -822,9 +942,154 @@ export class AbilityContext {
     }
   }
 
-  getDicePool(side: CombatSide): DicePool | undefined {
+  /** Phase stack of the current dice-roll group. Reads from the dispatching
+   *  step (all steps inside the group share the same `phase` array). Throws
+   *  outside a dice-roll group. */
+  get currentDiceRollPhase(): MetaPhase[] {
+    const cs = this._abilitiesParams.combatState
+    if (!isDiceRollContext(cs.currentGroupData)) {
+      throw new Error('currentDiceRollPhase called outside a dice-roll group')
+    }
+    const step = cs.peekStep()
+    if (!step) {
+      throw new Error('currentDiceRollPhase: dice-roll group has no steps')
+    }
+    return step.phase
+  }
+
+  /** Sides firing in the current dice-roll group. Throws outside one. */
+  get currentDiceRollFiring(): CombatSide[] {
     const ctx = this._abilitiesParams.combatState.currentGroupData
-    return isDiceRollContext(ctx) ? ctx.dicePool?.[side] : undefined
+    if (!isDiceRollContext(ctx)) {
+      throw new Error('currentDiceRollFiring called outside a dice-roll group')
+    }
+    return ctx.firing
+  }
+
+  /** Hit source of the current dice-roll group. Throws outside one. */
+  get currentDiceRollHitSource(): HitSource {
+    const ctx = this._abilitiesParams.combatState.currentGroupData
+    if (!isDiceRollContext(ctx)) {
+      throw new Error(
+        'currentDiceRollHitSource called outside a dice-roll group',
+      )
+    }
+    return ctx.hitSource
+  }
+
+  /** Hit-routing overrides for the current dice-roll group, if any.
+   *  Throws outside a dice-roll group. */
+  get currentDiceRollRouting():
+    | { attacker: CombatSide; defender: CombatSide }
+    | undefined {
+    const ctx = this._abilitiesParams.combatState.currentGroupData
+    if (!isDiceRollContext(ctx)) {
+      throw new Error('currentDiceRollRouting called outside a dice-roll group')
+    }
+    return ctx.routing
+  }
+
+  /** Whether the current dice-roll group is a unit-ability roll (vs. a
+   *  combat-round roll). Throws outside a dice-roll group. */
+  get currentDiceRollIsUnitAbility(): boolean {
+    const ctx = this._abilitiesParams.combatState.currentGroupData
+    if (!isDiceRollContext(ctx)) {
+      throw new Error(
+        'currentDiceRollIsUnitAbility called outside a dice-roll group',
+      )
+    }
+    return ctx.isUnitAbility
+  }
+
+  /** Side-abstract reroll declaration (docs/dice-math.md §2). `OWN` targets the
+   *  side of this AbilityContext; `OPPONENT` targets the other side.
+   *  Either slot may be omitted. The ability key is inferred from the
+   *  running ability context and shared across both slots — multiple
+   *  decls under the same key collapse to a single `uses` decrement
+   *  (see `oneShotKeys` in `_rollDice`), which is how War Funding's
+   *  own+opponent reroll counts as one charge. */
+  declareReroll(spec: {
+    OWN?: Omit<RerollTargetSpec, 'key'>
+    OPPONENT?: Omit<RerollTargetSpec, 'key'>
+  }): void {
+    const groupCtx = this._abilitiesParams.combatState.currentGroupData
+    if (!isDiceRollContext(groupCtx)) {
+      throw new Error('declareReroll called outside a dice-roll group')
+    }
+    const ability = this.ability
+    if (!ability) {
+      throw new Error('declareReroll called outside an ability context')
+    }
+    const key = ability.key
+    if (spec.OWN) {
+      this._pushReroll(groupCtx, this._side, { ...spec.OWN, key })
+    }
+    if (spec.OPPONENT) {
+      this._pushReroll(groupCtx, getOpponentSide(this._side), {
+        ...spec.OPPONENT,
+        key,
+      })
+    }
+  }
+
+  /** Side-abstract ADDITIONAL_HIT_POOL (docs/dice-math.md §2). Siphons hits sourced
+   *  from `units` on the firing side into an extra pool on the landing
+   *  side. `OWN` = this AbilityContext's side as the landing side. */
+  declareHitPoolTransform(spec: {
+    OWN?: AdditionalHitPoolTargetSpec
+    OPPONENT?: AdditionalHitPoolTargetSpec
+  }): void {
+    const groupCtx = this._abilitiesParams.combatState.currentGroupData
+    if (!isDiceRollContext(groupCtx)) {
+      throw new Error(
+        'declareHitPoolTransform called outside a dice-roll group',
+      )
+    }
+    if (!this.ability) {
+      throw new Error(
+        'declareHitPoolTransform called outside an ability context',
+      )
+    }
+    if (spec.OWN) this._pushAdditionalHitPool(groupCtx, this._side, spec.OWN)
+    if (spec.OPPONENT) {
+      this._pushAdditionalHitPool(
+        groupCtx,
+        getOpponentSide(this._side),
+        spec.OPPONENT,
+      )
+    }
+  }
+
+  private _pushReroll(
+    groupCtx: DiceRollContext,
+    side: CombatSide,
+    target: RerollTargetSpec,
+  ): void {
+    const list = (groupCtx.modifiers ??= [])
+    list.push({
+      type: 'REROLL',
+      slotId: list.length,
+      side,
+      abilityKey: target.key,
+      target: target.target,
+      rerollIf: target.rerollIf,
+    })
+  }
+
+  private _pushAdditionalHitPool(
+    groupCtx: DiceRollContext,
+    side: CombatSide,
+    target: AdditionalHitPoolTargetSpec,
+  ): void {
+    const list = (groupCtx.modifiers ??= [])
+    list.push({
+      type: 'ADDITIONAL_HIT_POOL',
+      slotId: list.length,
+      side,
+      abilityKey: target.key,
+      units: target.units,
+      transform: target.transform,
+    })
   }
 
   upgradeForCall(ability: Ability, logger?: Logger) {
@@ -948,7 +1213,7 @@ export class AbilityContext {
     const combatState = this._abilitiesParams.combatState
     const baseData = combatState.data
     const baseInvokes = combatState._invokes
-    const baseInvokesOwned = combatState._invokesOwned
+    const baseInvokesOwned = { ...combatState._invokesOwned }
     const baseAllInvokes = combatState._allInvokes
     const baseAllInvokesOwned = combatState._allInvokesOwned
     const baseLogger = this.logger
@@ -964,7 +1229,7 @@ export class AbilityContext {
     for (const outcome of outcomes) {
       // COW-arm invokes (same pattern as rollDiceOutcomes in CombatState)
       combatState._invokes = baseInvokes
-      combatState._invokesOwned = false
+      combatState._invokesOwned = { attacker: false, defender: false }
       combatState._allInvokes = baseAllInvokes
       combatState._allInvokesOwned = false
 
@@ -1047,12 +1312,14 @@ export class AbilityContext {
 
     const mySide = this._side
 
-    const customDice: SidedDiceData | undefined = overrides?.dice
+    const customDice:
+      | { attacker: SideDiceCollection; defender: SideDiceCollection }
+      | undefined = overrides?.dice
       ? {
           attacker:
-            mySide === 'attacker' ? diceGroupsToPool(overrides.dice) : {},
+            mySide === 'attacker' ? diceGroupsToCollection(overrides.dice) : {},
           defender:
-            mySide === 'defender' ? diceGroupsToPool(overrides.dice) : {},
+            mySide === 'defender' ? diceGroupsToCollection(overrides.dice) : {},
         }
       : undefined
 
@@ -1073,17 +1340,72 @@ export class AbilityContext {
   }
 }
 
-const SENTINEL_UNIT_ID = '' as UnitId
+/** Push a declaration into the currently-active dice-roll group's
+ *  `modifiers` list. The `build(list)` closure receives the list (so
+ *  `slotId = list.length`) and must return the new decl. Throws when
+ *  called outside a dice-roll group or outside an ability context. */
+function pushModifier(
+  ctx: AbilityContext,
+  side: CombatSide,
+  build: (list: ModifierDecl[]) => ModifierDecl,
+): void {
+  const groupCtx = ctx._abilitiesParams.combatState.currentGroupData
+  if (!isDiceRollContext(groupCtx)) {
+    throw new Error('dice-modifier API called outside a dice-roll group')
+  }
+  if (ctx.ability === undefined) {
+    throw new Error('dice-modifier API called outside an ability context')
+  }
+  // Silence the unused parameter when callers don't use `side` directly —
+  // the build closure may still reference it via captured scope.
+  void side
+  const list = (groupCtx.modifiers ??= [])
+  list.push(build(list))
+}
 
-function diceGroupsToPool(groups: DiceGroup[] | undefined): DicePool {
+/** Walk the pendingSteps stack tail-first looking for a dice-roll group
+ *  whose innermost step targets `meta`. Used by `applyBonusToResult` when
+ *  called from a non-dice-roll timing (e.g. START_OF_COMBAT). Returns the
+ *  group's `DiceRollContext` (the type guard runs internally). */
+function findPendingDiceRollGroup(
+  pendingSteps: readonly PendingStep[],
+  meta: MetaPhase,
+): DiceRollContext | undefined {
+  for (let i = pendingSteps.length - 1; i >= 0; i--) {
+    const s = pendingSteps[i]
+    if (s.kind !== 'group' || !isDiceRollContext(s.data)) continue
+    const inner = s.steps[s.steps.length - 1] ?? s.steps[0]
+    if (inner && inner.phase[inner.phase.length - 1] === meta) return s.data
+  }
+  return undefined
+}
+
+function arraysEqual<T>(a: T[] | undefined, b: T[] | undefined): boolean {
+  if (a === b) return true
+  if (!a || !b) return false
+  if (a.length !== b.length) return false
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false
+  return true
+}
+
+/** Convert user-provided `DiceGroup[]` (used by `ctx.resolveStep` for
+ *  ability dice overrides) into a `SideDiceCollection`. All groups land
+ *  under the synthetic `__custom` variant key; entries collapse on
+ *  identical `(hitValue, dpu)` pairs. */
+function diceGroupsToCollection(
+  groups: DiceGroup[] | undefined,
+): SideDiceCollection {
   if (!groups || groups.length === 0) return {}
-  const entries: SourcedDiceGroup[] = []
+  const list: [number, number, number][] = []
   for (const group of groups) {
     const [hitValue, count] = group
     const bonus = group.length === 3 ? group[2] : 0
-    if (count + bonus <= 0) continue
-    entries.push([hitValue, count, bonus, SENTINEL_UNIT_ID])
+    const dpu = count + bonus
+    if (dpu <= 0) continue
+    const existing = list.find(e => e[1] === hitValue && e[2] === dpu)
+    if (existing) existing[0] += 1
+    else list.push([1, hitValue, dpu])
   }
-  if (entries.length === 0) return {}
-  return { __custom: entries }
+  if (list.length === 0) return {}
+  return { __custom: list } as SideDiceCollection
 }

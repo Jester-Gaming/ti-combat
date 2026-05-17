@@ -47,10 +47,8 @@ export const trrakanAunZulok: Ability<Params> = {
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: UNIT_ABILITY_PHASES,
-      isCallable: (params, ctx) => {
-        if (ctx.api.own.isDicePoolEmpty()) return false
-        return ctx.utils.getFlat(params.phases).includes(ctx.meta)
-      },
+      isCallable: (params, ctx) =>
+        ctx.utils.getFlat(params.phases).includes(ctx.meta),
       call: ctx => {
         ctx.api.own.addDiceCount(1)
       },

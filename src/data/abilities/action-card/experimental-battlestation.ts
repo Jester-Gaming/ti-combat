@@ -1,5 +1,3 @@
-import type { UnitId } from '@/types'
-
 import type { Ability } from '../../../combat/abilities-engine/types'
 
 export const experimentalBattlestation: Ability = {
@@ -19,11 +17,7 @@ export const experimentalBattlestation: Ability = {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: 'SPACE_CANNON_OFFENSE',
       call: ctx => {
-        ctx.api.own.addDiceGroup(
-          'EXPERIMENTAL_BATTLESTATION',
-          '' as UnitId,
-          [5, 3],
-        )
+        ctx.api.own.addDiceGroup([5, 3])
       },
     },
   ],

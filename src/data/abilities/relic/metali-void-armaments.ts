@@ -1,5 +1,3 @@
-import type { UnitId } from '@/types'
-
 import type { Ability } from '../../../combat/abilities-engine/types'
 
 export const metaliVoidArmaments: Ability = {
@@ -18,7 +16,7 @@ export const metaliVoidArmaments: Ability = {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: 'AFB',
       call: ctx => {
-        ctx.api.own.addDiceGroup('METALI_VOID_ARMAMENTS', '' as UnitId, [6, 3])
+        ctx.api.own.addDiceGroup([6, 3])
       },
     },
   ],

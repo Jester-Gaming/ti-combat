@@ -24,7 +24,8 @@ export const salaiSaiCorian: Ability = {
           })
         }
 
-        ctx.api.own.setDiceCount(nonFighterCount, ctx.getUnit())
+        const variantKey = ctx.api.own.getUnitVariantKey(ctx.getUnit())
+        if (variantKey) ctx.api.own.setDiceCount(nonFighterCount, variantKey)
       },
     },
   ],

@@ -21,10 +21,10 @@ export const eidolon: Ability = {
         ctx.api.own.updateAbilityConfig('SETTINGS', {
           ships: (current: UnitBaseType[]) => [...current, 'MECH'],
         })
-
+        const stats = ctx.api.own.getUnitStats('MECH')!
         // Modify all mechs to Z-Grav form: combat [8, 2], loses Sustain Damage
         ctx.api.own.modifyUnitType('MECH', {
-          COMBAT: [8, 2],
+          COMBAT: [8, 2, stats.COMBAT![2] ?? 0],
           UNIT_ABILITIES: {},
           ABILITIES: [eidolon],
         })

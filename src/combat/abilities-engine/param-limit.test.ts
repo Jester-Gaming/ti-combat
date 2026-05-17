@@ -14,7 +14,6 @@ function makeSide(units: Record<UnitId, UnitType>): SideStateData {
     unitType: units as Record<string, UnitType>,
     unitState: {},
     unitStats: {} as never,
-    hitPools: [],
     abilities: {},
     liveAbilities: {},
   }
@@ -68,7 +67,6 @@ describe('resolveVariantLimit', () => {
       } as unknown as Record<string, UnitType>,
       unitState: {},
       unitStats: {} as never,
-      hitPools: [],
       abilities: {},
       liveAbilities: {},
     }

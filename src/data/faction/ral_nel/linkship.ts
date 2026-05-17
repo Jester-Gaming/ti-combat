@@ -52,7 +52,7 @@ export const linkshipI: Ability<Params> = {
         const best = findBestSpaceCannon(params, ctx.api.own)
         if (!best) return
 
-        ctx.api.own.addDiceGroup('DESTROYER', ctx.getUnit(), best.sc)
+        ctx.api.own.addDiceGroup(best.sc)
         ctx.api.own.updateAbilityConfig({
           structures: (prev: UnitList<number>) =>
             prev.map(([k, v]) =>
@@ -107,7 +107,7 @@ export const linkshipII: Ability<Params> = {
         const best = findBestSpaceCannon(params, ctx.api.own)
         if (!best) return
 
-        ctx.api.own.addDiceGroup('DESTROYER', ctx.getUnit(), best.sc)
+        ctx.api.own.addDiceGroup(best.sc)
       },
     },
   ],

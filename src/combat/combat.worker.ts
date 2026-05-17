@@ -65,7 +65,6 @@ function buildSideState(
     unitType,
     unitState,
     unitStats: baseUnitStats,
-    hitPools: [],
     abilities,
     liveAbilities: {},
   }

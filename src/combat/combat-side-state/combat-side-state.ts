@@ -13,19 +13,13 @@ import type {
 } from '@/types'
 
 import { countUnitsByBaseType } from '../abilities-engine/param-limit'
-import type {
-  DeclaredSubtype,
-  DicePool,
-  ParamFilter,
-} from '../abilities-engine/types'
+import type { DeclaredSubtype, ParamFilter } from '../abilities-engine/types'
 import type {
   CombatMode,
   CombatStateData,
   HitPool,
   HitSource,
-  HitValueModifier,
   MetaPhase,
-  PendingStep,
   ResolvedRestrictions,
   ResolvedRestrictionsLayer,
   RestrictionEntry,
@@ -33,7 +27,7 @@ import type {
   SideStateData,
   UnitAbilityRestrictions,
 } from '../combat-state/types'
-import { isDiceRollContext } from '../combat-state/types'
+import type { SideDiceCollection } from '../dice-math/types'
 import { canonicalizeUnitState } from '../utils/canonicalize-unit-state'
 import { resolveUnitStats } from '../utils/resolve-unit-stats'
 import { nextUnitIds } from '../utils/unit-id'
@@ -174,15 +168,27 @@ function ensureUnitStateOwned(s: SideStateData): void {
   }
 }
 
-/** CoW — clone `hitPools` if its ref may be shared with another side.
- *  Pool objects inside are not deep-cloned: the branch flow guarantees
- *  that newly-added pools are branch-local, and pre-existing pools are
- *  replaced (not in-place mutated) in `reduceHits`. */
-function ensureHitPoolsOwned(s: SideStateData): void {
-  if (s._hitPoolsShared) {
-    s.hitPools = s.hitPools.slice()
-    s._hitPoolsShared = false
+/** CoW — clone `hitPool` if its ref may be shared with another side.
+ *  The `custom` array is also shallow-cloned in the same step since
+ *  mutations that touch custom entries (append, remove, merge into main)
+ *  need a side-local array. Caller must guard against `hitPool === undefined`. */
+function ensureHitPoolOwned(s: SideStateData): void {
+  if (s._hitPoolShared && s.hitPool !== undefined) {
+    s.hitPool = { ...s.hitPool, custom: s.hitPool.custom.slice() }
+    s._hitPoolShared = false
   }
+}
+
+/** Get the side's hit pool, creating it (empty) if absent. Also clones
+ *  the existing pool when shared. Returns the now-owned pool. */
+function ensureHitPool(s: SideStateData): HitPool {
+  if (s.hitPool === undefined) {
+    s.hitPool = { base: 0, additional: 0, custom: [] }
+    s._hitPoolShared = false
+    return s.hitPool
+  }
+  ensureHitPoolOwned(s)
+  return s.hitPool!
 }
 
 const liveAbilitiesSideHashCache = new WeakMap<SideAbilitiesConfig, string>()
@@ -199,71 +205,147 @@ function computeLiveAbilitiesHash(side: SideAbilitiesConfig): string {
   return result
 }
 
-function hasValidTargets(hitPool: HitPool): boolean {
-  return hitPool.validTargets !== undefined && hitPool.validTargets.length > 0
+/** Tail-slice picker for unrestricted main-pool hits. Highest-priority
+ *  units sit at index 0; tail units are sacrificed first. */
+function pickTailTargets(
+  pool: UnitIdList | readonly UnitId[],
+  total: number,
+): UnitId[] {
+  if (total <= 0 || pool.length === 0) return []
+  const take = Math.min(total, pool.length)
+  const result: UnitId[] = []
+  for (let i = pool.length - take; i < pool.length; i++) {
+    result.push(pool[i] as UnitId)
+  }
+  return result
 }
 
-function matchesValidTargets(
-  s: SideStateData,
-  id: UnitId,
-  validTargets: readonly UnitType[],
-): boolean {
-  const key = s.unitType[id]
-  if (!key) return false
-  if (validTargets.includes(key)) return true
-  const baseType = parseVariantId(key).type as UnitType
-  return validTargets.includes(baseType)
-}
-
-/** Pick destruction targets from `pool` for a single HitPool. `pool`
- *  may be either a packed UnitId string (as stored on SideStateData) or
- *  an already-materialized array of UnitIds (the working copy used by
- *  the slow path in `assignHits`). */
-function pickTargetsForPool(
+/** Pick destruction targets for a custom sub-pool. Walks the entry's
+ *  `unitPriority` as a tier list — earlier entries preferred, later
+ *  as fallback. Each entry may be a variant key (exact match) or a
+ *  base type (matches every variant of that base type). Within each
+ *  tier, walks the pool tail-first. */
+function pickTargetsForCustom(
   s: SideStateData,
   pool: UnitIdList | readonly UnitId[],
-  hitPool: HitPool,
-  priorityList?: readonly UnitType[],
+  total: number,
+  unitPriority: readonly UnitType[],
 ): UnitId[] {
-  const total = hitPool.hits[0] + hitPool.hits[1]
-  if (total <= 0 || pool.length === 0) return []
-
-  if (!hasValidTargets(hitPool)) {
-    const take = Math.min(total, pool.length)
-    const result: UnitId[] = []
-    for (let i = pool.length - take; i < pool.length; i++) {
-      result.push(pool[i] as UnitId)
-    }
-    return result
-  }
-
-  const targets = hitPool.validTargets!
+  if (total <= 0 || pool.length === 0 || unitPriority.length === 0) return []
   const result: UnitId[] = []
-
-  if (priorityList && priorityList.length > 0) {
-    const targetSet = new Set<UnitType>(targets)
-    for (const variantKey of priorityList) {
-      if (result.length >= total) break
-      if (!targetSet.has(variantKey)) {
-        const baseType = parseVariantId(variantKey).type as UnitType
-        if (!targetSet.has(baseType)) continue
+  for (const tier of unitPriority) {
+    if (result.length >= total) break
+    for (let i = pool.length - 1; i >= 0 && result.length < total; i--) {
+      const id = pool[i] as UnitId
+      if (result.includes(id)) continue
+      const variantKey = s.unitType[id]
+      if (variantKey === tier) {
+        result.push(id)
+        continue
       }
-      for (let i = pool.length - 1; i >= 0 && result.length < total; i--) {
-        const id = pool[i] as UnitId
-        if (s.unitType[id] !== variantKey) continue
-        if (result.includes(id)) continue
+      if ((parseVariantId(variantKey).type as UnitType) === tier) {
         result.push(id)
       }
     }
-    if (result.length >= total) return result
-  }
-
-  for (let i = pool.length - 1; i >= 0 && result.length < total; i--) {
-    const id = pool[i] as UnitId
-    if (result.includes(id)) continue
-    if (matchesValidTargets(s, id, targets)) result.push(id)
   }
   return result
+}
+
+/** True when a unit's variant key resolves to the FIGHTER base type. */
+function isFighterVariant(variantKey: UnitType | undefined): boolean {
+  if (variantKey === undefined) return false
+  if (variantKey === 'FIGHTER') return true
+  // Variant keys are `BASE` or `BASE:subtype`, so a startsWith check on
+  // `FIGHTER:` is equivalent to (and cheaper than) parseVariantId.
+  return (
+    variantKey.length > 7 &&
+    variantKey.charCodeAt(7) === 58 /* ':' */ &&
+    variantKey.startsWith('FIGHTER:')
+  )
+}
+
+/** True when `unitPriority` follows the `[0.0.1]`-style pattern:
+ *  contains at least one FIGHTER tier and one non-FIGHTER tier, with every
+ *  non-FIGHTER tier strictly before every FIGHTER tier. Necessary but not
+ *  sufficient for the assignHits fast path — the caller must also verify
+ *  that every non-FIGHTER unit in the receiving pool has a base type
+ *  covered by `unitPriority` (otherwise selective priorities like
+ *  `[CRUISER, FIGHTER]` would over-pick into types that aren't actually
+ *  in the tier list). Hot path — cached per unitPriority array. */
+const fighterAtBottomCache = new WeakMap<readonly UnitType[], boolean>()
+function isFighterAtBottomPriority(unitPriority: readonly UnitType[]): boolean {
+  const cached = fighterAtBottomCache.get(unitPriority)
+  if (cached !== undefined) return cached
+  let seenFighter = false
+  let seenNonFighter = false
+  let ok = true
+  for (let i = 0; i < unitPriority.length; i++) {
+    const t = unitPriority[i]
+    const isFighter =
+      t === 'FIGHTER' || (parseVariantId(t).type as UnitType) === 'FIGHTER'
+    if (isFighter) {
+      seenFighter = true
+    } else if (seenFighter) {
+      ok = false
+      break
+    } else {
+      seenNonFighter = true
+    }
+  }
+  const result = ok && seenFighter && seenNonFighter
+  fighterAtBottomCache.set(unitPriority, result)
+  return result
+}
+
+/** Verify the custom entry's non-FIGHTER tiers exactly match the pool's
+ *  tail-to-head non-FIGHTER base-type sequence. This is the strict
+ *  invariant required for the single-pass fast path to be equivalent to
+ *  `pickTargetsForCustom`:
+ *
+ *  - The custom entry walks `unitPriority` head-first; for each tier it
+ *    walks the pool tail-first. The destroyed set therefore visits
+ *    distinct base types in the order they appear in `unitPriority`,
+ *    and within a single base type in pool-tail order.
+ *  - The fast path walks the pool tail-to-head and destroys every
+ *    non-fighter it encounters until `customRemaining` is exhausted. It
+ *    can ONLY produce the same destroyed set when each non-fighter base
+ *    type, read tail-to-head, appears in the same order as in
+ *    `unitPriority`'s non-FIGHTER prefix. For [0.0.1] this holds because
+ *    its `unitPriority` is the opponent's default spaceUnitPriority
+ *    (cheapest first) with FIGHTER moved to the end, and the opposing
+ *    participating pool is itself sorted cheapest-at-tail. For SCO with
+ *    a `customScoPriority` that reorders the non-fighter tiers, the
+ *    check correctly rejects the fast path. */
+function poolTailNonFightersFollowPriority(
+  s: SideStateData,
+  pool: UnitIdList | readonly UnitId[],
+  unitPriority: readonly UnitType[],
+): boolean {
+  let priIdx = 0
+  const seenPool = new Set<string>()
+  for (let i = pool.length - 1; i >= 0; i--) {
+    const variant = s.unitType[pool[i] as UnitId]
+    if (variant === undefined) continue
+    if (isFighterVariant(variant)) continue
+    const base = parseVariantId(variant).type as string
+    if (seenPool.has(base)) continue
+    seenPool.add(base)
+    // Advance priIdx until we find this base in unitPriority, skipping
+    // tiers that don't appear in the pool. Stop at FIGHTER or end.
+    let matched = false
+    while (priIdx < unitPriority.length) {
+      const pt = unitPriority[priIdx]
+      const pBase = parseVariantId(pt).type as string
+      if (pBase === 'FIGHTER') break
+      priIdx++
+      if (pBase === base) {
+        matched = true
+        break
+      }
+    }
+    if (!matched) return false
+  }
+  return true
 }
 
 function isCategoryMember(
@@ -499,19 +581,6 @@ function removeRestrictionEntry(
 
   if (!result.lost && !result.cannotBeUsed) return undefined
   return result
-}
-
-function findPendingDiceRollGroup(
-  pendingSteps: readonly PendingStep[],
-  meta: MetaPhase,
-): Extract<PendingStep, { kind: 'group' }> | undefined {
-  for (let i = pendingSteps.length - 1; i >= 0; i--) {
-    const s = pendingSteps[i]
-    if (s.kind !== 'group' || !isDiceRollContext(s.data)) continue
-    const inner = s.steps[s.steps.length - 1] ?? s.steps[0]
-    if (inner && inner.phase[inner.phase.length - 1] === meta) return s
-  }
-  return undefined
 }
 
 export interface GetUnitsOptions {
@@ -754,17 +823,24 @@ export class CombatSideState {
   // HIT POOL HELPERS
   // ==========================================================================
 
-  /** Sum pending hit pools. Without a filter returns base + bonus. */
+  /** Sum currently-staged hits. Without a filter returns base + additional
+   *  (across main pool and all custom entries). The `base` slot counts
+   *  main.base plus every custom entry's base; `bonus` counts
+   *  main.additional only (custom entries have no `additional` slot). */
   static getPendingHits(
     s: SideStateData,
     filter?: { base?: true; bonus?: true },
   ): number {
+    if (s.hitPool === undefined) return 0
     const b = !filter || filter.base
     const n = !filter || filter.bonus
-    return s.hitPools.reduce(
-      (sum, pool) => sum + (b ? pool.hits[0] : 0) + (n ? pool.hits[1] : 0),
-      0,
-    )
+    let sum = 0
+    if (b) {
+      sum += s.hitPool.base
+      for (const c of s.hitPool.custom) sum += c.base
+    }
+    if (n) sum += s.hitPool.additional
+    return sum
   }
 
   // ==========================================================================
@@ -894,23 +970,20 @@ export class CombatSideState {
     return getSettingsValidTargetsUtil(settings, meta)
   }
 
-  /** Resolve valid targets from SETTINGS for the given meta. Returns [] when
-   *  SETTINGS is absent (ability-context variant). */
-  static getSettingsValidTargets(
-    s: SideStateData,
-    meta: MetaPhase,
-  ): UnitBaseType[] {
-    const settings = CombatSideState.getLiveParams(s, 'SETTINGS')
-    if (!settings) return []
-    return getSettingsValidTargetsUtil(settings, meta)
-  }
-
-  /** Get hit pool valid targets (falls back to settings valid targets) */
+  /** Snapshot of the side's currently-targetable types for the *next*
+   *  hit incoming. Returns `undefined` when no restriction applies —
+   *  either no pool, or the main pool still has hits to drain (main
+   *  drains first and is unrestricted). Otherwise returns the union of
+   *  every queued custom entry's `unitPriority`, deduped. Used by
+   *  sustain-damage selection logic. */
   static getHitPoolValidTargets(s: SideStateData): UnitType[] | undefined {
-    const pool = s.hitPools[0]
-    if (pool && pool.validTargets && pool.validTargets.length > 0)
-      return pool.validTargets
-    return undefined
+    const pool = s.hitPool
+    if (pool === undefined) return undefined
+    if (pool.base + pool.additional > 0) return undefined
+    if (pool.custom.length === 0) return undefined
+    const set = new Set<UnitType>()
+    for (const c of pool.custom) for (const t of c.unitPriority) set.add(t)
+    return set.size > 0 ? [...set] : undefined
   }
 
   // ==========================================================================
@@ -1027,20 +1100,20 @@ export class CombatSideState {
     side: CombatSide,
     source: HitSource,
     allowedUnitTypes?: ReadonlySet<UnitBaseType>,
-  ): DicePool {
+  ): SideDiceCollection {
     const s = state[side]
     const participatingTypes = CombatSideState.getParticipatingUnits(
       s,
       state.combatMode,
     )
-    const result: DicePool = {}
+    const collection: SideDiceCollection = {}
 
     const scanNonParticipating =
       source === 'SPACE_CANNON' || source === 'BOMBARDMENT'
 
     const variantStatsCache = new Map<
       UnitType,
-      readonly [number, number, number] | null
+      readonly [number, number] | null
     >()
     const restrictionChecked = new Map<UnitBaseType, boolean>()
 
@@ -1082,68 +1155,152 @@ export class CombatSideState {
             continue
           }
           const [hitValue, dicePerUnit, bonusDice = 0] = dieData
-          if (dicePerUnit + bonusDice <= 0) {
+          const totalDpu = dicePerUnit + bonusDice
+          if (totalDpu <= 0) {
             variantStatsCache.set(key, null)
             continue
           }
-          die = [hitValue, dicePerUnit, bonusDice]
+          die = [hitValue, totalDpu]
           variantStatsCache.set(key, die)
         }
         if (die === null) continue
 
-        const [hitValue, dicePerUnit, bonusDice] = die
-        const arr = result[type] ?? (result[type] = [])
-        arr.push([hitValue, dicePerUnit, bonusDice, id as UnitId])
+        const [hitValue, dpu] = die
+        // Pool outer key is the base type, so galvanized + normal variants
+        // of the same base type land in the same list — distinguished only
+        // by `(hitValue, dpu)` of each entry.
+        const list = collection[type] ?? (collection[type] = [])
+        const existing = list.find(e => e[1] === hitValue && e[2] === dpu)
+        if (existing) existing[0] += 1
+        else list.push([1, hitValue, dpu])
       }
     }
 
     walk(s.participatingUnits, true)
-    if (scanNonParticipating) {
-      walk(s.nonParticipatingUnits, true)
-    }
+    if (scanNonParticipating) walk(s.nonParticipatingUnits, true)
 
-    return result
+    return collection
   }
 
   // ==========================================================================
   // ASSIGN HITS
   // ==========================================================================
 
-  /** Assign hits to this side. Replaces `participatingUnits` with a new array
-   *  (does NOT mutate the original — safe for shared branch data). */
+  /** Assign hits to this side. Replaces `participatingUnits` with a new
+   *  array (does NOT mutate the original — safe for shared branch data).
+   *  Drains the main pool first (always unrestricted, tail-slice), then
+   *  each custom entry in declaration order using its own `unitPriority`. */
   static assignHits(
     s: SideStateData,
     trackDestroyed?: boolean,
-    priorityList?: readonly UnitType[],
   ): Record<string, UnitId[]> {
-    if (s.hitPools.length === 0) return EMPTY_DESTROYED
+    const pool = s.hitPool
+    if (pool === undefined) return EMPTY_DESTROYED
 
-    const allFast = s.hitPools.every(p => !hasValidTargets(p))
-    let total = 0
-    for (const pool of s.hitPools) {
-      total += pool.hits[0] + pool.hits[1]
-    }
+    const mainTotal = pool.base + pool.additional
+    let customTotal = 0
+    for (const c of pool.custom) customTotal += c.base
+    const total = mainTotal + customTotal
+
     if (total === 0) {
-      s.hitPools = []
-      s._hitPoolsShared = false
+      s.hitPool = undefined
+      s._hitPoolShared = false
       return EMPTY_DESTROYED
     }
 
     const oldUnits = s.participatingUnits
     const destroyedIds: UnitId[] = []
+    const hasCustom = pool.custom.length > 0
 
-    if (allFast) {
-      const take = Math.min(total, oldUnits.length)
+    if (!hasCustom) {
+      const take = Math.min(mainTotal, oldUnits.length)
       const kept = oldUnits.length - take
       s.participatingUnits = oldUnits.slice(0, kept) as UnitIdList
       if (trackDestroyed) {
         for (let i = kept; i < oldUnits.length; i++)
           destroyedIds.push(oldUnits[i] as UnitId)
       }
+    } else if (
+      pool.custom.length === 1 &&
+      isFighterAtBottomPriority(pool.custom[0].unitPriority) &&
+      poolTailNonFightersFollowPriority(
+        s,
+        oldUnits,
+        pool.custom[0].unitPriority,
+      )
+    ) {
+      // Single-pass fast path for the [0.0.1]-style pattern (custom
+      // entry prefers non-FIGHTER, fallback to FIGHTER). Walks the
+      // participating pool tail-to-head ONCE: fighters go to main (its
+      // natural tail target), non-fighters go to custom (its preferred
+      // tier). A second pass handles overflow (main exhausting fighters
+      // spills into non-fighters; custom exhausting non-fighters spills
+      // into fighters) — at most 2×N work vs the prior O(N + P×N) where
+      // P is the priority list length (typically the full UNIT_PRIORITY).
+      let mainRemaining = mainTotal
+      let customRemaining = pool.custom[0].base
+      const N = oldUnits.length
+      const destroyedMask = new Uint8Array(N)
+
+      for (
+        let i = N - 1;
+        i >= 0 && (mainRemaining > 0 || customRemaining > 0);
+        i--
+      ) {
+        const id = oldUnits[i] as UnitId
+        const variantKey = s.unitType[id]
+        if (isFighterVariant(variantKey)) {
+          if (mainRemaining > 0) {
+            destroyedMask[i] = 1
+            if (trackDestroyed) destroyedIds.push(id)
+            mainRemaining--
+          }
+        } else if (customRemaining > 0) {
+          destroyedMask[i] = 1
+          if (trackDestroyed) destroyedIds.push(id)
+          customRemaining--
+        }
+      }
+
+      if (mainRemaining > 0 || customRemaining > 0) {
+        for (
+          let i = N - 1;
+          i >= 0 && (mainRemaining > 0 || customRemaining > 0);
+          i--
+        ) {
+          if (destroyedMask[i]) continue
+          const id = oldUnits[i] as UnitId
+          destroyedMask[i] = 1
+          if (trackDestroyed) destroyedIds.push(id)
+          if (mainRemaining > 0) mainRemaining--
+          else customRemaining--
+        }
+      }
+
+      let survivors = ''
+      for (let i = 0; i < N; i++) {
+        if (!destroyedMask[i]) survivors += oldUnits[i]
+      }
+      s.participatingUnits = survivors as UnitIdList
     } else {
       const working = [...oldUnits] as UnitId[]
-      for (const pool of s.hitPools) {
-        const picks = pickTargetsForPool(s, working, pool, priorityList)
+      if (mainTotal > 0) {
+        const picks = pickTailTargets(working, mainTotal)
+        for (const id of picks) {
+          const idx = working.indexOf(id)
+          if (idx === -1) continue
+          working.splice(idx, 1)
+          if (trackDestroyed) destroyedIds.push(id)
+        }
+      }
+      for (const entry of pool.custom) {
+        if (entry.base <= 0) continue
+        const picks = pickTargetsForCustom(
+          s,
+          working,
+          entry.base,
+          entry.unitPriority,
+        )
         for (const id of picks) {
           const idx = working.indexOf(id)
           if (idx === -1) continue
@@ -1154,8 +1311,8 @@ export class CombatSideState {
       s.participatingUnits = working.join('') as UnitIdList
     }
 
-    s.hitPools = []
-    s._hitPoolsShared = false
+    s.hitPool = undefined
+    s._hitPoolShared = false
 
     if (!trackDestroyed) return EMPTY_DESTROYED
 
@@ -1167,61 +1324,79 @@ export class CombatSideState {
     return destroyed
   }
 
-  /** Simulate resolving a single HitPool against this side's current units. */
-  static getAssignHitsTargets(
-    s: SideStateData,
-    hitPool: HitPool,
-    priorityList?: readonly UnitType[],
-  ): UnitId[] {
-    return pickTargetsForPool(s, s.participatingUnits, hitPool, priorityList)
+  /** Simulate resolving N unrestricted hits against this side's current
+   *  units (tail-slice) — returns the UnitIds that would be destroyed in
+   *  sacrifice order. Non-destructive. */
+  static getAssignHitsTargets(s: SideStateData, hits: number): UnitId[] {
+    return pickTailTargets(s.participatingUnits, hits)
   }
 
   // ==========================================================================
   // HIT POOLS (mutations)
   // ==========================================================================
 
-  /** Add a hit pool (ability-produced hits go into bonus slot) */
-  static addHits(
+  /** Add ability-produced hits to the side's main pool's `additional`
+   *  slot. Creates the pool if absent. */
+  static addHits(s: SideStateData, hits: number): void {
+    if (hits === 0) return
+    const pool = ensureHitPool(s)
+    pool.additional += hits
+  }
+
+  /** Create the side's main pool with a single custom (type-restricted)
+   *  entry. Caller (the public API) is responsible for asserting that
+   *  no pool already exists. */
+  static addCustomHits(
     s: SideStateData,
     hits: number,
-    validTargets: UnitType[],
+    key: string,
+    unitPriority: UnitType[],
   ): void {
     if (hits === 0) return
-    ensureHitPoolsOwned(s)
-    s.hitPools.push({ hits: [0, hits], validTargets })
-  }
-
-  /** Add a hit pool from a combat dice-roll outcome (hits in base slot). */
-  static addBaseHits(
-    s: SideStateData,
-    hits: number,
-    validTargets: UnitType[],
-  ): void {
-    if (hits <= 0) return
-    ensureHitPoolsOwned(s)
-    s.hitPools.push({ hits: [hits, 0], validTargets })
-  }
-
-  /** Reduce pending hits from hit pools (reduces bonus first, then base).
-   *  Replaces mutated pool entries with new objects so pool refs shared
-   *  with other branches (via CoW hitPools sharing) stay untouched. */
-  static reduceHits(s: SideStateData, amount: number): void {
-    if (s.hitPools.length === 0 || amount <= 0) return
-    ensureHitPoolsOwned(s)
-    let remaining = amount
-    for (let i = 0; i < s.hitPools.length; i++) {
-      const pool = s.hitPools[i]
-      const total = pool.hits[0] + pool.hits[1]
-      const reduce = Math.min(remaining, total)
-      const bonusReduce = Math.min(reduce, pool.hits[1])
-      const baseReduce = reduce - bonusReduce
-      s.hitPools[i] = {
-        ...pool,
-        hits: [pool.hits[0] - baseReduce, pool.hits[1] - bonusReduce],
-      }
-      remaining -= reduce
-      if (remaining <= 0) break
+    s.hitPool = {
+      base: 0,
+      additional: 0,
+      custom: [{ key, base: hits, unitPriority }],
     }
+    s._hitPoolShared = false
+  }
+
+  /** Merge a custom entry's hits into the main pool's `base` and drop the
+   *  entry. Used by abilities (e.g. [0.0.1]) that lift their restriction
+   *  when the producing unit is destroyed mid-round. No-op if the pool
+   *  is absent or the entry isn't present. */
+  static liftHitPoolRestriction(s: SideStateData, abilityKey: string): void {
+    const pool = s.hitPool
+    if (pool === undefined) return
+    const idx = pool.custom.findIndex(c => c.key === abilityKey)
+    if (idx === -1) return
+    ensureHitPoolOwned(s)
+    const own = s.hitPool!
+    own.base += own.custom[idx].base
+    own.custom.splice(idx, 1)
+  }
+
+  /** Reduce pending hits (reduces `additional` first, then `base`, then
+   *  each custom entry's `base` in reverse order). */
+  static reduceHits(s: SideStateData, amount: number): void {
+    if (s.hitPool === undefined || amount <= 0) return
+    ensureHitPoolOwned(s)
+    const pool = s.hitPool!
+    let remaining = amount
+    for (let i = pool.custom.length - 1; i >= 0 && remaining > 0; i--) {
+      const entry = pool.custom[i]
+      const reduce = Math.min(remaining, entry.base)
+      pool.custom[i] = { ...entry, base: entry.base - reduce }
+      remaining -= reduce
+    }
+    const additionalReduce = Math.min(remaining, pool.additional)
+    pool.additional -= additionalReduce
+    remaining -= additionalReduce
+    if (remaining <= 0) return
+    const baseReduce = Math.min(remaining, pool.base)
+    pool.base -= baseReduce
+    remaining -= baseReduce
+    if (remaining <= 0) return
   }
 
   // ==========================================================================
@@ -1489,60 +1664,6 @@ export class CombatSideState {
       isCategory ? (target as UnitCategory) : undefined,
     )
     invalidateResolvedRestrictions(state)
-  }
-
-  // ==========================================================================
-  // HIT VALUE MODIFIER (needs pendingSteps)
-  // ==========================================================================
-
-  /** Add a hit-value modifier to the pending dice-roll group for `meta`. */
-  static addHitValueModifier(
-    pendingSteps: readonly PendingStep[],
-    side: CombatSide,
-    amount: number,
-    target: unknown,
-    meta: MetaPhase,
-  ): void {
-    const group = findPendingDiceRollGroup(pendingSteps, meta)
-    if (!group) {
-      throw new Error(
-        `addHitValueModifier: no pending dice-roll group for meta ${meta}`,
-      )
-    }
-    const ctx = group.data
-    if (!isDiceRollContext(ctx)) {
-      throw new Error(
-        'addHitValueModifier: group data is not a DiceRollContext',
-      )
-    }
-    if (!ctx.hitValueModifiers) ctx.hitValueModifiers = {}
-    const list = (ctx.hitValueModifiers[side] ??= [])
-    const base: HitValueModifier = { amount }
-
-    if (target === undefined) {
-      list.push(base)
-    } else if (typeof target === 'string') {
-      // UnitId is a single-char packed token; any longer string is a variant key.
-      if (target.length === 1) {
-        list.push({ ...base, unitId: target as UnitId })
-      } else {
-        list.push({ ...base, unitType: target })
-      }
-    } else if (
-      typeof target === 'object' &&
-      target !== null &&
-      'exclude' in target
-    ) {
-      list.push({
-        ...base,
-        excludeUnitTypes: (target as { exclude: string[] }).exclude,
-      })
-    } else {
-      list.push({
-        ...base,
-        unitId: target as UnitId,
-      })
-    }
   }
 }
 

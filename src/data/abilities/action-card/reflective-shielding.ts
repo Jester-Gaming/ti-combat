@@ -29,7 +29,7 @@ export const reflectiveShielding: Ability = {
         return false
       },
       call: ctx => {
-        ctx.api.opponent.addHits(2, [])
+        ctx.api.opponent.addHits(2)
       },
     },
   ],

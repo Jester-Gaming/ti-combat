@@ -20,7 +20,7 @@ export const x89BacterialWeapon: Ability = {
       },
       call: ctx => {
         const base = ctx.api.opponent.getPendingHits({ base: true })
-        ctx.api.opponent.addHits(base, [])
+        ctx.api.opponent.addHits(base)
       },
     },
     {
@@ -31,7 +31,7 @@ export const x89BacterialWeapon: Ability = {
       },
       call: ctx => {
         const base = ctx.api.opponent.getPendingHits({ base: true })
-        ctx.api.opponent.addHits(base, [])
+        ctx.api.opponent.addHits(base)
       },
     },
   ],

@@ -67,7 +67,7 @@ export const ambush: Ability<Params> = {
 
         ctx.rollDice(dice, (branchCtx, hits) => {
           const total = hits.reduce((a, b) => a + b, 0)
-          branchCtx.api.opponent.addHits(total, [])
+          branchCtx.api.opponent.addHits(total)
         })
       },
     },

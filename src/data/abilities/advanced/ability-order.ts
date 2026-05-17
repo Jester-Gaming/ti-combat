@@ -11,6 +11,7 @@ type Params = {
   beforeUnitAbilityRoll: [string][]
   beforeAssignHits: [string][]
   endOfCombat: [string][]
+  reroll: [string][]
 }
 
 export const abilityOrder: Ability<Params> = {
@@ -22,6 +23,7 @@ export const abilityOrder: Ability<Params> = {
     beforeUnitAbilityRoll: UnitListSchema,
     beforeAssignHits: UnitListSchema,
     endOfCombat: UnitListSchema,
+    reroll: UnitListSchema,
   }),
   params: {
     isEnabled: true,
@@ -31,6 +33,7 @@ export const abilityOrder: Ability<Params> = {
     beforeUnitAbilityRoll: [],
     beforeAssignHits: [],
     endOfCombat: [],
+    reroll: [],
   },
   invoke: [],
   uiConfig: ctx => {

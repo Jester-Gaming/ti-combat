@@ -29,8 +29,11 @@ export const eidolonMaximum: Ability = {
             current.filter(u => u !== 'MECH'),
         })
 
+        const stats = ctx.api.own.getUnitStats('MECH')!
         // Modify all mechs to Eidolon Maximum form: combat [4, 4]
-        ctx.api.own.modifyUnitType('MECH', { COMBAT: [4, 4] })
+        ctx.api.own.modifyUnitType('MECH', {
+          COMBAT: [4, 4, stats.COMBAT![2] ?? 0],
+        })
       },
     },
     {

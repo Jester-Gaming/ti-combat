@@ -1,24 +1,7 @@
 import universitiesOfJolNarIcon from '@/assets/faction/universities_of_jol_nar.svg?raw'
 import type { Ability } from '@/combat'
-import {
-  buildRerollStrategy,
-  type RerollStrategy,
-  rerollStrategyConfig,
-  strategyToPredicate,
-} from '@/combat/reroll'
 
-type Params = {
-  ownStrategyKind: RerollStrategy['kind']
-  ownStrategyThreshold: number
-}
-
-declare global {
-  interface AbilityConfigMap {
-    AGNLAN_OLN: Params
-  }
-}
-
-export const agnlanOln: Ability<Params> = {
+export const agnlanOln: Ability = {
   key: 'AGNLAN_OLN',
   name: 'Agnlan Oln',
   description:
@@ -27,30 +10,14 @@ export const agnlanOln: Ability<Params> = {
   params: {
     isEnabled: false,
     uses: Infinity,
-    ownStrategyKind: 'ALWAYS',
-    ownStrategyThreshold: 0,
   },
   headerUI: 'isEnabled',
-  uiConfig: (_ctx, params) =>
-    rerollStrategyConfig<Params>(
-      'ownStrategyKind',
-      'ownStrategyThreshold',
-      params.ownStrategyKind,
-      'Own dice',
-    ),
   invoke: [
     {
       timing: 'REROLL_UNIT_ABILITY_ROLL',
-      isCallable: params => params.ownStrategyKind !== 'NEVER',
-      call: (ctx, params) => {
-        const strategy = buildRerollStrategy(
-          params.ownStrategyKind,
-          params.ownStrategyThreshold,
-        )
-        ctx.api.own.reroll({
+      call: ctx => {
+        ctx.api.own.declareReroll({
           target: 'MISSES',
-          rerollIf: strategyToPredicate(strategy),
-          consumeUseIf: () => false,
         })
       },
     },

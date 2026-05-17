@@ -334,6 +334,39 @@ export class CombatTest {
     return this
   }
 
+  /** Mirror `combat-state.advance()` — call the underlying advance once and
+   *  return its outcomes. Runs until the first branching point or until the
+   *  current script drains. Loads the next phase script when the stack is
+   *  empty, so consecutive calls walk forward across phase boundaries the
+   *  way combat-engine does at runtime.
+   *
+   *  Single-outcome (deterministic) results are adopted as the harness's
+   *  current state and their log entries are captured into `t.log`.
+   *  Branches are returned to the caller without adoption — the harness
+   *  tracks only one state, so the caller drives each branch via
+   *  `branch.state.advance()` directly. */
+  advance(): StateWithProbability[] {
+    const MAX_ITERATIONS = 500
+    for (let i = 0; i < MAX_ITERATIONS; i++) {
+      if (this._cs.isFinished()) return [{ state: this._cs, probability: 1 }]
+      if (!this._ensureScriptLoaded()) {
+        return [{ state: this._cs, probability: 1 }]
+      }
+      this._cs._logger = Logger.create()
+      const outcomes = this._cs.advance()
+      if (outcomes.length > 1 || outcomes[0].probability !== 1) {
+        return outcomes
+      }
+      // Deterministic — the current phase script drained without branching.
+      // Adopt the resulting state (captures logs, syncs `_cs`) and loop so
+      // `_ensureScriptLoaded` transitions to the next phase. This is what
+      // makes `advance()` keep walking past empty phases (e.g. SCO with no
+      // PDS) until it reaches a real branching point.
+      this._adoptOutcome(outcomes[0])
+    }
+    return [{ state: this._cs, probability: 1 }]
+  }
+
   /** Advance until the next branching event, drain boundary, completion, or
    *  meta transition (AFB nesting). With step-atomic advance(), individual
    *  steps are often deterministic — callers of `step()` want the next

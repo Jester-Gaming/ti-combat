@@ -2,6 +2,7 @@ import l1z1xMindnetIcon from '@/assets/faction/l1z1x_mindnet.svg?raw'
 import { sustainDamage } from '@/data/abilities/general/sustain-damage'
 import type { Faction } from '@/types'
 
+import { zerozeroone } from './001'
 import { annihilator } from './annihilator'
 import { harrow } from './harrow'
 import { twoRam } from './two-ram'
@@ -27,7 +28,7 @@ export const l1z1x_mindnet: Faction = {
         UNIT_ABILITIES: {
           SUSTAIN_DAMAGE: true,
         },
-        ABILITIES: [sustainDamage],
+        ABILITIES: [zerozeroone, sustainDamage],
       },
     },
     MECH: {

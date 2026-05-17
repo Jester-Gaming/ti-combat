@@ -25,7 +25,6 @@ function buildSide(
     unitType,
     unitState,
     unitStats: {} as SideStateData['unitStats'],
-    hitPools: [],
     abilities: {},
     liveAbilities: {},
   }
@@ -131,7 +130,6 @@ describe('canonicalizeUnitState', () => {
       unitType: { [A]: T, [B]: T },
       unitState: { [B]: { isDamaged: true } },
       unitStats: {} as SideStateData['unitStats'],
-      hitPools: [],
       abilities: {},
       liveAbilities: {},
     }

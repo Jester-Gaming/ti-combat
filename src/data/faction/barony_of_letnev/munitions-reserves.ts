@@ -4,7 +4,7 @@ import {
   type RerollStrategy,
   rerollStrategyConfig,
   strategyToPredicate,
-} from '@/combat/reroll'
+} from '@/combat/dice-math/reroll-strategy'
 
 type Params = {
   _useThisRound: boolean
@@ -56,7 +56,7 @@ export const munitionsReserves: Ability<Params> = {
           params.ownStrategyKind,
           params.ownStrategyThreshold,
         )
-        ctx.api.own.reroll({
+        ctx.api.own.declareReroll({
           target: 'MISSES',
           rerollIf: strategyToPredicate(strategy),
           consumeUseIf: () => false,

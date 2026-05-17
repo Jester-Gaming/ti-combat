@@ -417,17 +417,10 @@ function cloneTimingMap(
   return out
 }
 
-function cloneSideInvokes(side: SideInvokes): SideInvokes {
+export function cloneSideInvokes(side: SideInvokes): SideInvokes {
   const out: SideInvokes = new Map()
   for (const [phase, bucket] of side) out.set(phase, cloneTimingMap(bucket))
   return out
-}
-
-export function cloneInvokes(invokes: InvokeCollections): InvokeCollections {
-  return {
-    attacker: cloneSideInvokes(invokes.attacker),
-    defender: cloneSideInvokes(invokes.defender),
-  }
 }
 
 /** Clone an invocation tracker for independent continuation in a branch. */
@@ -442,7 +435,7 @@ export function cloneTracker(tracker: InvocationTracker): InvocationTracker {
 interface BranchStateSnapshot {
   data: CombatStateData
   invokes: InvokeCollections
-  invokesOwned: boolean
+  invokesOwned: { attacker: boolean; defender: boolean }
   allInvokes: Record<CombatSide, AbilityCandidate[]>
   allInvokesOwned: boolean
   logger?: Logger
@@ -458,6 +451,14 @@ interface BranchStateSnapshot {
 const SPACE_PHASE: MetaPhase[] = ['SPACE_COMBAT']
 const GROUND_PHASE: MetaPhase[] = ['GROUND_COMBAT']
 
+/** Lazy index — `_allInvokes[side]` array ref → Set of UnitIds appearing
+ *  as `source.unitId` in that array. Module-level WeakMap so `Object.create`-
+ *  initialized engine instances share the cache (cache keys are array
+ *  refs and unique-per-state). Used by `removeUnitInvokes` to short-circuit
+ *  fighter-only destroys (no per-unit ability candidates → nothing to
+ *  remove). */
+const unitsWithCandidatesCache = new WeakMap<AbilityCandidate[], Set<UnitId>>()
+
 export class AbilitiesEngine {
   private _combatState!: CombatState
   private _abilities!: Record<CombatSide, Ability[]>
@@ -467,6 +468,20 @@ export class AbilitiesEngine {
   private _defenderCtx!: AbilityContext
 
   _logger?: Logger
+
+  private _getUnitsWithCandidates(side: CombatSide): Set<UnitId> {
+    const all = this._combatState._allInvokes[side]
+    let cached = unitsWithCandidatesCache.get(all)
+    if (cached === undefined) {
+      cached = new Set<UnitId>()
+      for (let i = 0; i < all.length; i++) {
+        const src = all[i].source
+        if (src.type === 'unit') cached.add(src.unitId)
+      }
+      unitsWithCandidatesCache.set(all, cached)
+    }
+    return cached
+  }
 
   private get state(): CombatStateData {
     return this._combatState.data
@@ -487,7 +502,7 @@ export class AbilitiesEngine {
     return {
       data: this._combatState.data,
       invokes: this._combatState._invokes,
-      invokesOwned: this._combatState._invokesOwned,
+      invokesOwned: { ...this._combatState._invokesOwned },
       allInvokes: this._combatState._allInvokes,
       allInvokesOwned: this._combatState._allInvokesOwned,
       logger: this._logger,
@@ -502,7 +517,7 @@ export class AbilitiesEngine {
   _setBranchState(branch: AbilityBranch): void {
     this._combatState.data = branch.data
     this._combatState._invokes = branch.invokes
-    this._combatState._invokesOwned = false
+    this._combatState._invokesOwned = { attacker: false, defender: false }
     this._combatState._allInvokes = branch.allInvokes
     this._combatState._allInvokesOwned = false
     this._logger = branch.logger
@@ -1191,7 +1206,7 @@ export class AbilitiesEngine {
     }
 
     this._combatState._invokes = collections
-    this._combatState._invokesOwned = true
+    this._combatState._invokesOwned = { attacker: true, defender: true }
 
     this.applyAllUnitSourceSorts('attacker')
     this.applyAllUnitSourceSorts('defender')
@@ -1225,7 +1240,7 @@ export class AbilitiesEngine {
   }
 
   private removeInvokeEntries(side: CombatSide, abilityKey: string): void {
-    this._combatState.ensureOwnInvokes()
+    this._combatState.ensureOwnInvokes(side)
     const s = this._combatState._invokes[side]
     for (const bucket of s.values()) filterBucketByKey(bucket, abilityKey)
   }
@@ -1249,7 +1264,7 @@ export class AbilitiesEngine {
         if (!passesInvoke(invoke, mergedParams)) continue
         if (!passesCrossFactionFilter(invoke, candidate)) continue
         if (!pushed) {
-          this._combatState.ensureOwnInvokes()
+          this._combatState.ensureOwnInvokes(side)
           pushed = true
         }
         pushInvokeEntry(
@@ -1307,7 +1322,7 @@ export class AbilitiesEngine {
     }
     if (!hasMatch) return
 
-    this._combatState.ensureOwnInvokes()
+    this._combatState.ensureOwnInvokes(side)
     const owned = this._combatState._invokes[side]
     for (const bucket of owned.values()) {
       for (const [timing, entries] of bucket) {
@@ -1360,7 +1375,7 @@ export class AbilitiesEngine {
     const mergedParams = resolveMergedParams(state[side], candidate.ability)
     if (!mergedParams) return
 
-    this._combatState.ensureOwnInvokes()
+    this._combatState.ensureOwnInvokes(side)
     const owned = this._combatState._invokes[side]
     let pushed = false
     for (const invoke of candidate.ability.invoke) {
@@ -1444,27 +1459,104 @@ export class AbilitiesEngine {
 
   /** Remove unit-source candidates for the given unit IDs and refresh emitted
    *  invokes for affected ability keys. Used by the DESTROY cascade cleanup
-   *  so dead units' entries don't accumulate in `_allInvokes` / `_invokes`. */
+   *  so dead units' entries don't accumulate in `_allInvokes` / `_invokes`.
+   *
+   *  Fast path: rather than rebuilding entries for each affected ability key
+   *  (which re-walks `_allInvokes` and re-sorts buckets), we drop the dead
+   *  units' entries directly from `_invokes`. Surviving units' entries
+   *  retain their pre-computed params, their bucket positions, and their
+   *  unit-source sort order — removing items doesn't reorder the rest. The
+   *  rebuild was a no-op for surviving entries (ability config didn't
+   *  change just because a unit died); skipping it removes the per-DESTROY
+   *  `addAbilityInvokes` / `applyUnitSourceSort` cost that dominates the
+   *  [0.0.1] profile when 5+ dreads die across a round. */
   removeUnitInvokes(side: CombatSide, unitIds: UnitId[]): void {
     if (unitIds.length === 0) return
+
+    // Fast skip: when none of the dead units have unit-source candidates
+    // (e.g. fighter destroys with no per-unit abilities), the filter walk
+    // below would produce no removals — short-circuit before touching the
+    // CoW machinery. The unit-presence set is cached per `_allInvokes`
+    // array reference so siblings sharing the same CoW snapshot reuse it.
+    const presentUnits = this._getUnitsWithCandidates(side)
+    let anyMatch = false
+    for (let i = 0; i < unitIds.length; i++) {
+      if (presentUnits.has(unitIds[i])) {
+        anyMatch = true
+        break
+      }
+    }
+    if (!anyMatch) return
+
     this._combatState.ensureOwnAllInvokes()
     const allInvokes = this._combatState._allInvokes[side]
     const idSet = new Set<UnitId>(unitIds)
-    const affectedKeys = new Set<string>()
+    const removed: AbilityCandidate[] = []
 
     const filtered = allInvokes.filter(c => {
       if (c.source.type === 'unit' && idSet.has(c.source.unitId)) {
-        affectedKeys.add(c.ability.key)
+        removed.push(c)
         return false
       }
       return true
     })
-    if (filtered.length === allInvokes.length) return
+    if (removed.length === 0) return
     this._combatState._allInvokes[side] = filtered
 
-    const state = this._combatState.data
-    for (const key of affectedKeys) {
-      this.addAbilityInvokes(side, key, state)
+    // Limit the bucket sweep to the (phase, timing) tuples that actually
+    // have entries to remove. Without this, the destroy cleanup walks all
+    // 7 phases × every timing per call, which dominates the [0.0.1] profile
+    // when 5+ dreads die at once. Multiple dead candidates typically share
+    // the same `Ability` reference (e.g. all 5 dreads have SUSTAIN_DAMAGE),
+    // so we dedup at the ability level — one pass per unique ability,
+    // regardless of how many of its source units died.
+    this._combatState.ensureOwnInvokes(side)
+    const sideInvokes = this._combatState._invokes[side]
+
+    const seenAbilities = new Set<Ability>()
+    for (let ri = 0; ri < removed.length; ri++) {
+      const ability = removed[ri].ability
+      if (seenAbilities.has(ability)) continue
+      seenAbilities.add(ability)
+      const invokes = ability.invoke
+      for (let ii = 0; ii < invokes.length; ii++) {
+        const invoke = invokes[ii]
+        const timing = invoke.timing
+        const parent = MERGED_PARENT_BY_TIMING[timing]
+        const ctx = invoke.context
+        const phases: readonly MetaPhase[] = !ctx
+          ? ALL_META_PHASES
+          : typeof ctx === 'string'
+            ? [ctx]
+            : ctx
+        for (let pi = 0; pi < phases.length; pi++) {
+          const phase = phases[pi]
+          const bucket = sideInvokes.get(phase)
+          if (!bucket) continue
+          const entries = bucket.get(timing)
+          if (entries !== undefined) {
+            const survivors = entries.filter(
+              e => !(e.source.type === 'unit' && idSet.has(e.source.unitId)),
+            )
+            if (survivors.length !== entries.length) {
+              if (survivors.length === 0) bucket.delete(timing)
+              else bucket.set(timing, survivors)
+            }
+          }
+          if (parent !== undefined) {
+            const parentEntries = bucket.get(parent)
+            if (parentEntries !== undefined) {
+              const survivors = parentEntries.filter(
+                e => !(e.source.type === 'unit' && idSet.has(e.source.unitId)),
+              )
+              if (survivors.length !== parentEntries.length) {
+                if (survivors.length === 0) bucket.delete(parent)
+                else bucket.set(parent, survivors)
+              }
+            }
+          }
+        }
+      }
     }
   }
 

@@ -12,13 +12,28 @@ export const viszElVir: Ability = {
   readOnly: true,
   invoke: [
     {
-      timing: 'BEFORE_DICE_ROLL',
+      timing: 'PREPARE',
       call: ctx => {
-        for (const id of ctx.api.own.getUnits('MECH', {
-          includeVariants: true,
-        })) {
-          ctx.api.own.addDiceCount(1, id)
-        }
+        const stats = ctx.api.own.getUnitStats('MECH')!
+
+        ctx.api.own.modifyUnitType('MECH', {
+          COMBAT: [
+            stats.COMBAT![0],
+            stats.COMBAT![1],
+            stats.COMBAT![2] ?? 0 + 1,
+          ],
+        })
+      },
+    },
+    {
+      timing: 'DESTROY',
+      isCallable: (_params, ctx, ids) => ids.includes(ctx.getUnit()),
+      call: ctx => {
+        const stats = ctx.api.own.getUnitStats('MECH')!
+
+        ctx.api.own.modifyUnitType('MECH', {
+          COMBAT: [stats.COMBAT![0], stats.COMBAT![1], stats.COMBAT![2]! - 1],
+        })
       },
     },
   ],

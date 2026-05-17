@@ -5,7 +5,7 @@ import {
   type RerollStrategy,
   rerollStrategyConfig,
   strategyToPredicate,
-} from '@/combat/reroll'
+} from '@/combat/dice-math/reroll-strategy'
 
 type Params = {
   ownStrategyKind: RerollStrategy['kind']
@@ -61,17 +61,19 @@ export const warFunding: Ability<Params> = {
           params.ownStrategyKind,
           params.ownStrategyThreshold,
         )
-        ctx.api.own.reroll({
-          target: 'MISSES',
-          rerollIf: strategyToPredicate(ownStrategy),
-        })
-        const strategy = buildRerollStrategy(
+        const opponentStrategy = buildRerollStrategy(
           params.opponentStrategyKind,
           params.opponentStrategyThreshold,
         )
-        ctx.api.opponent.reroll({
-          target: 'ALL',
-          rerollIf: strategyToPredicate(strategy),
+        ctx.declareReroll({
+          OWN: {
+            target: 'MISSES',
+            rerollIf: strategyToPredicate(ownStrategy),
+          },
+          OPPONENT: {
+            target: 'ALL',
+            rerollIf: strategyToPredicate(opponentStrategy),
+          },
         })
       },
     },

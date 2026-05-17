@@ -19,7 +19,7 @@ export const valkyrieExoskeleton: Ability = {
         return unitId === ctx.getUnit()
       },
       call: ctx => {
-        ctx.api.opponent.addHits(1, [])
+        ctx.api.opponent.addHits(1)
       },
     },
   ],

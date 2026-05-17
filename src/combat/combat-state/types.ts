@@ -4,7 +4,6 @@ import type {
   FactionKey,
   UnitAbility,
   UnitBaseType,
-  UnitId,
   UnitIdList,
   UnitState,
   UnitStats,
@@ -15,9 +14,8 @@ import type {
   AbilityPassFrame,
   AbilityTiming,
   RunAbilitiesOptions,
-  SidedDiceData,
 } from '../abilities-engine'
-import type { QueuedSpecForSide } from '../reroll/fold-rerolls'
+import type { ModifierDecl } from '../dice-math/types'
 // `PhaseStep` references `CombatState` in its method `fn` signature; the
 // import is type-only to avoid a runtime cycle.
 import type { CombatState, StateWithProbability } from './combat-state'
@@ -80,12 +78,29 @@ export const UNIT_ABILITY_PHASES: MetaPhase[] = [
  */
 export type PhaseMarker = 'START' | 'DICE_ROLL' | 'ASSIGN_HITS' | 'END'
 
-/** A pool of unassigned hits with valid targets.
- *  hits[0] = base (from dice rolls), hits[1] = bonus (from abilities).
- *  Abilities that double hits (e.g. X-89) only double base hits. */
+/** An ability-owned restricted sub-pool within the main HitPool. Each
+ *  entry has its own `unitPriority` list (drain order) and is keyed by
+ *  the producing ability so it can be modified later (e.g. [0.0.1] lifts
+ *  its restriction by merging the entry into the main pool when the
+ *  flagship is destroyed). */
+export interface CustomHitPool {
+  key: string
+  base: number
+  unitPriority: UnitType[]
+}
+
+/** A pool of unassigned hits.
+ *  `base` = from dice rolls; `additional` = from abilities.
+ *  X-89-style hit doubling only doubles `base`.
+ *  The main pool (`base` + `additional`) is always unrestricted — it
+ *  drains by tail-slice on the side's pre-sorted `participatingUnits`.
+ *  All target-restricted hits live in `custom` entries, each carrying
+ *  its own `unitPriority`. Custom entries drain after the main pool,
+ *  in declaration order. */
 export interface HitPool {
-  hits: [number, number]
-  validTargets?: UnitType[]
+  base: number
+  additional: number
+  custom: CustomHitPool[]
 }
 
 /** A single restriction entry explaining why an ability is restricted */
@@ -111,16 +126,6 @@ export type ResolvedRestrictionsLayer = Map<UnitAbility, Set<UnitType> | 'ALL'>
 export interface ResolvedRestrictions {
   cannotBeUsed: ResolvedRestrictionsLayer
   lost: ResolvedRestrictionsLayer
-}
-
-/** A stored hit-value modifier applied after BEFORE_DICE_ROLL abilities.
- *  Scoped to a dice-roll group via `DiceRollContext.hitValueModifiers`, so
- *  it's naturally discarded once the group processes. */
-export interface HitValueModifier {
-  amount: number
-  unitType?: string
-  excludeUnitTypes?: string[]
-  unitId?: UnitId
 }
 
 /** A stats entry: either concrete stats or a factory that derives from parent type stats */
@@ -153,7 +158,11 @@ export interface SideStateData {
   unitState: Record<string, UnitState>
   /** Variant key → shared stats template (may be a factory for subtypes) */
   unitStats: Record<UnitType, UnitStatsEntry>
-  hitPools: HitPool[]
+  /** The side's pending hit pool, or undefined when no hits are queued.
+   *  At most one pool is alive at a time; abilities that produce
+   *  type-restricted hits via `addHits(n, types)` must do so when the
+   *  pool is undefined (the API throws otherwise). */
+  hitPool?: HitPool
   unitAbilityRestrictions?: UnitAbilityRestrictions
   /** Initial ability config for this side, set once at combat start.
    *  Immutable during the run — runtime mutations (isEnabled, uses,
@@ -173,10 +182,10 @@ export interface SideStateData {
    *  Flushed at BEFORE_ASSIGN_HITS and on hash reads, scoped to only
    *  the affected variant pools. Replaces the previous `_needsResort` flag. */
   _needsCanonicalize?: Set<UnitType>
-  /** CoW marker — when true, `hitPools` reference is potentially shared
+  /** CoW marker — when true, `hitPool` reference is potentially shared
    *  with another SideStateData; mutations must clone first via
-   *  `ensureHitPoolsOwned`. */
-  _hitPoolsShared?: boolean
+   *  `ensureHitPoolOwned`. */
+  _hitPoolShared?: boolean
   /** Derived O(1) lookup cache for `unitAbilityRestrictions`, rebuilt
    *  lazily on first read after any mutation that could affect
    *  restriction outcomes (entries added/removed, unit composition
@@ -239,28 +248,30 @@ export type PendingStep = PhaseStep | PhaseStepGroup
 
 /** Group context for a dice-roll group (combat or unit-ability).
  *  Seeded by the group builder with invariant params; `_collectDice`
- *  populates `dicePool` / `validTargets`; BEFORE timing abilities read
- *  the pool via `ctx.api.own.getDicePool()` and mutate it in place;
- *  `_rollDice` reads it back. */
+ *  populates `diceCollection` / `unitIndex` / `validTargets`; BEFORE
+ *  timing abilities read/mutate the collection via the SideApi (no direct
+ *  pool access); `_rollDice` hands the collection to the math kernel. */
 export interface DiceRollContext {
   hitSource: HitSource
   firing: CombatSide[]
   routing?: { attacker: CombatSide; defender: CombatSide }
-  customDice?: SidedDiceData
+  customDice?: {
+    attacker: import('../dice-math/types').SideDiceCollection
+    defender: import('../dice-math/types').SideDiceCollection
+  }
   allowedUnitTypes?: ReadonlySet<UnitBaseType>
   isUnitAbility: boolean
-  dicePool?: SidedDiceData
-  validTargets?: { attacker: UnitType[]; defender: UnitType[] }
-  /** Hit-value modifiers queued for this dice roll, per side. Written by
-   *  `applyBonusToResult` during START_OF_COMBAT / BEFORE_(UNIT_ABILITY_)?DICE_ROLL
-   *  timings and consumed by `_rollDice`. Dropped when the group drains. */
-  hitValueModifiers?: {
-    attacker?: HitValueModifier[]
-    defender?: HitValueModifier[]
+  /** Per-side dice collection in the kernel-native format. Populated by
+   *  `_collectDice`; mutated in place by BEFORE-timing API calls. */
+  diceCollection?: {
+    attacker: import('../dice-math/types').SideDiceCollection
+    defender: import('../dice-math/types').SideDiceCollection
   }
-  /** Reroll specs queued by REROLL_DICE_ROLL ability invokes. Consumed by
-   *  `_rollDice` to drive the fold-rerolls path. */
-  rerollSpecQueue?: QueuedSpecForSide[]
+  validTargets?: { attacker: UnitType[]; defender: UnitType[] }
+  /** Declarations queued by dice-related ability APIs (applyBonusToResult,
+   *  addDiceCount, declareReroll, etc.). Consumed by `_rollDice` in push
+   *  order. Dropped when the group drains. */
+  modifiers?: ModifierDecl[]
 }
 
 /** Type guard used by `SideApi.getDicePool` to recognize a dice-roll

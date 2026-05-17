@@ -42,7 +42,6 @@ const EMPTY_SIDE_FOR_STATIC: SideStateData = {
   unitType: {},
   unitState: {},
   unitStats: {} as never,
-  hitPools: [],
   abilities: {},
   liveAbilities: {},
 }

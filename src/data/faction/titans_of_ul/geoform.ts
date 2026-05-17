@@ -1,5 +1,3 @@
-import type { UnitId } from '@/types'
-
 import type { Ability } from '../../../combat/abilities-engine/types'
 
 export const geoform: Ability = {
@@ -18,7 +16,7 @@ export const geoform: Ability = {
       context: ['SPACE_CANNON_OFFENSE', 'SPACE_CANNON_DEFENSE'],
       external: true,
       call: ctx => {
-        ctx.api.own.addDiceGroup('GEOFORM', '' as UnitId, [5, 3])
+        ctx.api.own.addDiceGroup([5, 3])
       },
     },
   ],

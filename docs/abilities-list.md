@@ -15,7 +15,7 @@
 
 - [x] **Raid Formation** (Faction Ability) — When 1 or more of your units use Anti-Fighter Barrage, for each hit produced in excess of your opponent's fighters, choose 1 of your opponent's ships that has Sustain Damage to become damaged.
 - [x] **Strike Wing Ambuscade** (Promissory Note) — When 1 or more of your units make a roll for a unit ability: Choose 1 of those units to roll 1 additional die. Then, return this card to the Argent player.
-- [ ] **Strike Wing Alpha II** (Faction Technology) — When this unit uses Anti-Fighter Barrage, each result of 9 or 10 also destroys 1 of your opponent's infantry in the space area of the active system.
+- [x] **Strike Wing Alpha II** (Faction Technology) — When this unit uses Anti-Fighter Barrage, each result of 9 or 10 also destroys 1 of your opponent's infantry in the space area of the active system.
 - [x] **Quetzecoatl** (Flagship) — Other players cannot use Space Cannon against your ships in this system.
 - [x] **Trrakan Aun Zulok** (Commander) — When 1 or more of your units make a roll for a unit ability: You may choose 1 of those units to roll 1 additional die.
 
@@ -48,7 +48,7 @@
 
 ### Emirates of Hacan
 
-- [ ] **Wrath of Kenara** (Flagship) — After you roll a die during a space combat in this system, you may spend 1 trade good to apply +1 to the result.
+- [x] **Wrath of Kenara** (Flagship) — After you roll a die during a space combat in this system, you may spend 1 trade good to apply +1 to the result.
 
 ### Empyrean
 
@@ -88,7 +88,7 @@
 ### L1Z1X Mindnet
 
 - [x] **Harrow** (Faction Ability) — At the end of each round of ground combat, your ships in the active system may use their Bombardment abilities against your opponent's ground forces on the planet.
-- [ ] **[0.0.1]** (Flagship) — During a space combat, hits produced by this ship and by your dreadnoughts in this system must be assigned to non-fighter ships if able.
+- [x] **[0.0.1]** (Flagship) — During a space combat, hits produced by this ship and by your dreadnoughts in this system must be assigned to non-fighter ships if able.
 - [x] **2RAM** (Commander) — Units that have Planetary Shield do not prevent you from using Bombardment.
 - [x] **Annihilator** (Mech) — Bombardment 8. While not participating in ground combat, this unit can use its Bombardment ability on planets in its system as if it were a ship.
 
@@ -125,7 +125,7 @@
 ### Nomad
 
 - [x] **The Cavalry** (Promissory Note) — At the start of a space combat against a player other than the Nomad: During this combat, treat 1 of your non-fighter ships as if it has the Sustain Damage ability, combat value, and Anti-Fighter Barrage value of the Nomad's flagship. Return this card to the Nomad player at the end of this combat.
-- [ ] **The Thundarian** (Agent) — After the "Roll Dice" step of combat: You may exhaust this card. If you do, hits are not assigned to either player's units. Return to the start of this combat round's "Roll Dice" step.
+- [x] **The Thundarian** (Agent) — After the "Roll Dice" step of combat: You may exhaust this card. If you do, hits are not assigned to either player's units. Return to the start of this combat round's "Roll Dice" step.
 - [x] **Temporal Command Suite** (Faction Technology) — After any player's agent becomes exhausted, you may exhaust this card to ready that agent; if you ready another player's agent, you may perform a transaction with that player.
 - [x] **Quantum Manipulator** (Mech) — While this unit is in a space area during combat, you may use its Sustain Damage ability to cancel a hit that is produced against your ships in this system.
 
@@ -156,7 +156,7 @@
 ### Universities of Jol-Nar
 
 - [x] **Fragile** (Faction Ability) — Apply -1 to the result of each of your unit's combat rolls.
-- [ ] **J.N.S. Hylarim** (Flagship) — When making a combat roll for this ship, each result of 9 or 10, before applying modifiers, produces 2 additional hits.
+- [x] **J.N.S. Hylarim** (Flagship) — When making a combat roll for this ship, each result of 9 or 10, before applying modifiers, produces 2 additional hits.
 - [x] **Agnlan Oln** (Commander) — After you roll dice for a unit ability: You may reroll any of those dice.
 - [x] **Shield Paling** (Mech) — Your infantry on this planet are not affected by your Fragile faction ability.
 
@@ -226,8 +226,8 @@
 
 ## Relic
 
-- [ ] **The Crown of Thalnos** - During each combat round, this card's owner may reroll any number of their dice, applying +1 to the results; any units that reroll dice but do not produce at least 1 hit are destroyed.
-- [ ] **Heart of Ixth** - After any die is rolled, you may exhaust this card to add or subtract 1 from its result.
+- [x] **The Crown of Thalnos** - During each combat round, this card's owner may reroll any number of their dice, applying +1 to the results; any units that reroll dice but do not produce at least 1 hit are destroyed.
+- [x] **Heart of Ixth** - After any die is rolled, you may exhaust this card to add or subtract 1 from its result.
 - [x] **Metali Void Armaments** - During the "Anti-Fighter Barrage" step of space combat, you may resolve Anti-Fighter Barrage 6 (x3) against your opponent's units.
 - [x] **Lightrail Ordnance** - Your space docks gain Space Cannon 5 (x2). You may use your space dock's Space Cannon against ships that are adjacent to their systems.
 - [x] **Metali Void Shielding** - Each time hits are produced against 1 or more of your non-fighter ships, 1 of those ships may use Sustain Damage as if it had that ability.

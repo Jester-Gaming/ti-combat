@@ -114,7 +114,6 @@ export function runScenario(config: ScenarioConfig): FormattedOutcome[] {
   const engine = new CombatEngine()
   return engine
     .simulate(state)
-    .sort((a, b) => a.probability - b.probability)
     .map(o => ({
       attacker: formatSide(o.attacker),
       defender: formatSide(o.defender),
@@ -122,4 +121,10 @@ export function runScenario(config: ScenarioConfig): FormattedOutcome[] {
       probability:
         Math.round(o.probability * PROBABILITY_FACTOR) / PROBABILITY_FACTOR,
     }))
+    .sort((a, b) => {
+      if (a.probability !== b.probability) return a.probability - b.probability
+      if (a.attacker !== b.attacker) return a.attacker < b.attacker ? -1 : 1
+      if (a.defender !== b.defender) return a.defender < b.defender ? -1 : 1
+      return a.winner < b.winner ? -1 : a.winner > b.winner ? 1 : 0
+    })
 }

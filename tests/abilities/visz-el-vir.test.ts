@@ -40,7 +40,7 @@ describe.forEachSide('VISZ_EL_VIR', () => {
     expect(mechDice).toHaveLength(3)
     for (const group of mechDice) {
       expect(group[0]).toBe(8)
-      expect(group[1] + group[2]).toBe(3)
+      expect(group[1]).toBe(3)
     }
   })
 

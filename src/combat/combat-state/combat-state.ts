@@ -13,30 +13,32 @@ import {
   type AbilityBranch,
   AbilityBranchInterrupt,
   type AbilityCandidate,
-  cloneInvokes,
+  cloneSideInvokes,
   cloneTracker,
   type DicePool,
   type InvokeCollections,
   type RegisteredAbility,
   type RunAbilitiesOptions,
-  type SidedDiceData,
 } from '../abilities-engine'
+import { AbilityContext } from '../abilities-engine/api/ability-api'
 import {
   CombatSideState,
   getOpponentSide,
 } from '../combat-side-state/combat-side-state'
+import type {
+  DiceMathBranch,
+  PendingEffect,
+} from '../dice-math/branch-accumulator'
+import { runDiceMath } from '../dice-math/run-dice-math'
+import type { RollTriggerDecl, SideDiceCollection } from '../dice-math/types'
 import { type LogEntry, Logger } from '../logger'
-import { decodeKey } from '../reroll/distribution'
-import { foldRerolls, type QueuedSpecForSide } from '../reroll/fold-rerolls'
 import { canonicalizeUnitState } from '../utils/canonicalize-unit-state'
 import { sortUnitsByPriority } from '../utils/sort-units-by-priority'
-import { parseVariantId } from '../utils/unit-variant'
 import type {
   CombatMode,
   CombatStateData,
   DiceRollContext,
   HitSource,
-  HitValueModifier,
   MetaPhase,
   PendingStep,
   PhaseStep,
@@ -45,11 +47,6 @@ import type {
   UnitAbilityMeta,
 } from './types'
 import { isDiceRollContext } from './types'
-import {
-  buildRollGroups,
-  clampDistribution,
-  getCombinedDiceDistribution,
-} from './utils'
 
 /** A state with its probability */
 export interface StateWithProbability {
@@ -142,88 +139,8 @@ interface UnitAbilityPhaseConfig {
   allowedUnitTypes?: ReadonlySet<UnitBaseType>
 }
 
-/** True when neither side has any dice entries — a unit-ability phase with
- *  no firing units and no ability-injected dice should skip its ASSIGN_HITS
- *  tail entirely, since there can be no hits to resolve. */
-function isDicePoolEmpty(dice: SidedDiceData): boolean {
-  return isSidePoolEmpty(dice.attacker) && isSidePoolEmpty(dice.defender)
-}
-
-function isSidePoolEmpty(pool: DicePool): boolean {
-  for (const entries of Object.values(pool)) {
-    if (entries && entries.length > 0) return false
-  }
-  return true
-}
-
-/** Apply a fold-rerolls usesDelta to live ability config. For each ability
- *  key in `delta`, look up which side owns the ability (where the live `uses`
- *  count is stored), read the current value (live overlay → base → default),
- *  and rewrite the live entry with the decremented value. Branches that share
- *  `liveAbilities` references with a sibling get a fresh entry per write so
- *  the mutation doesn't leak. */
-function applyUsesDelta(
-  data: CombatStateData,
-  delta: Record<string, -1>,
-  ownerByKey: Map<string, CombatSide>,
-  defaultUsesByKey: Map<string, number>,
-): void {
-  for (const [key, d] of Object.entries(delta)) {
-    const ownerSide = ownerByKey.get(key)
-    if (ownerSide === undefined) continue
-    const sideData = data[ownerSide]
-    const baseUses = (sideData.abilities[key] as { uses?: number } | undefined)
-      ?.uses
-    sideData.liveAbilities = { ...sideData.liveAbilities }
-    const liveEntry =
-      (sideData.liveAbilities[key] as Record<string, unknown> | undefined) ?? {}
-    const currentUses =
-      typeof liveEntry.uses === 'number'
-        ? liveEntry.uses
-        : typeof baseUses === 'number'
-          ? baseUses
-          : (defaultUsesByKey.get(key) ?? 0)
-    sideData.liveAbilities[key] = { ...liveEntry, uses: currentUses + d }
-  }
-}
-
-/** Flatten a DicePool into DiceGroup[] for probability calculation */
-function flattenDicePool(pool: DicePool): DiceGroup[] {
-  const result: DiceGroup[] = []
-
-  for (const units of Object.values(pool)) {
-    if (!units || units.length === 0) continue
-
-    // Group by hitValue for efficiency
-    const grouped = new Map<number, number>()
-    for (const [hitValue, baseDice, bonusDice] of units) {
-      grouped.set(hitValue, (grouped.get(hitValue) ?? 0) + baseDice + bonusDice)
-    }
-
-    for (const [hitValue, totalDice] of grouped) {
-      result.push([hitValue, totalDice])
-    }
-  }
-
-  return result
-}
-
-function isFighterOnlyTargets(targets: UnitType[]): boolean {
-  return targets.length === 1 && targets[0] === 'FIGHTER'
-}
-
-function countParticipatingFighters(side: SideStateData): number {
-  let n = 0
-  for (const id of side.participatingUnits) {
-    if (parseVariantId(side.unitType[id]).type === 'FIGHTER') n++
-  }
-  return n
-}
-
-/** AFB-context AFTER_UNIT_ABILITY_ROLL abilities (e.g. RAID_FORMATION) only
- *  affect their owner's own dice output, so the gate is per-side: skip
- *  clamping the firing side's distribution when that side has any such
- *  invoke registered. */
+/** AFB-context AFTER_UNIT_ABILITY_ROLL abilities (e.g. RAID_FORMATION) need
+ *  to read excess-hit counts; clamping would hide them. Gate per-side. */
 function hasAfbAfterRollInvokes(
   invokes: InvokeCollections,
   side: CombatSide,
@@ -237,7 +154,15 @@ export class CombatState {
   _logger?: Logger
   private _params!: AbilitiesEngine
   public _invokes!: InvokeCollections
-  public _invokesOwned = true
+  /** Per-side ownership flag for CoW of `_invokes`. Mutating one side
+   *  (e.g. via `removeUnitInvokes`) only triggers a clone of THAT side's
+   *  `SideInvokes`, leaving the opposite side's reference shared with the
+   *  parent state. Avoids 7-bucket `cloneSideInvokes` allocations on the
+   *  uninvolved side during DESTROY cleanup. */
+  public _invokesOwned: { attacker: boolean; defender: boolean } = {
+    attacker: true,
+    defender: true,
+  }
   public _allInvokes!: Record<CombatSide, AbilityCandidate[]>
   public _allInvokesOwned = true
   /** LIFO stack of steps for the current meta's phase script. `advance()`
@@ -272,10 +197,18 @@ export class CombatState {
     return this._logger?.entries as LogEntry[] | undefined
   }
 
-  ensureOwnInvokes(): void {
-    if (!this._invokesOwned) {
-      this._invokes = cloneInvokes(this._invokes)
-      this._invokesOwned = true
+  ensureOwnInvokes(side?: CombatSide): void {
+    if (side === undefined) {
+      this.ensureOwnInvokes('attacker')
+      this.ensureOwnInvokes('defender')
+      return
+    }
+    if (!this._invokesOwned[side]) {
+      this._invokes = {
+        ...this._invokes,
+        [side]: cloneSideInvokes(this._invokes[side]),
+      }
+      this._invokesOwned[side] = true
     }
   }
 
@@ -356,8 +289,8 @@ export class CombatState {
     instance._params = params
     const source = params.combatState
     instance._invokes = source._invokes
-    instance._invokesOwned = false
-    source._invokesOwned = false
+    instance._invokesOwned = { attacker: false, defender: false }
+    source._invokesOwned = { attacker: false, defender: false }
     instance._allInvokes = source._allInvokes
     instance._allInvokesOwned = false
     source._allInvokesOwned = false
@@ -551,7 +484,12 @@ export class CombatState {
       case 'SPACE_CANNON_DEFENSE': {
         const abilityConfig = this._getUnitAbilityConfig(meta)
         return [
-          buildUnitAbilityDiceRollGroup(phase, abilityConfig),
+          buildUnitAbilityDiceRollGroup({
+            phase,
+            firing: abilityConfig.firing,
+            hitSource: abilityConfig.hitSource,
+            allowedUnitTypes: abilityConfig.allowedUnitTypes,
+          }),
           ...this.getAssignHitsScript(phase),
           { kind: 'timing', timing: 'AFTER_ASSIGN_HITS_STEP', phase },
           {
@@ -574,7 +512,7 @@ export class CombatState {
             ? this.getPhaseScript('AFB', round, phase)
             : []),
           { kind: 'timing', timing: 'ANNOUNCE_RETREAT_STEP', phase },
-          buildCombatDiceRollGroup(phase),
+          buildCombatDiceRollGroup({ phase }),
           ...this.getAssignHitsScript(phase),
           { kind: 'timing', timing: 'AFTER_ASSIGN_HITS_STEP', phase },
           {
@@ -736,7 +674,7 @@ export class CombatState {
     ])
   }
 
-  private pushScript(entity: PendingStep[]) {
+  public pushScript(entity: PendingStep[]) {
     this.pendingSteps.push(...entity.reverse())
   }
   /** Apply pending hit pools deterministically. When destroyed units need
@@ -755,26 +693,13 @@ export class CombatState {
 
     const meta = innerMeta(phase)
     const data = this.data
-    const mode = data.combatMode
-    const attackerPriority = CombatSideState.getPhasePriorityList(
-      data.attacker,
-      mode,
-      meta,
-    )
-    const defenderPriority = CombatSideState.getPhasePriorityList(
-      data.defender,
-      mode,
-      meta,
-    )
     const attackerDestroyed = CombatSideState.assignHits(
       data.attacker,
       trackDestroyed,
-      attackerPriority,
     )
     const defenderDestroyed = CombatSideState.assignHits(
       data.defender,
       trackDestroyed,
-      defenderPriority,
     )
 
     if (!trackDestroyed) return
@@ -795,262 +720,363 @@ export class CombatState {
     }
   }
 
-  /** Populate a dice-roll group's context. For unit-ability phases:
-   *  check block state and short-circuit when every firing side is
-   *  blocked (drop this meta's script); if some sides are blocked,
-   *  extend the BEFORE timing step's `options.skipSides`. Then collect
-   *  each firing side's dice (or use `customDice` if provided) and
-   *  store `dicePool` / `validTargets` on the group context. */
-  _collectDice(phase: MetaPhase[]): void {
+  /** Build the dice collection, hand it (along with all queued modifier
+   *  declarations) to the math kernel, then dispatch the returned branches
+   *  as `StateWithProbability[]`. This single method subsumes what used to
+   *  be `_collectDice` + `_rollDice` — the old split existed because
+   *  BEFORE_DICE_ROLL needed to mutate the collection; now BEFORE_DICE_ROLL
+   *  only queues declarations, so collection-building can wait until roll
+   *  time. Engine concerns here: read context, build the collection,
+   *  compute targets / use snapshots, log `DICE_POOL`, fork branches.
+   *  Effect callbacks (roll triggers, reroll effects) are dispatched per
+   *  branch via a freshly-bound `AbilityContext`. */
+  _rollDice(phase: MetaPhase[]): StateWithProbability[] | void {
     const ctx = this.currentGroupData
     if (!isDiceRollContext(ctx)) {
-      throw new Error('_collectDice called outside a dice-roll group')
+      throw new Error('_rollDice called outside a dice-roll group')
     }
 
     const data = this.data
 
+    // Unit-ability hard-block: if every firing side is blocked from
+    // running this hit-source's unit ability, drop the meta's script.
+    // For partial blocks (some sides blocked, some not), modifiers
+    // declared on a blocked side are dropped further below so config-
+    // level decls (e.g. addDiceGroup at BEFORE_UNIT_ABILITY_ROLL) don't
+    // sneak past the disable. Unit-attached abilities self-filter via
+    // `isCallable` because their unit ability is restricted.
+    const blockedSides: CombatSide[] = []
     if (ctx.isUnitAbility) {
-      const blocked = ctx.firing.filter(side =>
-        CombatSideState.isAbilityBlocked(
-          data,
-          side,
-          ctx.hitSource as UnitAbility,
-        ),
-      )
-      if (blocked.length === ctx.firing.length) {
+      for (const side of ctx.firing) {
+        if (
+          CombatSideState.isAbilityBlocked(
+            data,
+            side,
+            ctx.hitSource as UnitAbility,
+          )
+        ) {
+          blockedSides.push(side)
+        }
+      }
+      if (blockedSides.length === ctx.firing.length) {
         this._discardCurrentMetaScript(phase)
         return
       }
-      if (blocked.length > 0) {
-        // Extend BEFORE timing's skipSides. Precedent: runUnitAbilityStepForAbility
-        // used to mutate the DICE_ROLL step's payload.
-        const top = this.pendingSteps.at(-1)!
-        if (top.kind === 'group') {
-          const beforeStep = top.steps.at(-1)
-          if (beforeStep?.kind === 'timing') {
-            beforeStep.options = {
-              ...beforeStep.options,
-              skipSides: blocked,
-            }
-          }
-        }
-      }
     }
 
-    const attackerDice: DicePool = ctx.firing.includes('attacker')
-      ? (ctx.customDice?.attacker ??
-        CombatSideState.collectDice(
-          data,
-          'attacker',
-          ctx.hitSource,
-          ctx.allowedUnitTypes,
-        ))
-      : {}
-    const defenderDice: DicePool = ctx.firing.includes('defender')
-      ? (ctx.customDice?.defender ??
-        CombatSideState.collectDice(
-          data,
-          'defender',
-          ctx.hitSource,
-          ctx.allowedUnitTypes,
-        ))
-      : {}
-
-    ctx.dicePool = { attacker: attackerDice, defender: defenderDice }
-    // validTargets deferred to _rollDice so BEFORE_UNIT_ABILITY_ROLL abilities
-    // (e.g. WAYLAY expanding targets, EIDOLON_MAXIMUM removing MECH) can
-    // affect SETTINGS before targets are computed.
-  }
-
-  /** Read the populated dice pool, apply stored hit-value modifiers,
-   *  log DICE_POOL, and branch by outcome. Each resulting branch
-   *  inherits the group (with AFTER timing still inside), so
-   *  AFTER_(UNIT_ABILITY_)?DICE_ROLL runs per-branch as the next
-   *  script step. */
-  _rollDice(phase: MetaPhase[]): StateWithProbability[] | void {
-    const ctx = this.currentGroupData
-    if (!isDiceRollContext(ctx) || !ctx.dicePool) {
-      throw new Error('_rollDice called without a populated dice-roll context')
+    // Build the per-side collection (custom dice take precedence). Stored
+    // on ctx for the DICE_POOL log shape; mutated in place by the kernel.
+    const diceCollection = {
+      attacker: collectSideDice(
+        data,
+        'attacker',
+        ctx,
+        ctx.customDice?.attacker,
+      ),
+      defender: collectSideDice(
+        data,
+        'defender',
+        ctx,
+        ctx.customDice?.defender,
+      ),
     }
+    // Clear blocked sides' collections so config-level addDiceGroup
+    // modifiers (filtered out below) can't slip in via the natural side.
+    for (const side of blockedSides) diceCollection[side] = {}
+    ctx.diceCollection = diceCollection
 
-    const modifiedDice = ctx.dicePool
     const meta = innerMeta(phase)
 
-    // Compute validTargets here (after BEFORE_UNIT_ABILITY_ROLL) so that
-    // abilities which modify SETTINGS (e.g. WAYLAY, EIDOLON_MAXIMUM) are
-    // reflected in target resolution before we branch by outcome.
-    // Only unit-ability rolls need target restrictions; regular combat rolls
-    // (SPACE_COMBAT / GROUND_COMBAT) leave validTargets empty so hit
-    // assignment uses the fast tail-slice path.
+    // validTargets uses SETTINGS, which BEFORE_UNIT_ABILITY_ROLL abilities
+    // (e.g. WAYLAY, EIDOLON_MAXIMUM) may have just modified — compute here,
+    // after they ran. Regular combat rolls leave it empty so hit assignment
+    // uses the fast tail-slice path.
     const validTargets = ctx.isUnitAbility
       ? {
           attacker: CombatSideState.getValidTargetsForPhase(
-            this.data.attacker,
+            data.attacker,
             meta,
           ),
           defender: CombatSideState.getValidTargetsForPhase(
-            this.data.defender,
+            data.defender,
             meta,
           ),
         }
       : { attacker: [], defender: [] }
 
-    const attackerModifiers = ctx.hitValueModifiers?.attacker
-    if (attackerModifiers?.length) {
-      applyStoredHitValueModifiers(modifiedDice.attacker, attackerModifiers)
-    }
-    const defenderModifiers = ctx.hitValueModifiers?.defender
-    if (defenderModifiers?.length) {
-      applyStoredHitValueModifiers(modifiedDice.defender, defenderModifiers)
+    let modifiers: readonly import('../dice-math/types').ModifierDecl[] =
+      ctx.modifiers ?? []
+    // Drop modifiers attached to blocked sides — equivalent to the old
+    // skipSides on BEFORE_UNIT_ABILITY_ROLL: config-level decls whose
+    // owning side has the hit-source unit ability blocked are silently
+    // discarded so they don't synthesize dice for a disabled phase.
+    if (blockedSides.length > 0) {
+      modifiers = modifiers.filter(m => !blockedSides.includes(m.side))
     }
 
-    if (ctx.isUnitAbility) {
-      // Abilities may have injected dice for non-firing sides during
-      // BEFORE_UNIT_ABILITY_ROLL; drop them so only firing sides roll.
-      if (!ctx.firing.includes('attacker')) modifiedDice.attacker = {}
-      if (!ctx.firing.includes('defender')) modifiedDice.defender = {}
-
-      if (isDicePoolEmpty(modifiedDice)) {
-        // Nothing to roll — skip the rest of this meta's script so
-        // ASSIGN_HITS doesn't run for non-existent hits.
-        this._discardCurrentMetaScript(phase)
-        return
+    // owner side determines where each ability's `uses` count lives.
+    const abilityOwnerByKey = new Map<string, CombatSide>()
+    for (const d of modifiers) {
+      if (!abilityOwnerByKey.has(d.abilityKey)) {
+        abilityOwnerByKey.set(d.abilityKey, d.side)
       }
     }
 
-    this._logger?.child(meta).child('DICE_POOL').log({
-      attacker: modifiedDice.attacker,
-      defender: modifiedDice.defender,
+    const abilityUses = new Map<string, number>()
+    for (const [key, ownerSide] of abilityOwnerByKey) {
+      abilityUses.set(key, this._resolveAbilityUses(ownerSide, key))
+    }
+
+    const skipAfbClampForTarget =
+      meta === 'AFB'
+        ? {
+            attacker: hasAfbAfterRollInvokes(this._invokes, 'attacker'),
+            defender: hasAfbAfterRollInvokes(this._invokes, 'defender'),
+          }
+        : undefined
+
+    const priorityList = {
+      attacker: CombatSideState.getPhasePriorityList(
+        data.attacker,
+        data.combatMode,
+        meta,
+      ),
+      defender: CombatSideState.getPhasePriorityList(
+        data.defender,
+        data.combatMode,
+        meta,
+      ),
+    }
+
+    const { branches, isEmpty } = runDiceMath({
+      diceCollection,
+      modifiers,
       hitSource: ctx.hitSource,
+      firing: ctx.firing,
+      isUnitAbility: ctx.isUnitAbility,
+      routing: ctx.routing,
+      validTargets,
+      priorityList,
+      sideData: { attacker: data.attacker, defender: data.defender },
+      abilityUses,
+      meta,
+      skipAfbClampForTarget,
     })
 
-    const queue = (ctx.rerollSpecQueue ?? []) as QueuedSpecForSide[]
-    ctx.rerollSpecQueue = undefined
-
-    if (queue.length > 0) {
-      return this.rollDiceOutcomesWithFold(
-        modifiedDice,
-        queue,
-        phase,
-        validTargets,
-        ctx.routing,
-      )
+    if (isEmpty) {
+      // Nothing to roll — skip the rest of this meta's script so
+      // ASSIGN_HITS doesn't run for non-existent hits.
+      this._discardCurrentMetaScript(phase)
+      return
     }
 
-    return this.rollDiceOutcomes(modifiedDice, validTargets, phase, ctx.routing)
+    this._logger
+      ?.child(meta)
+      .child('DICE_POOL')
+      .log({
+        attacker: collectionToLogShape(diceCollection.attacker),
+        defender: collectionToLogShape(diceCollection.defender),
+        hitSource: ctx.hitSource,
+      })
+
+    return this._branchesFromMathKernel(
+      branches,
+      abilityOwnerByKey,
+      abilityUses,
+      phase,
+    )
   }
 
-  /** Fold-rerolls branching path. Used when REROLL_DICE_ROLL abilities have
-   *  queued one or more `RerollSpec`s onto the dice-roll group context.
-   *  Builds per-side `JointDist` cells via `foldRerolls`, then branches by
-   *  (usesDelta, attackerCell, defenderCell) — each branch clones state,
-   *  applies the usesDelta to `liveAbilities` on the ability-owner side, and
-   *  writes per-side totals into the opposite side's hit pools. */
-  private rollDiceOutcomesWithFold(
-    modifiedDice: SidedDiceData,
-    queue: QueuedSpecForSide[],
+  /** Resolve an ability's current `uses` value: live overlay → registered
+   *  defaults → Infinity. */
+  private _resolveAbilityUses(side: CombatSide, key: string): number {
+    const merged = CombatSideState.getLiveParams(this.data[side], key)
+    if (merged && typeof merged.uses === 'number') return merged.uses
+    const ability = this._params.getAbilities(side).find(a => a.key === key)
+    const defParams = ability?.params as { uses?: number } | undefined
+    return typeof defParams?.uses === 'number' ? defParams.uses : Infinity
+  }
+
+  /** Convert `DiceMathBranch[]` from the math kernel into engine-visible
+   *  `StateWithProbability[]`. Each branch:
+   *   1. Clones state (CoW) from the base.
+   *   2. Applies `usesDelta` to `liveAbilities` on owner sides.
+   *   3. Appends the math kernel's new pools to each side's `hitPools`
+   *      (CoW). At this point `hitPools` is otherwise empty — earlier
+   *      `addHits` calls in the round triggered `_assignHits` inline via
+   *      the `wasEmpty` path — so a Thundarian-style cancel simply
+   *      clears `hitPools` instead of tracking a base index.
+   *   4. Removes any `destroyedUnits` from the relevant side.
+   *   5. Forks the logger and emits per-branch `DICE_ROLL` / `DICE_HITS`.
+   *   6. Dispatches each `PendingEffect` via a freshly-bound `AbilityContext`. */
+  private _branchesFromMathKernel(
+    branches: DiceMathBranch[],
+    abilityOwnerByKey: Map<string, CombatSide>,
+    abilityUses: Map<string, number>,
     phase: MetaPhase[],
-    validTargets: { attacker: UnitType[]; defender: UnitType[] },
-    routing?: { attacker: CombatSide; defender: CombatSide },
   ): StateWithProbability[] {
     const metaPhase = innerMeta(phase)
-    const attLookups = {
-      variantKeyOf: (id: UnitId) => this.data.attacker.unitType[id] ?? '',
-    }
-    const defLookups = {
-      variantKeyOf: (id: UnitId) => this.data.defender.unitType[id] ?? '',
-    }
-    const attGroups = buildRollGroups(modifiedDice.attacker, attLookups)
-    const defGroups = buildRollGroups(modifiedDice.defender, defLookups)
+    const ctx = this.currentGroupData as DiceRollContext
+    const modifiers = ctx.modifiers ?? []
 
-    const ownerByKey = new Map<string, CombatSide>()
-    const defaultUsesByKey = new Map<string, number>()
-    for (const q of queue) {
-      ownerByKey.set(q.abilityKey, q.abilityOwnerSide)
-      const ability = this._params
-        .getAbilities(q.abilityOwnerSide)
-        .find(a => a.key === q.abilityKey)
-      const defaultUses = (ability?.params as { uses?: unknown } | undefined)
-        ?.uses
-      if (typeof defaultUses === 'number') {
-        defaultUsesByKey.set(q.abilityKey, defaultUses)
+    const naturalById = new Map<string, RollTriggerDecl>()
+    for (const d of modifiers) {
+      if (d.type === 'ROLL_TRIGGER') {
+        naturalById.set(`${d.side}:${d.slotId}`, d)
       }
     }
-
-    const branches = foldRerolls(attGroups, defGroups, queue)
 
     const baseInvokes = this._invokes
     const baseAllInvokes = this._allInvokes
     const baseData = this.data
     const basePendingSteps = this.pendingSteps
-
-    const attackerHitTarget = routing?.attacker ?? 'defender'
-    const defenderHitTarget = routing?.defender ?? 'attacker'
+    const baseLogger = this._logger
 
     const results: StateWithProbability[] = []
     for (const branch of branches) {
-      for (const [attKey, attProb] of branch.attackerDist.cells) {
-        const attTotal = decodeKey(attKey).reduce((a, b) => a + b, 0)
-        for (const [defKey, defProb] of branch.defenderDist.cells) {
-          const defTotal = decodeKey(defKey).reduce((a, b) => a + b, 0)
-          const probability = branch.probability * attProb * defProb
-          if (probability === 0) continue
+      if (branch.probability === 0) continue
 
-          this._invokes = baseInvokes
-          this._invokesOwned = false
-          this._allInvokes = baseAllInvokes
-          this._allInvokesOwned = false
+      // COW-arm invokes (same pattern as the legacy rollDiceOutcomes path).
+      this._invokes = baseInvokes
+      this._invokesOwned = { attacker: false, defender: false }
+      this._allInvokes = baseAllInvokes
+      this._allInvokesOwned = false
 
-          const branchData = cloneStateForBranch(baseData)
-          applyUsesDelta(
-            branchData,
-            branch.usesDelta,
-            ownerByKey,
-            defaultUsesByKey,
-          )
-          CombatSideState.addBaseHits(
-            branchData[attackerHitTarget],
-            attTotal,
-            validTargets[attackerHitTarget],
-          )
-          CombatSideState.addBaseHits(
-            branchData[defenderHitTarget],
-            defTotal,
-            validTargets[defenderHitTarget],
-          )
+      const branchData = cloneStateForBranch(baseData)
 
-          const branchLogger = this._logger?.fork()
-          branchLogger?.child(metaPhase).child('DICE_ROLL').log({
-            attacker: attTotal,
-            defender: defTotal,
-          })
-
-          let hitsToAttacker = 0
-          let hitsToDefender = 0
-          if (attackerHitTarget === 'attacker') hitsToAttacker += attTotal
-          else hitsToDefender += attTotal
-          if (defenderHitTarget === 'attacker') hitsToAttacker += defTotal
-          else hitsToDefender += defTotal
-          branchLogger?.child(metaPhase).child('DICE_HITS').log({
-            attacker: hitsToAttacker,
-            defender: hitsToDefender,
-          })
-
-          const branchState = CombatState.fromData(branchData, this._params)
-          branchState._logger = branchLogger
-          branchState.pendingSteps = clonePendingSteps(basePendingSteps)
-          results.push({ state: branchState, probability })
+      // Apply usesDelta — decrement each ability's `uses` on its owner side.
+      for (const [abilityKey, delta] of branch.usesDelta) {
+        if (delta === 0) continue
+        const ownerSide = abilityOwnerByKey.get(abilityKey)
+        if (ownerSide === undefined) continue
+        const sideData = branchData[ownerSide]
+        sideData.liveAbilities = { ...sideData.liveAbilities }
+        const liveEntry =
+          (sideData.liveAbilities[abilityKey] as
+            | Record<string, unknown>
+            | undefined) ?? {}
+        // The current uses for the decrement may come from live → base →
+        // registered Ability defaults. The same snapshot we built for
+        // the kernel input is the authoritative pre-roll value.
+        const snapshotUses = abilityUses.get(abilityKey)
+        const currentUses =
+          typeof liveEntry.uses === 'number'
+            ? liveEntry.uses
+            : snapshotUses !== undefined && Number.isFinite(snapshotUses)
+              ? snapshotUses
+              : 0
+        sideData.liveAbilities[abilityKey] = {
+          ...liveEntry,
+          uses: currentUses - delta,
         }
       }
+
+      // Merge the math kernel's pending pool into the side's existing
+      // hitPool. CoW before mutating — sibling branches share the same
+      // hitPool object reference until the first mutation on each branch.
+      // Thundarian-style cancels clear `hitPool` entirely.
+      for (const side of ['attacker', 'defender'] as const) {
+        const pending = branch.pendingHitPool[side]
+        if (pending.base === 0 && pending.custom.length === 0) continue
+        const sideData = branchData[side]
+        if (sideData.hitPool === undefined) {
+          sideData.hitPool = {
+            base: pending.base,
+            additional: 0,
+            custom: pending.custom.map(c => ({ ...c })),
+          }
+          sideData._hitPoolShared = false
+        } else {
+          if (sideData._hitPoolShared) {
+            sideData.hitPool = {
+              ...sideData.hitPool,
+              custom: sideData.hitPool.custom.slice(),
+            }
+            sideData._hitPoolShared = false
+          }
+          const own = sideData.hitPool
+          own.base += pending.base
+          for (const c of pending.custom) own.custom.push({ ...c })
+        }
+      }
+
+      // Remove any destroyed units (kernel currently never produces these;
+      // future-proofed for effect-driven destruction).
+      if (branch.destroyedUnits.size > 0) {
+        const ids = [...branch.destroyedUnits]
+        for (const side of ['attacker', 'defender'] as const) {
+          CombatSideState.removeUnits(branchData[side], ids)
+        }
+      }
+
+      const branchLogger = baseLogger?.fork()
+      branchLogger?.child(metaPhase).child('DICE_ROLL').log({
+        attacker: branch.pendingHitPool.attacker,
+        defender: branch.pendingHitPool.defender,
+      })
+
+      let hitsToAttacker = branch.pendingHitPool.attacker.base
+      for (const c of branch.pendingHitPool.attacker.custom)
+        hitsToAttacker += c.base
+      let hitsToDefender = branch.pendingHitPool.defender.base
+      for (const c of branch.pendingHitPool.defender.custom)
+        hitsToDefender += c.base
+      branchLogger?.child(metaPhase).child('DICE_HITS').log({
+        attacker: hitsToAttacker,
+        defender: hitsToDefender,
+      })
+
+      // Dispatch pending effects. Each effect needs an AbilityContext bound
+      // to the branch state and ability identity. We temporarily point
+      // this._params.combatState (=== `this`) at branch data so the ctx
+      // reads branch state; restored after each effect.
+      if (branch.pendingEffects.length > 0) {
+        this.data = branchData
+        this._logger = branchLogger
+        for (const eff of branch.pendingEffects) {
+          this._dispatchPendingEffect(eff, naturalById)
+        }
+        this.data = baseData
+        this._logger = baseLogger
+      }
+
+      const branchState = CombatState.fromData(branchData, this._params)
+      branchState._logger = branchLogger
+      branchState.pendingSteps = clonePendingSteps(basePendingSteps)
+      results.push({ state: branchState, probability: branch.probability })
     }
 
     this.pendingSteps = basePendingSteps
     this._invokes = baseInvokes
-    this._invokesOwned = true
+    this._invokesOwned = { attacker: true, defender: true }
     this._allInvokes = baseAllInvokes
     this._allInvokesOwned = true
+    this.data = baseData
+    this._logger = baseLogger
 
     return results
+  }
+
+  /** Look up the declaration and invoke its `effect` callback (if any),
+   *  bound to a fresh AbilityContext for the effect's `abilityKey` + `side`. */
+  private _dispatchPendingEffect(
+    eff: PendingEffect,
+    naturalById: Map<string, RollTriggerDecl>,
+  ): void {
+    const key = `${eff.side}:${eff.slotId}`
+    const ability = this._params
+      .getAbilities(eff.side)
+      .find(a => a.key === eff.abilityKey)
+    const decl = naturalById.get(key)
+    if (!decl?.effect) return
+    const branchCtx = new AbilityContext(eff.side, this._params)
+    if (ability) branchCtx.upgradeForCall(ability, this._logger)
+    try {
+      const payload = eff.payload as { count: number }
+      decl.effect(payload.count, branchCtx)
+    } finally {
+      branchCtx.resetAfterCall()
+    }
   }
 
   /** Convert engine-produced branches (each with its own data/invokes)
@@ -1065,116 +1091,12 @@ export class CombatState {
       const state = CombatState.fromData(b.data, this._params)
       state._logger = b.logger
       state._invokes = b.invokes
-      state._invokesOwned = false
+      state._invokesOwned = { attacker: false, defender: false }
       state._allInvokes = b.allInvokes
       state._allInvokesOwned = false
       state.pendingSteps = clonePendingSteps(b.pendingSteps ?? remainder)
       return { state, probability: b.probability }
     })
-  }
-
-  /** Branch by dice-outcome: for each (attacker, defender) combination,
-   *  clone state, add hits, log, and push a branch. Each branch inherits
-   *  the caller's `pendingSteps` — the dice-roll group's AFTER timing
-   *  step (if any) lands on every branch and runs per-branch through
-   *  the normal script-dispatch machinery. */
-  private rollDiceOutcomes(
-    modifiedDice: SidedDiceData,
-    validTargets: { attacker: UnitType[]; defender: UnitType[] },
-    phase: MetaPhase[],
-    routing?: { attacker: CombatSide; defender: CombatSide },
-  ): StateWithProbability[] {
-    let attackerDist = getCombinedDiceDistribution(
-      flattenDicePool(modifiedDice.attacker),
-    )
-    let defenderDist = getCombinedDiceDistribution(
-      flattenDicePool(modifiedDice.defender),
-    )
-
-    const metaPhase = innerMeta(phase)
-    const attackerHitTarget = routing?.attacker ?? 'defender'
-    const defenderHitTarget = routing?.defender ?? 'attacker'
-
-    if (metaPhase === 'AFB') {
-      if (
-        isFighterOnlyTargets(validTargets[attackerHitTarget]) &&
-        !hasAfbAfterRollInvokes(this._invokes, 'attacker')
-      ) {
-        attackerDist = clampDistribution(
-          attackerDist,
-          countParticipatingFighters(this.data[attackerHitTarget]),
-        )
-      }
-      if (
-        isFighterOnlyTargets(validTargets[defenderHitTarget]) &&
-        !hasAfbAfterRollInvokes(this._invokes, 'defender')
-      ) {
-        defenderDist = clampDistribution(
-          defenderDist,
-          countParticipatingFighters(this.data[defenderHitTarget]),
-        )
-      }
-    }
-
-    const results: StateWithProbability[] = []
-    const baseInvokes = this._invokes
-    const baseAllInvokes = this._allInvokes
-    const baseData = this.data
-    const basePendingSteps = this.pendingSteps
-
-    for (const attOutcome of attackerDist) {
-      for (const defOutcome of defenderDist) {
-        const probability = attOutcome.probability * defOutcome.probability
-        if (probability === 0) continue
-
-        this._invokes = baseInvokes
-        this._invokesOwned = false
-        this._allInvokes = baseAllInvokes
-        this._allInvokesOwned = false
-
-        const branchData = cloneStateForBranch(baseData)
-        CombatSideState.addBaseHits(
-          branchData[attackerHitTarget],
-          attOutcome.hits,
-          validTargets[attackerHitTarget],
-        )
-        CombatSideState.addBaseHits(
-          branchData[defenderHitTarget],
-          defOutcome.hits,
-          validTargets[defenderHitTarget],
-        )
-
-        const branchLogger = this._logger?.fork()
-        branchLogger?.child(metaPhase).child('DICE_ROLL').log({
-          attacker: attOutcome.hits,
-          defender: defOutcome.hits,
-        })
-
-        let hitsToAttacker = 0
-        let hitsToDefender = 0
-        if (attackerHitTarget === 'attacker') hitsToAttacker += attOutcome.hits
-        else hitsToDefender += attOutcome.hits
-        if (defenderHitTarget === 'attacker') hitsToAttacker += defOutcome.hits
-        else hitsToDefender += defOutcome.hits
-        branchLogger?.child(metaPhase).child('DICE_HITS').log({
-          attacker: hitsToAttacker,
-          defender: hitsToDefender,
-        })
-
-        const branchState = CombatState.fromData(branchData, this._params)
-        branchState._logger = branchLogger
-        branchState.pendingSteps = clonePendingSteps(basePendingSteps)
-        results.push({ state: branchState, probability })
-      }
-    }
-
-    this.pendingSteps = basePendingSteps
-    this._invokes = baseInvokes
-    this._invokesOwned = true
-    this._allInvokes = baseAllInvokes
-    this._allInvokesOwned = true
-
-    return results
   }
 
   /** Derive the unit-ability firing config from the given meta. */
@@ -1229,14 +1151,15 @@ export class CombatState {
     meta: UnitAbilityMeta
     firing: CombatSide[]
     outerPhase: MetaPhase[]
-    customDice?: SidedDiceData
+    customDice?: { attacker: SideDiceCollection; defender: SideDiceCollection }
     routing?: { attacker: CombatSide; defender: CombatSide }
   }): void {
     const { meta, firing, outerPhase, customDice, routing } = config
     const phase: MetaPhase[] = [...outerPhase, meta]
     const baseConfig = this._getUnitAbilityConfig(meta)
     this.pushScript([
-      buildUnitAbilityDiceRollGroup(phase, {
+      buildUnitAbilityDiceRollGroup({
+        phase,
         firing,
         hitSource: baseConfig.hitSource,
         allowedUnitTypes: baseConfig.allowedUnitTypes,
@@ -1391,60 +1314,84 @@ function buildUnitAbilityRunOptions(
   }
 }
 
-/** Build the four-step group that resolves a combat dice roll:
- *  _collectDice → BEFORE_DICE_ROLL → _rollDice → AFTER_DICE_ROLL.
- *  Stored reversed for the LIFO stack. */
-function buildCombatDiceRollGroup(phase: MetaPhase[]): PhaseStepGroup {
-  const data: DiceRollContext = {
-    hitSource: 'COMBAT',
-    firing: ['attacker', 'defender'],
-    isUnitAbility: false,
-  }
+/** Build the dice-roll group that resolves a combat or unit-ability dice
+ *  roll. Two builders share the LIFO skeleton but differ in which timings
+ *  fire (BEFORE_DICE_ROLL vs BEFORE_UNIT_ABILITY_ROLL), the per-side run
+ *  options (unit-ability rolls scope by firing / routing), and which
+ *  inputs make sense (combat rolls have no `customDice` /
+ *  `allowedUnitTypes` / `routing`, and always fire on both sides at
+ *  hitSource COMBAT).
+ *
+ *  Execution order: BEFORE → REROLL → _rollDice → AFTER → AFTER_STEP.
+ *  BEFORE/REROLL only queue ModifierDecl entries on `ctx.modifiers`;
+ *  `_rollDice` then builds the collection, applies all declarations
+ *  (dice-shape mutations, hit-value mods, then the kernel-side REROLL /
+ *  ROLL_TRIGGER / CUSTOM_ROLL / CONDITIONAL_MODIFIER /
+ *  ADDITIONAL_HIT_POOL passes), and appends the resulting hit pools to
+ *  each side's `hitPools`. AFTER is the imperative post-roll timing
+ *  where `getPendingHits` / `addHits` work against the just-rolled hits;
+ *  AFTER_STEP follows for engine-level wrap-up (e.g. Thundarian's
+ *  cancel via `discardCurrentGroupScript`).
+ *
+ *  `PhaseStepGroup.steps` is consumed LIFO (`top.steps.pop()`), so the
+ *  arrays below are stored in reverse execution order. */
+
+/** Build a dice-roll group for SPACE_COMBAT / GROUND_COMBAT. Both sides
+ *  always fire at hitSource COMBAT; the BEFORE/REROLL/AFTER timings
+ *  run unrestricted (no `skipSides`). */
+export function buildCombatDiceRollGroup(args: {
+  phase: MetaPhase[]
+}): PhaseStepGroup {
+  const { phase } = args
   return {
     kind: 'group',
-    data,
+    data: {
+      hitSource: 'COMBAT',
+      firing: ['attacker', 'defender'],
+      isUnitAbility: false,
+    },
     steps: [
+      { kind: 'timing', timing: 'AFTER_DICE_ROLL_STEP', phase },
       { kind: 'timing', timing: 'AFTER_DICE_ROLL', phase },
       { kind: 'method', fn: CombatState.prototype._rollDice, phase },
       { kind: 'timing', timing: 'REROLL_DICE_ROLL', phase },
       { kind: 'timing', timing: 'BEFORE_DICE_ROLL', phase },
-      { kind: 'method', fn: CombatState.prototype._collectDice, phase },
     ],
   }
 }
 
-/** Build the four-step group that resolves a unit-ability dice roll.
- *  Config is derived from `_getUnitAbilityConfig` for phase-script
- *  emissions and merged with overrides from
- *  `runUnitAbilityStepForAbility` (firing restricted to the caller's
- *  side, optional `customDice`, optional `routing`). */
-function buildUnitAbilityDiceRollGroup(
-  phase: MetaPhase[],
-  config: {
-    firing: CombatSide[]
-    hitSource: HitSource
-    allowedUnitTypes?: ReadonlySet<UnitBaseType>
-    customDice?: SidedDiceData
-    routing?: { attacker: CombatSide; defender: CombatSide }
-  },
-): PhaseStepGroup {
-  const data: DiceRollContext = {
-    hitSource: config.hitSource,
-    firing: config.firing,
-    allowedUnitTypes: config.allowedUnitTypes,
-    customDice: config.customDice,
-    routing: config.routing,
-    isUnitAbility: true,
-  }
+/** Build a dice-roll group for a unit-ability roll (SCO / AFB /
+ *  BOMBARDMENT / SCD). BEFORE/AFTER timings scope to the firing sides
+ *  via `buildUnitAbilityRunOptions`; `customDice` / `routing` are
+ *  forwarded for `ctx.resolveStep` overrides. See `buildCombatDiceRollGroup`
+ *  for the LIFO ordering invariant and execution flow. */
+export function buildUnitAbilityDiceRollGroup(args: {
+  phase: MetaPhase[]
+  firing: CombatSide[]
+  hitSource: HitSource
+  allowedUnitTypes?: ReadonlySet<UnitBaseType>
+  routing?: { attacker: CombatSide; defender: CombatSide }
+  customDice?: { attacker: SideDiceCollection; defender: SideDiceCollection }
+}): PhaseStepGroup {
+  const { phase, firing, hitSource, allowedUnitTypes, routing, customDice } =
+    args
   return {
     kind: 'group',
-    data,
+    data: {
+      hitSource,
+      firing,
+      routing,
+      customDice,
+      allowedUnitTypes,
+      isUnitAbility: true,
+    },
     steps: [
+      { kind: 'timing', timing: 'AFTER_UNIT_ABILITY_ROLL_STEP', phase },
       {
         kind: 'timing',
         timing: 'AFTER_UNIT_ABILITY_ROLL',
         phase,
-        options: buildUnitAbilityRunOptions(config.firing, config.routing, {
+        options: buildUnitAbilityRunOptions(firing, routing, {
           firingOnly: true,
           timing: 'after',
         }),
@@ -1455,67 +1402,64 @@ function buildUnitAbilityDiceRollGroup(
         kind: 'timing',
         timing: 'BEFORE_UNIT_ABILITY_ROLL',
         phase,
-        options: buildUnitAbilityRunOptions(config.firing, config.routing, {
+        options: buildUnitAbilityRunOptions(firing, routing, {
           timing: 'before',
         }),
       },
-      { kind: 'method', fn: CombatState.prototype._collectDice, phase },
     ],
   }
 }
 
-/** Apply stored hit-value modifiers to a dice pool for one side */
-function applyStoredHitValueModifiers(
-  pool: DicePool,
-  modifiers: readonly HitValueModifier[],
-): void {
-  for (const mod of modifiers) {
-    if (mod.unitId !== undefined) {
-      // Target specific unit by UnitId
-      for (const dice of Object.values(pool)) {
-        if (!dice) continue
-        for (let i = 0; i < dice.length; i++) {
-          if (dice[i][3] === mod.unitId) {
-            dice[i] = [
-              Math.max(1, dice[i][0] + mod.amount),
-              dice[i][1],
-              dice[i][2],
-              dice[i][3],
-            ]
-            break
-          }
-        }
-      }
-      continue
-    }
-
-    for (const [type, dice] of Object.entries(pool)) {
-      if (!dice) continue
-      if (mod.unitType && type !== mod.unitType) continue
-      if (mod.excludeUnitTypes?.includes(type)) continue
-      for (let i = 0; i < dice.length; i++) {
-        dice[i] = [
-          Math.max(1, dice[i][0] + mod.amount),
-          dice[i][1],
-          dice[i][2],
-          dice[i][3],
-        ]
-      }
-    }
-  }
+/** Collect a side's dice into the kernel-native SideDiceCollection
+ *  format. When `customDice` is provided (e.g. by `ctx.resolveStep` with
+ *  explicit dice), it's used as-is with an empty unit index (custom
+ *  entries don't correspond to real units). */
+function collectSideDice(
+  state: CombatStateData,
+  side: CombatSide,
+  ctx: DiceRollContext,
+  customCollection: SideDiceCollection | undefined,
+): SideDiceCollection {
+  if (!ctx.firing.includes(side)) return {}
+  if (customCollection) return customCollection
+  return CombatSideState.collectDice(
+    state,
+    side,
+    ctx.hitSource,
+    ctx.allowedUnitTypes,
+  )
 }
 
-/** Branch clone — CoW for `hitPools` and `unitState`: the new side shares
+/** Reconstruct a `DicePool`-equivalent view from the in-flight
+ *  `SideDiceCollection`. Emitted on the DICE_POOL log so test
+ *  infrastructure (`t.dicePool()`, `toContainDice`) keeps working. Each
+ *  log entry is `[hitValue, totalDpu]` repeated `unitCount` times so the
+ *  per-die count stays visible to `.toHaveLength(N)` assertions. */
+function collectionToLogShape(collection: SideDiceCollection): DicePool {
+  const out: DicePool = {}
+  for (const variant of Object.keys(collection) as UnitBaseType[]) {
+    const entries = collection[variant]
+    if (!entries) continue
+    const slot: DiceGroup[] = []
+    for (const [count, hitValue, dpu] of entries) {
+      for (let i = 0; i < count; i++) slot.push([hitValue, dpu])
+    }
+    out[variant] = slot
+  }
+  return out
+}
+
+/** Branch clone — CoW for `hitPool` and `unitState`: the new side shares
  *  refs with base and both are flagged as shared. The first side to mutate
- *  either resource clones it via `ensureHitPoolsOwned` / `ensureUnitStateOwned`
+ *  either resource clones it via `ensureHitPoolOwned` / `ensureUnitStateOwned`
  *  in combat-side-state.ts. Branches that never write pay nothing.
  *  `units`/`unitType`/`unitStats` stay shared (all mutation paths write
  *  fresh refs). `abilities` (initial config) is shared; `liveAbilities`
  *  is shallow-copied for per-entry COW. */
 export function cloneStateForBranch(base: CombatStateData): CombatStateData {
-  base.attacker._hitPoolsShared = true
+  base.attacker._hitPoolShared = true
   base.attacker._unitStateShared = true
-  base.defender._hitPoolsShared = true
+  base.defender._hitPoolShared = true
   base.defender._unitStateShared = true
   return {
     ...base,

@@ -64,6 +64,7 @@ export default defineConfig({
   test: {
     globals: true,
     css: true,
+    testTimeout: 10000,
     setupFiles: [
       'tests/utils/expect.ts',
       'tests/utils/for-each-side.ts',

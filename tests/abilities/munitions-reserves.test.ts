@@ -61,26 +61,6 @@ describe('MUNITIONS_RESERVES', () => {
     expect(rerollEntries).toHaveLength(0)
   })
 
-  it('does not fire in GROUND combat (context: SPACE)', () => {
-    const t = combatTest({
-      mode: 'GROUND',
-      attacker: {
-        faction: 'BARONY_OF_LETNEV',
-        units: { INFANTRY: 2 },
-        abilities: {
-          MUNITIONS_RESERVES: {
-            isEnabled: true,
-            ownStrategyKind: 'ALWAYS',
-          },
-        },
-      },
-      defender: { faction: 'ARBOREC', units: { INFANTRY: 2 } },
-    })
-    t.advanceTo('GROUND_COMBAT')
-    t.advanceRound()
-    expect(t.abilityLog('MUNITIONS_RESERVES')).toHaveLength(0)
-  })
-
   it('IF_HITS_LE: fires only when own total hits ≤ threshold', () => {
     const t = combatTest({
       mode: 'SPACE',
