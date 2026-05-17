@@ -1,30 +1,63 @@
-import type { Ability } from '../../../combat/abilities-engine/types'
+import { z } from 'zod/mini'
 
-export const strikeWingAlphaII: Ability = {
+import { type Ability, declareParam } from '@/combat'
+import type { UnitId, UnitList } from '@/types'
+import { UnitListBooleanSchema } from '@/types'
+
+type Params = {
+  targetPriority: UnitList<boolean>
+}
+
+declare global {
+  interface AbilityConfigMap {
+    STRIKE_WING_ALPHA_II: Params
+  }
+}
+
+export const strikeWingAlphaII: Ability<Params> = {
   key: 'STRIKE_WING_ALPHA_II',
   name: 'Strike Wing Alpha II',
   description:
     "When this unit uses Anti-Fighter Barrage, each result of 9 or 10 also destroys 1 of your opponent's infantry in the space area of the active system.",
   context: 'SPACE',
+  paramsSchema: z.object({
+    targetPriority: UnitListBooleanSchema,
+  }),
   params: {
     isEnabled: true,
     uses: Infinity,
+    targetPriority: declareParam<UnitList<boolean>>({
+      default: [],
+      source: 'groundForces',
+      side: 'opponent',
+      defaultItemValue: true,
+      sort: 'price-desc',
+      filter: { include: ['INFANTRY'], combatMode: 'GROUND' },
+    }),
   },
   headerUI: 'isEnabled',
-  readOnly: true,
   invoke: [
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: 'AFB',
-      call: ctx => {
+      call: (ctx, params) => {
         ctx.api.own.declareRollTrigger({
           unitType: [ctx.api.own.getUnitVariantKey(ctx.getUnit())!],
           faces: [9, 10],
           effect: (count, branchCtx) => {
-            const infantry = branchCtx.api.opponent.getUnits('INFANTRY', {
-              includeVariants: true,
-            })
-            const toDestroy = infantry.slice(0, count)
+            if (count <= 0) return
+            const flat = branchCtx.utils.getFlat(params.targetPriority)
+            const toDestroy: UnitId[] = []
+            for (const variant of flat) {
+              if (toDestroy.length >= count) break
+              const ids = branchCtx.api.opponent.getUnits(variant, {
+                includeVariants: false,
+              })
+              for (const id of ids) {
+                if (toDestroy.length >= count) break
+                toDestroy.push(id)
+              }
+            }
             if (toDestroy.length === 0) return
             branchCtx.api.opponent.destroyUnits(toDestroy)
           },
@@ -32,4 +65,19 @@ export const strikeWingAlphaII: Ability = {
       },
     },
   ],
+  uiConfig: ctx => {
+    const items = ctx.api.opponent.getUnitVariantsOptions('targetPriority')
+
+    if (items.length <= 1) return []
+
+    return [
+      {
+        key: 'targetPriority' as const,
+        type: 'unit-list' as const,
+        mode: 'checkbox' as const,
+        sortable: true,
+        items,
+      },
+    ]
+  },
 }
