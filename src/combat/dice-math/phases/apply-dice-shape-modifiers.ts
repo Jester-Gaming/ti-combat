@@ -14,13 +14,21 @@ import type {
 /** Apply dice-shape modifiers (SET_DICE_COUNT / ADD_DICE_COUNT /
  *  ADD_DICE_GROUP) in push order to a side's collection, mutating in place.
  *  Mirrors the previous eager-mutation behavior of the corresponding
- *  SideApi methods (`setDiceCount`, `addDiceCount`, `addDiceGroup`). */
+ *  SideApi methods (`setDiceCount`, `addDiceCount`, `addDiceGroup`).
+ *
+ *  `isSelfTarget` is set when the firing side's hits route back to itself
+ *  (Proxima self-bombardment). In that case ADD_DICE_COUNT is skipped:
+ *  the modifier's intent is opponent-facing ("give me +1 die to hit you"),
+ *  so when the roll lands on the owner instead, the bonus would
+ *  self-inflict damage. Mirrors `flipRerollSpecsForSelfTarget` — abilities
+ *  stay naive, the engine inverts the routing. */
 export function applyDiceShapeModifiers(
   collection: SideDiceCollection,
   modifiers: readonly ModifierDecl[],
   side: CombatSide,
   unitStats: SideStateData['unitStats'],
   hitSource: HitSource,
+  isSelfTarget: boolean,
 ): void {
   for (const mod of modifiers) {
     if (mod.side !== side) continue
@@ -29,6 +37,7 @@ export function applyDiceShapeModifiers(
         applySetDiceCount(collection, mod, unitStats, hitSource)
         break
       case 'ADD_DICE_COUNT':
+        if (isSelfTarget) break
         applyAddDiceCount(collection, mod)
         break
       case 'ADD_DICE_GROUP':

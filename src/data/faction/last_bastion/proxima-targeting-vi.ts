@@ -5,6 +5,13 @@ import { GALVANIZED } from '@/data/abilities/general/pre-galvanized'
 
 type Params = {
   resolveBombardment: boolean
+  bombardmentMinGalvanized: number
+}
+
+declare global {
+  interface AbilityConfigMap {
+    PROXIMA_TARGETING_VI: Params
+  }
 }
 
 export const proximaTargetingVi: Ability<Params> = {
@@ -15,20 +22,37 @@ export const proximaTargetingVi: Ability<Params> = {
   context: 'GROUND',
   paramsSchema: z.object({
     resolveBombardment: z.boolean(),
+    bombardmentMinGalvanized: z.number(),
   }),
   params: {
     isEnabled: false,
     uses: Infinity,
     resolveBombardment: false,
+    bombardmentMinGalvanized: 0,
   },
   headerUI: 'isEnabled',
-  uiConfig: [
-    {
-      key: 'resolveBombardment',
-      label: 'Resolve Bombardment',
-      type: 'checkbox',
-    },
-  ],
+  uiConfig: ctx => {
+    const { resolveBombardment } = ctx.api.own.getAbilityConfig(
+      'PROXIMA_TARGETING_VI',
+    )
+    return [
+      {
+        key: 'resolveBombardment' as const,
+        label: 'Resolve Bombardment',
+        type: 'checkbox' as const,
+      },
+      ...(resolveBombardment
+        ? [
+            {
+              key: 'bombardmentMinGalvanized' as const,
+              label: 'Only if galvanized count ≥',
+              type: 'number' as const,
+              min: 0,
+            },
+          ]
+        : []),
+    ]
+  },
   invoke: [
     {
       timing: 'BEFORE_ASSIGN_HITS',
@@ -44,28 +68,43 @@ export const proximaTargetingVi: Ability<Params> = {
     {
       timing: 'START_OF_COMBAT_ROUND',
       context: 'GROUND_COMBAT',
-      isCallable: params => params.resolveBombardment,
+      isCallable: (params, ctx) => {
+        if (!params.resolveBombardment) return false
+        return countGalvanizedUnits(ctx) >= params.bombardmentMinGalvanized
+      },
       call: ctx => {
-        // LIFO: push self-target first so the opponent bombardment runs first.
         ctx.resolveStep('BOMBARDMENT', { dice: [[8, 3]], target: 'OWN' })
-        ctx.resolveStep('BOMBARDMENT', { dice: [[8, 3]] })
+        ctx.resolveStep('BOMBARDMENT', {
+          dice: [[8, 3]],
+          deferCompletionCheck: true,
+        })
       },
     },
   ],
 }
 
+/** "Galvanized units present" on the bombarded planet: participating units
+ *  (ground forces in ground combat) plus structures sitting in the
+ *  non-participating pool (PDS / SPACE_DOCK per SETTINGS.structures).
+ *  Excludes ships parked in space during ground combat — they're not on
+ *  the planet being bombarded. */
 function countGalvanizedUnits(ctx: AbilityReadContext): number {
   const sideState = ctx.state[ctx.side]
+  const structures = new Set<string>(
+    ctx.api.own.getAbilityConfig('SETTINGS').structures,
+  )
   let count = 0
-  const walk = (pool: import('@/types').UnitIdList) => {
-    for (const id of pool) {
-      const key = sideState.unitType[id]
-      if (!key) continue
-      const { subtypes } = parseVariantId(key)
-      if (subtypes.includes(GALVANIZED)) count++
-    }
+  for (const id of sideState.participatingUnits) {
+    const key = sideState.unitType[id]
+    if (!key) continue
+    if (parseVariantId(key).subtypes.includes(GALVANIZED)) count++
   }
-  walk(sideState.participatingUnits)
-  walk(sideState.nonParticipatingUnits)
+  for (const id of sideState.nonParticipatingUnits) {
+    const key = sideState.unitType[id]
+    if (!key) continue
+    const { type, subtypes } = parseVariantId(key)
+    if (!structures.has(type)) continue
+    if (subtypes.includes(GALVANIZED)) count++
+  }
   return count
 }

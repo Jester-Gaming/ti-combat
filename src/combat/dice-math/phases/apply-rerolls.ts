@@ -47,11 +47,13 @@ function fires(
  *
  *  - `'ALL'`   — every die rerolled with a fresh face; keptHits = 0.
  *  - `'MISSES'`— only miss dice (`N - k`) are rerolled; the original `k`
- *                hits stay. */
+ *                hits stay.
+ *  - `'HITS'`  — only hit dice (`k`) are rerolled; the original misses
+ *                (`N - k`) stay as misses (so keptHits = 0). */
 function rerollHits(
   hits: PerSourceHits,
   sourceMap: Record<Source, FlatSource>,
-  target: 'MISSES' | 'ALL',
+  target: 'MISSES' | 'HITS' | 'ALL',
 ): { hits: PerSourceHits; factor: number }[] {
   let perm: { hits: PerSourceHits; factor: number }[] = [
     { hits: {}, factor: 1 },
@@ -61,8 +63,9 @@ function rerollHits(
     const k = hits[source]
     const totalDice = info.unitCount * info.dicePerUnit
     const p = hitProb(info.hitValue)
-    const rerolledCount = target === 'ALL' ? totalDice : totalDice - k
-    const keptHits = target === 'ALL' ? 0 : k
+    const rerolledCount =
+      target === 'ALL' ? totalDice : target === 'MISSES' ? totalDice - k : k
+    const keptHits = target === 'MISSES' ? k : 0
     const pmf = binomial(rerolledCount, p)
     const next: { hits: PerSourceHits; factor: number }[] = []
     for (const cur of perm) {
@@ -80,10 +83,40 @@ function rerollHits(
   return perm
 }
 
+/** When a firing side's dice are routed to itself (e.g. Proxima's
+ *  self-bombardment), what the player wants from the roll inverts —
+ *  hits-on-self are bad, misses-on-self are good. Engine-level swap keeps
+ *  reroll-authoring abilities (Agnlan Oln, Scramble Frequency, …)
+ *  opponent-facing:
+ *   - `target`: `'MISSES'` ↔ `'HITS'` (reroll bad rolls); `'ALL'` passes
+ *     through unchanged.
+ *   - `rerollIf`: negated. The author's "fire when the roll is bad
+ *     (against the opponent)" reads as "fire when the roll is good
+ *     (against the self)" — same intent, opposite branch. */
+export function flipRerollSpecsForSelfTarget(
+  specs: readonly RerollTargetSpec[],
+): RerollTargetSpec[] {
+  return specs.map(spec => {
+    const target: RerollTargetSpec['target'] =
+      spec.target === 'ALL'
+        ? 'ALL'
+        : spec.target === 'MISSES'
+          ? 'HITS'
+          : 'MISSES'
+    const rerollIf = spec.rerollIf
+      ? (side: RerollSide) => !spec.rerollIf!(side)
+      : undefined
+    return { ...spec, target, rerollIf }
+  })
+}
+
 /** Apply a sequence of REROLL specs to per-source branches. Each branch
  *  carries arbitrary `Meta` (preserved across rerolls) plus `hits` and
  *  `probability`. The factory recombines a rerolled outcome with the
- *  source branch's metadata. */
+ *  source branch's metadata, receiving the fired `spec` so it can bill
+ *  the use on the resulting branch (e.g. set `usesDelta[spec.key] = 1`).
+ *  Unfired branches are passed through untouched — their factory is
+ *  never invoked, so they don't bill. */
 export function applyRerollSpecs<
   Meta,
   B extends { hits: PerSourceHits; probability: number } & Meta,
@@ -91,7 +124,12 @@ export function applyRerollSpecs<
   branches: B[],
   sourceMap: Record<Source, FlatSource>,
   specs: readonly RerollTargetSpec[],
-  factory: (base: B, hits: PerSourceHits, probability: number) => B,
+  factory: (
+    base: B,
+    hits: PerSourceHits,
+    probability: number,
+    spec: RerollTargetSpec,
+  ) => B,
 ): B[] {
   let out = branches
   for (const spec of specs) {
@@ -104,7 +142,7 @@ export function applyRerollSpecs<
         continue
       }
       for (const r of rerollHits(branch.hits, sourceMap, spec.target)) {
-        next.push(factory(branch, r.hits, branch.probability * r.factor))
+        next.push(factory(branch, r.hits, branch.probability * r.factor, spec))
       }
     }
     out = next

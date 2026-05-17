@@ -817,12 +817,17 @@ export class SideApi {
 
   /** Queue a reroll declaration on the current dice-roll group. */
   declareReroll(
-    spec: Omit<RerollDecl, 'type' | 'slotId' | 'side' | 'abilityKey'>,
+    spec: Omit<
+      RerollDecl,
+      'type' | 'slotId' | 'side' | 'ownerSide' | 'abilityKey'
+    >,
   ): void {
+    const ownerSide = this._ctx.side
     pushModifier(this._ctx, this._side, list => ({
       type: 'REROLL',
       slotId: list.length,
       side: this._side,
+      ownerSide,
       abilityKey: this._ctx.ability!.key,
       ...spec,
     }))
@@ -1009,8 +1014,8 @@ export class AbilityContext {
    *  (see `oneShotKeys` in `_rollDice`), which is how War Funding's
    *  own+opponent reroll counts as one charge. */
   declareReroll(spec: {
-    OWN?: Omit<RerollTargetSpec, 'key'>
-    OPPONENT?: Omit<RerollTargetSpec, 'key'>
+    OWN?: Omit<RerollTargetSpec, 'key' | 'ownerSide'>
+    OPPONENT?: Omit<RerollTargetSpec, 'key' | 'ownerSide'>
   }): void {
     const groupCtx = this._abilitiesParams.combatState.currentGroupData
     if (!isDiceRollContext(groupCtx)) {
@@ -1063,13 +1068,14 @@ export class AbilityContext {
   private _pushReroll(
     groupCtx: DiceRollContext,
     side: CombatSide,
-    target: RerollTargetSpec,
+    target: Omit<RerollTargetSpec, 'ownerSide'>,
   ): void {
     const list = (groupCtx.modifiers ??= [])
     list.push({
       type: 'REROLL',
       slotId: list.length,
       side,
+      ownerSide: this._side,
       abilityKey: target.key,
       target: target.target,
       rerollIf: target.rerollIf,
@@ -1302,6 +1308,7 @@ export class AbilityContext {
     overrides?: {
       dice?: DiceGroup[]
       target?: 'OWN' | 'OPPONENT'
+      deferCompletionCheck?: boolean
     },
   ): void {
     if (!this.phaseStack) {
@@ -1336,6 +1343,7 @@ export class AbilityContext {
       outerPhase: this.phaseStack,
       customDice,
       routing,
+      deferCompletionCheck: overrides?.deferCompletionCheck,
     })
   }
 }

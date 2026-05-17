@@ -93,9 +93,23 @@ export interface ConditionalModifierDecl {
 export interface RerollDecl {
   type: 'REROLL'
   slotId: SlotId
+  /** The side whose dice get rerolled. Used by the dice-math kernel for
+   *  source filtering and landing-side derivation. */
   side: CombatSide
+  /** The side that owns the ability that pushed this decl. Used by the
+   *  use-accounting layer so cross-side rerolls (e.g. Scramble Frequency
+   *  on defender pushing a reroll on attacker's dice) decrement uses on
+   *  the ability owner's `liveAbilities`, not the firing side's phantom
+   *  entry. */
+  ownerSide: CombatSide
   abilityKey: string
-  target?: 'MISSES' | 'ALL'
+  /** Which dice to reroll. `'MISSES'` rerolls misses, `'HITS'` rerolls
+   *  hits, `'ALL'` rerolls every die. When the firing side's dice are
+   *  routed to itself (Proxima self-bombardment), the engine swaps
+   *  `'MISSES'` ↔ `'HITS'` AND negates `rerollIf` — the author writes the
+   *  intuitive opponent-facing intent ("reroll bad rolls") and the engine
+   *  applies the same intent to the self-routed roll. */
+  target?: 'MISSES' | 'HITS' | 'ALL'
   rerollIf?: (side: RerollSide) => boolean
   consumeUseIf?: (side: RerollSide) => boolean
 }
@@ -229,8 +243,16 @@ export function buildSourceMap(
 
 export interface RerollTargetSpec {
   key: string
-  /** Which dice to reroll. 'MISSES' rerolls failures; 'ALL' rerolls every die. */
-  target: 'MISSES' | 'ALL'
+  /** Ability owner — the side whose `uses` are billed when the reroll
+   *  fires. Differs from `RerollModifier.target` slot (which is the dice
+   *  side affected): e.g. Scramble Frequency on defender declaring a
+   *  reroll on attacker's dice has `ownerSide: 'defender'` but lives in
+   *  the attacker slot. Required so per-fire billing attributes correctly
+   *  when both sides own the same ability key. */
+  ownerSide: CombatSide
+  /** Which dice to reroll. `'MISSES'` rerolls failures, `'HITS'` rerolls
+   *  successes, `'ALL'` rerolls every die. */
+  target: 'MISSES' | 'HITS' | 'ALL'
   /** Optional gate consulted with the side's pre-reroll aggregate. */
   rerollIf?: (side: RerollSide) => boolean
 }

@@ -7,7 +7,10 @@ import {
   makeEmptyPendingHitPool,
   type PendingHitPool,
 } from './branch-accumulator'
-import { applyRerollSpecs } from './phases/apply-rerolls'
+import {
+  applyRerollSpecs,
+  flipRerollSpecsForSelfTarget,
+} from './phases/apply-rerolls'
 import { collapseBranches } from './phases/collapse-branches'
 import type { PreSplit, SideBuckets } from './pre-split'
 import { sortValidTargetsByPriority } from './sort-valid-targets'
@@ -61,18 +64,38 @@ export function runPerUnitTypeMode(input: PerUnitTypeInput): DiceMathBranch[] {
     const sourceMap = buildSourceMap(input.dice[side])
     const sideCustomRolls = pickCustomRolls(input.modifiers, side)
     let branches = initialBranches(sources, sideCustomRolls)
-    const sideRerolls = pickRerolls(input.modifiers, side)
-    if (sideRerolls.length > 0) {
+    const rawSideRerolls = pickRerolls(input.modifiers, side)
+    const isSelfTarget = input.preSplit[side].landingSide === side
+    const sideRerolls = isSelfTarget
+      ? flipRerollSpecsForSelfTarget(rawSideRerolls)
+      : rawSideRerolls
+    // A reroll spec targeting a side with no rolled dice is a no-op: no
+    // probability change and no use billed. Catches abilities like
+    // Scramble Frequency declaring on the non-firing side during a
+    // single-sided unit-ability roll — without this guard the empty-pool
+    // branch still passes `rerollIf` for several strategies and bills a
+    // phantom use, divergent state hashes inflate the cache, and odds
+    // shift even though nothing was actually rerolled.
+    if (sideRerolls.length > 0 && sources.length > 0) {
       branches = applyRerollSpecs(
         branches,
         sourceMap,
         sideRerolls,
-        (base, hits, probability) => ({
-          probability,
-          hits,
-          usesDelta: base.usesDelta,
-          pendingEffects: base.pendingEffects,
-        }),
+        (base, hits, probability, spec) => {
+          // Bill the use on the rerolled output. Branches whose `rerollIf`
+          // didn't fire skip this factory entirely and keep their use.
+          // Key by `(ownerSide, abilityKey)` so when both sides own the
+          // same ability (e.g. attacker + defender both running
+          // SCRAMBLE_FREQUENCY) each side's fire bills its own owner.
+          const usesDelta = new Map(base.usesDelta)
+          usesDelta.set(`${spec.ownerSide}|${spec.key}`, 1)
+          return {
+            probability,
+            hits,
+            usesDelta,
+            pendingEffects: base.pendingEffects,
+          }
+        },
       )
       branches = collapseSideBranches(branches)
     }

@@ -283,8 +283,14 @@ export interface AbilityCallContext {
   readonly currentDiceRollIsUnitAbility: boolean
   /** Side-abstract reroll declaration (docs/dice-math.md §2). */
   declareReroll(spec: {
-    OWN?: Omit<import('../dice-math/types').RerollTargetSpec, 'key'>
-    OPPONENT?: Omit<import('../dice-math/types').RerollTargetSpec, 'key'>
+    OWN?: Omit<
+      import('../dice-math/types').RerollTargetSpec,
+      'key' | 'ownerSide'
+    >
+    OPPONENT?: Omit<
+      import('../dice-math/types').RerollTargetSpec,
+      'key' | 'ownerSide'
+    >
   }): void
   /** Side-abstract ADDITIONAL_HIT_POOL declaration (docs/dice-math.md §2). */
   declareHitPoolTransform(spec: {
@@ -323,6 +329,12 @@ export interface AbilityCallContext {
    *   - `dice`   — custom dice pool for the firing side; skips collectDice
    *   - `target` — where hits land. `'OPPONENT'` (default) or `'OWN'`
    *                (self-damage, e.g. Proxima's second roll)
+   *   - `deferCompletionCheck` — when true, omit the post-assign-hits
+   *                wipe-out check at the end of this step. Use to chain
+   *                multiple `resolveStep` calls as one transaction so an
+   *                early wipe in step N can't preempt step N+1 (e.g.
+   *                Proxima's opp-target bomb must not end combat before
+   *                the paired self-target bomb runs).
    *
    *  Composition: multiple `resolveStep` calls in one `call` execute in
    *  reverse call-order (LIFO): the last push sits on top of the script
@@ -332,6 +344,7 @@ export interface AbilityCallContext {
     overrides?: {
       dice?: DiceGroup[]
       target?: 'OWN' | 'OPPONENT'
+      deferCompletionCheck?: boolean
     },
   ): void
 }

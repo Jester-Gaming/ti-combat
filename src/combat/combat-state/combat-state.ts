@@ -814,17 +814,35 @@ export class CombatState {
       modifiers = modifiers.filter(m => !blockedSides.includes(m.side))
     }
 
-    // owner side determines where each ability's `uses` count lives.
+    // Owner side determines where each ability's `uses` count lives.
+    // For REROLL decls the ability owner can differ from the firing
+    // side (e.g. Scramble Frequency on defender declaring a reroll on
+    // attacker's dice — `d.side === 'attacker'` but the use lives on
+    // defender). REROLL decls carry an explicit `ownerSide`; all other
+    // decl types treat `side` as the ability owner.
+    //
+    // REROLL entries are keyed by `${ownerSide}|${abilityKey}` so two
+    // sides owning the same ability key (e.g. both running
+    // SCRAMBLE_FREQUENCY) don't collapse onto a single owner. Non-REROLL
+    // decls keep the bare `abilityKey` — if multi-side ownership ever
+    // surfaces for them, switch to composite keys here too.
     const abilityOwnerByKey = new Map<string, CombatSide>()
     for (const d of modifiers) {
-      if (!abilityOwnerByKey.has(d.abilityKey)) {
+      if (d.type === 'REROLL') {
+        const key = `${d.ownerSide}|${d.abilityKey}`
+        if (abilityOwnerByKey.has(key)) continue
+        abilityOwnerByKey.set(key, d.ownerSide)
+      } else {
+        if (abilityOwnerByKey.has(d.abilityKey)) continue
         abilityOwnerByKey.set(d.abilityKey, d.side)
       }
     }
 
     const abilityUses = new Map<string, number>()
     for (const [key, ownerSide] of abilityOwnerByKey) {
-      abilityUses.set(key, this._resolveAbilityUses(ownerSide, key))
+      const sepIdx = key.indexOf('|')
+      const abilityKey = sepIdx >= 0 ? key.slice(sepIdx + 1) : key
+      abilityUses.set(key, this._resolveAbilityUses(ownerSide, abilityKey))
     }
 
     const skipAfbClampForTarget =
@@ -945,26 +963,31 @@ export class CombatState {
       const branchData = cloneStateForBranch(baseData)
 
       // Apply usesDelta — decrement each ability's `uses` on its owner side.
-      for (const [abilityKey, delta] of branch.usesDelta) {
+      // Abilities with non-finite (Infinity) uses are skipped: they're
+      // unlimited by design, so the per-fire billing factory's delta is
+      // a no-op for them. Without this guard, the fallback `currentUses=0`
+      // would write `0 - 1 = -1` into liveAbilities and accidentally gate
+      // future dispatches.
+      for (const [usesKey, delta] of branch.usesDelta) {
         if (delta === 0) continue
-        const ownerSide = abilityOwnerByKey.get(abilityKey)
+        const ownerSide = abilityOwnerByKey.get(usesKey)
         if (ownerSide === undefined) continue
+        const snapshotUses = abilityUses.get(usesKey)
+        if (snapshotUses === undefined || !Number.isFinite(snapshotUses))
+          continue
+        // Decode the composite REROLL key back to the bare ability key
+        // before writing `liveAbilities` (which is keyed by abilityKey).
+        // Non-REROLL keys pass through unchanged.
+        const sepIdx = usesKey.indexOf('|')
+        const abilityKey = sepIdx >= 0 ? usesKey.slice(sepIdx + 1) : usesKey
         const sideData = branchData[ownerSide]
         sideData.liveAbilities = { ...sideData.liveAbilities }
         const liveEntry =
           (sideData.liveAbilities[abilityKey] as
             | Record<string, unknown>
             | undefined) ?? {}
-        // The current uses for the decrement may come from live → base →
-        // registered Ability defaults. The same snapshot we built for
-        // the kernel input is the authoritative pre-roll value.
-        const snapshotUses = abilityUses.get(abilityKey)
         const currentUses =
-          typeof liveEntry.uses === 'number'
-            ? liveEntry.uses
-            : snapshotUses !== undefined && Number.isFinite(snapshotUses)
-              ? snapshotUses
-              : 0
+          typeof liveEntry.uses === 'number' ? liveEntry.uses : snapshotUses
         sideData.liveAbilities[abilityKey] = {
           ...liveEntry,
           uses: currentUses - delta,
@@ -1153,11 +1176,16 @@ export class CombatState {
     outerPhase: MetaPhase[]
     customDice?: { attacker: SideDiceCollection; defender: SideDiceCollection }
     routing?: { attacker: CombatSide; defender: CombatSide }
+    /** When true, omit the trailing `_postAssignHits` wipe-check. The
+     *  caller will run another step (or steps) whose terminal
+     *  `_postAssignHits` covers the combined result. Used by chained
+     *  `resolveStep` calls that must resolve atomically (Proxima). */
+    deferCompletionCheck?: boolean
   }): void {
     const { meta, firing, outerPhase, customDice, routing } = config
     const phase: MetaPhase[] = [...outerPhase, meta]
     const baseConfig = this._getUnitAbilityConfig(meta)
-    this.pushScript([
+    const script: PendingStep[] = [
       buildUnitAbilityDiceRollGroup({
         phase,
         firing,
@@ -1167,8 +1195,15 @@ export class CombatState {
         routing,
       }),
       ...this.getAssignHitsScript(phase),
-      { kind: 'method', fn: CombatState.prototype._postAssignHits, phase },
-    ])
+    ]
+    if (!config.deferCompletionCheck) {
+      script.push({
+        kind: 'method',
+        fn: CombatState.prototype._postAssignHits,
+        phase,
+      })
+    }
+    this.pushScript(script)
   }
 
   // ===========================================================================
@@ -1421,13 +1456,31 @@ function collectSideDice(
   customCollection: SideDiceCollection | undefined,
 ): SideDiceCollection {
   if (!ctx.firing.includes(side)) return {}
-  if (customCollection) return customCollection
+  // Deep-clone the custom collection so the dice-math kernel (which
+  // mutates entries in-place via `applyDiceShapeModifiers`) can't leak
+  // changes back into the bomb group's stored `customDice`. The engine's
+  // cycle handler re-expands states on cache miss — without this clone,
+  // ADD_DICE_COUNT modifiers from a previous expansion stick around and
+  // each re-expansion bumps the dice count again (3 → 4 → 5 → ...).
+  if (customCollection) return cloneSideDiceCollection(customCollection)
   return CombatSideState.collectDice(
     state,
     side,
     ctx.hitSource,
     ctx.allowedUnitTypes,
   )
+}
+
+function cloneSideDiceCollection(
+  collection: SideDiceCollection,
+): SideDiceCollection {
+  const out: SideDiceCollection = {}
+  for (const variant of Object.keys(collection) as UnitBaseType[]) {
+    const entries = collection[variant]
+    if (!entries) continue
+    out[variant] = entries.map(e => [...e] as [number, number, number])
+  }
+  return out
 }
 
 /** Reconstruct a `DicePool`-equivalent view from the in-flight

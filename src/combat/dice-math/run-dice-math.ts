@@ -91,14 +91,24 @@ interface DiceMathResult {
 export function runDiceMath(input: DiceMathInput): DiceMathResult {
   const dice = input.diceCollection
 
+  const routing = input.routing ?? {
+    attacker: 'defender' as CombatSide,
+    defender: 'attacker' as CombatSide,
+  }
+
   // Step 1.1: dice-shape mutators in push order. Each side reads its own
   // entries; cross-side decls (rare) are filtered by `side === d.side`.
+  // `isSelfTarget` is true when this side's hits route back to itself
+  // (Proxima self-bomb). ADD_DICE_COUNT is suppressed in that case — the
+  // bonus is opponent-facing intent, so granting it on a self-routed roll
+  // would self-inflict. Mirrors the reroll spec flip in apply-rerolls.
   applyDiceShapeModifiers(
     dice.attacker,
     input.modifiers,
     'attacker',
     input.sideData.attacker.unitStats,
     input.hitSource,
+    routing.attacker === 'attacker',
   )
   applyDiceShapeModifiers(
     dice.defender,
@@ -106,6 +116,7 @@ export function runDiceMath(input: DiceMathInput): DiceMathResult {
     'defender',
     input.sideData.defender.unitStats,
     input.hitSource,
+    routing.defender === 'defender',
   )
 
   // Step 1.2: stored hit-value modifiers per side.
@@ -137,11 +148,6 @@ export function runDiceMath(input: DiceMathInput): DiceMathResult {
     if (!input.firing.includes('attacker')) dice.attacker = {}
     if (!input.firing.includes('defender')) dice.defender = {}
     if (isCollectionEmpty(dice)) return { branches: [], isEmpty: true }
-  }
-
-  const routing = input.routing ?? {
-    attacker: 'defender' as CombatSide,
-    defender: 'attacker' as CombatSide,
   }
 
   const modifiers = collectModifiers({
@@ -196,7 +202,16 @@ export function runDiceMath(input: DiceMathInput): DiceMathResult {
  *  any rerolls per source before collapsing to bucket totals. */
 function canRunFast(modifiers: Modifier[]): boolean {
   for (const m of modifiers) {
-    if (m.type !== 'ADDITIONAL_HIT_POOL' && m.type !== 'REROLL') return false
+    if (m.type === 'REROLL') {
+      // Conditional rerolls (with `rerollIf`) need per-branch fire-tracking
+      // to bill `uses` only on actually-fired branches. That tracking only
+      // lives in per-unit-type mode (its `SideBranch` carries `usesDelta`);
+      // fast-mode's `PerSourceBranch` collapses outcomes by bucket totals
+      // and would lose the per-branch billing distinction.
+      if (m.target[0]?.rerollIf || m.target[1]?.rerollIf) return false
+      continue
+    }
+    if (m.type !== 'ADDITIONAL_HIT_POOL') return false
   }
   return true
 }
@@ -247,7 +262,10 @@ function markOneShotUses(
 
   for (const branch of branches) {
     for (const d of rerollDecls) {
-      const key = d.abilityKey
+      // Key by `(ownerSide, abilityKey)` so two sides owning the same
+      // ability bill independently. See per-unit-type factory for the
+      // matching convention.
+      const key = `${d.ownerSide}|${d.abilityKey}`
       if (branch.usesDelta.has(key)) continue
       const baseUses = abilityUses.get(key)
       if (baseUses === undefined || !Number.isFinite(baseUses)) continue
@@ -259,8 +277,17 @@ function markOneShotUses(
           distribution: getMarginal(d.side),
         }
         if (!d.consumeUseIf(rerollSide)) continue
+        branch.usesDelta.set(key, 1)
+        continue
       }
-      branch.usesDelta.set(key, 1)
+      // No `consumeUseIf` override: per-branch billing for conditional
+      // rerolls is handled inside `applyRerollSpecs` (the factory marks
+      // `usesDelta[spec.key]` on the rerolled output, leaving unfired
+      // branches' use intact). Unconditional rerolls in fast-mode lack
+      // that per-branch tracking, so bill them here.
+      if (d.rerollIf === undefined) {
+        branch.usesDelta.set(key, 1)
+      }
     }
   }
 }

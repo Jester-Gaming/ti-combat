@@ -6,7 +6,11 @@ import {
   makeEmptyPendingHitPool,
   type PendingHitPool,
 } from './branch-accumulator'
-import { applyRerollSpecs, type PerSourceHits } from './phases/apply-rerolls'
+import {
+  applyRerollSpecs,
+  flipRerollSpecsForSelfTarget,
+  type PerSourceHits,
+} from './phases/apply-rerolls'
 import type { Bucket, PreSplit, SideBuckets } from './pre-split'
 import { sortValidTargetsByPriority } from './sort-valid-targets'
 import type {
@@ -52,14 +56,21 @@ interface FastModeInput {
  * an additional HitPool on the landing side.
  */
 export function runFastMode(input: FastModeInput): DiceMathBranch[] {
-  const sides = (['attacker', 'defender'] as const).map(firingSide => ({
-    firingSide,
-    plan: planSide(
-      input.dice[firingSide],
-      input.preSplit[firingSide],
-      pickRerolls(input.modifiers, firingSide),
-    ),
-  }))
+  const sides = (['attacker', 'defender'] as const).map(firingSide => {
+    const rawRerolls = pickRerolls(input.modifiers, firingSide)
+    const isSelfTarget = input.preSplit[firingSide].landingSide === firingSide
+    const rerolls = isSelfTarget
+      ? flipRerollSpecsForSelfTarget(rawRerolls)
+      : rawRerolls
+    return {
+      firingSide,
+      plan: planSide(
+        input.dice[firingSide],
+        input.preSplit[firingSide],
+        rerolls,
+      ),
+    }
+  })
 
   const branches: DiceMathBranch[] = []
   for (const aOutcome of sides[0].plan.outcomes) {
@@ -114,6 +125,15 @@ function planSide(
   rerolls: RerollTargetSpec[],
 ): SidePlan {
   if (rerolls.length === 0) return planSideFast(dice, side)
+  // Reroll specs targeting a side with no rolled dice are no-ops — fall
+  // back to the no-reroll path so the spec doesn't fire on an empty pool.
+  // See per-unit-type.ts for the matching guard and the Scramble Frequency
+  // bug it prevents.
+  const hasDice = Object.keys(dice).some(variant => {
+    const entries = dice[variant as keyof SideDiceCollection]
+    return entries && entries.length > 0
+  })
+  if (!hasDice) return planSideFast(dice, side)
   return planSideWithRerolls(dice, side, rerolls)
 }
 
@@ -156,6 +176,10 @@ function planSideWithRerolls(
     branches,
     sourceMap,
     rerolls,
+    // Fast mode only runs when there's no `rerollIf` predicate (every
+    // branch fires unconditionally), so per-branch use billing isn't
+    // needed here — `markOneShotUses` handles the (unconditional)
+    // accounting for these specs.
     (_base, hits, probability) => ({ hits, probability }),
   )
 

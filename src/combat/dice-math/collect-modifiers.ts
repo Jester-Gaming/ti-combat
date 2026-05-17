@@ -36,17 +36,23 @@ export function collectModifiers(input: CollectModifiersInput): Modifier[] {
   const out: Modifier[] = []
   const firing: CombatSide = 'attacker'
 
-  // REROLL
+  // REROLL. Two decls may share an `abilityKey` when both sides own the
+  // same ability (e.g. attacker AND defender both running SCRAMBLE_FREQUENCY).
+  // We group by `(ownerSide, abilityKey)` rather than `abilityKey` alone so
+  // per-fire billing attributes uses to the correct side — `RerollTargetSpec`
+  // carries `ownerSide` for the same reason.
   const rerollByKey = new Map<string, SidedTarget<RerollTargetSpec>>()
   for (const d of input.modifiers) {
     if (d.type !== 'REROLL') continue
     const slot: RerollTargetSpec = {
       key: d.abilityKey,
+      ownerSide: d.ownerSide,
       target: d.target ?? 'ALL',
       rerollIf: d.rerollIf,
     }
     const idx: 0 | 1 = d.side === firing ? 0 : 1
-    upsertSlot(rerollByKey, d.abilityKey, idx, slot)
+    const groupKey = `${d.ownerSide}|${d.abilityKey}`
+    upsertSlot(rerollByKey, groupKey, idx, slot)
   }
   for (const target of rerollByKey.values()) {
     out.push({ type: 'REROLL', target })
