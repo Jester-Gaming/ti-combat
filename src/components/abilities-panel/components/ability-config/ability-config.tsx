@@ -118,8 +118,21 @@ export function AbilityConfig({
     setIsCollapsed(prev => !prev)
   }
 
-  const descriptionIcon = ability.description ? (
-    <Tooltip content={ability.description} anchor={anchorName}>
+  const hasTooltip = !!ability.description || !!ability.warning
+  const tooltipContent = hasTooltip ? (
+    <>
+      {ability.description && (
+        <p className={styles.tooltipParagraph}>{ability.description}</p>
+      )}
+      {ability.warning && (
+        <p className={clsx(styles.tooltipParagraph, styles.tooltipWarning)}>
+          {ability.warning}
+        </p>
+      )}
+    </>
+  ) : null
+  const descriptionIcon = hasTooltip ? (
+    <Tooltip content={tooltipContent} anchor={anchorName}>
       <QuestionMarkCircledIcon className={styles.descriptionIcon} />
     </Tooltip>
   ) : null
@@ -220,11 +233,7 @@ export function AbilityConfig({
         [styles.container_dimmed]:
           ability.context && ability.context !== combatMode,
       })}
-      style={
-        ability.description
-          ? ({ anchorName } as React.CSSProperties)
-          : undefined
-      }
+      style={hasTooltip ? ({ anchorName } as React.CSSProperties) : undefined}
     >
       {header}
       {hasConfigItems && !isCollapsed && (

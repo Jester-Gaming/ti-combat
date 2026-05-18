@@ -145,6 +145,18 @@
   }
 }
 
+.tooltipParagraph {
+  margin: 0;
+}
+
+.tooltipParagraph + .tooltipParagraph {
+  margin-top: var(--space-1-5);
+}
+
+.tooltipWarning {
+  color: hsl(var(--color-amber-500));
+}
+
 .configItems {
   padding: calc(var(--space-2) - 1px);
   padding-top: 0;

@@ -19,6 +19,8 @@ export const proximaTargetingVi: Ability<Params> = {
   name: 'Proxima Targeting VI',
   description:
     "Cancel 1 hit produced by Bombardment rolls made against your ground forces for each of your galvanized units present. At the start of a round of ground combat you may resolve Bombardment 8 (x3) against your opponent's ground forces; if you do, make an identical roll against your own ground forces.",
+  warning:
+    'Additional dice (i.e. Plasma Scoring) are used only for rolls against the opponent. Rerolls against yourself using the opposite logic (i.e. Agnlan Oln reroll hits, not misses). Opponents Scramble Frequency can be used on any roll using inverse strategy.',
   context: 'GROUND',
   paramsSchema: z.object({
     resolveBombardment: z.boolean(),

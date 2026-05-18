@@ -467,6 +467,7 @@ export interface Ability<Params extends Record<string, unknown> = any> {
   key: string
   name: string // Display name for UI
   description?: string // Tooltip text describing what the ability does
+  warning?: string // Optional warning paragraph appended to the tooltip
   icon?: string // Raw SVG string for display next to name
   params: AbilityBaseParams & Params
   paramsSchema?: {
