@@ -381,6 +381,7 @@ export class SideApi {
 
     if (destroyed.length === 0) return
     CombatSideState.removeUnits(s, destroyed)
+    this._abilitiesParams?.combatState.syncWinnerSide()
 
     if (this._abilitiesParams) {
       this._ctx.runDestroyAbilities(destroyed)
@@ -409,6 +410,7 @@ export class SideApi {
       // placeUnits appends to the tail of participatingUnits; resort so the
       // configured UNIT_PRIORITY governs hit assignment for the new units.
       abilitiesParams.combatState.resyncParticipating(this._side)
+      abilitiesParams.combatState.syncWinnerSide()
     }
     enforceFleetPool(this)
     return placed as Record<UnitType, UnitId[]>

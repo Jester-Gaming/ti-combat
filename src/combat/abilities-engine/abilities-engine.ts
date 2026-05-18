@@ -69,6 +69,7 @@ for (const group of TIMING_GROUPS) {
  *  abilities and the child round-scoped ones. */
 const MERGED_PARENT_BY_TIMING: Partial<Record<AbilityTiming, AbilityTiming>> = {
   START_OF_COMBAT_ROUND: 'START_OF_COMBAT',
+  END_OF_COMBAT_ROUND: 'END_OF_COMBAT',
 }
 
 /** Buckets that are pre-sorted (by ABILITY_ORDER) at build-time and after any

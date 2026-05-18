@@ -425,9 +425,13 @@ export class CombatState {
   }
 
   /** Pop the current pending step from the top of the stack. If the top is
-   *  a group, pop its innermost step; when the group drains, remove it. */
+   *  a group, pop its innermost step; when the group drains, remove it.
+   *  No-op when the stack is empty — an ability handler may have cleared it
+   *  mid-step (e.g. `syncWinnerSide` cancelling completion after a unit
+   *  placement restored a previously-wiped side). */
   private _popTopStep(): void {
     const top = this.pendingSteps[this.pendingSteps.length - 1]
+    if (top === undefined) return
     if (top.kind === 'group') {
       top.steps.pop()
       if (top.steps.length === 0) this.pendingSteps.pop()
@@ -658,9 +662,12 @@ export class CombatState {
     phase: MetaPhase[],
     winner: CombatSide | 'draw',
   ): void {
-    if (this.data.winnerSide === undefined) {
-      this.data.winnerSide = winner
-    }
+    // Idempotent: once a winner is pinned, the completion sequence is owned
+    // by the first caller. Subsequent unit-state changes (Harrow killing the
+    // last opponent unit, Alarum placing reinforcements) update winnerSide
+    // via `syncWinnerSide` rather than re-pushing the completion script.
+    if (this.data.winnerSide !== undefined) return
+    this.data.winnerSide = winner
     this.pendingSteps = []
     this.pushScript([
       { kind: 'timing', timing: 'END_OF_COMBAT', phase },
@@ -672,6 +679,31 @@ export class CombatState {
         phase,
       },
     ])
+  }
+
+  /** Re-derive `winnerSide` from current participating-unit state. No-op
+   *  unless a winner has already been pinned (initial wipe detection is
+   *  owned by `_postAssignHits` → `_triggerCompletion`). Called from
+   *  unit-mutation sites so abilities that destroy or place units during
+   *  the completion sequence keep the outcome correct:
+   *  - A destruction can flip the outcome (e.g. Harrow's bombardment kills
+   *    the last opposing infantry → defender→draw, or →attacker).
+   *  - A placement that restores a wiped side cancels the completion
+   *    entirely: clears `pendingSteps` and `winnerSide` so the engine sees
+   *    an empty stack with `isFinished=false` and loads the next round. */
+  public syncWinnerSide(): void {
+    if (this.data.winnerSide === undefined) return
+    const d = this.data
+    const attackerOut = !CombatSideState.hasParticipatingUnits(d.attacker)
+    const defenderOut = !CombatSideState.hasParticipatingUnits(d.defender)
+    if (!attackerOut && !defenderOut) {
+      this.pendingSteps = []
+      d.winnerSide = undefined
+      return
+    }
+    if (attackerOut && defenderOut) d.winnerSide = 'draw'
+    else if (attackerOut) d.winnerSide = 'defender'
+    else d.winnerSide = 'attacker'
   }
 
   public pushScript(entity: PendingStep[]) {
@@ -701,6 +733,8 @@ export class CombatState {
       data.defender,
       trackDestroyed,
     )
+
+    this.syncWinnerSide()
 
     if (!trackDestroyed) return
 
