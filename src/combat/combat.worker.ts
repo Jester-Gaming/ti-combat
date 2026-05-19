@@ -78,7 +78,11 @@ self.onmessage = (e: MessageEvent<SimulationInput>) => {
     defenderSelections,
     combatMode,
     abilities,
+    precision,
   } = e.data
+
+  const collapseThreshold =
+    precision?.kind === 'limited' ? 10 ** -precision.digits : undefined
 
   const sideAbilities = prepareSimulationConfig(
     abilities,
@@ -114,6 +118,7 @@ self.onmessage = (e: MessageEvent<SimulationInput>) => {
       defender: sideAbilities.defender.factionOwnedKeys,
     },
     gen._nextCode,
+    collapseThreshold,
   )
 
   const engine = new CombatEngine()

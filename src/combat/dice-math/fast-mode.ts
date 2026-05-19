@@ -11,6 +11,7 @@ import {
   flipRerollSpecsForSelfTarget,
   type PerSourceHits,
 } from './phases/apply-rerolls'
+import { collapseSideOutcomes } from './phases/collapse-side-outcomes'
 import type { Bucket, PreSplit, SideBuckets } from './pre-split'
 import { sortValidTargetsByPriority } from './sort-valid-targets'
 import type {
@@ -35,6 +36,9 @@ interface FastModeInput {
     defender: UnitType[] | undefined
   }
   meta: MetaPhase
+  /** When set, collapse extreme tail outcomes per side whose marginal
+   *  probability is < threshold before the joint cross-product. */
+  collapseThreshold?: number
 }
 
 /**
@@ -62,14 +66,20 @@ export function runFastMode(input: FastModeInput): DiceMathBranch[] {
     const rerolls = isSelfTarget
       ? flipRerollSpecsForSelfTarget(rawRerolls)
       : rawRerolls
-    return {
-      firingSide,
-      plan: planSide(
-        input.dice[firingSide],
-        input.preSplit[firingSide],
-        rerolls,
-      ),
-    }
+    const plan = planSide(
+      input.dice[firingSide],
+      input.preSplit[firingSide],
+      rerolls,
+    )
+    const outcomes =
+      input.collapseThreshold !== undefined
+        ? collapseSideOutcomes(
+            plan.outcomes,
+            o => o.bucketHits.reduce((a, b) => a + b, 0),
+            input.collapseThreshold,
+          )
+        : plan.outcomes
+    return { firingSide, plan: { outcomes } }
   })
 
   const branches: DiceMathBranch[] = []

@@ -12,6 +12,7 @@ import {
   flipRerollSpecsForSelfTarget,
 } from './phases/apply-rerolls'
 import { collapseBranches } from './phases/collapse-branches'
+import { collapseSideOutcomes } from './phases/collapse-side-outcomes'
 import type { PreSplit, SideBuckets } from './pre-split'
 import { sortValidTargetsByPriority } from './sort-valid-targets'
 import type {
@@ -41,6 +42,10 @@ interface PerUnitTypeInput {
     defender: UnitType[] | undefined
   }
   meta: MetaPhase
+  /** When set, collapse extreme tail outcomes per side whose marginal
+   *  probability (sum of all per-source hits) is < threshold before the
+   *  joint cross-product. */
+  collapseThreshold?: number
 }
 
 /**
@@ -117,6 +122,17 @@ export function runPerUnitTypeMode(input: PerUnitTypeInput): DiceMathBranch[] {
     const sideConditionals = pickConditionals(input.modifiers, side)
     branches = applyConditionalSpecs(branches, sourceMap, sideConditionals)
     branches = collapseSideBranches(branches)
+    if (input.collapseThreshold !== undefined) {
+      branches = collapseSideOutcomes(
+        branches,
+        b => {
+          let sum = 0
+          for (const v of Object.values(b.hits)) sum += v
+          return sum
+        },
+        input.collapseThreshold,
+      )
+    }
     return { side, branches }
   })
 

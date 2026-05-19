@@ -153,6 +153,7 @@ export class CombatState {
   data!: CombatStateData
   _logger?: Logger
   private _params!: AbilitiesEngine
+  private _collapseThreshold?: number
   public _invokes!: InvokeCollections
   /** Per-side ownership flag for CoW of `_invokes`. Mutating one side
    *  (e.g. via `removeUnitInvokes`) only triggers a clone of THAT side's
@@ -242,6 +243,7 @@ export class CombatState {
       ReadonlySet<string>
     >,
     nextCode?: number,
+    collapseThreshold?: number,
   ): CombatState {
     const instance = Object.create(CombatState.prototype) as CombatState
 
@@ -258,6 +260,7 @@ export class CombatState {
     }
 
     instance.data = baseData
+    instance._collapseThreshold = collapseThreshold
     instance.pendingSteps = []
     instance._params = AbilitiesEngine.fromConfig(
       instance,
@@ -289,6 +292,7 @@ export class CombatState {
     instance._params = params
     const source = params.combatState
     instance._invokes = source._invokes
+    instance._collapseThreshold = source._collapseThreshold
     instance._invokesOwned = { attacker: false, defender: false }
     source._invokesOwned = { attacker: false, defender: false }
     instance._allInvokes = source._allInvokes
@@ -913,6 +917,7 @@ export class CombatState {
       abilityUses,
       meta,
       skipAfbClampForTarget,
+      collapseThreshold: this._collapseThreshold,
     })
 
     if (isEmpty) {

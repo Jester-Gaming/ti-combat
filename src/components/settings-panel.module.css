@@ -1,5 +1,5 @@
-.title {
-  margin-bottom: var(--space-4);
+.content {
+  gap: var(--space-4);
 }
 
 .divider {
@@ -16,11 +16,6 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: var(--space-4) 0;
-
-  &:last-child {
-    margin-bottom: 0;
-  }
 }
 
 .label {
@@ -29,8 +24,22 @@
   font-family: var(--font-heading);
   color: var(--color-text-muted);
   letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
 }
 
 .button {
   margin-left: var(--space-4);
+}
+
+.precisionControls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.warning {
+  color: hsl(var(--color-amber-500));
+  display: contents;
 }

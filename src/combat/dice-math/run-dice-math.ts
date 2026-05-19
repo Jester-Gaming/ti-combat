@@ -53,6 +53,10 @@ interface DiceMathInput {
    *  read excess-hit counts; clamping would hide them. Engine sets these
    *  flags after inspecting its invoke registry. */
   skipAfbClampForTarget?: { attacker: boolean; defender: boolean }
+  /** When set, the math kernel collapses extreme tail outcomes per side
+   *  whose marginal probability (grouped by total hits) is < threshold
+   *  before the joint cross-product. Undefined = full precision. */
+  collapseThreshold?: number
 }
 
 interface DiceMathResult {
@@ -164,6 +168,7 @@ export function runDiceMath(input: DiceMathInput): DiceMathResult {
         validTargets: input.validTargets,
         priorityList: input.priorityList,
         meta: input.meta,
+        collapseThreshold: input.collapseThreshold,
       })
     : runPerUnitTypeMode({
         dice,
@@ -172,6 +177,7 @@ export function runDiceMath(input: DiceMathInput): DiceMathResult {
         validTargets: input.validTargets,
         priorityList: input.priorityList,
         meta: input.meta,
+        collapseThreshold: input.collapseThreshold,
       })
 
   // One-shot use accounting: only REROLL decls are accounted here. The other

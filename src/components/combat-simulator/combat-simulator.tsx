@@ -18,6 +18,7 @@ import { GlassCard } from '@/components/ui/glass-card'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { ToggleGroup } from '@/components/ui/toggle-group'
 import { useCombatSetup } from '@/hooks/use-combat-setup'
+import type { Precision } from '@/hooks/use-settings'
 import { useSimulation } from '@/hooks/use-simulation'
 import { useUrlSync } from '@/hooks/use-url-sync'
 import type { CombatSide, UnitBaseType } from '@/types'
@@ -57,9 +58,13 @@ function loadFilterMode(side: CombatSide): AbilityFilterMode {
 
 interface CombatSimulatorProps {
   className?: string
+  precision: Precision
 }
 
-export function CombatSimulator({ className }: CombatSimulatorProps) {
+export function CombatSimulator({
+  className,
+  precision,
+}: CombatSimulatorProps) {
   const {
     attackerFaction,
     defenderFaction,
@@ -157,7 +162,12 @@ export function CombatSimulator({ className }: CombatSimulatorProps) {
     [stateData],
   )
 
-  const { outcomes, isComputing } = useSimulation(simulationInput)
+  const inputWithPrecision = useMemo(
+    () => (simulationInput === null ? null : { ...simulationInput, precision }),
+    [simulationInput, precision],
+  )
+
+  const { outcomes, isComputing } = useSimulation(inputWithPrecision)
 
   const unitPriority = useMemo(() => {
     const key =

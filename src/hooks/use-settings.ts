@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react'
 
 export type Theme = 'system' | 'dark' | 'light'
-export type Settings = { theme: Theme }
+
+export type Precision = { kind: 'limited' | 'full'; digits: number }
+
+export type Settings = { theme: Theme; precision: Precision }
 
 const STORAGE_KEY = 'settings'
-const DEFAULT_SETTINGS: Settings = { theme: 'system' }
+const DEFAULT_SETTINGS: Settings = {
+  theme: 'system',
+  precision: { kind: 'limited', digits: 2 },
+}
 
 function loadSettings(): Settings {
   try {

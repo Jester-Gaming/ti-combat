@@ -52,6 +52,7 @@ function App() {
         {/* Combat simulator */}
         <CombatSimulator
           className={clsx(styles.animateFadeUp, styles.animateDelay100)}
+          precision={settings.precision}
         />
       </div>
     </ToastProvider>
