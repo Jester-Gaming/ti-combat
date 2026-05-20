@@ -27,7 +27,7 @@ export const thundarian: Ability = {
               phase: ctx.currentDiceRollPhase,
               firing: ctx.currentDiceRollFiring,
               hitSource: ctx.currentDiceRollHitSource,
-              routing: ctx.currentDiceRollRouting,
+              selfTarget: ctx.currentDiceRollSelfTarget,
             })
           : buildCombatDiceRollGroup({ phase: ctx.currentDiceRollPhase })
         ctx.api.own.discardCurrentGroupScript()

@@ -54,6 +54,7 @@ export const strikeWingAmbuscade: Ability<Params> = {
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: UNIT_ABILITY_PHASES,
+      declaration: true,
       isCallable: (params, ctx) =>
         ctx.utils.getFlat(params.phases).includes(ctx.meta),
       call: ctx => {

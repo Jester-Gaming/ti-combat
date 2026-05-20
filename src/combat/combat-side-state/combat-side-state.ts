@@ -947,7 +947,7 @@ export class CombatSideState {
     meta: MetaPhase,
   ): UnitType[] | undefined {
     if (meta === 'SPACE_CANNON_OFFENSE') {
-      const sc = mergeConfig(s, 'RESOLVE_SPACE_CANNON')
+      const sc = mergeConfig(s, 'SPACE_CANNON_OFFENSE')
       if (sc?.customScoPriority) {
         const parsed = parsePriorityList(sc.scoUnitPriority)
         if (parsed !== undefined) return parsed

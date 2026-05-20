@@ -15,6 +15,7 @@ import { CombatState } from '../combat-state/combat-state'
 import type {
   CombatStateData,
   MetaPhase,
+  SideAbilitiesConfig,
   SideStateData,
 } from '../combat-state/types'
 import { Logger } from '../logger'
@@ -26,7 +27,6 @@ import {
   AbilityBranchInterrupt,
   AbilityContext,
 } from './api/ability-api'
-import { extractDefaults } from './declare-param'
 import type {
   Ability,
   AbilityInvoke,
@@ -129,10 +129,11 @@ function resolveMergedParams(
   sideData: SideStateData,
   ability: Ability,
 ): Record<string, unknown> | undefined {
-  const configParams = CombatSideState.getLiveParams(sideData, ability.key)
-  const mergedParams = configParams
-    ? { ...extractDefaults(ability), ...configParams }
-    : extractDefaults(ability)
+  // Defaults are materialized into `abilities` (base) at setup, so the merged
+  // base+live config already carries every default. No registered-default
+  // merge needed here.
+  const mergedParams = CombatSideState.getLiveParams(sideData, ability.key)
+  if (!mergedParams) return undefined
   if ('isEnabled' in mergedParams && !mergedParams.isEnabled) return undefined
   return mergedParams
 }
@@ -345,27 +346,23 @@ function decrementUses(
   draft: CombatStateData,
   side: CombatSide,
   abilityKey: string,
-  params: Record<string, unknown>,
   engine?: AbilitiesEngine,
 ): void {
-  if (
-    'uses' in params &&
-    typeof params.uses === 'number' &&
-    isFinite(params.uses)
-  ) {
-    const live = draft[side].liveAbilities[abilityKey]
-    const base = draft[side].abilities[abilityKey]
-    const currentUses =
-      live && typeof live.uses === 'number'
-        ? live.uses
-        : base && typeof base.uses === 'number'
-          ? base.uses
-          : (params.uses as number)
-    const entry = cowLiveAbilityEntry(draft, side, abilityKey)
-    entry.uses = currentUses - 1
-    if (engine) {
-      engine.addAbilityInvokes(side, abilityKey, draft)
-    }
+  // Defaults are materialized into `abilities` (base) at setup, so the current
+  // `uses` value always lives in live → base. No registered-default fallback.
+  const live = draft[side].liveAbilities[abilityKey]
+  const base = draft[side].abilities[abilityKey]
+  const currentUses =
+    live && typeof live.uses === 'number'
+      ? live.uses
+      : base && typeof base.uses === 'number'
+        ? base.uses
+        : undefined
+  if (currentUses === undefined || !isFinite(currentUses)) return
+  const entry = cowLiveAbilityEntry(draft, side, abilityKey)
+  entry.uses = currentUses - 1
+  if (engine) {
+    engine.addAbilityInvokes(side, abilityKey, draft)
   }
 }
 
@@ -389,16 +386,22 @@ export interface AbilityPassFrame {
   tracker: InvocationTracker
   currentSide: CombatSide
   consecutiveSkips: number
+  /** Ephemeral per-pass scratch state, keyed by side then ability key.
+   *  Written via `SideApi.updateRunState`, read via `getRunState`. Lives
+   *  only for the duration of one `runAbilities` pass (carried across
+   *  park/resume on the dispatching step's frame, deep-cloned per branch
+   *  by `clonePendingSteps`), then discarded — never hashed into state
+   *  identity. Use for data scoped to a single timing run, e.g. which
+   *  structures a Linkship pass has already consumed. */
+  runState?: Record<CombatSide, SideAbilitiesConfig>
 }
 
 export interface RunAbilitiesOptions {
-  skipSides?: CombatSide[]
   /** Remap `ctx.api.opponent` per invoker side. Used by unit-ability phases
    *  (BOMBARDMENT, AFB, SPACE_CANNON_*) so abilities see "opponent" as their
    *  counterparty in the action — target when firing, firing when targeted —
-   *  regardless of actual attacker/defender labels. Enables routed hits (e.g.
-   *  Proxima self-bombard) to look natural to abilities like X-89 and Bunker
-   *  without making them aware of the routing. */
+   *  regardless of actual attacker/defender labels. Lets abilities like X-89
+   *  and Bunker resolve their counterparty naturally. */
   opponentSideByInvokerSide?: { attacker: CombatSide; defender: CombatSide }
 }
 
@@ -467,6 +470,12 @@ export class AbilitiesEngine {
   private _unitAbilityKeys!: Record<CombatSide, ReadonlySet<string>>
   private _attackerCtx!: AbilityContext
   private _defenderCtx!: AbilityContext
+
+  /** Run-state of the `runAbilities` pass currently executing, or undefined
+   *  when no pass is active. Set at the top of `runAbilities` (seeded from
+   *  the resume frame), restored on return. `SideApi.updateRunState` /
+   *  `getRunState` read/write through this. See `AbilityPassFrame.runState`. */
+  _currentRunState?: Record<CombatSide, SideAbilitiesConfig>
 
   _logger?: Logger
 
@@ -882,7 +891,6 @@ export class AbilitiesEngine {
   runAbilities<T extends AbilityTiming>(
     timing: T,
     context?: TimingContextMap[T],
-    options?: RunAbilitiesOptions,
     logger?: Logger,
   ): void {
     // The dispatching timing step (and its phase stack) comes from the
@@ -908,15 +916,25 @@ export class AbilitiesEngine {
       defender: new Set(),
     }
 
-    this._runAbilityLoop(
-      timing,
-      tracker,
-      resume?.currentSide ?? 'attacker',
-      resume?.consecutiveSkips ?? 0,
-      context,
-      options,
-      activeLogger,
-    )
+    // Per-pass scratch state — resumed from the frame, otherwise fresh.
+    // Exposed via `_currentRunState` for the duration of the pass so
+    // `SideApi.updateRunState`/`getRunState` reach it, then restored.
+    const runState = resume?.runState ?? { attacker: {}, defender: {} }
+    const prevRunState = this._currentRunState
+    this._currentRunState = runState
+
+    try {
+      this._runAbilityLoop(
+        timing,
+        tracker,
+        resume?.currentSide ?? 'attacker',
+        resume?.consecutiveSkips ?? 0,
+        context,
+        activeLogger,
+      )
+    } finally {
+      this._currentRunState = prevRunState
+    }
   }
 
   /**
@@ -936,25 +954,17 @@ export class AbilitiesEngine {
     startSide: CombatSide,
     consecutiveSkips: number,
     context: TimingContextMap[T] | undefined,
-    options?: RunAbilitiesOptions,
     logger?: Logger,
   ): void {
     let currentSide: CombatSide = startSide
 
     while (consecutiveSkips < 2) {
-      if (options?.skipSides?.includes(currentSide)) {
-        consecutiveSkips += 1
-        currentSide = getOpponentSide(currentSide)
-        continue
-      }
-
       const result = this.tryResolveOne(
         timing,
         currentSide,
         context,
         tracker,
         logger,
-        options?.opponentSideByInvokerSide,
       )
 
       if (result === 'parked') return
@@ -995,10 +1005,6 @@ export class AbilitiesEngine {
     context: TimingContextMap[T] | undefined,
     tracker: InvocationTracker,
     logger?: Logger,
-    opponentSideByInvokerSide?: {
-      attacker: CombatSide
-      defender: CombatSide
-    },
   ): 'ran' | 'ran-stay' | 'skipped' | 'parked' {
     const state = this._combatState.data
     const step = this._combatState.currentStep
@@ -1058,114 +1064,101 @@ export class AbilitiesEngine {
       ctx.ownerFaction = ownerFaction
       ctx.ability = ability
 
-      // Rebind ctx.api.opponent if the caller passed a role-based remap
-      // (used for unit-ability phases so abilities see opponent = target when
-      // firing, or opponent = firing when targeted).
-      const remappedOpponent = opponentSideByInvokerSide?.[side]
-      const priorOpponentSide =
-        remappedOpponent !== undefined
-          ? ctx.api.opponent._rebindSide(remappedOpponent)
-          : undefined
+      let canCall: boolean
+      if (inv.isCallable) {
+        canCall = inv.isCallable(freshParams, ctx, context)
+      } else {
+        canCall = true
+      }
 
-      try {
-        let canCall: boolean
-        if (inv.isCallable) {
-          canCall = inv.isCallable(freshParams, ctx, context)
-        } else {
-          canCall = true
+      if (canCall) {
+        const childLogger = logger?.child(invoke.timing).child(ability.key)
+
+        const markTracker = (t: InvocationTracker) => {
+          t[side].add(entry.trackerKey)
         }
 
-        if (canCall) {
-          const childLogger = logger?.child(invoke.timing).child(ability.key)
+        const isDeclarationInvoke = invoke.declaration === true
+        const shouldDecrementUses = !invoke.system && !isDeclarationInvoke
+        ctx.upgradeForCall(ability, childLogger?.forSide(side))
+        ctx.isDeclarationInvoke = isDeclarationInvoke
 
-          const markTracker = (t: InvocationTracker) => {
-            t[side].add(entry.trackerKey)
+        // Pre-stamp the dispatching step's frame with the post-invoke
+        // resume state. If the call branches, `clonePendingSteps` deep-
+        // clones this frame per branch (with its own `cloneTracker`) so
+        // every branch resumes from the correct point. If the call
+        // completes normally, we clear the frame below.
+        //
+        // Parking requires `preScriptLen > 0`: at the top level (initial
+        // PREPARE or a test-driven `runAbilities`) there's no outer step
+        // to come back to. We still pre-stamp for branch propagation;
+        // the final step.frame is cleared on non-parked completion.
+        // External invokes fired by a non-owner side don't consume the
+        // alternation slot — the loop stays on that side for the next
+        // dispatch. `ownerFaction === undefined` means this side doesn't
+        // own the ability; combined with `invoke.external` that's the
+        // cross-faction usage case.
+        const stayOnSide =
+          invoke.external === true && ownerFaction === undefined
+
+        const frameTracker = step ? cloneTracker(tracker) : undefined
+        if (step && frameTracker) {
+          markTracker(frameTracker)
+          step.frame = {
+            tracker: frameTracker,
+            currentSide: stayOnSide ? side : getOpponentSide(side),
+            consecutiveSkips: 0,
+            // Reference the live per-pass object so accumulated writes
+            // travel with the frame on park/resume; deep-cloned per branch
+            // by `clonePendingSteps`.
+            runState: this._currentRunState,
+          }
+        }
+        // Also mark the outer loop's tracker so the current pass
+        // alternation (if we continue without branching/parking) treats
+        // this ability as invoked.
+        markTracker(tracker)
+
+        try {
+          inv.call(ctx, freshParams, context)
+
+          if (shouldDecrementUses) decrementUses(state, side, ability.key, this)
+          ctx.resetAfterCall()
+        } catch (e) {
+          if (!(e instanceof AbilityBranchInterrupt)) {
+            if (step) step.frame = undefined
+            throw e
           }
 
-          const shouldDecrementUses =
-            !invoke.system &&
-            timing !== 'REROLL_DICE_ROLL' &&
-            timing !== 'REROLL_UNIT_ABILITY_ROLL'
-          ctx.upgradeForCall(ability, childLogger?.forSide(side))
+          ctx.resetAfterCall()
 
-          // Pre-stamp the dispatching step's frame with the post-invoke
-          // resume state. If the call branches, `clonePendingSteps` deep-
-          // clones this frame per branch (with its own `cloneTracker`) so
-          // every branch resumes from the correct point. If the call
-          // completes normally, we clear the frame below.
-          //
-          // Parking requires `preScriptLen > 0`: at the top level (initial
-          // PREPARE or a test-driven `runAbilities`) there's no outer step
-          // to come back to. We still pre-stamp for branch propagation;
-          // the final step.frame is cleared on non-parked completion.
-          // External invokes fired by a non-owner side don't consume the
-          // alternation slot — the loop stays on that side for the next
-          // dispatch. `ownerFaction === undefined` means this side doesn't
-          // own the ability; combined with `invoke.external` that's the
-          // cross-faction usage case.
-          const stayOnSide =
-            invoke.external === true && ownerFaction === undefined
-
-          const frameTracker = step ? cloneTracker(tracker) : undefined
-          if (step && frameTracker) {
-            markTracker(frameTracker)
-            step.frame = {
-              tracker: frameTracker,
-              currentSide: stayOnSide ? side : getOpponentSide(side),
-              consecutiveSkips: 0,
-            }
-          }
-          // Also mark the outer loop's tracker so the current pass
-          // alternation (if we continue without branching/parking) treats
-          // this ability as invoked.
-          markTracker(tracker)
-
-          try {
-            inv.call(ctx, freshParams, context)
+          for (const branch of e.branches) {
+            const saved = this._saveBranchState()
+            this._setBranchState(branch)
 
             if (shouldDecrementUses)
-              decrementUses(state, side, ability.key, freshParams, this)
-            ctx.resetAfterCall()
-          } catch (e) {
-            if (!(e instanceof AbilityBranchInterrupt)) {
-              if (step) step.frame = undefined
-              throw e
-            }
+              decrementUses(branch.data, side, ability.key, this)
+            branch.logger?.forSide(side).log()
 
-            ctx.resetAfterCall()
-
-            for (const branch of e.branches) {
-              const saved = this._saveBranchState()
-              this._setBranchState(branch)
-
-              if (shouldDecrementUses)
-                decrementUses(branch.data, side, ability.key, freshParams, this)
-              branch.logger?.forSide(side).log()
-
-              this._restoreBranchState(saved)
-            }
-
-            throw new AbilityBranchInterrupt(e.branches)
+            this._restoreBranchState(saved)
           }
 
-          childLogger?.forSide(side).log()
-
-          // Parked when the dispatching step is no longer on top — either a
-          // trigger was pushed above it (ctx.trigger, destroy cascade) or the
-          // script was dropped out from under us (ctx.transitionTo). Top-level
-          // passes (step === undefined) can't park: pushed steps sit on
-          // `pendingSteps` and run on the next `advance()`.
-          const parked =
-            step !== undefined && this._combatState.currentStep !== step
-
-          if (!parked && step) step.frame = undefined
-          if (parked) return 'parked'
-          return stayOnSide ? 'ran-stay' : 'ran'
+          throw new AbilityBranchInterrupt(e.branches)
         }
-      } finally {
-        if (priorOpponentSide !== undefined) {
-          ctx.api.opponent._rebindSide(priorOpponentSide)
-        }
+
+        childLogger?.forSide(side).log()
+
+        // Parked when the dispatching step is no longer on top — either a
+        // trigger was pushed above it (ctx.trigger, destroy cascade) or the
+        // script was dropped out from under us (ctx.transitionTo). Top-level
+        // passes (step === undefined) can't park: pushed steps sit on
+        // `pendingSteps` and run on the next `advance()`.
+        const parked =
+          step !== undefined && this._combatState.currentStep !== step
+
+        if (!parked && step) step.frame = undefined
+        if (parked) return 'parked'
+        return stayOnSide ? 'ran-stay' : 'ran'
       }
     }
 

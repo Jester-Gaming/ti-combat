@@ -45,17 +45,13 @@ export interface PreSplit {
  * default `firingSide='attacker'` convention where decls whose `side`
  * equals the firing side land in slot 0 and the opposite in slot 1.
  */
-export function preSplit(
-  dice: CollectedDice,
-  modifiers: Modifier[],
-  routing: { attacker: CombatSide; defender: CombatSide },
-): PreSplit {
+export function preSplit(dice: CollectedDice, modifiers: Modifier[]): PreSplit {
   const additional = modifiers.filter(
     (m): m is AdditionalHitPoolModifier => m.type === 'ADDITIONAL_HIT_POOL',
   )
   return {
-    attacker: splitForFiringSide('attacker', dice, additional, routing),
-    defender: splitForFiringSide('defender', dice, additional, routing),
+    attacker: splitForFiringSide('attacker', dice, additional),
+    defender: splitForFiringSide('defender', dice, additional),
   }
 }
 
@@ -63,7 +59,6 @@ function splitForFiringSide(
   firingSide: CombatSide,
   dice: CollectedDice,
   additional: AdditionalHitPoolModifier[],
-  routing: { attacker: CombatSide; defender: CombatSide },
 ): SideBuckets {
   const firingIdx: 0 | 1 = firingSide === 'attacker' ? 0 : 1
   const specs = additional
@@ -87,7 +82,9 @@ function splitForFiringSide(
   }
   buckets.push(rest)
 
-  return { landingSide: routing[firingSide], buckets }
+  const landingSide: CombatSide =
+    firingSide === 'attacker' ? 'defender' : 'attacker'
+  return { landingSide, buckets }
 }
 
 function matchUnit(variantKey: UnitType, units: UnitType[]): boolean {

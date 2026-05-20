@@ -122,6 +122,38 @@ describe('STRIKE_WING_AMBUSCADE', () => {
     expect(pool.defender).toContainDice('PDS', [6, 2])
   })
 
+  it('spends its single use on the first roll, not both SCO and AFB', () => {
+    // Destroyer (AFB) + PDS (SCO) on the same side, SWA enabled for both
+    // phases with a single use. SCO resolves first (before SPACE_COMBAT) and
+    // consumes the use, so the later AFB roll gets no extra die.
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { DESTROYER: 1, PDS: 1 },
+        abilities: {
+          STRIKE_WING_AMBUSCADE: {
+            isEnabled: true,
+            uses: 1,
+            phases: [
+              ['SPACE_CANNON_OFFENSE', true],
+              ['AFB', true],
+            ],
+          },
+        },
+      },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 1, FIGHTER: 1 } },
+    })
+
+    t.advanceTo('SPACE_COMBAT')
+    // SCO consumed the use: PDS SCO [6, 1] + 1 = [6, 2].
+    expect(t.dicePool().attacker).toContainDice('PDS', [6, 2])
+
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', 0, 'AFB')
+    // Use already spent on SCO — Destroyer AFB stays at [9, 2].
+    expect(t.dicePool().attacker).toContainDice('DESTROYER', [9, 2])
+  })
+
   it('does not add die when phase is not selected', () => {
     const t = combatTest({
       mode: 'SPACE',

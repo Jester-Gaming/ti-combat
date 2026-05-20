@@ -41,15 +41,8 @@ export const capacity: Ability<Params> = {
       },
     },
     {
-      timing: 'AFTER_ASSIGN_HITS_STEP',
-      context: 'SPACE_CANNON_OFFENSE',
-      call: (ctx, params) => {
-        enforceCapacity(ctx, ctx.utils.getFlat(params.removePriority))
-      },
-    },
-    {
       timing: 'CLEANUP',
-      context: 'SPACE_COMBAT',
+      context: ['SPACE_COMBAT', 'SPACE_CANNON_OFFENSE'],
       call: (ctx, params) => {
         enforceCapacity(ctx, ctx.utils.getFlat(params.removePriority))
       },

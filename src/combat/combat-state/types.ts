@@ -10,11 +10,7 @@ import type {
   UnitType,
 } from '@/types'
 
-import type {
-  AbilityPassFrame,
-  AbilityTiming,
-  RunAbilitiesOptions,
-} from '../abilities-engine'
+import type { AbilityPassFrame, AbilityTiming } from '../abilities-engine'
 import type { ModifierDecl } from '../dice-math/types'
 // `PhaseStep` references `CombatState` in its method `fn` signature; the
 // import is type-only to avoid a runtime cycle.
@@ -212,7 +208,6 @@ export type PhaseStep = { phase: MetaPhase[]; data?: unknown } & (
   | {
       kind: 'timing'
       timing: AbilityTiming
-      options?: RunAbilitiesOptions
       /** In-flight pass state — populated by the ability engine when the
        *  pass parks (e.g. after `ctx.trigger`) or branches; consumed on
        *  resume. Cloned per-branch through `clonePendingSteps` so each
@@ -254,7 +249,11 @@ export type PendingStep = PhaseStep | PhaseStepGroup
 export interface DiceRollContext {
   hitSource: HitSource
   firing: CombatSide[]
-  routing?: { attacker: CombatSide; defender: CombatSide }
+  /** Proxima-style self-target roll: hits are produced against the natural
+   *  opponent (then swapped to the firer post-roll by `_swapHitPools`), but
+   *  ADD_DICE_COUNT suppression and the reroll-spec flip apply as if the
+   *  firer shoots itself. */
+  selfTarget?: boolean
   customDice?: {
     attacker: import('../dice-math/types').SideDiceCollection
     defender: import('../dice-math/types').SideDiceCollection

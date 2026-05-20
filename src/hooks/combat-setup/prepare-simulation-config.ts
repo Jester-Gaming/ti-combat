@@ -15,6 +15,7 @@ import {
 } from './get-available-abilities'
 import {
   clampLimitParams,
+  initializeAbilityDefaults,
   reconcileAbilitiesConfig,
   resetSettingsToBase,
   restoreConsumerParams,
@@ -80,6 +81,12 @@ export function prepareSimulationConfig(
   }
 
   const savedParams = snapshotConsumerParams(config, abilities)
+  // Materialize every registered ability's static defaults into the config so
+  // `sideData.abilities` carries a base entry for all of them (uses, isEnabled,
+  // and simple defaults). Runs AFTER the snapshot so it only fills gaps —
+  // snapshot/restore must not capture these defaults and overwrite reconciled
+  // sync values. Mirrors the UI store's setup (combat-setup.ts).
+  initializeAbilityDefaults(config, abilities)
   reconcileAbilitiesConfig(config, abilities, combatMode)
   restoreConsumerParams(config, abilities, savedParams)
   // After restore, sync-source params with declared limits may carry

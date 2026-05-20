@@ -16,12 +16,12 @@ import type {
  *  Mirrors the previous eager-mutation behavior of the corresponding
  *  SideApi methods (`setDiceCount`, `addDiceCount`, `addDiceGroup`).
  *
- *  `isSelfTarget` is set when the firing side's hits route back to itself
- *  (Proxima self-bombardment). In that case ADD_DICE_COUNT is skipped:
- *  the modifier's intent is opponent-facing ("give me +1 die to hit you"),
- *  so when the roll lands on the owner instead, the bonus would
- *  self-inflict damage. Mirrors `flipRerollSpecsForSelfTarget` — abilities
- *  stay naive, the engine inverts the routing. */
+ *  `isSelfTarget` is set when the firing side is shooting itself (Proxima
+ *  self-bombardment). In that case ADD_DICE_COUNT is skipped: the modifier's
+ *  intent is opponent-facing ("give me +1 die to hit you"), so on a
+ *  self-targeted roll the bonus would self-inflict damage. Mirrors
+ *  `flipRerollSpecsForSelfTarget` — abilities stay naive, the engine
+ *  handles the self-target inversion. */
 export function applyDiceShapeModifiers(
   collection: SideDiceCollection,
   modifiers: readonly ModifierDecl[],

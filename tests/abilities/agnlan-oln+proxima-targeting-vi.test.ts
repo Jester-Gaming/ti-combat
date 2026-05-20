@@ -21,7 +21,9 @@ describe('AGNLAN_OLN + PROXIMA_TARGETING_VI', () => {
     //   Each natural hit (p=0.3) gets rerolled at p=0.3 → final P(hit per
     //   die) = 0.09. Distribution is the compound (natural Binomial(3,0.3)
     //   then reroll-hits Binomial(k,0.3)): 0.753571 / 0.223587 / 0.022113 /
-    //   0.000729 on attacker's hit pool.
+    //   0.000729. Hits are produced on the defender's pool (natural opponent)
+    //   and swapped to the attacker only after the roll, so the branch
+    //   distribution is keyed by defender here.
 
     // Opp-bomb fires first (LIFO: opp-bomb pushed second, fires first).
     const oppBomb = combatTest({
@@ -51,7 +53,7 @@ describe('AGNLAN_OLN + PROXIMA_TARGETING_VI', () => {
     // self-bomb's dice roll — opp-bomb hits are independent of self-bomb
     // hits so the conditional distribution matches the marginal.
     const selfBranches = oppBranches[0].state.advance()
-    expect(selfBranches).toHaveBranches(pendingHits('attacker'), [
+    expect(selfBranches).toHaveBranches(pendingHits('defender'), [
       { value: 0, probability: 0.753571 },
       { value: 1, probability: 0.223587 },
       { value: 2, probability: 0.022113 },

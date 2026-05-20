@@ -30,6 +30,10 @@ export interface HitValueModifierDecl {
    *  (split out of the variant's bucket). Used by abilities like
    *  Gravleash Maneuvers that target a single ship. */
   singleUnit?: string
+  /** True when the source invoke was flagged `declaration: true` — the
+   *  dispatch-time `uses` decrement was deferred; the kernel must bill
+   *  one use if this modifier survives the firing-side filter. */
+  wasDeclaration?: boolean
 }
 
 /** Override the variant's base dice count, preserving any bonus dice
@@ -41,6 +45,7 @@ export interface SetDiceCountDecl {
   abilityKey: string
   count: number
   unitType: UnitType
+  wasDeclaration?: boolean
 }
 
 /** Add `count` to one unit's `dicePerUnit` in the variant with the
@@ -52,6 +57,7 @@ export interface AddDiceCountDecl {
   abilityKey: string
   count: number
   target: 'BEST' | 'WORST'
+  wasDeclaration?: boolean
 }
 
 /** Append a new dice group under the ability's key (a synthetic source). */
@@ -62,6 +68,7 @@ export interface AddDiceGroupDecl {
   abilityKey: string
   hitValue: number
   dpu: number
+  wasDeclaration?: boolean
 }
 
 export interface RollTriggerDecl {
@@ -79,6 +86,7 @@ export interface RollTriggerDecl {
    *  face. Resolved inside the math kernel's branch construction so the
    *  branch state returned by `advance()` already reflects the effect. */
   effect: (count: number, ctx: AbilityContext) => void
+  wasDeclaration?: boolean
 }
 
 export interface ConditionalModifierDecl {
@@ -88,6 +96,7 @@ export interface ConditionalModifierDecl {
   abilityKey: string
   unit: UnitId | 'ALL_OWN' | 'ALL_OPPONENT'
   amount: number
+  wasDeclaration?: boolean
 }
 
 export interface RerollDecl {
@@ -112,6 +121,7 @@ export interface RerollDecl {
   target?: 'MISSES' | 'HITS' | 'ALL'
   rerollIf?: (side: RerollSide) => boolean
   consumeUseIf?: (side: RerollSide) => boolean
+  wasDeclaration?: boolean
 }
 
 /** ADDITIONAL_HIT_POOL decl (docs/dice-math.md §2). Siphons hits sourced from
@@ -127,6 +137,7 @@ export interface AdditionalHitPoolDecl {
    *  variant key against the firing side's sources). */
   units: UnitType[]
   transform: (count: number) => { base: number; unitPriority: UnitType[] }
+  wasDeclaration?: boolean
 }
 
 /** Per-unit custom-roll declaration (docs/dice-math.md §1.5). Replaces the
@@ -142,6 +153,7 @@ export interface CustomRollDecl {
   abilityKey: string
   shouldTransform: (hitValue: number, dicePerUnit: number) => boolean
   createGenerator: (hitValue: number, dicePerUnit: number) => number[]
+  wasDeclaration?: boolean
 }
 
 /** Tagged union of every declaration that can be pushed into
@@ -238,7 +250,7 @@ export function buildSourceMap(
 //
 // `target` is a tuple [OWN?, OPPONENT?] where OWN refers to the firing side
 // from this modifier's perspective. The math kernel does not assume a fixed
-// attacker/defender mapping; the caller passes routing separately.
+// attacker/defender mapping.
 // ============================================================================
 
 export interface RerollTargetSpec {

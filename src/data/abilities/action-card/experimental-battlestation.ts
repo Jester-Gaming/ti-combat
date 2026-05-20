@@ -16,6 +16,7 @@ export const experimentalBattlestation: Ability = {
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: 'SPACE_CANNON_OFFENSE',
+      declaration: true,
       call: ctx => {
         ctx.api.own.addDiceGroup([5, 3])
       },

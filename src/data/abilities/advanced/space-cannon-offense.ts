@@ -7,47 +7,42 @@ import { declareParam } from '../../../combat/abilities-engine/declare-param'
 import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
-  resolve: boolean
   customScoPriority: boolean
   scoUnitPriority: UnitList
 }
 
 declare global {
   interface AbilityConfigMap {
-    RESOLVE_SPACE_CANNON: Params
+    SPACE_CANNON_OFFENSE: Params
   }
 }
 
-export const spaceCannon: Ability<Params> = {
-  key: 'RESOLVE_SPACE_CANNON',
-  name: 'Space Cannon',
-  description: 'Space Cannon is resolved only when enabled',
+export const spaceCannonOffense: Ability<Params> = {
+  key: 'SPACE_CANNON_OFFENSE',
+  name: 'Space Cannon Offense',
+  description: 'Space Cannon Offense is resolved only when enabled',
+  context: 'SPACE',
   paramsSchema: z.object({
-    resolve: z.boolean(),
     customScoPriority: z.boolean(),
     scoUnitPriority: UnitListSchema,
   }),
   params: {
     isEnabled: true,
     uses: Infinity,
-    resolve: true,
     customScoPriority: false,
     scoUnitPriority: declareParam<UnitList>({
       default: [],
       source: 'spaceCombatParticipating',
     }),
   },
-  headerUI: 'resolve',
+  headerUI: 'isEnabled',
   invoke: [
     {
-      timing: 'PREPARE',
-      isCallable: params => !params.resolve,
-      call: ctx => {
-        ctx.api.own.setUnitAbilityCannotBeUsed(
-          'SPACE_CANNON',
-          'RESOLVE_SPACE_CANNON',
-        )
-      },
+      timing: 'SPACE_CANNON_OFFENSE_STEP',
+      call: ctx =>
+        ctx.resolveStep('SPACE_CANNON_OFFENSE', {
+          deferCompletionCheck: true,
+        }),
     },
   ],
   uiConfig: (ctx, params) => {

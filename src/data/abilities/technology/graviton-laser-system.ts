@@ -19,13 +19,13 @@ export const gravitonLaserSystem: Ability = {
       context: 'SPACE_CANNON_OFFENSE',
       call: ctx => {
         const opp = ctx.api.opponent
-        const sc = opp.getAbilityConfig('RESOLVE_SPACE_CANNON')
+        const sc = opp.getAbilityConfig('SPACE_CANNON_OFFENSE')
         const priority = sc?.customScoPriority
           ? (sc.scoUnitPriority ?? [])
           : (opp.getAbilityConfig('UNIT_PRIORITY')?.spaceUnitPriority ?? [])
-        const isFighter = ([v]: [string]) =>
+        const isFighter = ([v]: [UnitType]) =>
           parseVariantId(v as UnitType).type === 'FIGHTER'
-        opp.updateAbilityConfig('RESOLVE_SPACE_CANNON', {
+        opp.updateAbilityConfig('SPACE_CANNON_OFFENSE', {
           customScoPriority: true,
           scoUnitPriority: [
             ...priority.filter(p => !isFighter(p)),

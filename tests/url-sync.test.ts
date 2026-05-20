@@ -65,7 +65,7 @@ describe('URL round-trip', () => {
   })
 
   it('does not warn for UnitList (V=never) order arrays', () => {
-    // UNIT_PRIORITY and RESOLVE_SPACE_CANNON use `UnitList` whose runtime
+    // UNIT_PRIORITY and SPACE_CANNON_OFFENSE use `UnitList` whose runtime
     // shape is `[K][]` 1-tuples but round-trips through the URL as a flat
     // `K[]` (no second element to pair with). Both shapes are valid runtime
     // input — validation must not flag the round-tripped shape.
@@ -73,7 +73,7 @@ describe('URL round-trip', () => {
     config.da['UNIT_PRIORITY'] = {
       spaceUnitPriority: [['FIGHTER'], ['DESTROYER']],
     }
-    config.da['RESOLVE_SPACE_CANNON'] = {
+    config.da['SPACE_CANNON_OFFENSE'] = {
       scoUnitPriority: [['FIGHTER'], ['DESTROYER']],
     }
     const search = configToSearchString(config)
@@ -81,7 +81,7 @@ describe('URL round-trip', () => {
     const result = validateSerializedConfig(decoded, abilityLookup)
     expect(result.warnings).toEqual([])
     expect(result.config.da['UNIT_PRIORITY']).toBeDefined()
-    expect(result.config.da['RESOLVE_SPACE_CANNON']).toBeDefined()
+    expect(result.config.da['SPACE_CANNON_OFFENSE']).toBeDefined()
   })
 
   it('surfaces a warning for legacy URLs with flat-encoded tuple arrays', () => {

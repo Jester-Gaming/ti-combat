@@ -42,6 +42,9 @@ interface PerUnitTypeInput {
     defender: UnitType[] | undefined
   }
   meta: MetaPhase
+  /** True for a self-targeting roll (Proxima self-bomb): flip reroll specs
+   *  so "reroll misses" becomes "reroll hits" against the firer's own dice. */
+  selfTarget?: boolean
   /** When set, collapse extreme tail outcomes per side whose marginal
    *  probability (sum of all per-source hits) is < threshold before the
    *  joint cross-product. */
@@ -70,8 +73,7 @@ export function runPerUnitTypeMode(input: PerUnitTypeInput): DiceMathBranch[] {
     const sideCustomRolls = pickCustomRolls(input.modifiers, side)
     let branches = initialBranches(sources, sideCustomRolls)
     const rawSideRerolls = pickRerolls(input.modifiers, side)
-    const isSelfTarget = input.preSplit[side].landingSide === side
-    const sideRerolls = isSelfTarget
+    const sideRerolls = input.selfTarget
       ? flipRerollSpecsForSelfTarget(rawSideRerolls)
       : rawSideRerolls
     // A reroll spec targeting a side with no rolled dice is a no-op: no

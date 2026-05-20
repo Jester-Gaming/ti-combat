@@ -4,14 +4,16 @@ import { bombardment } from './bombardment'
 import { capacity } from './capacity'
 import { fleetPool } from './fleet-pool'
 import { retreat } from './retreat'
-import { spaceCannon } from './space-cannon'
+import { spaceCannonDefense } from './space-cannon-defense'
+import { spaceCannonOffense } from './space-cannon-offense'
 
 export default [
   abilityOrder,
   fleetPool,
   capacity,
   retreat,
-  spaceCannon,
+  spaceCannonOffense,
+  spaceCannonDefense,
   antiFighterBarrage,
   bombardment,
 ]

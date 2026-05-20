@@ -55,9 +55,12 @@ describe('PROXIMA_TARGETING_VI', () => {
     // Force both bombs to land 3 hits. With the old sequential resolution
     // the first bomb would wipe the defender and end combat before the
     // self-bomb's 3 hits killed the attacker. With deferred completion
-    // both pools assign and combat ends in a draw.
+    // both pools assign and combat ends in a draw. Both rolls produce hits
+    // against the natural opponent (defender's pool); the self-bomb is
+    // swapped to the attacker after the roll, so its raw outcome is keyed by
+    // defender at the dice-roll branch.
     t.advanceToTiming('BEFORE_ASSIGN_HITS', { defender: 3 })
-    t.advanceToTiming('BEFORE_ASSIGN_HITS', { attacker: 3 })
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', { defender: 3 })
     t.advanceRound()
 
     expect(t.attacker.units.INFANTRY).toBeUndefined()

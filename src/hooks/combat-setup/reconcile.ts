@@ -86,8 +86,12 @@ function buildValidList(
 // ── Pure reconcile functions ────────────────────────────────────────────
 
 /**
- * Initialize defaults for abilities that declare params but don't
- * yet have entries in the config.
+ * Materialize every ability's static defaults into the config so each base
+ * entry carries a full default param set. Defaults are merged UNDER any
+ * existing config, so user-supplied values always win — a partially
+ * configured ability (e.g. just `{ uses: 1 }`) still gets the rest of its
+ * defaults (`isEnabled`, etc.). Runtime code (resolveMergedParams,
+ * decrementUses) then reads base/live only, never registered defaults.
  */
 export function initializeAbilityDefaults(
   config: AbilitiesConfig,
@@ -96,9 +100,7 @@ export function initializeAbilityDefaults(
   for (const side of ['attacker', 'defender'] as const) {
     for (const ability of abilities[side]) {
       const defaults = extractDefaults(ability)
-      if (!config[side][ability.key] && defaults) {
-        config[side][ability.key] = { ...defaults }
-      }
+      config[side][ability.key] = { ...defaults, ...config[side][ability.key] }
     }
   }
 }

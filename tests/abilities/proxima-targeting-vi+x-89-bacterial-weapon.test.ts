@@ -24,10 +24,13 @@ describe('PROXIMA_TARGETING_VI + X_89_BACTERIAL_WEAPON', () => {
     })
 
     // Narrow verification: force R2 (self-target) to 1 raw hit. X-89 doubles
-    // → 2 attacker infantry lost.
+    // → 2 attacker infantry lost. Both rolls produce hits against the natural
+    // opponent (defender's pool); the self-target roll is swapped to the
+    // attacker after AFTER_UNIT_ABILITY_ROLL, so its raw outcome is keyed by
+    // defender at the dice-roll branch.
     t.advanceTo('GROUND_COMBAT')
     t.advanceToTiming('BEFORE_ASSIGN_HITS', { attacker: 0, defender: 1 })
-    t.advanceToTiming('BEFORE_ASSIGN_HITS', { attacker: 1, defender: 0 })
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', { attacker: 0, defender: 1 })
     t.advanceRound()
 
     expect(t.abilityLog('X_89_BACTERIAL_WEAPON')).not.toHaveLength(0)
@@ -54,8 +57,9 @@ describe('PROXIMA_TARGETING_VI + X_89_BACTERIAL_WEAPON', () => {
         abilities: { X_89_BACTERIAL_WEAPON: true },
       },
     })
+    t.advanceToTiming('START_OF_COMBAT')
     t.advanceToTiming('BEFORE_ASSIGN_HITS', { attacker: 0, defender: 1 })
-    t.advanceToTiming('BEFORE_ASSIGN_HITS', { attacker: 1, defender: 0 })
+    t.advanceToTiming('BEFORE_ASSIGN_HITS', { attacker: 0, defender: 1 })
     t.advanceRound()
 
     // Defender's X-89 must not fire for attacker-owned Proxima rolls.

@@ -39,11 +39,11 @@ const baseConfig: CombatStateConfig = {
 describe('PROXIMA_TARGETING_VI + SCRAMBLE_FREQUENCY', () => {
   it('Scramble reduces opp-bomb hits; self-bomb is unaffected (use depleted)', () => {
     // Opp-bomb fires first (LIFO). Branches collapse to a 6-cell grid keyed by
-    // (defender hits, defender's remaining Scramble uses). `uses=undefined`
-    // means the liveAbilities overlay was never touched — Scramble didn't
-    // fire on that branch. `uses=0` means the use was consumed.
+    // (defender hits, defender's remaining Scramble uses). `uses=1` is the
+    // materialized default — Scramble didn't fire on that branch. `uses=0`
+    // means the use was consumed.
     //
-    //   nat=0 (0.343), nat=1 (0.441): predicate skips → uses=undefined.
+    //   nat=0 (0.343), nat=1 (0.441): predicate skips → uses=1.
     //   nat=2 (0.189), nat=3 (0.027): predicate fires → reroll all 3 dice at
     //     p=0.3 → Binomial(3, 0.3) again, with uses billed once. Mass
     //     0.189+0.027=0.216 is redistributed across (defH ∈ 0..3, uses=0).
@@ -55,8 +55,8 @@ describe('PROXIMA_TARGETING_VI + SCRAMBLE_FREQUENCY', () => {
         currentUses('defender', 'SCRAMBLE_FREQUENCY'),
       ),
       [
-        { value: [0, undefined], probability: 0.343 },
-        { value: [1, undefined], probability: 0.441 },
+        { value: [0, 1], probability: 0.343 },
+        { value: [1, 1], probability: 0.441 },
         { value: [0, 0], probability: 0.074088 },
         { value: [1, 0], probability: 0.095256 },
         { value: [2, 0], probability: 0.040824 },
@@ -66,14 +66,16 @@ describe('PROXIMA_TARGETING_VI + SCRAMBLE_FREQUENCY', () => {
 
     // Pick a branch where Scramble fired on opp-bomb (use depleted). The
     // self-bomb's `isCallable` skips Scramble because uses=0, so the dice
-    // resolve naturally: Binomial(3, 0.3) on the attacker hit pool.
+    // resolve naturally: Binomial(3, 0.3). Hits are produced on the natural
+    // opponent (defender's pool) and swapped to the attacker only after the
+    // roll, so the branch distribution is keyed by defender here.
     const oppFired = oppBranches.find(
       b =>
         pendingHits('defender')(b) === 0 &&
         currentUses('defender', 'SCRAMBLE_FREQUENCY')(b) === 0,
     )!
     const selfAfterFired = oppFired.state.advance()
-    expect(selfAfterFired).toHaveBranches(pendingHits('attacker'), [
+    expect(selfAfterFired).toHaveBranches(pendingHits('defender'), [
       { value: 0, probability: 0.343 },
       { value: 1, probability: 0.441 },
       { value: 2, probability: 0.189 },
@@ -99,26 +101,28 @@ describe('PROXIMA_TARGETING_VI + SCRAMBLE_FREQUENCY', () => {
     //   attH=1: 0.151263 + 0.194481 = 0.345744
     //   attH=2: 0.064827 + 0.083349 = 0.148176
     //   attH=3: 0.009261 + 0.011907 = 0.021168
-    // Plus the two non-firing branches:
-    //   attH=2 / uses=undefined: 0.189
-    //   attH=3 / uses=undefined: 0.027
+    // Plus the two non-firing branches (uses=1, the materialized default):
+    //   attH=2 / uses=1: 0.189
+    //   attH=3 / uses=1: 0.027
     //
-    // The marginal `pendingHits('attacker')` is 0.268912 / 0.345744 / 0.337176
-    // / 0.048168 — strictly more mass at the high end than natural Binomial(3,
+    // The marginal hit distribution is 0.268912 / 0.345744 / 0.337176 /
+    // 0.048168 — strictly more mass at the high end than natural Binomial(3,
     // 0.3) = 0.343 / 0.441 / 0.189 / 0.027 (i.e. more hits on Bastion → good
-    // for ARB).
+    // for ARB). Hits are produced on the natural opponent (defender's pool)
+    // and swapped to the attacker only after the roll, so the branch
+    // distribution is keyed by defender here.
     const t = combatTest(baseConfig)
     const oppBranches = t.advance()
     const oppNotFired = oppBranches.find(
       b =>
         pendingHits('defender')(b) === 0 &&
-        currentUses('defender', 'SCRAMBLE_FREQUENCY')(b) === undefined,
+        currentUses('defender', 'SCRAMBLE_FREQUENCY')(b) === 1,
     )!
 
     const selfAfterNotFired = oppNotFired.state.advance()
     expect(selfAfterNotFired).toHaveBranches(
       all(
-        pendingHits('attacker'),
+        pendingHits('defender'),
         currentUses('defender', 'SCRAMBLE_FREQUENCY'),
       ),
       [
@@ -126,8 +130,8 @@ describe('PROXIMA_TARGETING_VI + SCRAMBLE_FREQUENCY', () => {
         { value: [1, 0], probability: 0.345744 },
         { value: [2, 0], probability: 0.148176 },
         { value: [3, 0], probability: 0.021168 },
-        { value: [2, undefined], probability: 0.189 },
-        { value: [3, undefined], probability: 0.027 },
+        { value: [2, 1], probability: 0.189 },
+        { value: [3, 1], probability: 0.027 },
       ],
     )
   })

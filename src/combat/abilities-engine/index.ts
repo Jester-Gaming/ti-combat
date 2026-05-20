@@ -6,7 +6,6 @@ export {
   cloneTracker,
   type InvocationTracker,
   type InvokeCollections,
-  type RunAbilitiesOptions,
 } from './abilities-engine'
 export {
   type AbilitySlot,

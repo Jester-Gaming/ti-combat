@@ -40,6 +40,7 @@ export const strikeWingAlphaII: Ability<Params> = {
     {
       timing: 'BEFORE_UNIT_ABILITY_ROLL',
       context: 'AFB',
+      declaration: true,
       call: (ctx, params) => {
         ctx.api.own.declareRollTrigger({
           unitType: [ctx.api.own.getUnitVariantKey(ctx.getUnit())!],

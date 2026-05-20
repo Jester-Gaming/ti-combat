@@ -39,6 +39,7 @@ export const scrambleFrequency: Ability<Params> = {
   invoke: [
     {
       timing: 'REROLL_UNIT_ABILITY_ROLL',
+      declaration: true,
       isCallable: params => params.opponentStrategyKind !== 'NEVER',
       call: (ctx, params) => {
         const strategy = buildRerollStrategy(

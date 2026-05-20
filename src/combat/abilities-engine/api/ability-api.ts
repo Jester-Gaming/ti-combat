@@ -139,16 +139,6 @@ export class SideApi {
     this._ctx = ctx
   }
 
-  /** Temporarily rebind this SideApi to a different side and return the
-   *  previous side (for restoration). Used by the engine to implement
-   *  "mimic side" semantics in unit-ability phases. Not intended for
-   *  ability authors. */
-  _rebindSide(side: CombatSide): CombatSide {
-    const prev = this._side
-    this._side = side
-    return prev
-  }
-
   private get _sideData(): SideStateData {
     return this._ctx.state[this._side]
   }
@@ -667,6 +657,51 @@ export class SideApi {
     }
   }
 
+  /** Read this side's ephemeral run state for `key` (defaults to the running
+   *  ability). Run state lives only for the current `runAbilities` pass and
+   *  is discarded when the pass ends — use it for data scoped to a single
+   *  timing run (e.g. structures already consumed this pass). Returns
+   *  undefined when no pass is active or nothing was written. */
+  getRunState(key?: string): Record<string, unknown> | undefined {
+    const runState = this._ctx._abilitiesParams._currentRunState
+    if (!runState) return undefined
+    const targetKey = key ?? this._abilityKey
+    if (targetKey === undefined) return undefined
+    return runState[this._side][targetKey]
+  }
+
+  /** Write ephemeral run state. Same signature as `updateAbilityConfig`
+   *  (`updateRunState(updates)` targets the running ability;
+   *  `updateRunState(key, updates)` targets `key`). Values may be functions
+   *  receiving the previous value. Unlike `updateAbilityConfig`, writes are
+   *  not hashed into state identity and are discarded when the current
+   *  `runAbilities` pass ends. */
+  updateRunState(
+    keyOrUpdates: string | Record<string, unknown>,
+    maybeUpdates?: Record<string, unknown>,
+  ): void {
+    const runState = this._ctx._abilitiesParams._currentRunState
+    if (!runState) {
+      throw new Error('updateRunState called outside an abilities run')
+    }
+
+    let targetKey: string
+    let updates: Record<string, unknown>
+    if (typeof keyOrUpdates === 'string') {
+      targetKey = keyOrUpdates
+      updates = maybeUpdates!
+    } else {
+      targetKey = this._abilityKey!
+      updates = keyOrUpdates
+    }
+
+    const sideRunState = runState[this._side]
+    const entry = (sideRunState[targetKey] ??= {})
+    for (const [key, value] of Object.entries(updates)) {
+      entry[key] = typeof value === 'function' ? value(entry[key]) : value
+    }
+  }
+
   /** Apply `+amount` to a side's dice results for this dice-roll group.
    *  `target` selects scope:
    *   - omitted — every variant on the side
@@ -737,6 +772,7 @@ export class SideApi {
       unitType,
       singleUnit,
       excludeUnitTypes,
+      wasDeclaration: this._ctx.isDeclarationInvoke === true,
     })
   }
 
@@ -885,6 +921,10 @@ export class AbilityContext {
   unitSource?: UnitId
   ownerFaction?: FactionKey
   ability?: Ability
+  /** True while dispatching an invoke flagged `declaration: true`. Used by
+   *  `pushModifier` to tag emitted modifiers so the dice-math kernel can
+   *  bill `uses` only when the declaration actually survives. */
+  isDeclarationInvoke?: boolean
 
   _abilitiesParams: AbilitiesEngine
   private _side: CombatSide
@@ -984,16 +1024,16 @@ export class AbilityContext {
     return ctx.hitSource
   }
 
-  /** Hit-routing overrides for the current dice-roll group, if any.
+  /** Whether the current dice-roll group is a Proxima-style self-target roll.
    *  Throws outside a dice-roll group. */
-  get currentDiceRollRouting():
-    | { attacker: CombatSide; defender: CombatSide }
-    | undefined {
+  get currentDiceRollSelfTarget(): boolean {
     const ctx = this._abilitiesParams.combatState.currentGroupData
     if (!isDiceRollContext(ctx)) {
-      throw new Error('currentDiceRollRouting called outside a dice-roll group')
+      throw new Error(
+        'currentDiceRollSelfTarget called outside a dice-roll group',
+      )
     }
-    return ctx.routing
+    return ctx.selfTarget ?? false
   }
 
   /** Whether the current dice-roll group is a unit-ability roll (vs. a
@@ -1081,6 +1121,7 @@ export class AbilityContext {
       abilityKey: target.key,
       target: target.target,
       rerollIf: target.rerollIf,
+      wasDeclaration: this.isDeclarationInvoke === true,
     })
   }
 
@@ -1097,6 +1138,7 @@ export class AbilityContext {
       abilityKey: target.key,
       units: target.units,
       transform: target.transform,
+      wasDeclaration: this.isDeclarationInvoke === true,
     })
   }
 
@@ -1112,6 +1154,7 @@ export class AbilityContext {
   resetAfterCall() {
     this.logger = undefined
     this.ability = undefined
+    this.isDeclarationInvoke = undefined
     this._api.own._abilityKey = undefined
     this._api.own._abilitiesParams = undefined
     this._api.opponent._abilityKey = undefined
@@ -1310,6 +1353,7 @@ export class AbilityContext {
     overrides?: {
       dice?: DiceGroup[]
       target?: 'OWN' | 'OPPONENT'
+      firing?: CombatSide[]
       deferCompletionCheck?: boolean
     },
   ): void {
@@ -1320,6 +1364,7 @@ export class AbilityContext {
     }
 
     const mySide = this._side
+    const firing = overrides?.firing ?? [mySide]
 
     const customDice:
       | { attacker: SideDiceCollection; defender: SideDiceCollection }
@@ -1332,19 +1377,17 @@ export class AbilityContext {
         }
       : undefined
 
-    // target='OWN' flips firing side's hits to itself (self-damage).
-    // Routing for the non-firing side is unused (it produces no hits).
-    const routing: { attacker: CombatSide; defender: CombatSide } | undefined =
-      overrides?.target === 'OWN'
-        ? { attacker: mySide, defender: mySide }
-        : undefined
+    // target='OWN' makes the firing side shoot itself (self-damage). Hits are
+    // still produced against the natural opponent, then `_swapHitPools` moves
+    // them to the firer after AFTER_UNIT_ABILITY_ROLL.
+    const selfTarget = overrides?.target === 'OWN'
 
-    this._abilitiesParams.combatState.runUnitAbilityStepForAbility({
+    this._abilitiesParams.combatState.runUnitAbility({
       meta,
-      firing: [mySide],
+      firing,
       outerPhase: this.phaseStack,
       customDice,
-      routing,
+      selfTarget,
       deferCompletionCheck: overrides?.deferCompletionCheck,
     })
   }
@@ -1370,7 +1413,9 @@ function pushModifier(
   // the build closure may still reference it via captured scope.
   void side
   const list = (groupCtx.modifiers ??= [])
-  list.push(build(list))
+  const decl = build(list)
+  if (ctx.isDeclarationInvoke) decl.wasDeclaration = true
+  list.push(decl)
 }
 
 /** Walk the pendingSteps stack tail-first looking for a dice-roll group

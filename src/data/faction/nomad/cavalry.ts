@@ -108,6 +108,7 @@ export const cavalry: Ability<Params> = {
     {
       timing: 'CLEANUP',
       system: true,
+      context: ['SPACE_COMBAT'],
       call: (ctx, params) => {
         const variantId = makeVariantId(params.unitType, [CAVALRY])
         const [unitId] = ctx.api.own.getUnits(variantId, {

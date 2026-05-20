@@ -36,6 +36,9 @@ interface FastModeInput {
     defender: UnitType[] | undefined
   }
   meta: MetaPhase
+  /** True for a self-targeting roll (Proxima self-bomb): flip reroll specs
+   *  so "reroll misses" becomes "reroll hits" against the firer's own dice. */
+  selfTarget?: boolean
   /** When set, collapse extreme tail outcomes per side whose marginal
    *  probability is < threshold before the joint cross-product. */
   collapseThreshold?: number
@@ -62,8 +65,7 @@ interface FastModeInput {
 export function runFastMode(input: FastModeInput): DiceMathBranch[] {
   const sides = (['attacker', 'defender'] as const).map(firingSide => {
     const rawRerolls = pickRerolls(input.modifiers, firingSide)
-    const isSelfTarget = input.preSplit[firingSide].landingSide === firingSide
-    const rerolls = isSelfTarget
+    const rerolls = input.selfTarget
       ? flipRerollSpecsForSelfTarget(rawRerolls)
       : rawRerolls
     const plan = planSide(

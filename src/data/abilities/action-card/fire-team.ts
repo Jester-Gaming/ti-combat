@@ -40,6 +40,7 @@ export const fireTeam: Ability<Params> = {
   invoke: [
     {
       timing: 'REROLL_DICE_ROLL',
+      declaration: true,
       isCallable: params => params.ownStrategyKind !== 'NEVER',
       call: (ctx, params) => {
         const strategy = buildRerollStrategy(

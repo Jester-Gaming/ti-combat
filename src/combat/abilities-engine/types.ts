@@ -157,7 +157,11 @@ declare global {
     BEFORE_UNIT_ABILITY_ROLL: void
     REROLL_UNIT_ABILITY_ROLL: void
     AFTER_UNIT_ABILITY_ROLL: void
-    AFTER_UNIT_ABILITY_ROLL_STEP: void
+
+    AFB_STEP: void
+    BOMBARDMENT_STEP: void
+    SPACE_CANNON_OFFENSE_STEP: void
+    SPACE_CANNON_DEFENSE_STEP: void
 
     DESTROY: UnitId[]
     WHEN_DESTROY: UnitId[]
@@ -229,10 +233,8 @@ export interface AbilityReadContext {
   readonly currentDiceRollFiring: CombatSide[]
   /** Hit source of the current dice-roll group. Throws outside one. */
   readonly currentDiceRollHitSource: HitSource
-  /** Hit-routing overrides for the current dice-roll group, if any. Throws outside one. */
-  readonly currentDiceRollRouting:
-    | { attacker: CombatSide; defender: CombatSide }
-    | undefined
+  /** Whether the current dice-roll group is a Proxima-style self-target roll. Throws outside one. */
+  readonly currentDiceRollSelfTarget: boolean
   /** Whether the current dice-roll group is a unit-ability roll. Throws outside one. */
   readonly currentDiceRollIsUnitAbility: boolean
 }
@@ -275,10 +277,8 @@ export interface AbilityCallContext {
   readonly currentDiceRollFiring: CombatSide[]
   /** Hit source of the current dice-roll group. Throws outside one. */
   readonly currentDiceRollHitSource: HitSource
-  /** Hit-routing overrides for the current dice-roll group, if any. Throws outside one. */
-  readonly currentDiceRollRouting:
-    | { attacker: CombatSide; defender: CombatSide }
-    | undefined
+  /** Whether the current dice-roll group is a Proxima-style self-target roll. Throws outside one. */
+  readonly currentDiceRollSelfTarget: boolean
   /** Whether the current dice-roll group is a unit-ability roll. Throws outside one. */
   readonly currentDiceRollIsUnitAbility: boolean
   /** Side-abstract reroll declaration (docs/dice-math.md §2). */
@@ -323,12 +323,18 @@ export interface AbilityCallContext {
    *  resumes. The nested phase stack is `[...outerPhase, meta]` so invoke-
    *  level `context` filters and hit-value modifiers match.
    *
-   *  Fires from the calling ability's side (`ctx.side`).
+   *  Fires from the calling ability's side (`ctx.side`) by default.
    *
    *  Overrides:
    *   - `dice`   — custom dice pool for the firing side; skips collectDice
    *   - `target` — where hits land. `'OPPONENT'` (default) or `'OWN'`
    *                (self-damage, e.g. Proxima's second roll)
+   *   - `firing` — sides that roll in this step. Defaults to `[ctx.side]`.
+   *                Pass `['attacker', 'defender']` for a single combined
+   *                roll where both sides fire simultaneously (AFB): one
+   *                dice-roll group, each side's hits landing on its natural
+   *                opponent. A side that opted out is dropped by the
+   *                unit-ability hard-block, so per-side toggles still work.
    *   - `deferCompletionCheck` — when true, omit the post-assign-hits
    *                wipe-out check at the end of this step. Use to chain
    *                multiple `resolveStep` calls as one transaction so an
@@ -344,6 +350,7 @@ export interface AbilityCallContext {
     overrides?: {
       dice?: DiceGroup[]
       target?: 'OWN' | 'OPPONENT'
+      firing?: CombatSide[]
       deferCompletionCheck?: boolean
     },
   ): void
@@ -369,6 +376,14 @@ type AbilityInvokeFor<TParams, T extends AbilityTiming> = {
    *  fired on a non-owner side don't consume the alternation slot — the
    *  loop stays on that side and dispatches its next invoke. */
   external?: boolean
+  /** When true, this invoke produces a declaration (dice modifier). Its
+   *  `uses` decrement is DEFERRED — the engine skips the dispatch-time
+   *  decrement and bills `uses` only if the pushed declaration actually
+   *  survives the dice-math kernel (i.e. its target side is firing, and
+   *  for REROLLs, the per-branch rerollIf predicate fired). The existing
+   *  REROLL-specific deferral special-case in the engine is replaced by
+   *  this generic flag. Default: false. */
+  declaration?: boolean
 } & (TimingContextMap[T] extends void
   ? {
       // Void timings (PREPARE, START_OF_COMBAT, BEFORE_DICE_ROLL, etc.)

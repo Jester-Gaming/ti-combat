@@ -301,28 +301,25 @@ describe('AbilityContext dice-roll group getters', () => {
     expect(ctx.currentDiceRollHitSource).toBe('COMBAT')
   })
 
-  it('currentDiceRollRouting returns DiceRollContext.routing; throws outside', () => {
+  it('currentDiceRollSelfTarget returns DiceRollContext.selfTarget; throws outside', () => {
     const { ctx } = withAbility(cs)
-    expect(() => ctx.currentDiceRollRouting).toThrow(/dice-roll group/)
-    // Default group has no routing.
+    expect(() => ctx.currentDiceRollSelfTarget).toThrow(/dice-roll group/)
+    // Default group is not self-target.
     pushDiceRollGroup(cs)
-    expect(ctx.currentDiceRollRouting).toBeUndefined()
+    expect(ctx.currentDiceRollSelfTarget).toBe(false)
 
-    // Replace top with a unit-ability group that carries routing
-    // (combat rolls never carry routing).
+    // Replace top with a unit-ability group flagged self-target
+    // (combat rolls are never self-target).
     cs.pendingSteps.pop()
     cs.pendingSteps.push(
       buildUnitAbilityDiceRollGroup({
         phase: ['SPACE_CANNON_OFFENSE'],
         firing: ['attacker'],
         hitSource: 'SPACE_CANNON',
-        routing: { attacker: 'attacker', defender: 'attacker' },
+        selfTarget: true,
       }),
     )
-    expect(ctx.currentDiceRollRouting).toEqual({
-      attacker: 'attacker',
-      defender: 'attacker',
-    })
+    expect(ctx.currentDiceRollSelfTarget).toBe(true)
   })
 
   it('currentDiceRollIsUnitAbility returns DiceRollContext.isUnitAbility; throws outside', () => {

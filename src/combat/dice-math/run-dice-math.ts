@@ -31,7 +31,11 @@ interface DiceMathInput {
   hitSource: HitSource
   firing: readonly CombatSide[]
   isUnitAbility: boolean
-  routing?: { attacker: CombatSide; defender: CombatSide }
+  /** True for a Proxima-style self-targeting roll: hits are still produced
+   *  against the natural opponent (then swapped to the firer post-roll by a
+   *  script method), but the dice-shape `ADD_DICE_COUNT` suppression and the
+   *  reroll-spec flip apply as if the firer is shooting itself. */
+  selfTarget?: boolean
   /** Per-landing-side meta-level target restriction (only set for
    *  unit-ability rolls). Becomes the `unitPriority` of a custom entry
    *  attached to the landing side's hit pool, ordered by `priorityList`. */
@@ -95,24 +99,21 @@ interface DiceMathResult {
 export function runDiceMath(input: DiceMathInput): DiceMathResult {
   const dice = input.diceCollection
 
-  const routing = input.routing ?? {
-    attacker: 'defender' as CombatSide,
-    defender: 'attacker' as CombatSide,
-  }
+  const selfTarget = input.selfTarget ?? false
 
   // Step 1.1: dice-shape mutators in push order. Each side reads its own
   // entries; cross-side decls (rare) are filtered by `side === d.side`.
-  // `isSelfTarget` is true when this side's hits route back to itself
-  // (Proxima self-bomb). ADD_DICE_COUNT is suppressed in that case — the
-  // bonus is opponent-facing intent, so granting it on a self-routed roll
-  // would self-inflict. Mirrors the reroll spec flip in apply-rerolls.
+  // `isSelfTarget` is true when the firing side is shooting itself (Proxima
+  // self-bomb). ADD_DICE_COUNT is suppressed in that case — the bonus is
+  // opponent-facing intent, so granting it on a self-targeted roll would
+  // self-inflict. Mirrors the reroll spec flip in apply-rerolls.
   applyDiceShapeModifiers(
     dice.attacker,
     input.modifiers,
     'attacker',
     input.sideData.attacker.unitStats,
     input.hitSource,
-    routing.attacker === 'attacker',
+    selfTarget && input.firing.includes('attacker'),
   )
   applyDiceShapeModifiers(
     dice.defender,
@@ -120,7 +121,7 @@ export function runDiceMath(input: DiceMathInput): DiceMathResult {
     'defender',
     input.sideData.defender.unitStats,
     input.hitSource,
-    routing.defender === 'defender',
+    selfTarget && input.firing.includes('defender'),
   )
 
   // Step 1.2: stored hit-value modifiers per side.
@@ -158,7 +159,7 @@ export function runDiceMath(input: DiceMathInput): DiceMathResult {
     modifiers: input.modifiers,
     abilityUses: input.abilityUses,
   })
-  const split = preSplit(dice, modifiers, routing)
+  const split = preSplit(dice, modifiers)
 
   let branches: DiceMathBranch[] = canRunFast(modifiers)
     ? runFastMode({
@@ -168,6 +169,7 @@ export function runDiceMath(input: DiceMathInput): DiceMathResult {
         validTargets: input.validTargets,
         priorityList: input.priorityList,
         meta: input.meta,
+        selfTarget,
         collapseThreshold: input.collapseThreshold,
       })
     : runPerUnitTypeMode({
@@ -177,23 +179,33 @@ export function runDiceMath(input: DiceMathInput): DiceMathResult {
         validTargets: input.validTargets,
         priorityList: input.priorityList,
         meta: input.meta,
+        selfTarget,
         collapseThreshold: input.collapseThreshold,
       })
 
-  // One-shot use accounting: only REROLL decls are accounted here. The other
-  // modifier kinds (HIT_VALUE / dice-shape / ROLL_TRIGGER / ADDITIONAL_HIT_POOL)
-  // are queued from non-reroll invokes whose `uses` decrement is handled at
-  // invoke dispatch time — counting them here too would double-decrement.
-  // REROLL decls are queued from REROLL_DICE_ROLL / REROLL_UNIT_ABILITY_ROLL
-  // invokes, which explicitly skip the dispatch-time decrement, so they
-  // need this path. `consumeUseIf` opts a decl out (e.g. Munitions Reserves
-  // pays for the round via START_OF_COMBAT_ROUND, not the reroll itself).
+  // One-shot use accounting for REROLL decls. REROLL decls are queued from
+  // REROLL_DICE_ROLL / REROLL_UNIT_ABILITY_ROLL invokes, which skip the
+  // dispatch-time decrement, so they need this path. `consumeUseIf` opts a
+  // decl out (e.g. Munitions Reserves pays for the round via
+  // START_OF_COMBAT_ROUND, not the reroll itself).
   markOneShotUses(input.modifiers, input.abilityUses, branches)
+
+  // Declaration accounting for every other modifier kind. Invokes flagged
+  // `declaration: true` (`wasDeclaration` on the decl) defer their `uses`
+  // decrement; bill one use here if the modifier survived the firing-side
+  // filter. Non-declaration modifiers keep their dispatch-time decrement and
+  // are skipped here to avoid double-billing.
+  markDeclarationUses(
+    input.modifiers,
+    input.abilityUses,
+    branches,
+    input.firing,
+    selfTarget,
+  )
 
   if (input.meta === 'AFB') {
     branches = applyAfbClamp(
       branches,
-      routing,
       input.validTargets,
       input.sideData,
       input.skipAfbClampForTarget,
@@ -298,9 +310,40 @@ function markOneShotUses(
   }
 }
 
+/** Bill `uses` for non-REROLL declarations (invokes flagged
+ *  `declaration: true`) whose dispatch-time decrement was deferred. A
+ *  declaration survives — and is billed once on every branch — when its side
+ *  is firing. ADD_DICE_COUNT is additionally suppressed on a self-targeted
+ *  roll (see `applyDiceShapeModifiers`), so it isn't billed there. Decls with
+ *  non-finite (`Infinity`) uses are skipped; their delta is a no-op. */
+function markDeclarationUses(
+  decls: readonly ModifierDecl[],
+  abilityUses: Map<string, number>,
+  branches: DiceMathBranch[],
+  firing: readonly CombatSide[],
+  selfTarget: boolean,
+): void {
+  const billedKeys = new Set<string>()
+  for (const d of decls) {
+    if (d.type === 'REROLL') continue
+    if (d.wasDeclaration !== true) continue
+    if (!firing.includes(d.side)) continue
+    if (d.type === 'ADD_DICE_COUNT' && selfTarget) continue
+    const baseUses = abilityUses.get(d.abilityKey)
+    if (baseUses === undefined || !Number.isFinite(baseUses)) continue
+    billedKeys.add(d.abilityKey)
+  }
+  if (billedKeys.size === 0) return
+
+  for (const branch of branches) {
+    for (const key of billedKeys) {
+      if (!branch.usesDelta.has(key)) branch.usesDelta.set(key, 1)
+    }
+  }
+}
+
 function applyAfbClamp(
   branches: DiceMathBranch[],
-  routing: { attacker: CombatSide; defender: CombatSide },
   validTargets: { attacker: UnitType[]; defender: UnitType[] },
   sideData: { attacker: SideStateData; defender: SideStateData },
   skipForTarget: { attacker: boolean; defender: boolean } | undefined,
@@ -309,7 +352,7 @@ function applyAfbClamp(
   out = clampForFiringSide(
     out,
     'attacker',
-    routing.attacker,
+    'defender',
     validTargets,
     sideData,
     skipForTarget,
@@ -317,7 +360,7 @@ function applyAfbClamp(
   out = clampForFiringSide(
     out,
     'defender',
-    routing.defender,
+    'attacker',
     validTargets,
     sideData,
     skipForTarget,

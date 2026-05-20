@@ -120,6 +120,7 @@ export const apollo: Ability<Params> = {
     {
       timing: 'CLEANUP',
       system: true,
+      context: ['SPACE_COMBAT'],
       isCallable: params => !!params.heroUnit,
       call: (ctx, params) => {
         const variantId = makeVariantId(params.heroUnit!, [HERO])

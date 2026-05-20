@@ -18,13 +18,11 @@ import {
   type DicePool,
   type InvokeCollections,
   type RegisteredAbility,
-  type RunAbilitiesOptions,
 } from '../abilities-engine'
 import { AbilityContext } from '../abilities-engine/api/ability-api'
-import {
-  CombatSideState,
-  getOpponentSide,
-} from '../combat-side-state/combat-side-state'
+import { extractDefaults } from '../abilities-engine/declare-param'
+import type { Ability } from '../abilities-engine/types'
+import { CombatSideState } from '../combat-side-state/combat-side-state'
 import type {
   DiceMathBranch,
   PendingEffect,
@@ -259,12 +257,17 @@ export class CombatState {
       defender: new Set<string>(),
     }
 
+    const registered = abilities ?? { attacker: [], defender: [] }
+
     instance.data = baseData
     instance._collapseThreshold = collapseThreshold
     instance.pendingSteps = []
+    // Materialize ability defaults into base config BEFORE building the engine,
+    // so its invoke index sees every ability's full params.
+    CombatState._ensureAbilityDefaults(baseData, registered)
     instance._params = AbilitiesEngine.fromConfig(
       instance,
-      abilities ?? { attacker: [], defender: [] },
+      registered,
       unitAbilityKeys ?? emptyKeys,
       factionOwnedKeys ?? emptyKeys,
     )
@@ -314,16 +317,47 @@ export class CombatState {
       attacker: new Set<string>(),
       defender: new Set<string>(),
     }
+    const registered = abilities ?? { attacker: [], defender: [] }
     const instance = Object.create(CombatState.prototype) as CombatState
     instance.data = data
     instance.pendingSteps = []
+    // Materialize ability defaults into base config BEFORE building the engine,
+    // so its invoke index sees every ability's full params.
+    CombatState._ensureAbilityDefaults(data, registered)
     instance._params = AbilitiesEngine.wrap(
       instance,
-      abilities ?? { attacker: [], defender: [] },
+      registered,
       unitAbilityKeys ?? emptyKeys,
       factionOwnedKeys ?? emptyKeys,
     )
     return instance
+  }
+
+  /** Materialize static ability defaults into each side's base `abilities`
+   *  config for any ability the engine can dispatch (registered config
+   *  abilities + abilities attached to units) that has no entry yet. Setup
+   *  pipelines already do this for the faction's abilities; this guarantees
+   *  the invariant for directly-constructed states (e.g. engine tests, units
+   *  carrying ad-hoc abilities) so runtime reads never need registered
+   *  defaults. Only fills absent keys — never overwrites existing config. */
+  private static _ensureAbilityDefaults(
+    data: CombatStateData,
+    abilities: Record<import('@/types').CombatSide, RegisteredAbility[]>,
+  ): void {
+    for (const side of ['attacker', 'defender'] as const) {
+      const cfg = data[side].abilities
+      const fill = (ability: Ability) => {
+        if (cfg[ability.key] === undefined) {
+          cfg[ability.key] = { ...extractDefaults(ability) }
+        }
+      }
+      for (const { ability } of abilities[side]) fill(ability)
+      for (const { ability } of AbilitiesEngine.collectUnitAbilities(
+        data,
+        side,
+      ))
+        fill(ability)
+    }
   }
 
   assignHits(phase: MetaPhase[]): void {
@@ -486,27 +520,46 @@ export class CombatState {
   ): PendingStep[] {
     const phase: MetaPhase[] = parentMeta ? [...parentMeta, meta] : [meta]
     switch (meta) {
-      case 'SPACE_CANNON_OFFENSE':
       case 'AFB':
-      case 'BOMBARDMENT':
-      case 'SPACE_CANNON_DEFENSE': {
-        const abilityConfig = this._getUnitAbilityConfig(meta)
         return [
-          buildUnitAbilityDiceRollGroup({
-            phase,
-            firing: abilityConfig.firing,
-            hitSource: abilityConfig.hitSource,
-            allowedUnitTypes: abilityConfig.allowedUnitTypes,
-          }),
-          ...this.getAssignHitsScript(phase),
-          { kind: 'timing', timing: 'AFTER_ASSIGN_HITS_STEP', phase },
+          { kind: 'timing', timing: 'AFB_STEP', phase },
           {
             kind: 'method',
             fn: CombatState.prototype._postAssignHits,
             phase,
           },
         ]
-      }
+
+      case 'BOMBARDMENT':
+        return [
+          { kind: 'timing', timing: 'BOMBARDMENT_STEP', phase },
+          {
+            kind: 'method',
+            fn: CombatState.prototype._postAssignHits,
+            phase,
+          },
+        ]
+
+      case 'SPACE_CANNON_OFFENSE':
+        return [
+          { kind: 'timing', timing: 'SPACE_CANNON_OFFENSE_STEP', phase },
+          {
+            kind: 'method',
+            fn: CombatState.prototype._postAssignHits,
+            phase,
+          },
+          { kind: 'timing', timing: 'CLEANUP', phase },
+        ]
+
+      case 'SPACE_CANNON_DEFENSE':
+        return [
+          { kind: 'timing', timing: 'SPACE_CANNON_DEFENSE_STEP', phase },
+          {
+            kind: 'method',
+            fn: CombatState.prototype._postAssignHits,
+            phase,
+          },
+        ]
 
       case 'SPACE_COMBAT':
       case 'GROUND_COMBAT': {
@@ -532,16 +585,6 @@ export class CombatState {
           { kind: 'timing', timing: 'END_OF_COMBAT_ROUND', phase },
           { kind: 'timing', timing: 'AFTER_COMBAT_ROUND', phase },
           { kind: 'timing', timing: 'CLEANUP_ROUND', phase },
-          // Second wipe-check: catches abilities that destroy units after the
-          // first `_postAssignHits` (e.g. EXOTRIREME wiping the opponent in
-          // AFTER_COMBAT_ROUND). Without this the round drains, the engine
-          // loops to round N+1, and ability CLEANUPs (e.g. CAVALRY) don't
-          // fire until that next round's `_postAssignHits`.
-          {
-            kind: 'method',
-            fn: CombatState.prototype._postAssignHits,
-            phase,
-          },
         ]
       }
 
@@ -563,7 +606,6 @@ export class CombatState {
       this._params.runAbilities(
         step.timing,
         data as never,
-        step.options,
         this._logger?.child(innerMeta(step.phase)),
       )
     } catch (e) {
@@ -576,6 +618,23 @@ export class CombatState {
   // ===========================================================================
   // STEP METHODS (referenced by PhaseStep entries in getPhaseScript)
   // ===========================================================================
+
+  /** Swap the two sides' pending hit pools. Queued inside a self-targeting
+   *  unit-ability dice-roll group (Proxima self-bomb): the roll produces hits
+   *  against the natural opponent so AFTER_UNIT_ABILITY_ROLL abilities (e.g.
+   *  X-89) see them through their natural opponent; this then moves them to
+   *  the firer so ASSIGN_HITS lands them on the firer's own units. Only one
+   *  side has a populated pool at this point (single-firer step), so a plain
+   *  reference swap is sufficient. */
+  _swapHitPools(): void {
+    const d = this.data
+    const tmpPool = d.attacker.hitPool
+    const tmpShared = d.attacker._hitPoolShared
+    d.attacker.hitPool = d.defender.hitPool
+    d.attacker._hitPoolShared = d.defender._hitPoolShared
+    d.defender.hitPool = tmpPool
+    d.defender._hitPoolShared = tmpShared
+  }
 
   /** After ASSIGN_HITS completes: trigger completion if either side is
    *  wiped; otherwise return so the script continues draining. Combat metas
@@ -797,7 +856,6 @@ export class CombatState {
         }
       }
       if (blockedSides.length === ctx.firing.length) {
-        this._discardCurrentMetaScript(phase)
         return
       }
     }
@@ -910,7 +968,7 @@ export class CombatState {
       hitSource: ctx.hitSource,
       firing: ctx.firing,
       isUnitAbility: ctx.isUnitAbility,
-      routing: ctx.routing,
+      selfTarget: ctx.selfTarget,
       validTargets,
       priorityList,
       sideData: { attacker: data.attacker, defender: data.defender },
@@ -921,9 +979,6 @@ export class CombatState {
     })
 
     if (isEmpty) {
-      // Nothing to roll — skip the rest of this meta's script so
-      // ASSIGN_HITS doesn't run for non-existent hits.
-      this._discardCurrentMetaScript(phase)
       return
     }
 
@@ -1181,24 +1236,6 @@ export class CombatState {
     }
   }
 
-  /** Pop pending steps that belong to the given phase (reference-equal
-   *  phase array from the same getPhaseScript emission). For standalone
-   *  metas this empties the stack; for a nested meta (AFB inside
-   *  SPACE_COMBAT), the outer script's steps — which carry a different
-   *  phase array — survive. Groups are homogeneous (all inner steps share
-   *  a phase), so checking the group's next-to-run step is sufficient. */
-  private _discardCurrentMetaScript(phase: MetaPhase[]): void {
-    while (this.pendingSteps.length > 0) {
-      const top = this.pendingSteps[this.pendingSteps.length - 1]
-      const topPhase =
-        top.kind === 'group'
-          ? top.steps[top.steps.length - 1]?.phase
-          : top.phase
-      if (topPhase !== phase) break
-      this.pendingSteps.pop()
-    }
-  }
-
   /** Queue a full unit-ability step (DICE_ROLL + ASSIGN_HITS) as nested
    *  script entries. Called from `AbilityContext.resolveStep`: the outer
    *  ability is inside a script-driven pass, so after its `call` returns
@@ -1206,23 +1243,28 @@ export class CombatState {
    *  dispatches the pushed step(s) before the outer pass resumes.
    *
    *  The group carries firing-side restriction, optional custom dice,
-   *  and optional hit routing (e.g. `target: 'OWN'` self-damage).
-   *  Everything else (BEFORE/AFTER ASSIGN_HITS, destroy cascade,
-   *  completion check) flows through the standard phase script. */
-  public runUnitAbilityStepForAbility(config: {
+   *  and an optional `selfTarget` flag (e.g. `target: 'OWN'` self-damage):
+   *  hits are produced against the natural opponent, then `_swapHitPools`
+   *  (queued inside the dice-roll group, after AFTER_UNIT_ABILITY_ROLL)
+   *  moves them to the firer. Everything else (BEFORE/AFTER ASSIGN_HITS,
+   *  destroy cascade, completion check) flows through the standard phase
+   *  script. */
+  public runUnitAbility(config: {
     meta: UnitAbilityMeta
     firing: CombatSide[]
     outerPhase: MetaPhase[]
     customDice?: { attacker: SideDiceCollection; defender: SideDiceCollection }
-    routing?: { attacker: CombatSide; defender: CombatSide }
+    selfTarget?: boolean
     /** When true, omit the trailing `_postAssignHits` wipe-check. The
      *  caller will run another step (or steps) whose terminal
      *  `_postAssignHits` covers the combined result. Used by chained
      *  `resolveStep` calls that must resolve atomically (Proxima). */
     deferCompletionCheck?: boolean
   }): void {
-    const { meta, firing, outerPhase, customDice, routing } = config
-    const phase: MetaPhase[] = [...outerPhase, meta]
+    const { meta, firing, outerPhase, customDice, selfTarget } = config
+    const innermostOuter = outerPhase[outerPhase.length - 1]
+    const phase: MetaPhase[] =
+      innermostOuter === meta ? [...outerPhase] : [...outerPhase, meta]
     const baseConfig = this._getUnitAbilityConfig(meta)
     const script: PendingStep[] = [
       buildUnitAbilityDiceRollGroup({
@@ -1231,7 +1273,7 @@ export class CombatState {
         hitSource: baseConfig.hitSource,
         allowedUnitTypes: baseConfig.allowedUnitTypes,
         customDice,
-        routing,
+        selfTarget,
       }),
       ...this.getAssignHitsScript(phase),
     ]
@@ -1326,75 +1368,21 @@ function cloneStep(step: PhaseStep): PhaseStep {
     frame: {
       ...step.frame,
       tracker: cloneTracker(step.frame.tracker),
+      // Per-pass scratch state is mutated in place during the pass; deep-
+      // clone so sibling branches don't share it.
+      runState: step.frame.runState
+        ? structuredClone(step.frame.runState)
+        : undefined,
     },
-  }
-}
-
-/** Compute RunAbilitiesOptions for a unit-ability phase's BEFORE/AFTER
- *  unit-ability-roll abilities, based on who is firing and where their hits
- *  are routed. This implements "mimic side" semantics: `ctx.api.opponent`
- *  always points to the counterparty in the action regardless of the
- *  attacker/defender labels, so abilities (Bunker, X-89, etc.) don't need
- *  to know about custom routing.
- *
- *  Default remap (multi-firer phases, and AFTER_UNIT_ABILITY_ROLL):
- *   - `firing` role: opponent = target side (where this side's hits go)
- *   - `target`-only role: opponent = firing side
- *   - self-bombard (firing == target): opponent = self
- *   - `none` role: fall back to the natural opposite side
- *
- *  BEFORE_UNIT_ABILITY_ROLL in a single-firer phase (BOMBARDMENT,
- *  SPACE_CANNON_DEFENSE): every invoker's opponent is that firer. Dice-
- *  modifying abilities (Bunker, Antimass Deflectors) target the rolling pool
- *  uniformly, so they work whether the owner is defender-vs-attacker-bombing
- *  (normal case) or the owner themselves is firing via Proxima/Harrow.
- *
- *  When `firingOnly` is set, non-firing sides are skipped (used for
- *  AFTER_UNIT_ABILITY_ROLL — only the side that rolled should react). */
-function buildUnitAbilityRunOptions(
-  firing: readonly CombatSide[],
-  routing?: { attacker: CombatSide; defender: CombatSide },
-  flags: { firingOnly?: boolean; timing?: 'before' | 'after' } = {},
-): RunAbilitiesOptions {
-  const firingSet = new Set(firing)
-  const targetOf = (side: CombatSide): CombatSide =>
-    routing?.[side] ?? getOpponentSide(side)
-
-  const targets = new Set<CombatSide>()
-  for (const f of firing) targets.add(targetOf(f))
-
-  const opponentFor = (side: CombatSide): CombatSide => {
-    if (flags.timing === 'before' && firing.length === 1) return firing[0]
-    if (firingSet.has(side)) return targetOf(side)
-    if (targets.has(side)) {
-      for (const f of firing) if (targetOf(f) === side) return f
-    }
-    return getOpponentSide(side)
-  }
-
-  const skipSides: CombatSide[] = []
-  if (flags.firingOnly) {
-    for (const side of ['attacker', 'defender'] as const) {
-      if (!firingSet.has(side)) skipSides.push(side)
-    }
-  }
-
-  return {
-    opponentSideByInvokerSide: {
-      attacker: opponentFor('attacker'),
-      defender: opponentFor('defender'),
-    },
-    skipSides: skipSides.length > 0 ? skipSides : undefined,
   }
 }
 
 /** Build the dice-roll group that resolves a combat or unit-ability dice
  *  roll. Two builders share the LIFO skeleton but differ in which timings
  *  fire (BEFORE_DICE_ROLL vs BEFORE_UNIT_ABILITY_ROLL), the per-side run
- *  options (unit-ability rolls scope by firing / routing), and which
- *  inputs make sense (combat rolls have no `customDice` /
- *  `allowedUnitTypes` / `routing`, and always fire on both sides at
- *  hitSource COMBAT).
+ *  options (unit-ability rolls scope by firing side), and which inputs make
+ *  sense (combat rolls have no `customDice` / `allowedUnitTypes` /
+ *  `selfTarget`, and always fire on both sides at hitSource COMBAT).
  *
  *  Execution order: BEFORE → REROLL → _rollDice → AFTER → AFTER_STEP.
  *  BEFORE/REROLL only queue ModifierDecl entries on `ctx.modifiers`;
@@ -1436,39 +1424,49 @@ export function buildCombatDiceRollGroup(args: {
 
 /** Build a dice-roll group for a unit-ability roll (SCO / AFB /
  *  BOMBARDMENT / SCD). BEFORE/AFTER timings scope to the firing sides
- *  via `buildUnitAbilityRunOptions`; `customDice` / `routing` are
- *  forwarded for `ctx.resolveStep` overrides. See `buildCombatDiceRollGroup`
- *  for the LIFO ordering invariant and execution flow. */
+ *  via `buildUnitAbilityRunOptions`; `customDice` is forwarded for
+ *  `ctx.resolveStep` overrides. When `selfTarget` is set, a `_swapHitPools`
+ *  method runs after AFTER_UNIT_ABILITY_ROLL to move the produced hits from
+ *  the natural opponent to the firer (Proxima self-bomb). See
+ *  `buildCombatDiceRollGroup` for the LIFO ordering invariant and execution
+ *  flow. */
 export function buildUnitAbilityDiceRollGroup(args: {
   phase: MetaPhase[]
   firing: CombatSide[]
   hitSource: HitSource
   allowedUnitTypes?: ReadonlySet<UnitBaseType>
-  routing?: { attacker: CombatSide; defender: CombatSide }
+  selfTarget?: boolean
   customDice?: { attacker: SideDiceCollection; defender: SideDiceCollection }
 }): PhaseStepGroup {
-  const { phase, firing, hitSource, allowedUnitTypes, routing, customDice } =
+  const { phase, firing, hitSource, allowedUnitTypes, selfTarget, customDice } =
     args
   return {
     kind: 'group',
     data: {
       hitSource,
       firing,
-      routing,
+      selfTarget,
       customDice,
       allowedUnitTypes,
       isUnitAbility: true,
     },
     steps: [
-      { kind: 'timing', timing: 'AFTER_UNIT_ABILITY_ROLL_STEP', phase },
+      // Stored reverse of execution order. The swap (when self-targeting)
+      // sits at the top so it runs LAST — after AFTER_UNIT_ABILITY_ROLL has
+      // seen the hits in the natural opponent's pool (e.g. X-89 doubling).
+      ...(selfTarget
+        ? [
+            {
+              kind: 'method' as const,
+              fn: CombatState.prototype._swapHitPools,
+              phase,
+            },
+          ]
+        : []),
       {
         kind: 'timing',
         timing: 'AFTER_UNIT_ABILITY_ROLL',
         phase,
-        options: buildUnitAbilityRunOptions(firing, routing, {
-          firingOnly: true,
-          timing: 'after',
-        }),
       },
       { kind: 'method', fn: CombatState.prototype._rollDice, phase },
       { kind: 'timing', timing: 'REROLL_UNIT_ABILITY_ROLL', phase },
@@ -1476,9 +1474,6 @@ export function buildUnitAbilityDiceRollGroup(args: {
         kind: 'timing',
         timing: 'BEFORE_UNIT_ABILITY_ROLL',
         phase,
-        options: buildUnitAbilityRunOptions(firing, routing, {
-          timing: 'before',
-        }),
       },
     ],
   }
