@@ -1,12 +1,8 @@
 import { z } from 'zod/mini'
 
+import { type Ability, type AbilityReadContext, declareParam } from '@/combat'
 import { UnitListSchema } from '@/types'
 
-import { declareParam } from '../../../combat/abilities-engine/declare-param'
-import type {
-  Ability,
-  AbilityReadContext,
-} from '../../../combat/abilities-engine/types'
 import type { UnitId, UnitList, UnitType } from '../../../types'
 
 type Params = {
@@ -44,6 +40,7 @@ export const duraniumArmor: Ability<Params> = {
     {
       timing: 'WHEN_SUSTAIN_DAMAGE_USE',
       context: ['SPACE_COMBAT', 'GROUND_COMBAT'],
+      system: true,
       isCallable: (_params, ctx, unit) => ctx.api.own.hasUnit(unit),
       call: (ctx, _params, unit) => {
         ctx.api.own.modifyUnitState(unit, { usedSustainThisRound: true })
@@ -62,6 +59,7 @@ export const duraniumArmor: Ability<Params> = {
     },
     {
       timing: 'CLEANUP_ROUND',
+      system: true,
       call: ctx => {
         for (const key in ctx.state[ctx.side].unitState) {
           const unitId = key as UnitId
@@ -77,15 +75,13 @@ export const duraniumArmor: Ability<Params> = {
   ],
   uiConfig: ctx => {
     const isGround = ctx.state.combatMode === 'GROUND'
-    const key = isGround
-      ? ('groundRepairPriority' as const)
-      : ('spaceRepairPriority' as const)
+    const key = isGround ? 'groundRepairPriority' : 'spaceRepairPriority'
 
     return [
       {
         key,
-        type: 'unit-list' as const,
-        mode: 'order' as const,
+        type: 'unit-list',
+        mode: 'order',
         items: ctx.api.own.getUnitVariantsOptions(key),
       },
     ]

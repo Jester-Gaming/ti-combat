@@ -80,18 +80,18 @@ export const impulseCore: Ability<Params> = {
   ],
   uiConfig: ctx => [
     {
-      key: 'sacrificePriority' as const,
+      key: 'sacrificePriority',
       label: 'Sacrifice Priority',
-      type: 'unit-list' as const,
-      mode: 'checkbox' as const,
+      type: 'unit-list',
+      mode: 'checkbox',
       sortable: true,
       items: ctx.api.own.getUnitVariantsOptions('sacrificePriority'),
     },
     {
-      key: 'targetPriority' as const,
+      key: 'targetPriority',
       label: 'Target Priority',
-      type: 'unit-list' as const,
-      mode: 'checkbox' as const,
+      type: 'unit-list',
+      mode: 'checkbox',
       sortable: true,
       items: ctx.api.opponent
         .getUnitVariantsOptions('targetPriority')

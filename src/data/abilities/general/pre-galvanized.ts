@@ -71,15 +71,15 @@ export const preGalvanized: Ability<Params> = {
   },
   uiConfig: ctx => [
     {
-      key: 'reinforcementTokens' as const,
+      key: 'reinforcementTokens',
       label: 'Tokens in reinforcement',
-      type: 'number' as const,
+      type: 'number',
       min: 0,
     },
     {
-      key: 'galvanizedUnits' as const,
-      type: 'unit-list' as const,
-      mode: 'number' as const,
+      key: 'galvanizedUnits',
+      type: 'unit-list',
+      mode: 'number',
       items: ctx.api.own.getUnitVariantsOptions('galvanizedUnits'),
     },
   ],

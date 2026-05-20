@@ -46,9 +46,9 @@ export const apollo: Ability<Params> = {
       : [],
   uiConfig: ctx => [
     {
-      key: 'heroUnit' as const,
+      key: 'heroUnit',
       label: 'Hero Unit',
-      type: 'select' as const,
+      type: 'select',
       items: ctx.api.own.getUnitVariantsOptions('heroUnit'),
     },
   ],
@@ -119,15 +119,15 @@ export const apollo: Ability<Params> = {
     },
     {
       timing: 'CLEANUP',
+      context: 'SPACE_COMBAT',
       system: true,
-      context: ['SPACE_COMBAT'],
       isCallable: params => !!params.heroUnit,
       call: (ctx, params) => {
         const variantId = makeVariantId(params.heroUnit!, [HERO])
         const [unitId] = ctx.api.own.getUnits(variantId, {
           includeVariants: false,
         })
-        if (unitId !== undefined) ctx.api.own.removeSubtype(unitId, HERO)
+        ctx.api.own.removeSubtype(unitId, HERO)
       },
     },
   ],

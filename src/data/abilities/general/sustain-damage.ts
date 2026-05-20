@@ -1,7 +1,7 @@
 import { z } from 'zod/mini'
 
 import { type Ability, declareParam } from '@/combat'
-import type { UnitId, UnitList, UnitType } from '@/types'
+import type { UnitId, UnitList } from '@/types'
 import { UnitListBooleanSchema } from '@/types'
 
 type Params = {
@@ -78,7 +78,7 @@ export const sustainDamage: Ability<Params> = {
         }
 
         const unitType = ctx.api.own.getUnitBaseType(unitId)!
-        const variantId = ctx.api.own.getUnitVariantKey(unitId)! as UnitType
+        const variantId = ctx.api.own.getUnitVariantKey(unitId)!
 
         const isGround = ctx.state.combatMode === 'GROUND'
         const allowedUnits = isGround
@@ -87,7 +87,7 @@ export const sustainDamage: Ability<Params> = {
         if (!ctx.utils.getFlat(allowedUnits).includes(variantId)) return false
 
         const validTargets = ctx.api.own.getHitPoolValidTargets()
-        if (validTargets && !validTargets.includes(unitType as UnitType)) {
+        if (validTargets && !validTargets.includes(unitType)) {
           return false
         }
 
@@ -113,15 +113,13 @@ export const sustainDamage: Ability<Params> = {
   ],
   uiConfig: ctx => {
     const isGround = ctx.state.combatMode === 'GROUND'
-    const key = isGround
-      ? ('groundPriority' as const)
-      : ('spacePriority' as const)
+    const key = isGround ? 'groundPriority' : 'spacePriority'
 
     return [
       {
         key,
-        type: 'unit-list' as const,
-        mode: 'checkbox' as const,
+        type: 'unit-list',
+        mode: 'checkbox',
         sortable: true,
         items: ctx.api.own.getUnitVariantsOptions(key),
       },

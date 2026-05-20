@@ -78,14 +78,14 @@ export const cavalry: Ability<Params> = {
   },
   uiConfig: ctx => [
     {
-      key: 'memoria2' as const,
+      key: 'memoria2',
       label: 'Memoria II',
-      type: 'checkbox' as const,
+      type: 'checkbox',
     },
     {
-      key: 'unitType' as const,
+      key: 'unitType',
       label: 'Unit Type',
-      type: 'select' as const,
+      type: 'select',
       items: ctx.api.own.getUnitVariantsOptions('unitType').reverse(),
     },
   ],
@@ -108,7 +108,7 @@ export const cavalry: Ability<Params> = {
     {
       timing: 'CLEANUP',
       system: true,
-      context: ['SPACE_COMBAT'],
+      context: 'SPACE_COMBAT',
       call: (ctx, params) => {
         const variantId = makeVariantId(params.unitType, [CAVALRY])
         const [unitId] = ctx.api.own.getUnits(variantId, {

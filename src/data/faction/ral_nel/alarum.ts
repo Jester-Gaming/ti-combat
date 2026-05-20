@@ -6,7 +6,6 @@ import { UnitListNumberSchema } from '@/types'
 
 type Params = {
   availableUnits: UnitList<number>
-  firedRoundIds: UnitId[]
 }
 
 declare global {
@@ -39,7 +38,6 @@ export const alarum: Ability<Params> = {
       },
       limit: 'EXTRA',
     }),
-    firedRoundIds: [] as UnitId[],
   },
   headerUI: 'isEnabled',
   uiConfig: ctx => [
@@ -58,7 +56,9 @@ export const alarum: Ability<Params> = {
       isCallable: (params, ctx) => {
         if (!params.availableUnits.some(([, n]) => n > 0)) return false
         const callerId = ctx.getUnit()
-        return !params.firedRoundIds.includes(callerId)
+        const state = (ctx.api.own.getRunState('ALARUM')?.firedRoundIds ??
+          []) as UnitId[]
+        return !state.includes(callerId)
       },
       call: (ctx, params) => {
         const callerId = ctx.getUnit()
@@ -86,20 +86,19 @@ export const alarum: Ability<Params> = {
           availableUnits: Array.from(
             updatedCounts.entries(),
           ) as UnitList<number>,
-          firedRoundIds: [...params.firedRoundIds, callerId, ...placedIds],
+        })
+
+        ctx.api.own.updateRunState({
+          firedRoundIds: (current: UnitId[]) => [
+            ...(current ?? []),
+            callerId,
+            ...placedIds,
+          ],
         })
 
         if (placed > 0) {
           ctx.logger?.log(`Moved ${placed} ground forces from adjacent systems`)
         }
-      },
-    },
-    {
-      timing: 'CLEANUP_ROUND',
-      system: true,
-      isCallable: params => params.firedRoundIds.length > 0,
-      call: ctx => {
-        ctx.api.own.updateAbilityConfig({ firedRoundIds: [] as UnitId[] })
       },
     },
   ],

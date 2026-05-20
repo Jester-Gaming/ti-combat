@@ -1,4 +1,4 @@
-import type { Ability } from '../../../combat/abilities-engine/types'
+import type { Ability } from '@/combat'
 
 export const prophecyOfIxth: Ability = {
   key: 'PROPHECY_OF_IXTH',

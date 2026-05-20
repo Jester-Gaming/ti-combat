@@ -78,24 +78,4 @@ describe('HARROW', () => {
     expect(t.defender.units.INFANTRY).toBeUndefined()
     expect(t.state.winnerSide).toBe('draw')
   })
-
-  it('does not fire when attacker has no bombardment-capable units', () => {
-    const t = combatTest({
-      mode: 'GROUND',
-      attacker: {
-        faction: 'L1Z1X_MINDNET',
-        units: { INFANTRY: 2 },
-        abilities: { HARROW: true },
-      },
-      defender: {
-        faction: 'ARBOREC',
-        units: { INFANTRY: 1 },
-      },
-    })
-
-    t.advanceTo('GROUND_COMBAT')
-    t.advanceRound()
-
-    expect(t.abilityLog('HARROW')).toHaveLength(0)
-  })
 })

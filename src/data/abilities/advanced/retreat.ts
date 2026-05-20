@@ -1,3 +1,4 @@
+import type { Ability, AbilityCallContext, CombatStateData } from '@/combat'
 import type {
   CombatSide,
   UnitId,
@@ -5,12 +6,6 @@ import type {
   UnitState,
   UnitType,
 } from '@/types'
-
-import type {
-  Ability,
-  AbilityCallContext,
-} from '../../../combat/abilities-engine/types'
-import type { CombatStateData } from '../../../combat/combat-state/types'
 
 type Params = {
   isEnabled: boolean

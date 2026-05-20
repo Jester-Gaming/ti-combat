@@ -1,4 +1,4 @@
-import type { Ability } from '../../../combat/abilities-engine/types'
+import type { Ability } from '@/combat'
 
 export const reflectiveShielding: Ability = {
   key: 'REFLECTIVE_SHIELDING',
@@ -16,17 +16,10 @@ export const reflectiveShielding: Ability = {
       timing: 'WHEN_SUSTAIN_DAMAGE_USE',
       context: 'SPACE_COMBAT',
       isCallable: (_params, ctx, unitId) => {
-        // Only trigger for ships — not mechs or ground forces
         const { ships } = ctx.api.own.getAbilityConfig('SETTINGS')
-        for (const shipType of ships) {
-          if (
-            ctx.api.own
-              .getUnits(shipType, { includeVariants: true })
-              .includes(unitId)
-          )
-            return true
-        }
-        return false
+        const variant = ctx.api.own.getUnitBaseType(unitId)!
+
+        return ships.includes(variant)
       },
       call: ctx => {
         ctx.api.opponent.addHits(2)

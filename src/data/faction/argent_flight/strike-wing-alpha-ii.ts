@@ -46,7 +46,6 @@ export const strikeWingAlphaII: Ability<Params> = {
           unitType: [ctx.api.own.getUnitVariantKey(ctx.getUnit())!],
           faces: [9, 10],
           effect: (count, branchCtx) => {
-            if (count <= 0) return
             const flat = branchCtx.utils.getFlat(params.targetPriority)
             const toDestroy: UnitId[] = []
             for (const variant of flat) {
@@ -73,9 +72,9 @@ export const strikeWingAlphaII: Ability<Params> = {
 
     return [
       {
-        key: 'targetPriority' as const,
-        type: 'unit-list' as const,
-        mode: 'checkbox' as const,
+        key: 'targetPriority',
+        type: 'unit-list',
+        mode: 'checkbox',
         sortable: true,
         items,
       },

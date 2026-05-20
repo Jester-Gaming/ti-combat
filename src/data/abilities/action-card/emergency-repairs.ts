@@ -1,8 +1,5 @@
-import type {
-  Ability,
-  AbilityCallContext,
-  AbilityReadContext,
-} from '../../../combat/abilities-engine/types'
+import type { Ability, AbilityCallContext, AbilityReadContext } from '@/combat'
+
 import type { UnitId } from '../../../types'
 
 export const emergencyRepairs: Ability = {
@@ -26,7 +23,7 @@ export const emergencyRepairs: Ability = {
   ],
 }
 
-function getSustainUnits(
+function getUnitsWithSustain(
   ctx: AbilityReadContext | AbilityCallContext,
 ): UnitId[] {
   const result: UnitId[] = []
@@ -43,16 +40,15 @@ function getSustainUnits(
 }
 
 function isCallable(_params: unknown, ctx: AbilityReadContext): boolean {
-  const sustainUnits = getSustainUnits(ctx)
+  const sustainUnits = getUnitsWithSustain(ctx)
   if (sustainUnits.length === 0) return false
   return sustainUnits.every(id => ctx.api.own.getUnitState(id)?.isDamaged)
 }
 
 function call(ctx: AbilityCallContext): void {
-  for (const id of getSustainUnits(ctx)) {
+  for (const id of getUnitsWithSustain(ctx)) {
     if (ctx.api.own.getUnitState(id)?.isDamaged) {
       ctx.api.own.modifyUnitState(id, { isDamaged: false })
-      ctx.api.own.enableUnitAbility(id, 'SUSTAIN_DAMAGE')
     }
   }
 }

@@ -68,7 +68,9 @@ export function AbilityConfig({
       }
     }
     return items?.filter(
-      item => item.type !== 'unit-list' || item.items.length > 0,
+      item =>
+        item.visible !== false &&
+        (item.type !== 'unit-list' || item.items.length > 0),
     )
   }, [ability, defaults, readContext, params])
 

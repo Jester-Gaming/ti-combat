@@ -13,7 +13,12 @@ export {
   SLOT_ORDER,
   type SlotDisplay,
 } from './ability-slot'
-export { type AbilityBranch, AbilityBranchInterrupt } from './api/ability-api'
+export {
+  type AbilityBranch,
+  AbilityBranchInterrupt,
+  type SideApi,
+} from './api/ability-api'
+export { abilityUtils } from './api/ability-utils'
 export { declareParam } from './declare-param'
 export type {
   Ability,

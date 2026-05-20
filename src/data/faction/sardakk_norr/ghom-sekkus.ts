@@ -53,9 +53,9 @@ export const ghomSekkus: Ability<Params> = {
   ],
   uiConfig: ctx => [
     {
-      key: 'units' as const,
-      type: 'unit-list' as const,
-      mode: 'number' as const,
+      key: 'units',
+      type: 'unit-list',
+      mode: 'number',
       items: ctx.api.own.getUnitVariantsOptions('units'),
     },
   ],

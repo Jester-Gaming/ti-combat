@@ -17,7 +17,7 @@ export const annihilator: Ability = {
       call: ctx => {
         ctx.api.own.setUnitAbilityCannotBeUsed(
           'BOMBARDMENT',
-          'ANNIHILATOR_GROUND_COMMIT',
+          ctx.this.key,
           'MECH',
         )
       },

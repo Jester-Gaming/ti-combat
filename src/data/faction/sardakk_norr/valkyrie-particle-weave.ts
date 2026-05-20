@@ -15,9 +15,7 @@ export const valkyrieParticleWeave: Ability = {
     {
       timing: 'AFTER_DICE_ROLL',
       context: 'GROUND_COMBAT',
-      isCallable: (_params, ctx) => {
-        return ctx.api.own.getPendingHits() >= 1
-      },
+      isCallable: (_params, ctx) => ctx.api.own.getPendingHits() >= 1,
       call: ctx => {
         ctx.api.opponent.addHits(1)
       },

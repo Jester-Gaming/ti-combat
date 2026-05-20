@@ -52,10 +52,10 @@ export const sleeperCell: Ability<Params> = {
   headerUI: 'isEnabled',
   uiConfig: ctx => [
     {
-      key: 'availableShips' as const,
+      key: 'availableShips',
       label: 'Available Ships',
-      type: 'unit-list' as const,
-      mode: 'number' as const,
+      type: 'unit-list',
+      mode: 'number',
       items: ctx.api.own.getUnitVariantsOptions('availableShips'),
     },
   ],

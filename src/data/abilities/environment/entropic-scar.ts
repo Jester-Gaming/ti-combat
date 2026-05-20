@@ -1,6 +1,5 @@
+import type { Ability } from '@/combat'
 import { UNIT_ABILITIES } from '@/constants/units'
-
-import type { Ability } from '../../../combat/abilities-engine/types'
 
 export const entropicScar: Ability = {
   key: 'ENTROPIC_SCAR',
@@ -18,7 +17,7 @@ export const entropicScar: Ability = {
       timing: 'PREPARE',
       call: ctx => {
         for (const ability of UNIT_ABILITIES) {
-          ctx.api.own.setUnitAbilityCannotBeUsed(ability, 'ENTROPIC_SCAR')
+          ctx.api.own.setUnitAbilityCannotBeUsed(ability, ctx.this.key)
         }
       },
     },

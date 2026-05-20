@@ -587,6 +587,10 @@ export interface GetUnitsOptions {
   includeVariants: boolean
 }
 
+/** Predicate to further restrict candidates in `findUnitByPriority`.
+ *  Receives the unit's own variant key and its UnitId. */
+export type FindUnitPredicate = (variantKey: UnitType, id: UnitId) => boolean
+
 /**
  * CombatSideState — namespace of all side operations.
  *
@@ -761,28 +765,36 @@ export class CombatSideState {
     s: SideStateData,
     priority: UnitType[],
     participatingTypes: ReadonlySet<UnitBaseType> | undefined,
-    options: GetUnitsOptions,
+    options: GetUnitsOptions & { predicate?: FindUnitPredicate },
   ): UnitId | undefined
   static findUnitByPriority(
     s: SideStateData,
     priority: UnitType[],
     participatingTypes: ReadonlySet<UnitBaseType> | undefined,
-    options: GetUnitsOptions & { amount: number },
+    options: GetUnitsOptions & {
+      amount: number
+      predicate?: FindUnitPredicate
+    },
   ): UnitId[]
   static findUnitByPriority(
     s: SideStateData,
     priority: UnitType[],
     participatingTypes: ReadonlySet<UnitBaseType> | undefined,
-    options: GetUnitsOptions & { amount?: number },
+    options: GetUnitsOptions & {
+      amount?: number
+      predicate?: FindUnitPredicate
+    },
   ): UnitId | UnitId[] | undefined {
     const collect = options.amount !== undefined
     const amount = options.amount ?? Infinity
+    const { predicate } = options
     const result: UnitId[] = []
 
     for (const variantId of priority) {
       const { type } = parseVariantId(variantId)
       if (participatingTypes && !participatingTypes.has(type)) continue
       for (const id of CombatSideState.getUnits(s, variantId, options)) {
+        if (predicate && !predicate(s.unitType[id], id)) continue
         if (!collect) return id
         result.push(id)
         if (result.length >= amount) return result

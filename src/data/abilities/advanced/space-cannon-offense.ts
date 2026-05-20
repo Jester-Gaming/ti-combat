@@ -1,10 +1,8 @@
 import { z } from 'zod/mini'
 
+import { type Ability, declareParam } from '@/combat'
 import type { UnitList } from '@/types'
 import { UnitListSchema } from '@/types'
-
-import { declareParam } from '../../../combat/abilities-engine/declare-param'
-import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
   customScoPriority: boolean
@@ -49,21 +47,18 @@ export const spaceCannonOffense: Ability<Params> = {
     if (ctx.state.combatMode !== 'SPACE') return []
     return [
       {
-        key: 'customScoPriority' as const,
+        key: 'customScoPriority',
         label: 'Custom priority for SCO',
-        type: 'checkbox' as const,
+        type: 'checkbox',
       },
-      ...(params.customScoPriority
-        ? [
-            {
-              key: 'scoUnitPriority' as const,
-              label: 'Space Cannon Offense Priority',
-              type: 'unit-list' as const,
-              mode: 'order' as const,
-              items: ctx.api.own.getUnitVariantsOptions('scoUnitPriority'),
-            },
-          ]
-        : []),
+      {
+        key: 'scoUnitPriority',
+        label: 'Space Cannon Offense Priority',
+        type: 'unit-list',
+        mode: 'order',
+        items: ctx.api.own.getUnitVariantsOptions('scoUnitPriority'),
+        visible: params.customScoPriority,
+      },
     ]
   },
 }

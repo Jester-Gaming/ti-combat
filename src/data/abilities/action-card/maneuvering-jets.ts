@@ -1,4 +1,4 @@
-import type { Ability } from '../../../combat/abilities-engine/types'
+import type { Ability } from '@/combat'
 
 export const maneuveringJets: Ability = {
   key: 'MANEUVERING_JETS',
@@ -14,9 +14,7 @@ export const maneuveringJets: Ability = {
     {
       timing: 'BEFORE_ASSIGN_HITS',
       context: ['SPACE_CANNON_OFFENSE', 'SPACE_CANNON_DEFENSE'],
-      isCallable: (_params, ctx) => {
-        return ctx.api.own.getPendingHits() > 0
-      },
+      isCallable: (_params, ctx) => ctx.api.own.getPendingHits() > 0,
       call: ctx => {
         ctx.api.own.reduceHits(1)
       },

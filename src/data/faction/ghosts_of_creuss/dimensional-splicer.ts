@@ -52,9 +52,9 @@ export const dimensionalSplicer: Ability<Params> = {
   ],
   uiConfig: ctx => [
     {
-      key: 'targetPriority' as const,
-      type: 'unit-list' as const,
-      mode: 'order' as const,
+      key: 'targetPriority',
+      type: 'unit-list',
+      mode: 'order',
       items: ctx.api.opponent.getUnitVariantsOptions('targetPriority'),
     },
   ],

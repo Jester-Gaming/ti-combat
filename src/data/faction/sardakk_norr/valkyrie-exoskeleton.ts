@@ -16,9 +16,7 @@ export const valkyrieExoskeleton: Ability = {
     {
       timing: 'AFTER_SUSTAIN_DAMAGE_USE',
       context: 'GROUND_COMBAT',
-      isCallable: (_params, ctx, unitId) => {
-        return unitId === ctx.getUnit()
-      },
+      isCallable: (_params, ctx, unitId) => unitId === ctx.getUnit(),
       call: ctx => {
         ctx.api.opponent.addHits(1)
       },

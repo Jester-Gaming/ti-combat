@@ -20,7 +20,7 @@ export const quietus: Ability = {
       call: ctx => {
         if (ctx.isOwner()) return
         for (const ability of UNIT_ABILITIES) {
-          ctx.api.own.setUnitAbilityLost(ability, 'QUIETUS')
+          ctx.api.own.setUnitAbilityLost(ability, ctx.this.key)
         }
       },
     },
@@ -30,7 +30,7 @@ export const quietus: Ability = {
         ctx.unitSource !== undefined && ids.includes(ctx.unitSource),
       call: ctx => {
         for (const ability of UNIT_ABILITIES) {
-          ctx.api.opponent.removeUnitAbilityLost(ability, 'QUIETUS')
+          ctx.api.opponent.removeUnitAbilityLost(ability, ctx.this.key)
         }
       },
     },

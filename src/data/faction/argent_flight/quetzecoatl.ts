@@ -18,7 +18,7 @@ export const quetzecoatl: Ability = {
       call: ctx => {
         ctx.api.opponent.setUnitAbilityCannotBeUsed(
           'SPACE_CANNON',
-          'QUETZECOATL',
+          ctx.this.key,
         )
       },
     },

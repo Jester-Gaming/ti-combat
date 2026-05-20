@@ -74,10 +74,10 @@ export const ambush: Ability<Params> = {
   ],
   uiConfig: ctx => [
     {
-      key: 'attackerPriority' as const,
+      key: 'attackerPriority',
       label: 'Ship Priority',
-      type: 'unit-list' as const,
-      mode: 'checkbox' as const,
+      type: 'unit-list',
+      mode: 'checkbox',
       sortable: true,
       items: ctx.api.own.getUnitVariantsOptions('attackerPriority'),
     },

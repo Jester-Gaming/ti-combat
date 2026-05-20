@@ -56,8 +56,7 @@ export const dunlainReaper: Ability<Params> = {
         const target = ctx.api.own.findUnitByPriority(
           ctx.utils.getFlat(params.targetPriority),
           { includeVariants: false },
-        )
-        if (target === undefined) return
+        )!
         ctx.api.own.removeUnits(target)
         ctx.api.own.placeUnits({ MECH: 1 })
         ctx.api.own.updateAbilityConfig({
@@ -86,7 +85,6 @@ export const dunlainReaper: Ability<Params> = {
             destroyed += 1
           }
         }
-        if (destroyed === 0) return
         ctx.api.own.updateAbilityConfig({
           availableMechs: Math.min(
             UNIT_LIMITS.MECH,
@@ -101,23 +99,20 @@ export const dunlainReaper: Ability<Params> = {
 
     return [
       {
-        key: 'availableMechs' as const,
+        key: 'availableMechs',
         label: 'Available Mechs',
-        type: 'number' as const,
+        type: 'number',
         min: 0,
         max: UNIT_LIMITS.MECH,
       },
-      ...(items.length > 1
-        ? [
-            {
-              key: 'targetPriority' as const,
-              type: 'unit-list' as const,
-              mode: 'checkbox' as const,
-              sortable: true,
-              items,
-            },
-          ]
-        : []),
+      {
+        key: 'targetPriority',
+        type: 'unit-list',
+        mode: 'checkbox',
+        sortable: true,
+        items,
+        visible: items.length > 1,
+      },
     ]
   },
 }

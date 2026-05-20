@@ -149,6 +149,6 @@ const baseUnits = {
       NAME: 'Space Dock II',
     },
   },
-} as const
+}
 
 export default baseUnits

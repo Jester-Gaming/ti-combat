@@ -25,9 +25,9 @@ export const temporalCommandSuite: Ability<Params> = {
     const ownAgents = ctx.abilities.own.agents
     return [
       {
-        key: 'agentKey' as const,
+        key: 'agentKey',
         label: 'Agent',
-        type: 'select' as const,
+        type: 'select',
         items: ownAgents.map(a => ({ label: a.name, value: a.key })),
       },
     ]
@@ -42,8 +42,9 @@ export const temporalCommandSuite: Ability<Params> = {
         const agent = findAgent(ctx, params.agentKey)
         if (!agent) return
 
-        const defaultUses =
-          typeof agent.params.uses === 'number' ? agent.params.uses : 0
+        const { uses: defaultUses } = ctx.api.own.getAbilityConfig(
+          agent.key as keyof AbilityConfigMap,
+        )
 
         ctx.api.own.updateAbilityConfig(agent.key, {
           uses: (current: unknown) =>

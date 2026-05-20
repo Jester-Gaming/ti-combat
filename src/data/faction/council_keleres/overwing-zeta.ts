@@ -81,19 +81,19 @@ export const overwingZeta: Ability<Params> = {
   ],
   uiConfig: ctx => [
     {
-      key: 'strategy' as const,
+      key: 'strategy',
       label: 'Strategy',
-      type: 'select' as const,
+      type: 'select',
       items: [
         { label: 'Immediately (R1)', value: 'IMMEDIATELY' },
         { label: 'Enough Fleet Pool', value: 'ENOUGH_FLEET_POOL' },
       ],
     },
     {
-      key: 'ships' as const,
+      key: 'ships',
       label: 'Ships',
-      type: 'unit-list' as const,
-      mode: 'number' as const,
+      type: 'unit-list',
+      mode: 'number',
       items: ctx.api.own.getUnitVariantsOptions('ships'),
     },
   ],

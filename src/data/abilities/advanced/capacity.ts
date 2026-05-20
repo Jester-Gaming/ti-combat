@@ -1,14 +1,9 @@
 import { z } from 'zod/mini'
 
+import { type Ability, type AbilityCallContext, parseVariantId } from '@/combat'
 import { UNIT_TYPES } from '@/constants/units'
 import type { UnitBaseType, UnitList, UnitType } from '@/types'
 import { UnitListSchema } from '@/types'
-
-import type {
-  Ability,
-  AbilityCallContext,
-} from '../../../combat/abilities-engine/types'
-import { parseVariantId } from '../../../combat/utils'
 
 type Params = {
   removePriority: UnitList
@@ -56,10 +51,10 @@ export const capacity: Ability<Params> = {
 
     return [
       {
-        key: 'removePriority' as const,
+        key: 'removePriority',
         label: 'Removal Priority',
-        type: 'unit-list' as const,
-        mode: 'order' as const,
+        type: 'unit-list',
+        mode: 'order',
         items: ctx.api.own.getUnitVariantsOptions({
           include: carriedBaseTypes,
           includeNonParticipating: true,

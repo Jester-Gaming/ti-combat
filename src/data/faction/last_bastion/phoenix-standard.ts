@@ -27,7 +27,7 @@ export const phoenixStandard: Ability<Params> = {
   }),
   params: {
     isEnabled: false,
-    uses: Infinity,
+    uses: 1,
     spaceUnitPriority: declareParam({
       default: [],
       source: 'spaceCombatParticipating',
@@ -44,9 +44,7 @@ export const phoenixStandard: Ability<Params> = {
   headerUI: 'isEnabled',
   uiConfig: ctx => {
     const isGround = ctx.state.combatMode === 'GROUND'
-    const key = isGround
-      ? ('groundUnitPriority' as const)
-      : ('spaceUnitPriority' as const)
+    const key = isGround ? 'groundUnitPriority' : 'spaceUnitPriority'
     return [
       {
         key,

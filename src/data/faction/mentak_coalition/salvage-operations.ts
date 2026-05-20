@@ -21,7 +21,7 @@ export const salvageOperations: Ability<Params> = {
   }),
   params: {
     isEnabled: false,
-    uses: Infinity,
+    uses: 1,
     shipPriority: declareParam({
       default: [],
       source: 'ships',
@@ -32,16 +32,17 @@ export const salvageOperations: Ability<Params> = {
   headerUI: 'isEnabled',
   uiConfig: ctx => [
     {
-      key: 'shipPriority' as const,
+      key: 'shipPriority',
       label: 'Ship Priority',
-      type: 'unit-list' as const,
-      mode: 'order' as const,
+      type: 'unit-list',
+      mode: 'order',
       items: ctx.api.own.getUnitVariantsOptions('shipPriority'),
     },
   ],
   invoke: [
     {
       timing: 'DESTROY',
+      system: true,
       call: (ctx, params, ids) => {
         const { ships } = ctx.api.own.getAbilityConfig('SETTINGS')
         const shipsSet = new Set<UnitBaseType>(ships)

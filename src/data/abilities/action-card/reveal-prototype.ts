@@ -1,14 +1,9 @@
 import { z } from 'zod/mini'
 
+import { type Ability, type AbilityReadContext, declareParam } from '@/combat'
 import type { UnitBaseType, UnitList, UnitStats } from '@/types'
 import { UnitListBooleanSchema } from '@/types'
 import { getFactionUnitConfig } from '@/utils/get-faction-unit-config'
-
-import { declareParam } from '../../../combat/abilities-engine/declare-param'
-import type {
-  Ability,
-  AbilityReadContext,
-} from '../../../combat/abilities-engine/types'
 
 type Params = {
   spacePriority: UnitList<boolean>
@@ -43,14 +38,12 @@ export const revealPrototype: Ability<Params> = {
   headerUI: 'isEnabled',
   uiConfig: ctx => {
     const isGround = ctx.state.combatMode === 'GROUND'
-    const key = isGround
-      ? ('groundPriority' as const)
-      : ('spacePriority' as const)
+    const key = isGround ? 'groundPriority' : 'spacePriority'
     return [
       {
         key,
-        type: 'unit-list' as const,
-        mode: 'checkbox' as const,
+        type: 'unit-list',
+        mode: 'checkbox',
         sortable: true,
         items: ctx.api.own.getUnitVariantsOptions(key),
       },
@@ -61,9 +54,7 @@ export const revealPrototype: Ability<Params> = {
       timing: 'START_OF_COMBAT',
       isCallable: (params, ctx) => pickTarget(params, ctx) !== undefined,
       call: (ctx, params) => {
-        const target = pickTarget(params, ctx)
-        if (!target) return
-
+        const target = pickTarget(params, ctx)!
         const faction = getFactionUnitConfig(ctx.api.own.getFaction())
         const upgraded = faction[target].UPGRADED!
         const current = ctx.api.own.getUnitStats(target)!

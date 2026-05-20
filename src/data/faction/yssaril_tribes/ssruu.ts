@@ -65,14 +65,14 @@ export const ssruu: Ability<Params> = {
   uiConfig: (ctx, params) => {
     const agents = getAgents()
     const selectItem = {
-      key: 'agentKey' as const,
+      key: 'agentKey',
       label: 'Agent',
-      type: 'select' as const,
+      type: 'select',
       items: [
         { label: 'None', value: 'none' },
         ...agents.map(a => ({ label: a.name, value: a.key })),
-      ] satisfies SelectItem[],
-    }
+      ] as SelectItem[],
+    } as const
     const agent = agents.find(a => a.key === params.agentKey)
     if (!agent?.uiConfig) return [selectItem]
     const merged = withAgentDefaults(agent, params)
@@ -135,5 +135,5 @@ function wrapInvoke(agent: Ability, invoke: AbilityInvoke) {
       const merged = withAgentDefaults(agent, params)
       ;(invoke.call as GenericCall)(ctx, merged, extra)
     },
-  } as const
+  }
 }

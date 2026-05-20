@@ -1,4 +1,4 @@
-import type { Ability } from '../../../combat/abilities-engine/types'
+import type { Ability } from '@/combat'
 
 export const metaliVoidArmaments: Ability = {
   key: 'METALI_VOID_ARMAMENTS',

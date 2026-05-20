@@ -1,8 +1,5 @@
-import type {
-  Ability,
-  AbilityReadContext,
-} from '../../../combat/abilities-engine/types'
-import { parseVariantId } from '../../../combat/utils/unit-variant'
+import type { Ability, AbilityReadContext } from '@/combat'
+
 import type { UnitId } from '../../../types'
 
 export const metaliVoidShielding: Ability = {
@@ -45,26 +42,22 @@ function findVoidShieldTarget(ctx: AbilityReadContext): UnitId | undefined {
   const validTargets = ctx.api.own.getHitPoolValidTargets()
   const validTargetSet = validTargets ? new Set(validTargets) : null
 
-  for (const variant of ctx.utils.getFlat(priority)) {
-    const { type: unitType } = parseVariantId(variant)
-    if (validTargetSet && !validTargetSet.has(unitType)) continue
-    if (ctx.api.own.isUnitAbilityCannotBeUsed('SUSTAIN_DAMAGE', unitType)) {
-      continue
-    }
+  const target = ctx.api.own.findUnitByPriority(ctx.utils.getFlat(priority), {
+    includeVariants: false,
+    predicate: (variant, unitId) => {
+      if (validTargetSet && !validTargetSet.has(variant)) return false
+      if (ctx.api.own.isUnitAbilityCannotBeUsed('SUSTAIN_DAMAGE', variant)) {
+        return false
+      }
+      // Ignore units that don't have sustain because it lost
+      if (ctx.api.own.isUnitAbilityLost('SUSTAIN_DAMAGE', variant)) {
+        return false
+      }
 
-    const units = ctx.api.own.getUnits(variant, { includeVariants: false })
-    if (units.length === 0) continue
+      if (ctx.api.own.getUnitState(unitId)?.isDamaged) return false
+      return true
+    },
+  })
 
-    // Ignore units that don't have sustain because it lost
-    if (ctx.api.own.isUnitAbilityLost('SUSTAIN_DAMAGE', unitType)) {
-      continue
-    }
-
-    for (const unitId of units) {
-      if (ctx.api.own.getUnitState(unitId)?.isDamaged) continue
-      return unitId
-    }
-  }
-
-  return undefined
+  return target
 }

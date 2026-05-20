@@ -1,4 +1,4 @@
-import type { Ability } from '../../../combat/abilities-engine/types'
+import type { Ability } from '@/combat'
 
 export const solarFlare: Ability = {
   key: 'SOLAR_FLARE',
@@ -17,7 +17,7 @@ export const solarFlare: Ability = {
       call: ctx => {
         ctx.api.opponent.setUnitAbilityCannotBeUsed(
           'SPACE_CANNON',
-          'SOLAR_FLARE',
+          ctx.this.key,
         )
       },
     },

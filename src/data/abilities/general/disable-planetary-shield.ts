@@ -1,4 +1,4 @@
-import type { Ability } from '../../../combat/abilities-engine/types'
+import type { Ability } from '@/combat'
 
 export const disablePlanetaryShield: Ability = {
   key: 'DISABLE_PLANETARY_SHIELD',
@@ -11,7 +11,7 @@ export const disablePlanetaryShield: Ability = {
     {
       timing: 'PREPARE',
       call: ctx => {
-        ctx.api.opponent.setUnitAbilityLost('PLANETARY_SHIELD', 'WAR_SUN')
+        ctx.api.opponent.setUnitAbilityLost('PLANETARY_SHIELD', ctx.this.key)
       },
     },
   ],

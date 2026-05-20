@@ -1,6 +1,5 @@
+import type { Ability } from '@/combat'
 import { UNIT_ABILITIES } from '@/constants/units'
-
-import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
   isEnabled: boolean
@@ -20,11 +19,10 @@ export const articlesOfWar: Ability<Params> = {
   invoke: [
     {
       timing: 'PREPARE',
-      isCallable: (params: Params) => params.isEnabled,
       call: ctx => {
         for (const ability of UNIT_ABILITIES) {
           if (ability === 'SUSTAIN_DAMAGE') continue
-          ctx.api.own.setUnitAbilityLost(ability, 'ARTICLES_OF_WAR', 'MECH')
+          ctx.api.own.setUnitAbilityLost(ability, ctx.this.key, 'MECH')
         }
 
         // Remove printed Ability objects from mech units (keep only Sustain Damage)

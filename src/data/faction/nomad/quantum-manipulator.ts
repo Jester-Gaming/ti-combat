@@ -30,13 +30,13 @@ export const quantumManipulator: Ability = {
         return true
       },
       call: ctx => {
-        const locator = ctx.getUnit()
-        ctx.api.own.modifyUnitState(locator, { isDamaged: true })
+        const unitId = ctx.getUnit()
+        ctx.api.own.modifyUnitState(unitId, { isDamaged: true })
         ctx.api.own.reduceHits(1)
         ctx.logger?.log(ctx.api.own.getUnitBaseType(ctx.getUnit()))
         // Triggered steps pop LIFO — push AFTER first so WHEN runs first.
-        ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', locator)
-        ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', locator)
+        ctx.trigger('AFTER_SUSTAIN_DAMAGE_USE', unitId)
+        ctx.trigger('WHEN_SUSTAIN_DAMAGE_USE', unitId)
       },
     },
   ],

@@ -89,6 +89,60 @@ describe.forEachSide('GRAVLEASH_MANEUVERS', () => {
     expect(pool2.attacker).toContainDice('CARRIER', [9, 1])
   })
 
+  it('does not count structures toward the ship type bonus', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'BARONY_OF_LETNEV',
+        units: { CRUISER: 2, PDS: 1 },
+        abilities: {
+          GRAVLEASH_MANEUVERS: {
+            isEnabled: true,
+            shipPriority: [['CRUISER']],
+          },
+        },
+      },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
+    })
+
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound()
+    const pool = t.dicePool()
+
+    // Only 1 ship type (Cruiser); PDS is a structure and must not count.
+    // Cruiser base 7 - 1 = 6
+    expect(pool.attacker).toContainDice('CRUISER', [6, 1])
+    // Other Cruiser unchanged
+    expect(pool.attacker).toContainDice('CRUISER', [7, 1])
+  })
+
+  it('does not count ground forces toward the ship type bonus', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'BARONY_OF_LETNEV',
+        units: { CRUISER: 2, INFANTRY: 1 },
+        abilities: {
+          GRAVLEASH_MANEUVERS: {
+            isEnabled: true,
+            shipPriority: [['CRUISER']],
+          },
+        },
+      },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
+    })
+
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound()
+    const pool = t.dicePool()
+
+    // Only 1 ship type (Cruiser); Infantry is a ground force and must not count.
+    // Cruiser base 7 - 1 = 6
+    expect(pool.attacker).toContainDice('CRUISER', [6, 1])
+    // Other Cruiser unchanged
+    expect(pool.attacker).toContainDice('CRUISER', [7, 1])
+  })
+
   it('respects ship priority order', () => {
     const t = combatTest({
       mode: 'SPACE',

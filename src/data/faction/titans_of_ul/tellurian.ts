@@ -16,11 +16,8 @@ export const tellurian: Ability = {
     {
       timing: 'BEFORE_ASSIGN_HITS',
       external: true,
-      isCallable: (_params, ctx) => {
-        return ctx.api.own.getPendingHits() > 0
-      },
+      isCallable: (_params, ctx) => ctx.api.own.getPendingHits() > 0,
       call: ctx => {
-        // Cancel 1 hit
         ctx.api.own.reduceHits(1)
       },
     },

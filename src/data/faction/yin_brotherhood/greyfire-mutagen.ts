@@ -64,17 +64,14 @@ export const greyfireMutagen: Ability<Params> = {
   uiConfig: ctx => {
     const items = ctx.api.opponent.getUnitVariantsOptions('targetPriority')
 
-    if (items.length <= 1) {
-      return []
-    }
-
     return [
       {
-        key: 'targetPriority' as const,
-        type: 'unit-list' as const,
-        mode: 'checkbox' as const,
+        key: 'targetPriority',
+        type: 'unit-list',
+        mode: 'checkbox',
         sortable: true,
         items,
+        visible: items.length > 1,
       },
     ]
   },

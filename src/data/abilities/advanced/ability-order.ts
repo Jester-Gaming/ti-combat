@@ -1,9 +1,8 @@
 import { z } from 'zod/mini'
 
+import type { Ability } from '@/combat'
 import { TIMING_GROUPS } from '@/combat/abilities-engine/abilities-engine'
 import { UnitListSchema } from '@/types'
-
-import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
   startOfCombat: [string][]
@@ -37,18 +36,16 @@ export const abilityOrder: Ability<Params> = {
   },
   invoke: [],
   uiConfig: ctx => {
-    const items = []
-    for (const group of TIMING_GROUPS) {
+    return TIMING_GROUPS.map(group => {
       const abilities = ctx.getAbilitiesForTiming(group.timings)
-      if (abilities.length < 1) continue
-      items.push({
+
+      return {
         key: group.paramKey as keyof Params,
         label: group.label,
-        type: 'unit-list' as const,
-        mode: 'order' as const,
+        type: 'unit-list',
+        mode: 'order',
         items: abilities.map(a => ({ label: a.name, value: a.key })),
-      })
-    }
-    return items
+      }
+    })
   },
 }

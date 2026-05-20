@@ -1,4 +1,4 @@
-import type { Ability } from '../../../combat/abilities-engine/types'
+import type { Ability } from '@/combat'
 
 export const conventionsOfWar: Ability = {
   key: 'CONVENTIONS_OF_WAR',
@@ -16,10 +16,7 @@ export const conventionsOfWar: Ability = {
     {
       timing: 'PREPARE',
       call: ctx => {
-        ctx.api.own.setUnitAbilityCannotBeUsed(
-          'BOMBARDMENT',
-          'CONVENTIONS_OF_WAR',
-        )
+        ctx.api.own.setUnitAbilityCannotBeUsed('BOMBARDMENT', ctx.this.key)
       },
     },
   ],

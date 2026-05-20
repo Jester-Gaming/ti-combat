@@ -416,6 +416,8 @@ interface UIConfigItemBase<TParams = Record<string, unknown>> {
    *  value extracted from `ability.params`. Used when an ability's UI
    *  needs to mirror another ability's saved state (e.g. Ssruu). */
   defaultValue?: unknown
+  /** When `false`, the item is omitted from the rendered config. */
+  visible?: boolean
 }
 
 interface UIConfigCheckbox<

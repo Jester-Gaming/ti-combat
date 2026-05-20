@@ -19,7 +19,10 @@ export const myruVos: Ability = {
       timing: 'PREPARE',
       external: true,
       call: ctx => {
-        ctx.api.opponent.setUnitAbilityCannotBeUsed('SPACE_CANNON', 'MYRU_VOS')
+        ctx.api.opponent.setUnitAbilityCannotBeUsed(
+          'SPACE_CANNON',
+          ctx.this.key,
+        )
       },
     },
   ],

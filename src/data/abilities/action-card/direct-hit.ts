@@ -1,5 +1,5 @@
 import { type Ability, declareParam } from '@/combat'
-import type { UnitList, UnitType } from '@/types'
+import type { UnitList } from '@/types'
 
 type Params = {
   targets: UnitList<boolean>
@@ -27,9 +27,9 @@ export const directHit: Ability<Params> = {
   headerUI: 'uses',
   uiConfig: ctx => [
     {
-      key: 'targets' as const,
-      type: 'unit-list' as const,
-      mode: 'checkbox' as const,
+      key: 'targets',
+      type: 'unit-list',
+      mode: 'checkbox',
       items: ctx.api.opponent.getUnitVariantsOptions('targets'),
     },
   ],
@@ -38,10 +38,9 @@ export const directHit: Ability<Params> = {
       timing: 'AFTER_SUSTAIN_DAMAGE_USE',
       isCallable: (params, ctx, unitId) => {
         if (!ctx.api.opponent.hasUnit(unitId)) return false
-        const variant = ctx.api.opponent.getUnitVariantKey(unitId)
-        if (!variant) return false
+        const variant = ctx.api.opponent.getUnitVariantKey(unitId)!
         const targets = ctx.utils.getFlat(params.targets)
-        if (!targets.includes(variant as UnitType)) return false
+        if (!targets.includes(variant)) return false
         const stats = ctx.api.opponent.getUnitStats(unitId)!
         if (stats.DIRECT_HIT_IMMUNE) return false
         return true

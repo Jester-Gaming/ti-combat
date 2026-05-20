@@ -17,7 +17,7 @@ export const fourthMoon: Ability = {
       call: ctx => {
         ctx.api.opponent.setUnitAbilityCannotBeUsed(
           'SUSTAIN_DAMAGE',
-          'FOURTH_MOON',
+          ctx.this.key,
           'SHIPS',
         )
       },
@@ -28,7 +28,7 @@ export const fourthMoon: Ability = {
       call: ctx => {
         ctx.api.opponent.removeUnitAbilityCannotBeUsed(
           'SUSTAIN_DAMAGE',
-          'FOURTH_MOON',
+          ctx.this.key,
           'SHIPS',
         )
       },

@@ -39,20 +39,17 @@ export const proximaTargetingVi: Ability<Params> = {
     )
     return [
       {
-        key: 'resolveBombardment' as const,
+        key: 'resolveBombardment',
         label: 'Resolve Bombardment',
-        type: 'checkbox' as const,
+        type: 'checkbox',
       },
-      ...(resolveBombardment
-        ? [
-            {
-              key: 'bombardmentMinGalvanized' as const,
-              label: 'Only if galvanized count ≥',
-              type: 'number' as const,
-              min: 0,
-            },
-          ]
-        : []),
+      {
+        key: 'bombardmentMinGalvanized',
+        label: 'Only if galvanized count ≥',
+        type: 'number',
+        min: 0,
+        visible: resolveBombardment,
+      },
     ]
   },
   invoke: [

@@ -46,50 +46,49 @@ export const devotion: Ability<Params> = {
           ctx.utils.getFlat(params.sacrificePriority),
           { includeVariants: false },
         )
-        if (sacrifice === undefined) return false
-        return (
-          ctx.api.opponent.findUnitByPriority(
-            ctx.utils.getFlat(params.targetPriority),
-            { includeVariants: false },
-          ) !== undefined
+        const target = ctx.api.opponent.findUnitByPriority(
+          ctx.utils.getFlat(params.targetPriority),
+          { includeVariants: false },
         )
+        if (sacrifice === undefined) return false
+        if (target === undefined) return false
+        return true
       },
       call: (ctx, params) => {
         const sacrifice = ctx.api.own.findUnitByPriority(
           ctx.utils.getFlat(params.sacrificePriority),
           { includeVariants: false },
         )
+        const target = ctx.api.opponent.findUnitByPriority(
+          ctx.utils.getFlat(params.targetPriority),
+          { includeVariants: false },
+        )
         if (sacrifice === undefined) return
+        if (target === undefined) return
 
-        for (const variant of ctx.utils.getFlat(params.targetPriority)) {
-          if (
-            ctx.api.opponent.findUnitByPriority([variant], {
-              includeVariants: false,
-            }) !== undefined
-          ) {
-            ctx.api.opponent.addHits(1, [variant])
-            ctx.api.own.destroyUnits(sacrifice)
-            return
-          }
-        }
+        ctx.api.opponent.addHits(1, [
+          ctx.api.opponent.getUnitVariantKey(target)!,
+        ])
+        ctx.api.own.destroyUnits(sacrifice)
+        return
       },
     },
   ],
   uiConfig: ctx => {
     return [
       {
-        key: 'sacrificePriority' as const,
+        key: 'sacrificePriority',
         label: 'Sacrifice Priority',
-        type: 'unit-list' as const,
-        mode: 'checkbox' as const,
+        type: 'unit-list',
+        mode: 'checkbox',
         sortable: true,
         items: ctx.api.own.getUnitVariantsOptions('sacrificePriority'),
       },
       {
-        key: 'targetPriority' as const,
+        key: 'targetPriority',
         label: 'Target Priority',
-        type: 'unit-list' as const,
-        mode: 'checkbox' as const,
+        type: 'unit-list',
+        mode: 'checkbox',
         sortable: true,
         items: ctx.api.opponent.getUnitVariantsOptions('targetPriority'),
       },

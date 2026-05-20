@@ -17,7 +17,7 @@ export const l4Disruptors: Ability = {
       call: ctx => {
         ctx.api.opponent.setUnitAbilityCannotBeUsed(
           'SPACE_CANNON',
-          'L4_DISRUPTORS',
+          ctx.this.key,
         )
       },
     },

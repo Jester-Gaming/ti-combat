@@ -30,9 +30,9 @@ export const gravleashManeuvers: Ability<Params> = {
   headerUI: 'isEnabled',
   uiConfig: ctx => [
     {
-      key: 'shipPriority' as const,
-      type: 'unit-list' as const,
-      mode: 'order' as const,
+      key: 'shipPriority',
+      type: 'unit-list',
+      mode: 'order',
       items: ctx.api.own.getUnitVariantsOptions('shipPriority'),
     },
   ],
@@ -40,7 +40,14 @@ export const gravleashManeuvers: Ability<Params> = {
     {
       timing: 'BEFORE_DICE_ROLL',
       call: (ctx, params) => {
-        const shipTypeCount = ctx.api.own.getActiveBaseTypes().length
+        const shipTypeCount = ctx.api.own
+          .getParticipatingUnitTypes()
+          .filter(unitType =>
+            ctx.api.own.hasUnitType(unitType, {
+              includeVariants: true,
+            }),
+          ).length
+
         const target = ctx.api.own.findUnitByPriority(
           ctx.utils.getFlat(params.shipPriority),
           { includeVariants: false },

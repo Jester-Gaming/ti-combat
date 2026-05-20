@@ -88,17 +88,17 @@ export const courageousToTheEnd: Ability<Params> = {
   ],
   uiConfig: ctx => [
     {
-      key: 'ownPriority' as const,
+      key: 'ownPriority',
       label: 'Own Trigger Priority',
-      type: 'unit-list' as const,
-      mode: 'checkbox' as const,
+      type: 'unit-list',
+      mode: 'checkbox',
       items: ctx.api.own.getUnitVariantsOptions('ownPriority'),
     },
     {
-      key: 'targetPriority' as const,
+      key: 'targetPriority',
       label: 'Allowed Targets',
-      type: 'unit-list' as const,
-      mode: 'checkbox' as const,
+      type: 'unit-list',
+      mode: 'checkbox',
       items: ctx.api.opponent.getUnitVariantsOptions('targetPriority'),
     },
   ],

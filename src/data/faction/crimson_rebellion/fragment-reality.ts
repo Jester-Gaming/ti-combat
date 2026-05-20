@@ -48,9 +48,9 @@ export const fragmentReality: Ability<Params> = {
   ],
   uiConfig: ctx => [
     {
-      key: 'ships' as const,
-      type: 'unit-list' as const,
-      mode: 'number' as const,
+      key: 'ships',
+      type: 'unit-list',
+      mode: 'number',
       items: ctx.api.own.getUnitVariantsOptions('ships'),
     },
   ],

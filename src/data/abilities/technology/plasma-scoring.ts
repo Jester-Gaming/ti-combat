@@ -1,6 +1,6 @@
 import { z } from 'zod/mini'
 
-import type { Ability } from '../../../combat/abilities-engine/types'
+import type { Ability } from '@/combat'
 
 export const plasmaScoring: Ability = {
   key: 'PLASMA_SCORING',

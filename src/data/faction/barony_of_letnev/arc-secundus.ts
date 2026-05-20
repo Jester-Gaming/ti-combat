@@ -15,7 +15,7 @@ export const arcSecundus: Ability = {
     {
       timing: 'PREPARE',
       call: ctx => {
-        ctx.api.opponent.setUnitAbilityLost('PLANETARY_SHIELD', 'ARC_SECUNDUS')
+        ctx.api.opponent.setUnitAbilityLost('PLANETARY_SHIELD', ctx.this.key)
       },
     },
     {
@@ -25,7 +25,6 @@ export const arcSecundus: Ability = {
         ctx.api.own.modifyUnitState(unitId, {
           isDamaged: false,
         })
-        ctx.api.own.enableUnitAbility(unitId, 'SUSTAIN_DAMAGE')
       },
     },
   ],

@@ -126,7 +126,7 @@ function createFactionUnitAbility(
     }),
     invoke: [
       {
-        timing: 'PREPARE' as const,
+        timing: 'PREPARE',
         call: (ctx: AbilityCallContext) => {
           // Save original stats before overwriting
           const original = { ...ctx.api.own.getUnitStats(unitType)! }

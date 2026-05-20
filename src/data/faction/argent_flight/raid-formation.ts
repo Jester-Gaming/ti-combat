@@ -23,9 +23,9 @@ export const raidFormation: Ability<Params> = {
   },
   uiConfig: ctx => [
     {
-      key: 'targetPriority' as const,
-      type: 'unit-list' as const,
-      mode: 'order' as const,
+      key: 'targetPriority',
+      type: 'unit-list',
+      mode: 'order',
       items: ctx.api.opponent.getUnitVariantsOptions('targetPriority'),
     },
   ],
@@ -48,43 +48,32 @@ export const raidFormation: Ability<Params> = {
         })
         const excess = pendingHits - fighterCount
 
-        let damaged = 0
+        const targets = ctx.api.opponent.findUnitByPriority(
+          ctx.utils.getFlat(params.targetPriority),
+          {
+            includeVariants: false,
+            amount: excess,
+            predicate: (variant, unitId) => {
+              if (
+                ctx.api.opponent.isUnitAbilityLost('SUSTAIN_DAMAGE', variant)
+              ) {
+                return false
+              }
 
-        for (let i = 0; i < excess; i++) {
-          let found = false
+              const stats = ctx.api.opponent.getUnitStats(variant)
 
-          for (const variant of ctx.utils.getFlat(params.targetPriority)) {
-            if (ctx.api.opponent.isUnitAbilityLost('SUSTAIN_DAMAGE', variant)) {
-              continue
-            }
+              if (!stats?.UNIT_ABILITIES?.SUSTAIN_DAMAGE) return false
 
-            const units = ctx.api.opponent.getUnits(variant, {
-              includeVariants: false,
-            })
-            const stats = ctx.api.opponent.getUnitStats(variant)
+              return !ctx.api.opponent.getUnitState(unitId)?.isDamaged
+            },
+          },
+        )
 
-            if (!stats?.UNIT_ABILITIES?.SUSTAIN_DAMAGE) continue
-
-            const unit = units.find(
-              unit => !ctx.api.opponent.getUnitState(unit)?.isDamaged,
-            )
-
-            if (unit) {
-              ctx.api.opponent.modifyUnitState(unit, {
-                isDamaged: true,
-              })
-              damaged++
-              found = true
-              break
-            }
-          }
-
-          if (!found) break
-        }
-
-        if (damaged > 0) {
-          ctx.logger?.log(`${damaged} ship(s) damaged`)
-        }
+        targets.forEach(target => {
+          ctx.api.opponent.modifyUnitState(target, {
+            isDamaged: true,
+          })
+        })
       },
     },
   ],

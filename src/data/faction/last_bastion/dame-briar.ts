@@ -45,9 +45,7 @@ export const dameBriar: Ability<Params> = {
   ],
   uiConfig: ctx => {
     const isGround = ctx.state.combatMode === 'GROUND'
-    const key = isGround
-      ? ('groundUnitType' as const)
-      : ('spaceUnitType' as const)
+    const key = isGround ? 'groundUnitType' : 'spaceUnitType'
     return [
       {
         key,

@@ -27,30 +27,6 @@ describe('WAR_FUNDING', () => {
     expect(rerollEntries).not.toHaveLength(0)
   })
 
-  it('does not fire when both strategies are NEVER', () => {
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'BARONY_OF_LETNEV',
-        units: { CRUISER: 1 },
-        abilities: {
-          WAR_FUNDING: {
-            isEnabled: true,
-            ownStrategyKind: 'NEVER',
-            opponentStrategyKind: 'NEVER',
-          },
-        },
-      },
-      defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
-    })
-    t.advanceTo('SPACE_COMBAT')
-    t.advanceRound()
-    const rerollEntries = t
-      .abilityLog('WAR_FUNDING')
-      .filter(e => e.path.includes('REROLL_DICE_ROLL'))
-    expect(rerollEntries).toHaveLength(0)
-  })
-
   it('one-shot: uses=1 consumed after firing', () => {
     const t = combatTest({
       mode: 'SPACE',

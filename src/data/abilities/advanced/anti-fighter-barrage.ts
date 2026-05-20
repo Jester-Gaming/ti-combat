@@ -1,6 +1,5 @@
+import type { Ability } from '@/combat'
 import type { CombatSide } from '@/types'
-
-import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = { resolve: boolean }
 

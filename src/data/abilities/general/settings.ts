@@ -1,3 +1,4 @@
+import type { Ability, SettingsParams } from '@/combat'
 import {
   GROUND_FORCES,
   NON_FIGHTER_SHIPS,
@@ -5,11 +6,6 @@ import {
   STRUCTURES,
 } from '@/constants/units'
 import type { UnitBaseType } from '@/types'
-
-import type {
-  Ability,
-  SettingsParams,
-} from '../../../combat/abilities-engine/types'
 
 declare global {
   interface AbilityConfigMap {

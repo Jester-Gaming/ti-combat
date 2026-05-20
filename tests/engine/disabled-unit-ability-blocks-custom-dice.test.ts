@@ -22,7 +22,7 @@ const disableSpaceCannon: Ability = {
     {
       timing: 'PREPARE',
       call: ctx => {
-        ctx.api.own.setUnitAbilityCannotBeUsed('SPACE_CANNON', 'TEST')
+        ctx.api.own.setUnitAbilityCannotBeUsed('SPACE_CANNON', ctx.this.key)
       },
     },
   ],

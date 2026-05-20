@@ -45,9 +45,9 @@ export const viscountUnlenn: Ability<Params> = {
   headerUI: 'isEnabled',
   uiConfig: ctx => [
     {
-      key: 'unitType' as const,
+      key: 'unitType',
       label: 'Unit Type',
-      type: 'select' as const,
+      type: 'select',
       items: ctx.api.own.getUnitVariantsOptions('unitType').reverse(),
     },
   ],
@@ -64,7 +64,7 @@ export const viscountUnlenn: Ability<Params> = {
         const [unitId] = ctx.api.own.getUnits(params.unitType, {
           includeVariants: false,
         })
-        if (unitId !== undefined) ctx.api.own.addSubtype(unitId, VISCOUNT)
+        ctx.api.own.addSubtype(unitId, VISCOUNT)
       },
     },
     {
@@ -82,7 +82,7 @@ export const viscountUnlenn: Ability<Params> = {
         const [unitId] = ctx.api.own.getUnits(variantId, {
           includeVariants: true,
         })
-        if (unitId !== undefined) ctx.api.own.removeSubtype(unitId, VISCOUNT)
+        ctx.api.own.removeSubtype(unitId, VISCOUNT)
       },
     },
   ],

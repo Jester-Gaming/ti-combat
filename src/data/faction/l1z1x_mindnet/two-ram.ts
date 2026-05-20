@@ -19,7 +19,7 @@ export const twoRam: Ability = {
     {
       timing: 'PREPARE',
       call: ctx => {
-        ctx.api.opponent.setUnitAbilityLost('PLANETARY_SHIELD', 'TWO_RAM')
+        ctx.api.opponent.setUnitAbilityLost('PLANETARY_SHIELD', ctx.this.key)
       },
     },
   ],

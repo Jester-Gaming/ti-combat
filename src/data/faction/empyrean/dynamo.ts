@@ -24,7 +24,6 @@ export const dynamo: Ability<Params> = {
         ctx.api.own.getUnitState(unitId)?.isDamaged === true,
       call: (ctx, _params, unitId) => {
         ctx.api.own.modifyUnitState(unitId, { isDamaged: false })
-        ctx.api.own.enableUnitAbility(unitId, 'SUSTAIN_DAMAGE')
       },
     },
     {

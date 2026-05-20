@@ -1,5 +1,5 @@
-import type { Ability } from '../../../combat/abilities-engine/types'
-import { parseVariantId } from '../../../combat/utils'
+import { type Ability, parseVariantId } from '@/combat'
+
 import type { UnitType } from '../../../types'
 
 export const gravitonLaserSystem: Ability = {

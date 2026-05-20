@@ -64,7 +64,7 @@ export const evelynDelouis: Ability<Params> = {
         const [unitId] = ctx.api.own.getUnits(params.unitType, {
           includeVariants: false,
         })
-        if (unitId !== undefined) ctx.api.own.addSubtype(unitId, EVELYN)
+        ctx.api.own.addSubtype(unitId, EVELYN)
       },
     },
     {
@@ -82,7 +82,7 @@ export const evelynDelouis: Ability<Params> = {
         const [unitId] = ctx.api.own.getUnits(variantId, {
           includeVariants: true,
         })
-        if (unitId !== undefined) ctx.api.own.removeSubtype(unitId, EVELYN)
+        ctx.api.own.removeSubtype(unitId, EVELYN)
       },
     },
   ],

@@ -1,10 +1,8 @@
 import { z } from 'zod/mini'
 
+import { type Ability, declareParam } from '@/combat'
 import type { UnitList, UnitType } from '@/types'
 import { UnitListNumberSchema } from '@/types'
-
-import { declareParam } from '../../../combat/abilities-engine/declare-param'
-import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
   damagedUnits: UnitList<number>

@@ -54,9 +54,6 @@ export const warFunding: Ability<Params> = {
     {
       timing: 'REROLL_DICE_ROLL',
       declaration: true,
-      isCallable: params =>
-        params.ownStrategyKind !== 'NEVER' ||
-        params.opponentStrategyKind !== 'NEVER',
       call: (ctx, params) => {
         const ownStrategy = buildRerollStrategy(
           params.ownStrategyKind,

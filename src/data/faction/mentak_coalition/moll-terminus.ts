@@ -18,7 +18,7 @@ export const mollTerminus: Ability = {
       call: ctx => {
         ctx.api.opponent.setUnitAbilityCannotBeUsed(
           'SUSTAIN_DAMAGE',
-          `MOLL_TERMINUS_${ctx.getUnit()}`,
+          `${ctx.this.key}_${ctx.getUnit()}`,
         )
       },
     },
@@ -28,7 +28,7 @@ export const mollTerminus: Ability = {
       call: ctx => {
         ctx.api.opponent.removeUnitAbilityCannotBeUsed(
           'SUSTAIN_DAMAGE',
-          `MOLL_TERMINUS_${ctx.getUnit()}`,
+          `${ctx.this.key}_${ctx.getUnit()}`,
         )
       },
     },

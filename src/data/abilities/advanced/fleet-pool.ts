@@ -1,9 +1,6 @@
+import { type Ability, abilityUtils, type SideApi } from '@/combat'
+import { declareParam } from '@/combat/abilities-engine/declare-param'
 import type { UnitBaseType, UnitList } from '@/types'
-
-import type { SideApi } from '../../../combat/abilities-engine/api/ability-api'
-import { abilityUtils } from '../../../combat/abilities-engine/api/ability-utils'
-import { declareParam } from '../../../combat/abilities-engine/declare-param'
-import type { Ability } from '../../../combat/abilities-engine/types'
 
 type Params = {
   fleetPool: number
@@ -45,17 +42,17 @@ export const fleetPool: Ability<Params> = {
   ],
   uiConfig: ctx => [
     {
-      key: 'fleetPool' as const,
+      key: 'fleetPool',
       label: 'Fleet Pool',
-      type: 'number' as const,
+      type: 'number',
       min: 1,
       max: 20,
     },
     {
-      key: 'shipPriority' as const,
+      key: 'shipPriority',
       label: 'Ship Keep Priority',
-      type: 'unit-list' as const,
-      mode: 'order' as const,
+      type: 'unit-list',
+      mode: 'order',
       items: ctx.api.own.getUnitVariantsOptions('shipPriority'),
     },
   ],

@@ -1,4 +1,4 @@
-import type { Ability } from '../../../combat/abilities-engine/types'
+import type { Ability } from '@/combat'
 
 export const publicizeWeaponSchematics: Ability = {
   key: 'PUBLICIZE_WEAPON_SCHEMATICS',
@@ -17,7 +17,7 @@ export const publicizeWeaponSchematics: Ability = {
       call: ctx => {
         ctx.api.own.setUnitAbilityLost(
           'SUSTAIN_DAMAGE',
-          'PUBLICIZE_WEAPON_SCHEMATICS',
+          ctx.this.key,
           'WAR_SUN',
         )
       },
