@@ -92,9 +92,18 @@ export interface RollTriggerDecl {
 export interface ConditionalModifierDecl {
   type: 'CONDITIONAL_MODIFIER'
   slotId: SlotId
+  /** The side whose dice receive the bonus — derived from which SideApi
+   *  (`own` / `opponent`) the ability called. May differ from `ownerSide`
+   *  (e.g. Heart of Ixth, owned by attacker, applying -1 to defender's
+   *  dice via `ctx.api.opponent`). */
   side: CombatSide
+  /** The side that owns the ability that pushed this decl. Used by the
+   *  use-accounting layer so cross-side bonuses bill `uses` on the owner's
+   *  `liveAbilities`, not the affected side's. */
+  ownerSide: CombatSide
   abilityKey: string
-  unit: UnitId | 'ALL_OWN' | 'ALL_OPPONENT'
+  /** Optional single-unit target. Omitted = every die on `side`. */
+  unit?: UnitId
   amount: number
   wasDeclaration?: boolean
 }
@@ -271,6 +280,9 @@ export interface RerollTargetSpec {
 
 export interface ConditionalModifierTargetSpec {
   key: string
+  /** The side that owns the ability — `uses` are billed here, which may
+   *  differ from the affected side this spec sits in. */
+  ownerSide: CombatSide
   bonus: number
   limit: number
   /** Optional source filter (variant key). Omitted = applies to every

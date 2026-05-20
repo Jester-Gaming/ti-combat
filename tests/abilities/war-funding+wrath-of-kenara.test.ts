@@ -5,7 +5,7 @@ import { combatTest } from '../utils/combat-test'
 
 describe('WAR_FUNDING + WRATH_OF_KENARA', () => {
   it("War Funding's reroll applies before Kenara's flip", () => {
-    // Hacan FLAGSHIP [7, 2] with WRATH_OF_KENARA (2 uses, ALL_OWN +1) and
+    // Hacan FLAGSHIP [7, 2] with WRATH_OF_KENARA (2 uses, +1 to own dice) and
     // WAR_FUNDING (own dice ALWAYS reroll on misses, opponent reroll
     // disabled). The new math pipeline orders REROLL (step 3) before
     // CONDITIONAL_MODIFIER (step 4): War Funding rerolls every miss

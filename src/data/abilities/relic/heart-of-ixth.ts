@@ -8,15 +8,9 @@ type Params = {
 
 function applyFlip(ctx: AbilityCallContext, params: Params): void {
   if (params.target === 'own') {
-    ctx.api.own.applyConditionalBonusToResult({
-      unit: 'ALL_OWN',
-      amount: 1,
-    })
+    ctx.api.own.applyConditionalBonusToResult({ amount: 1 })
   } else {
-    ctx.api.own.applyConditionalBonusToResult({
-      unit: 'ALL_OPPONENT',
-      amount: -1,
-    })
+    ctx.api.opponent.applyConditionalBonusToResult({ amount: -1 })
   }
 }
 

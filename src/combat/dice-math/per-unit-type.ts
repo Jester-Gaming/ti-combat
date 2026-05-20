@@ -447,7 +447,10 @@ function applyConditionalBatch(
           if (remaining <= 0) break
           const take = Math.min(spec.limit, remaining)
           if (take === 0) continue
-          newUsesDelta.set(spec.key, (newUsesDelta.get(spec.key) ?? 0) + take)
+          // Key by `(ownerSide, abilityKey)` to match the abilityOwnerByKey
+          // bookkeeping in combat-state — the use is billed on the owner.
+          const usesKey = `${spec.ownerSide}|${spec.key}`
+          newUsesDelta.set(usesKey, (newUsesDelta.get(usesKey) ?? 0) + take)
           remaining -= take
         }
       }

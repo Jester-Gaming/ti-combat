@@ -6,7 +6,7 @@ import { combatTest } from '../utils/combat-test'
 describe('HEART_OF_IXTH + JNS_HYLARIM', () => {
   it("Heart's +1 doesn't promote a flipped die into a JNS roll trigger", () => {
     // Jol-Nar FLAGSHIP — FRAGILE shifts effective hitValue to 7. With
-    // HEART_OF_IXTH (target='own', uses=1) adding ALL_OWN +1, face classes
+    // HEART_OF_IXTH (target='own', uses=1) adding +1 to own dice, face classes
     // for each die at base hitValue=7:
     //   T = trigger faces 9-10  (2/10 = 0.2): JNS roll trigger → 3 hits
     //   H = naturalHit  7-8     (2/10 = 0.2): 1 hit

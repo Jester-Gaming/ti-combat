@@ -136,31 +136,31 @@ describe('SideApi.applyConditionalBonusToResult', () => {
 
   it('throws when called outside a dice-roll group', () => {
     const { api } = withAbility(cs)
-    expect(() =>
-      api.applyConditionalBonusToResult({ unit: 'ALL_OWN', amount: 1 }),
-    ).toThrow(/dice-roll group/)
+    expect(() => api.applyConditionalBonusToResult({ amount: 1 })).toThrow(
+      /dice-roll group/,
+    )
   })
 
   it('throws when called outside an ability context', () => {
     pushDiceRollGroup(cs)
     const ctx = new AbilityContext('attacker', cs.params)
     const api = ctx.api.own
-    expect(() =>
-      api.applyConditionalBonusToResult({ unit: 'ALL_OWN', amount: 1 }),
-    ).toThrow(/ability context/)
+    expect(() => api.applyConditionalBonusToResult({ amount: 1 })).toThrow(
+      /ability context/,
+    )
   })
 
   it('pushes a filled entry with slotId 0', () => {
     const ctx = pushDiceRollGroup(cs)
     const { api, ability } = withAbility(cs, 'defender')
-    api.applyConditionalBonusToResult({ unit: 'ALL_OWN', amount: 2 })
+    api.applyConditionalBonusToResult({ amount: 2 })
     expect(ctx.modifiers).toEqual([
       {
         type: 'CONDITIONAL_MODIFIER',
         slotId: 0,
         side: 'defender',
+        ownerSide: 'defender',
         abilityKey: ability.key,
-        unit: 'ALL_OWN',
         amount: 2,
       },
     ])
@@ -168,9 +168,9 @@ describe('SideApi.applyConditionalBonusToResult', () => {
 
   it('assigns slotId 1 to a second call', () => {
     const ctx = pushDiceRollGroup(cs)
-    const { api } = withAbility(cs)
-    api.applyConditionalBonusToResult({ unit: 'ALL_OWN', amount: 1 })
-    api.applyConditionalBonusToResult({ unit: 'ALL_OPPONENT', amount: -1 })
+    const { ctx: abilityCtx } = withAbility(cs)
+    abilityCtx.api.own.applyConditionalBonusToResult({ amount: 1 })
+    abilityCtx.api.opponent.applyConditionalBonusToResult({ amount: -1 })
     expect(ctx.modifiers).toHaveLength(2)
     expect(ctx.modifiers![1].slotId).toBe(1)
   })

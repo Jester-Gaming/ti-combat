@@ -9,7 +9,7 @@ describe('CROWN_OF_THALNOS + WRATH_OF_KENARA', () => {
     () => {
       // Hacan FLAGSHIP [7,2] with both CROWN_OF_THALNOS (selecting FLAGSHIP,
       // safeReroll OFF — destruction on rerolled-and-missed) AND
-      // WRATH_OF_KENARA (1 use, +1 conditional flip on ALL_OWN). Kenara is a
+      // WRATH_OF_KENARA (1 use, +1 conditional flip on own dice). Kenara is a
       // flagship ability — needs a flagship to register.
       //
       // Each flagship die is independent; per-die final classes:

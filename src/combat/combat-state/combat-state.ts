@@ -912,20 +912,19 @@ export class CombatState {
     }
 
     // Owner side determines where each ability's `uses` count lives.
-    // For REROLL decls the ability owner can differ from the firing
-    // side (e.g. Scramble Frequency on defender declaring a reroll on
-    // attacker's dice — `d.side === 'attacker'` but the use lives on
-    // defender). REROLL decls carry an explicit `ownerSide`; all other
-    // decl types treat `side` as the ability owner.
+    // For REROLL and CONDITIONAL_MODIFIER decls the ability owner can differ
+    // from the affected side (e.g. Scramble Frequency on defender rerolling
+    // attacker's dice; Heart of Ixth on attacker applying -1 to defender's
+    // dice). Those decls carry an explicit `ownerSide`; all other decl types
+    // treat `side` as the ability owner.
     //
-    // REROLL entries are keyed by `${ownerSide}|${abilityKey}` so two
-    // sides owning the same ability key (e.g. both running
-    // SCRAMBLE_FREQUENCY) don't collapse onto a single owner. Non-REROLL
-    // decls keep the bare `abilityKey` — if multi-side ownership ever
-    // surfaces for them, switch to composite keys here too.
+    // Owner-bearing entries are keyed by `${ownerSide}|${abilityKey}` so two
+    // sides owning the same ability key (e.g. both running SCRAMBLE_FREQUENCY)
+    // don't collapse onto a single owner. Other decls keep the bare
+    // `abilityKey`.
     const abilityOwnerByKey = new Map<string, CombatSide>()
     for (const d of modifiers) {
-      if (d.type === 'REROLL') {
+      if (d.type === 'REROLL' || d.type === 'CONDITIONAL_MODIFIER') {
         const key = `${d.ownerSide}|${d.abilityKey}`
         if (abilityOwnerByKey.has(key)) continue
         abilityOwnerByKey.set(key, d.ownerSide)

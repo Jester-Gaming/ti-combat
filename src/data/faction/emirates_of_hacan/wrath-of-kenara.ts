@@ -18,10 +18,7 @@ export const wrathOfKenara: Ability = {
       system: true,
       isCallable: params => params.isEnabled && params.uses > 0,
       call: ctx => {
-        ctx.api.own.applyConditionalBonusToResult({
-          unit: 'ALL_OWN',
-          amount: 1,
-        })
+        ctx.api.own.applyConditionalBonusToResult({ amount: 1 })
       },
     },
   ],

@@ -58,31 +58,28 @@ export function collectModifiers(input: CollectModifiersInput): Modifier[] {
     out.push({ type: 'REROLL', target })
   }
 
-  // CONDITIONAL_MODIFIER. The decl's `side` is the ability owner; the
-  // affected side depends on `unit`: 'ALL_OWN' → owner; 'ALL_OPPONENT' →
-  // opposite; a UnitId belongs to its owner. The modifier's target slot
-  // is indexed by the affected side (relative to `firing`).
+  // CONDITIONAL_MODIFIER. The decl's `side` is the affected side (the SideApi
+  // the ability called); `ownerSide` is the ability owner. The target slot is
+  // indexed by the affected side relative to `firing`. We group by
+  // `(ownerSide, abilityKey)` — like REROLL — so the same key owned by both
+  // sides bills independently, and `uses` resolve against the owner.
   const condByKey = new Map<
     string,
     SidedTarget<ConditionalModifierTargetSpec>
   >()
   for (const d of input.modifiers) {
     if (d.type !== 'CONDITIONAL_MODIFIER') continue
-    const affectedSide: CombatSide =
-      d.unit === 'ALL_OPPONENT'
-        ? d.side === 'attacker'
-          ? 'defender'
-          : 'attacker'
-        : d.side
-    const declaredUses = input.abilityUses?.get(d.abilityKey)
+    const usesKey = `${d.ownerSide}|${d.abilityKey}`
+    const declaredUses = input.abilityUses?.get(usesKey)
     const limit = Number.isFinite(declaredUses) ? (declaredUses as number) : 1
     const slot: ConditionalModifierTargetSpec = {
       key: d.abilityKey,
+      ownerSide: d.ownerSide,
       bonus: d.amount,
       limit,
     }
-    const idx: 0 | 1 = affectedSide === firing ? 0 : 1
-    upsertSlot(condByKey, d.abilityKey, idx, slot)
+    const idx: 0 | 1 = d.side === firing ? 0 : 1
+    upsertSlot(condByKey, usesKey, idx, slot)
   }
   for (const target of condByKey.values()) {
     out.push({ type: 'CONDITIONAL_MODIFIER', target })

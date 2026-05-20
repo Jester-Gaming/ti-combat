@@ -826,17 +826,21 @@ export class SideApi {
     }))
   }
 
-  /** Queue a conditional hit-value modifier on the current dice-roll group. */
+  /** Queue a conditional hit-value modifier on the current dice-roll group.
+   *  The affected side is this SideApi's side (`own` / `opponent`); `uses`
+   *  are billed on the ability owner's side. */
   applyConditionalBonusToResult(
     spec: Omit<
       ConditionalModifierDecl,
-      'type' | 'slotId' | 'side' | 'abilityKey'
+      'type' | 'slotId' | 'side' | 'ownerSide' | 'abilityKey'
     >,
   ): void {
+    const ownerSide = this._ctx.side
     pushModifier(this._ctx, this._side, list => ({
       type: 'CONDITIONAL_MODIFIER',
       slotId: list.length,
       side: this._side,
+      ownerSide,
       abilityKey: this._ctx.ability!.key,
       ...spec,
     }))
