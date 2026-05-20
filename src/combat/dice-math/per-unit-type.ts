@@ -121,7 +121,11 @@ export function runPerUnitTypeMode(input: PerUnitTypeInput): DiceMathBranch[] {
       branches = applyRollTrigger(branches, sourceMap, spec, side)
       branches = collapseSideBranches(branches)
     }
-    const sideConditionals = pickConditionals(input.modifiers, side)
+    const sideConditionals = pickConditionals(
+      input.modifiers,
+      side,
+      input.selfTarget,
+    )
     branches = applyConditionalSpecs(branches, sourceMap, sideConditionals)
     branches = collapseSideBranches(branches)
     if (input.collapseThreshold !== undefined) {
@@ -301,8 +305,16 @@ function pickRerolls(
 function pickConditionals(
   modifiers: Modifier[],
   side: CombatSide,
+  selfTarget = false,
 ): ConditionalModifierTargetSpec[] {
-  const idx: 0 | 1 = side === 'attacker' ? 0 : 1
+  // On a self-targeting roll (Proxima self-bomb) the firer shoots itself, so
+  // attacker/defender are swapped — mirroring the post-roll `_swapHitPools`.
+  // A conditional declared against the firer's opponent (Heart `target:
+  // 'opponent'` -1, or the opponent's Heart `target:'own'` +1) then lands on
+  // the firer's self-routed dice, while a conditional declared against the
+  // firer itself routes to the (empty) opposite side and drops out.
+  const base: 0 | 1 = side === 'attacker' ? 0 : 1
+  const idx: 0 | 1 = selfTarget ? ((base ^ 1) as 0 | 1) : base
   const out: ConditionalModifierTargetSpec[] = []
   for (const m of modifiers) {
     if (m.type !== 'CONDITIONAL_MODIFIER') continue
