@@ -67,9 +67,13 @@ interface PerUnitTypeInput {
  * appended to the landing side's pools.
  */
 export function runPerUnitTypeMode(input: PerUnitTypeInput): DiceMathBranch[] {
+  const sourceMaps: Record<CombatSide, Record<Source, FlatSource>> = {
+    attacker: buildSourceMap(input.dice.attacker),
+    defender: buildSourceMap(input.dice.defender),
+  }
   const sides = (['attacker', 'defender'] as const).map(side => {
     const sources = flattenSources(input.dice[side])
-    const sourceMap = buildSourceMap(input.dice[side])
+    const sourceMap = sourceMaps[side]
     const sideCustomRolls = pickCustomRolls(input.modifiers, side)
     let branches = initialBranches(sources, sideCustomRolls)
     const rawSideRerolls = pickRerolls(input.modifiers, side)
@@ -142,38 +146,69 @@ export function runPerUnitTypeMode(input: PerUnitTypeInput): DiceMathBranch[] {
     return { side, branches }
   })
 
+  // Two-sided shared-budget conditionals (both tuple slots filled, e.g. Heart
+  // of Ixth "Any") are excluded from the per-side passes above and applied here
+  // — once the cross-product exposes both sides' per-source hits — so a single
+  // `uses` budget caps the total flips across both sides.
+  const twoSided = input.modifiers.filter(
+    (m): m is ConditionalModifier =>
+      m.type === 'CONDITIONAL_MODIFIER' &&
+      m.target[0] !== undefined &&
+      m.target[1] !== undefined,
+  )
+  const selfTarget = input.selfTarget ?? false
+
   const out: DiceMathBranch[] = []
   for (const a of sides[0].branches) {
     for (const d of sides[1].branches) {
       const prob = a.probability * d.probability
       if (prob === 0) continue
-      const pools: Record<CombatSide, PendingHitPool> = {
-        attacker: makeEmptyPendingHitPool(),
-        defender: makeEmptyPendingHitPool(),
+      let joints: JointConditionalOutcome[] = [
+        {
+          attackerHits: a.hits,
+          defenderHits: d.hits,
+          usesDelta: mergeUses(a.usesDelta, d.usesDelta),
+          probability: 1,
+        },
+      ]
+      for (const mod of twoSided) {
+        const next: JointConditionalOutcome[] = []
+        for (const j of joints) {
+          next.push(...applyTwoSidedConditional(j, mod, sourceMaps, selfTarget))
+        }
+        joints = next
       }
-      emitPools(
-        a.hits,
-        input.preSplit.attacker,
-        input.validTargets[input.preSplit.attacker.landingSide],
-        input.priorityList[input.preSplit.attacker.landingSide],
-        input.meta,
-        pools,
-      )
-      emitPools(
-        d.hits,
-        input.preSplit.defender,
-        input.validTargets[input.preSplit.defender.landingSide],
-        input.priorityList[input.preSplit.defender.landingSide],
-        input.meta,
-        pools,
-      )
-      out.push({
-        probability: prob,
-        pendingHitPool: pools,
-        usesDelta: mergeUses(a.usesDelta, d.usesDelta),
-        destroyedUnits: new Set(),
-        pendingEffects: [...a.pendingEffects, ...d.pendingEffects],
-      })
+      for (const j of joints) {
+        const jointProb = prob * j.probability
+        if (jointProb === 0) continue
+        const pools: Record<CombatSide, PendingHitPool> = {
+          attacker: makeEmptyPendingHitPool(),
+          defender: makeEmptyPendingHitPool(),
+        }
+        emitPools(
+          j.attackerHits,
+          input.preSplit.attacker,
+          input.validTargets[input.preSplit.attacker.landingSide],
+          input.priorityList[input.preSplit.attacker.landingSide],
+          input.meta,
+          pools,
+        )
+        emitPools(
+          j.defenderHits,
+          input.preSplit.defender,
+          input.validTargets[input.preSplit.defender.landingSide],
+          input.priorityList[input.preSplit.defender.landingSide],
+          input.meta,
+          pools,
+        )
+        out.push({
+          probability: jointProb,
+          pendingHitPool: pools,
+          usesDelta: j.usesDelta,
+          destroyedUnits: new Set(),
+          pendingEffects: [...a.pendingEffects, ...d.pendingEffects],
+        })
+      }
     }
   }
   return collapseBranches(out)
@@ -318,8 +353,162 @@ function pickConditionals(
   const out: ConditionalModifierTargetSpec[] = []
   for (const m of modifiers) {
     if (m.type !== 'CONDITIONAL_MODIFIER') continue
-    const spec = (m as ConditionalModifier).target[idx]
+    const { target } = m as ConditionalModifier
+    // Two-sided shared-budget conditionals are handled jointly after the
+    // cross-product (see `applyTwoSidedConditional`), not per side.
+    if (target[0] !== undefined && target[1] !== undefined) continue
+    const spec = target[idx]
     if (spec) out.push(spec)
+  }
+  return out
+}
+
+interface JointConditionalOutcome {
+  attackerHits: Record<Source, number>
+  defenderHits: Record<Source, number>
+  usesDelta: Map<string, number>
+  probability: number
+}
+
+/** Apply one two-sided shared-budget conditional (Heart "Any") to a joint
+ *  cross-product branch. Both tuple slots are filled; on a self-targeting roll
+ *  the slot→side mapping swaps, matching `pickConditionals`. The two slots
+ *  share one `limit` (= owner's `uses`): flips are enumerated on each side,
+ *  then allocated preferred-slot-first up to the shared budget, so the total
+ *  number of ±1 flips never exceeds the budget. The use is billed on the owner
+ *  once per flip. */
+function applyTwoSidedConditional(
+  branch: JointConditionalOutcome,
+  modifier: ConditionalModifier,
+  sourceMaps: Record<CombatSide, Record<Source, FlatSource>>,
+  selfTarget: boolean,
+): JointConditionalOutcome[] {
+  const attackerSpec = (selfTarget ? modifier.target[1] : modifier.target[0])!
+  const defenderSpec = (selfTarget ? modifier.target[0] : modifier.target[1])!
+  const limit = attackerSpec.limit
+  if (limit <= 0) return [branch]
+
+  const attackerFlips = enumerateFlippable(
+    branch.attackerHits,
+    sourceMaps.attacker,
+    attackerSpec,
+  )
+  const defenderFlips = enumerateFlippable(
+    branch.defenderHits,
+    sourceMaps.defender,
+    defenderSpec,
+  )
+  const attackerPreferred = attackerSpec.preferred === true
+  const signA = attackerSpec.bonus > 0 ? 1 : -1
+  const signD = defenderSpec.bonus > 0 ? 1 : -1
+  const usesKey = `${attackerSpec.ownerSide}|${attackerSpec.key}`
+
+  const out: JointConditionalOutcome[] = []
+  for (const af of attackerFlips) {
+    for (const df of defenderFlips) {
+      const probability = branch.probability * af.probability * df.probability
+      if (probability === 0) continue
+      let flipsA: number
+      let flipsD: number
+      if (attackerPreferred) {
+        flipsA = Math.min(af.total, limit)
+        flipsD = Math.min(df.total, limit - flipsA)
+      } else {
+        flipsD = Math.min(df.total, limit)
+        flipsA = Math.min(af.total, limit - flipsD)
+      }
+      const consumed = flipsA + flipsD
+      let usesDelta = branch.usesDelta
+      if (consumed > 0) {
+        usesDelta = new Map(branch.usesDelta)
+        usesDelta.set(usesKey, (usesDelta.get(usesKey) ?? 0) + consumed)
+      }
+      out.push({
+        attackerHits: distributeFlips(
+          branch.attackerHits,
+          af.perSource,
+          flipsA,
+          signA,
+        ),
+        defenderHits: distributeFlips(
+          branch.defenderHits,
+          df.perSource,
+          flipsD,
+          signD,
+        ),
+        usesDelta,
+        probability,
+      })
+    }
+  }
+  return out
+}
+
+interface FlippableOutcome {
+  perSource: { source: Source; count: number }[]
+  total: number
+  probability: number
+}
+
+/** Enumerate, per source on a side, how many dice sit on the single flippable
+ *  face for a ±1 conditional (a `+1` flips the face one below the hit value;
+ *  a `-1` flips the face exactly at the hit value), returning the joint
+ *  distribution of flippable counts across that side's matched sources. */
+function enumerateFlippable(
+  hits: Record<Source, number>,
+  sourceMap: Record<Source, FlatSource>,
+  spec: ConditionalModifierTargetSpec,
+): FlippableOutcome[] {
+  const sign = spec.bonus > 0 ? 1 : -1
+  const matched = matchedSources(hits, sourceMap, spec.source)
+  let outcomes: FlippableOutcome[] = [
+    { perSource: [], total: 0, probability: 1 },
+  ]
+  for (const source of matched) {
+    const info = sourceMap[source]
+    if (!info) continue
+    const k = hits[source] ?? 0
+    const totalDice = info.unitCount * info.dicePerUnit
+    const available = sign > 0 ? totalDice - k : k
+    const tierFaces = sign > 0 ? info.hitValue - 1 : 11 - info.hitValue
+    // D=1: tier-1 count is the flippable count (one specific face).
+    const dist = enumerateTierMultinomial(available, 1, tierFaces).map(e => ({
+      count: e.counts[0],
+      probability: e.probability,
+    }))
+    const next: FlippableOutcome[] = []
+    for (const o of outcomes) {
+      for (const d of dist) {
+        next.push({
+          perSource: [...o.perSource, { source, count: d.count }],
+          total: o.total + d.count,
+          probability: o.probability * d.probability,
+        })
+      }
+    }
+    outcomes = next
+  }
+  return outcomes
+}
+
+/** Apply `flips` ±1 modifications across a side's flippable sources, in source
+ *  order (each source capped by its flippable count). */
+function distributeFlips(
+  hits: Record<Source, number>,
+  perSource: { source: Source; count: number }[],
+  flips: number,
+  sign: 1 | -1,
+): Record<Source, number> {
+  if (flips <= 0) return hits
+  const out = { ...hits }
+  let remaining = flips
+  for (const ps of perSource) {
+    if (remaining <= 0) break
+    const take = Math.min(ps.count, remaining)
+    if (take > 0) {
+      out[ps.source] = (out[ps.source] ?? 0) + sign * take
+      remaining -= take
+    }
   }
   return out
 }

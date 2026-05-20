@@ -60,7 +60,10 @@ const MINUS_ONE: Grid = [
   { value: [1, 0], probability: 0.007 },
 ]
 
-function setup(owner: CombatSide, target: 'own' | 'opponent') {
+function setup(
+  owner: CombatSide,
+  target: 'own' | 'opponent' | 'anyPreferOwn' | 'anyPreferOpponent',
+) {
   const heart = { HEART_OF_IXTH: { isEnabled: true, uses: 2, target } }
   return combatTest({
     mode: 'GROUND',
@@ -129,5 +132,19 @@ describe('HEART_OF_IXTH + PROXIMA_TARGETING_VI', () => {
     const opp = t.advance()
     expect(opp).toHaveBranches(grid('defender'), MINUS_ONE)
     expect(selfBomb(opp, 'defender')).toHaveBranches(grid('defender'), NATURAL)
+  })
+
+  it("Bastion's 'Any' applies +1 to the opp-bomb and -1 to the self-bomb", () => {
+    // "Any" declares both halves sharing the budget. The self-bomb side-swap
+    // routes the +1 to the opp-bomb (boost hits on the opponent) and the -1 to
+    // the self-bomb (cut self-hits) — the same PLUS_ONE / MINUS_ONE grids the
+    // single-target variants produce, now from one generic config.
+    const t = setup('attacker', 'anyPreferOwn')
+    const opp = t.advance()
+    expect(opp).toHaveBranches(grid('attacker'), PLUS_ONE)
+    expect(selfBomb(opp, 'attacker')).toHaveBranches(
+      grid('attacker'),
+      MINUS_ONE,
+    )
   })
 })

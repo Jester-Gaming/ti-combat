@@ -105,6 +105,10 @@ export interface ConditionalModifierDecl {
   /** Optional single-unit target. Omitted = every die on `side`. */
   unit?: UnitId
   amount: number
+  /** For a two-sided conditional sharing one use budget (Heart of Ixth "Any"),
+   *  marks the slot whose flip is allocated first when a single outcome could
+   *  take either side's flip. Ignored for one-sided conditionals. */
+  preferred?: boolean
   wasDeclaration?: boolean
 }
 
@@ -288,6 +292,9 @@ export interface ConditionalModifierTargetSpec {
   /** Optional source filter (variant key). Omitted = applies to every
    *  source on the affected side. */
   source?: UnitType
+  /** Set on the preferred slot of a two-sided shared-budget conditional
+   *  (Heart "Any") — its flip is allocated before the other slot's. */
+  preferred?: boolean
 }
 
 export interface AdditionalHitPoolTargetSpec {
