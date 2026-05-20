@@ -1,48 +1,29 @@
 import { describe, expect, it } from 'vitest'
 
-import { branchesByHit, sumProb } from '../utils/branches'
 import { combatTest } from '../utils/combat-test'
 
+const AMOUNT_OWN_LE0 = {
+  ownStrategyKind: 'IF_HITS_AMOUNT_LE' as const,
+  ownStrategyThreshold: 0,
+  opponentStrategyKind: 'NEVER' as const,
+  opponentStrategyThreshold: 0,
+}
+
+const AMOUNT_OPP_GE1 = {
+  ownStrategyKind: 'NEVER' as const,
+  ownStrategyThreshold: 0,
+  opponentStrategyKind: 'IF_HITS_AMOUNT_GE' as const,
+  opponentStrategyThreshold: 1,
+}
+
 describe('THUNDARIAN', () => {
-  it('disabled: produces baseline binomial distribution', () => {
-    // 2 attacker cruisers [7,1] vs 1 defender carrier (no combat dice).
-    // Per attacker die: hit (face 7-10) = 0.4, miss = 0.6.
-    // P(0 hits) = 0.36, P(1 hit) = 0.48, P(2 hits) = 0.16.
+  it('disabled: never restarts', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {
         faction: 'ARBOREC',
         units: { CRUISER: 2 },
-        abilities: {
-          THUNDARIAN: { isEnabled: false, uses: 1 },
-        },
-      },
-      defender: { faction: 'ARBOREC', units: { CARRIER: 1 } },
-    })
-
-    t.advanceToTiming('BEFORE_DICE_ROLL', 0, 'SPACE_COMBAT')
-    const branches = t.step()
-
-    expect(sumProb(branches)).toBeCloseTo(1, 8)
-    expect(sumProb(branchesByHit(branches, 'defender', 0))).toBeCloseTo(0.36, 8)
-    expect(sumProb(branchesByHit(branches, 'defender', 1))).toBeCloseTo(0.48, 8)
-    expect(sumProb(branchesByHit(branches, 'defender', 2))).toBeCloseTo(0.16, 8)
-  })
-
-  it('enabled (uses=1): restart fires, hits discarded, fresh roll committed', () => {
-    // With Thundarian enabled on attacker (uses=1), the FIRST dice-roll
-    // group's hits are discarded and a fresh group runs. Since the re-roll
-    // is an independent Bernoulli sample with the same distribution, the
-    // final hit distribution on the defender is the same as the baseline
-    // binomial. Verify the ability fired and its uses went to 0.
-    const t = combatTest({
-      mode: 'SPACE',
-      attacker: {
-        faction: 'ARBOREC',
-        units: { CRUISER: 2 },
-        abilities: {
-          THUNDARIAN: { isEnabled: true, uses: 1 },
-        },
+        abilities: { THUNDARIAN: { isEnabled: false, uses: 1 } },
       },
       defender: { faction: 'ARBOREC', units: { CARRIER: 1 } },
     })
@@ -50,91 +31,223 @@ describe('THUNDARIAN', () => {
     t.advanceTo('SPACE_COMBAT')
     t.advanceRound()
 
-    expect(t.abilityLog('THUNDARIAN')).not.toHaveLength(0)
-    // After one fire, Thundarian is exhausted.
-    expect(t.state.attacker.abilities.THUNDARIAN.uses).toBe(0)
-
-    // Check the RESTART log event was emitted at least once.
-    const restarts = t.log.filter(e => e.path.includes('RESTART'))
-    expect(restarts).not.toHaveLength(0)
+    expect(t.abilityLog('THUNDARIAN')).toHaveLength(0)
   })
 
-  it('exhausts after one fire: uses goes 1 → 0 after combat round', () => {
+  it('own strategy fires on a bad own roll, spends the use', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+        abilities: {
+          THUNDARIAN: {
+            isEnabled: true,
+            uses: 1,
+            combinator: 'OR',
+            ...AMOUNT_OWN_LE0,
+          },
+        },
+      },
+      defender: { faction: 'ARBOREC', units: { CARRIER: 1 } },
+    })
+
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound({ defender: 0 })
+
+    expect(t.abilityLog('THUNDARIAN').length).toBeGreaterThan(0)
+    expect(t.state.attacker.abilities.THUNDARIAN.uses).toBe(0)
+  })
+
+  it('own strategy does not fire on a good own roll, keeps the use', () => {
+    const t = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+        abilities: {
+          THUNDARIAN: {
+            isEnabled: true,
+            uses: 1,
+            combinator: 'OR',
+            ...AMOUNT_OWN_LE0,
+          },
+        },
+      },
+      defender: { faction: 'ARBOREC', units: { CARRIER: 1 } },
+    })
+
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound({ defender: 2 })
+
+    expect(t.abilityLog('THUNDARIAN')).toHaveLength(0)
+    expect(t.state.attacker.abilities.THUNDARIAN.uses).toBe(1)
+  })
+
+  it('opponent strategy fires on a dangerous opponent roll', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {
         faction: 'ARBOREC',
         units: { CRUISER: 1 },
         abilities: {
-          THUNDARIAN: { isEnabled: true, uses: 1 },
+          THUNDARIAN: {
+            isEnabled: true,
+            uses: 1,
+            combinator: 'OR',
+            ...AMOUNT_OPP_GE1,
+          },
         },
       },
-      defender: { faction: 'ARBOREC', units: { CARRIER: 1 } },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
     t.advanceTo('SPACE_COMBAT')
-    t.advanceRound()
+    t.advanceRound({ attacker: 1 })
 
-    expect(t.abilityLog('THUNDARIAN')).not.toHaveLength(0)
-    expect(t.state.attacker.abilities.THUNDARIAN.uses).toBe(0)
+    expect(t.abilityLog('THUNDARIAN').length).toBeGreaterThan(0)
   })
 
-  it('uses=0: does not fire, dice roll commits normally', () => {
+  it('opponent strategy does not fire on a weak opponent roll', () => {
     const t = combatTest({
       mode: 'SPACE',
       attacker: {
         faction: 'ARBOREC',
-        units: { CRUISER: 2 },
+        units: { CRUISER: 1 },
         abilities: {
-          THUNDARIAN: { isEnabled: true, uses: 0 },
+          THUNDARIAN: {
+            isEnabled: true,
+            uses: 1,
+            combinator: 'OR',
+            ...AMOUNT_OPP_GE1,
+          },
         },
       },
-      defender: { faction: 'ARBOREC', units: { CARRIER: 1 } },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
     })
 
-    t.advanceToTiming('BEFORE_DICE_ROLL', 0, 'SPACE_COMBAT')
-    const branches = t.step()
+    t.advanceTo('SPACE_COMBAT')
+    t.advanceRound({ attacker: 0 })
 
-    expect(sumProb(branches)).toBeCloseTo(1, 8)
-    expect(sumProb(branchesByHit(branches, 'defender', 0))).toBeCloseTo(0.36, 8)
-    expect(sumProb(branchesByHit(branches, 'defender', 1))).toBeCloseTo(0.48, 8)
-    expect(sumProb(branchesByHit(branches, 'defender', 2))).toBeCloseTo(0.16, 8)
     expect(t.abilityLog('THUNDARIAN')).toHaveLength(0)
   })
 
-  it('fires in round 1, exhausted in round 2 — round 2 produces baseline', () => {
-    // Use 2 cruisers vs 1 carrier — defender has no combat dice, so attacker
-    // cruisers never die. Round 1: Thundarian fires (uses 1 → 0). Round 2:
-    // Thundarian has uses=0, doesn't fire, dice commit normally.
-    const t = combatTest({
+  it('AND combinator requires both conditions', () => {
+    const config = {
+      isEnabled: true,
+      uses: 1,
+      combinator: 'AND' as const,
+      ownStrategyKind: 'IF_HITS_AMOUNT_LE' as const,
+      ownStrategyThreshold: 0,
+      opponentStrategyKind: 'IF_HITS_AMOUNT_GE' as const,
+      opponentStrategyThreshold: 1,
+    }
+
+    const both = combatTest({
       mode: 'SPACE',
       attacker: {
         faction: 'ARBOREC',
         units: { CRUISER: 2 },
-        abilities: {
-          THUNDARIAN: { isEnabled: true, uses: 1 },
-        },
+        abilities: { THUNDARIAN: config },
+      },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
+    })
+    both.advanceTo('SPACE_COMBAT')
+    both.advanceRound({ defender: 0, attacker: 1 })
+    expect(both.abilityLog('THUNDARIAN').length).toBeGreaterThan(0)
+
+    // Only own condition holds (own produces 0, opponent produces 0): AND fails.
+    const ownConditionOnly = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+        abilities: { THUNDARIAN: config },
+      },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
+    })
+    ownConditionOnly.advanceTo('SPACE_COMBAT')
+    ownConditionOnly.advanceRound({ defender: 0, attacker: 0 })
+    expect(ownConditionOnly.abilityLog('THUNDARIAN')).toHaveLength(0)
+
+    // Only opponent condition holds (own produces 2, opponent produces 1): AND fails.
+    const opponentConditionOnly = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+        abilities: { THUNDARIAN: config },
+      },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
+    })
+    opponentConditionOnly.advanceTo('SPACE_COMBAT')
+    opponentConditionOnly.advanceRound({ defender: 2, attacker: 1 })
+    expect(opponentConditionOnly.abilityLog('THUNDARIAN')).toHaveLength(0)
+  })
+
+  it('OR combinator fires when either condition holds', () => {
+    const config = {
+      isEnabled: true,
+      uses: 1,
+      combinator: 'OR' as const,
+      ownStrategyKind: 'IF_HITS_AMOUNT_LE' as const,
+      ownStrategyThreshold: 0,
+      opponentStrategyKind: 'IF_HITS_AMOUNT_GE' as const,
+      opponentStrategyThreshold: 1,
+    }
+
+    const onlyOpp = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+        abilities: { THUNDARIAN: config },
+      },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
+    })
+    onlyOpp.advanceTo('SPACE_COMBAT')
+    onlyOpp.advanceRound({ defender: 2, attacker: 1 })
+    expect(onlyOpp.abilityLog('THUNDARIAN').length).toBeGreaterThan(0)
+
+    const neither = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+        abilities: { THUNDARIAN: config },
+      },
+      defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
+    })
+    neither.advanceTo('SPACE_COMBAT')
+    neither.advanceRound({ defender: 2, attacker: 0 })
+    expect(neither.abilityLog('THUNDARIAN')).toHaveLength(0)
+  })
+
+  it('default percent config restarts a below-median own roll only', () => {
+    const fires = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+        abilities: { THUNDARIAN: { isEnabled: true, uses: 1 } },
       },
       defender: { faction: 'ARBOREC', units: { CARRIER: 1 } },
     })
+    fires.advanceTo('SPACE_COMBAT')
+    fires.advanceRound({ defender: 0 })
+    expect(fires.abilityLog('THUNDARIAN').length).toBeGreaterThan(0)
 
-    t.advanceTo('SPACE_COMBAT')
-    t.advanceRound() // round 1: Thundarian fires once
-
-    expect(t.abilityLog('THUNDARIAN')).not.toHaveLength(0)
-    expect(t.state.attacker.abilities.THUNDARIAN.uses).toBe(0)
-
-    const round1LogCount = t.abilityLog('THUNDARIAN').length
-
-    t.advanceToTiming('BEFORE_DICE_ROLL', 0, 'SPACE_COMBAT')
-    const branches = t.step()
-
-    expect(sumProb(branches)).toBeCloseTo(1, 8)
-    expect(sumProb(branchesByHit(branches, 'defender', 0))).toBeCloseTo(0.36, 8)
-    expect(sumProb(branchesByHit(branches, 'defender', 1))).toBeCloseTo(0.48, 8)
-    expect(sumProb(branchesByHit(branches, 'defender', 2))).toBeCloseTo(0.16, 8)
-
-    // Round 2 didn't add restart entries.
-    expect(t.abilityLog('THUNDARIAN').length).toBe(round1LogCount)
+    const quiet = combatTest({
+      mode: 'SPACE',
+      attacker: {
+        faction: 'ARBOREC',
+        units: { CRUISER: 2 },
+        abilities: { THUNDARIAN: { isEnabled: true, uses: 1 } },
+      },
+      defender: { faction: 'ARBOREC', units: { CARRIER: 1 } },
+    })
+    quiet.advanceTo('SPACE_COMBAT')
+    quiet.advanceRound({ defender: 1 })
+    expect(quiet.abilityLog('THUNDARIAN')).toHaveLength(0)
   })
 })

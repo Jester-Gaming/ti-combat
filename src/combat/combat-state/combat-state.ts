@@ -29,6 +29,7 @@ import type {
 } from '../dice-math/branch-accumulator'
 import { runDiceMath } from '../dice-math/run-dice-math'
 import type { RollTriggerDecl, SideDiceCollection } from '../dice-math/types'
+import { marginalizeBaseHits } from '../dice-math/utils/marginalize-base-hits'
 import { type LogEntry, Logger } from '../logger'
 import { canonicalizeUnitState } from '../utils/canonicalize-unit-state'
 import { sortUnitsByPriority } from '../utils/sort-units-by-priority'
@@ -1029,6 +1030,10 @@ export class CombatState {
   ): StateWithProbability[] {
     const metaPhase = innerMeta(phase)
     const ctx = this.currentGroupData as DiceRollContext
+    ctx.hitDistribution = {
+      attacker: marginalizeBaseHits(branches, 'attacker'),
+      defender: marginalizeBaseHits(branches, 'defender'),
+    }
     const modifiers = ctx.modifiers ?? []
 
     const naturalById = new Map<string, RollTriggerDecl>()

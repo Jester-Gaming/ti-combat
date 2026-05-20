@@ -94,6 +94,7 @@ export function strategyToPredicate(
         for (const o of side.distribution) {
           if (o.hits >= side.total) mass += o.probability
         }
+
         return mass <= cutoff + 1e-12
       }
     }

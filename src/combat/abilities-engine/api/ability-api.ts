@@ -35,6 +35,7 @@ import type {
   UnitAbilityMeta,
 } from '../../combat-state/types'
 import { isDiceRollContext } from '../../combat-state/types'
+import type { RerollSide } from '../../dice-math/reroll-strategy'
 import type {
   AdditionalHitPoolTargetSpec,
   ConditionalModifierDecl,
@@ -1034,6 +1035,30 @@ export class AbilityContext {
       )
     }
     return ctx.isUnitAbility
+  }
+
+  getPostRollSides(): { own: RerollSide; opponent: RerollSide } {
+    const cs = this._abilitiesParams.combatState
+    const ctx = cs.currentGroupData
+    if (!isDiceRollContext(ctx) || ctx.hitDistribution === undefined) {
+      throw new Error(
+        'getPostRollSides called outside a rolled dice-roll group',
+      )
+    }
+    const ownSide = this._side
+    const oppSide = getOpponentSide(ownSide)
+    const baseHits = (side: CombatSide): number =>
+      cs.data[side].hitPool?.base ?? 0
+    return {
+      own: {
+        total: baseHits(oppSide),
+        distribution: ctx.hitDistribution[oppSide],
+      },
+      opponent: {
+        total: baseHits(ownSide),
+        distribution: ctx.hitDistribution[ownSide],
+      },
+    }
   }
 
   /** Side-abstract reroll declaration (docs/dice-math.md §2). `OWN` targets the

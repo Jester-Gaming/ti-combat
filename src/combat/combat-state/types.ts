@@ -11,6 +11,7 @@ import type {
 } from '@/types'
 
 import type { AbilityPassFrame, AbilityTiming } from '../abilities-engine'
+import type { HitsDist } from '../dice-math/reroll-strategy'
 import type { ModifierDecl } from '../dice-math/types'
 // `PhaseStep` references `CombatState` in its method `fn` signature; the
 // import is type-only to avoid a runtime cycle.
@@ -267,6 +268,14 @@ export interface DiceRollContext {
     defender: import('../dice-math/types').SideDiceCollection
   }
   validTargets?: { attacker: UnitType[]; defender: UnitType[] }
+  /** Per-landing-side marginal of main base hits, captured by
+   *  `_branchesFromMathKernel` after the math kernel runs. Read at
+   *  AFTER_DICE_ROLL_STEP by abilities that gate on the realized roll's
+   *  odds (Thundarian). Recomputing from `diceCollection` would be wrong:
+   *  the kernel applies dice-shape / hit-value / conditional /
+   *  additional-hit-pool modifiers inside `_rollDice`, so the collection
+   *  does not reflect the true post-modifier odds. */
+  hitDistribution?: { attacker: HitsDist; defender: HitsDist }
   /** Declarations queued by dice-related ability APIs (applyBonusToResult,
    *  addDiceCount, declareReroll, etc.). Consumed by `_rollDice` in push
    *  order. Dropped when the group drains. */

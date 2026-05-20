@@ -18,6 +18,7 @@ import type {
   RerollDecl,
   SideDiceCollection,
 } from './types'
+import { marginalizeBaseHits } from './utils/marginalize-base-hits'
 
 interface DiceMathInput {
   /** Mutated in place by stored hit-value modifiers, dice-shape mutators,
@@ -267,13 +268,7 @@ function markOneShotUses(
     if (cached) return cached
     const landing: CombatSide =
       firingSide === 'attacker' ? 'defender' : 'attacker'
-    const m = new Map<number, number>()
-    for (const b of branches) {
-      const hits = b.pendingHitPool[landing].base
-      m.set(hits, (m.get(hits) ?? 0) + b.probability)
-    }
-    const dist: { hits: number; probability: number }[] = []
-    for (const [hits, probability] of m) dist.push({ hits, probability })
+    const dist = marginalizeBaseHits(branches, landing)
     marginalCache.set(firingSide, dist)
     return dist
   }

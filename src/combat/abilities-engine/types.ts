@@ -237,6 +237,15 @@ export interface AbilityReadContext {
   readonly currentDiceRollSelfTarget: boolean
   /** Whether the current dice-roll group is a unit-ability roll. Throws outside one. */
   readonly currentDiceRollIsUnitAbility: boolean
+  /** Own/opponent base-hit snapshot for strategy gating at
+   *  AFTER_DICE_ROLL_STEP. `own` = hits THIS side produced (landing on the
+   *  opponent); `opponent` = hits the other side produced. Totals read
+   *  main `hitPool.base` to match the captured `.base` marginal. Throws
+   *  outside a dice-roll group or before the distribution was captured. */
+  getPostRollSides(): {
+    own: import('../dice-math/reroll-strategy').RerollSide
+    opponent: import('../dice-math/reroll-strategy').RerollSide
+  }
 }
 
 /** Mutable context for call (Immer draft, full API) */
@@ -281,6 +290,15 @@ export interface AbilityCallContext {
   readonly currentDiceRollSelfTarget: boolean
   /** Whether the current dice-roll group is a unit-ability roll. Throws outside one. */
   readonly currentDiceRollIsUnitAbility: boolean
+  /** Own/opponent base-hit snapshot for strategy gating at
+   *  AFTER_DICE_ROLL_STEP. `own` = hits THIS side produced (landing on the
+   *  opponent); `opponent` = hits the other side produced. Totals read
+   *  main `hitPool.base` to match the captured `.base` marginal. Throws
+   *  outside a dice-roll group or before the distribution was captured. */
+  getPostRollSides(): {
+    own: import('../dice-math/reroll-strategy').RerollSide
+    opponent: import('../dice-math/reroll-strategy').RerollSide
+  }
   /** Side-abstract reroll declaration (docs/dice-math.md §2). */
   declareReroll(spec: {
     OWN?: Omit<
