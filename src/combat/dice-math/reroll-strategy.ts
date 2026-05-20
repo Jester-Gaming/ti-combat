@@ -64,6 +64,28 @@ export function buildRerollStrategy(
   return { kind, threshold }
 }
 
+/** Mean (midpoint) percentile rank of `side.total` within its distribution,
+ *  measured from the given end: the probability mass strictly beyond `total`
+ *  plus half the mass tied at `total`.
+ *
+ *  Splitting the tied mass is what makes coarse distributions behave: with a
+ *  single die (P(miss)=0.6, P(hit)=0.4) a plain CDF puts the worst possible
+ *  roll (a miss) at rank 0.6 — above the bottom 50% — so "worse than 50%"
+ *  wouldn't reroll it. The midpoint rank puts the miss at 0.30 (and the hit at
+ *  0.80), matching the intuition that a below-mean roll is "worse than 50%".
+ *  A degenerate single-outcome distribution ranks at exactly 0.5 from both
+ *  ends, so the strict `< cutoff` comparison never fires on a no-dice side. */
+function midpointRank(side: RerollSide, from: 'bottom' | 'top'): number {
+  let beyond = 0
+  let at = 0
+  for (const o of side.distribution) {
+    if (o.hits === side.total) at += o.probability
+    else if (from === 'bottom' ? o.hits < side.total : o.hits > side.total)
+      beyond += o.probability
+  }
+  return beyond + at / 2
+}
+
 /** Converts a `RerollStrategy` into a predicate matching `RerollDecl.rerollIf`. */
 export function strategyToPredicate(
   strategy: RerollStrategy,
@@ -79,24 +101,11 @@ export function strategyToPredicate(
       return side => side.total >= strategy.threshold
     case 'IF_HITS_PERCENT_LE': {
       const cutoff = strategy.threshold / 100
-      return side => {
-        let mass = 0
-        for (const o of side.distribution) {
-          if (o.hits <= side.total) mass += o.probability
-        }
-        return mass <= cutoff + 1e-12
-      }
+      return side => midpointRank(side, 'bottom') < cutoff
     }
     case 'IF_HITS_PERCENT_GE': {
       const cutoff = strategy.threshold / 100
-      return side => {
-        let mass = 0
-        for (const o of side.distribution) {
-          if (o.hits >= side.total) mass += o.probability
-        }
-
-        return mass <= cutoff + 1e-12
-      }
+      return side => midpointRank(side, 'top') < cutoff
     }
   }
 }
