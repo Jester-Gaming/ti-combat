@@ -181,6 +181,7 @@
 - [x] **Impulse Core** (Faction Technology) — At the start of a space combat, you may destroy 1 of your cruisers or destroyers in the active system to produce 1 hit against your opponent's ships; that hit must be assigned by your opponent to 1 of their non-fighter ships if able.
 - [x] **Van Hauge** (Flagship) — When this ship is destroyed, destroy all ships in this system.
 - [x] **Brother Milor** (Agent) — After a player's unit is destroyed: You may exhaust this card to allow that player to place 2 fighters in the destroyed unit's system if it was a ship, or 2 infantry on its planet if it was a ground force.
+- [x] **Moyin's Ashes** (Mech) — Deploy: When you use your Indoctrination faction ability, you may spend 1 additional influence to replace your opponent's unit with 1 mech instead of 1 infantry.
 
 ### Yssaril Tribes
 
@@ -246,4 +247,4 @@
 ## Environment
 
 - [x] **Nebula** — If a space combat occurs in a nebula, the defender applies +1 to each combat roll of their ships during that combat.
-- [x] **Scar** — All unit abilities cannot be used by or against units inside of an entropic scar.
+- [x] **Entropic Scar** — All unit abilities cannot be used by or against units inside of an entropic scar.

@@ -66,11 +66,11 @@ const t = combatTest({
 
 ### Phase Control
 
-| Method                             | Description                                                                                           |
-| ---------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `t.advanceTo(meta, micro?, hits?)` | Advance through combat, stopping **before** the target phase. Picks outcome matching hits (default 0) |
-| `t.advanceRound(hits?)`            | Process one full combat round from current position through END                                       |
-| `t.step(round?)`                   | Single advance step, returns all `StateWithProbability[]` outcomes                                    |
+| Method                     | Description                                                                                                                                                                                                |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `t.advanceTo(meta, hits?)` | Advance until just **before** `meta` executes. `meta` is a whole MetaPhase (`'SPACE_COMBAT'`, `'AFB'`, `'GROUND_COMBAT'`, `'COMPLETE'`, …), never a micro-phase. Picks outcome matching `hits` (default 0) |
+| `t.advanceRound(hits?)`    | Process one full combat round from current position through END                                                                                                                                            |
+| `t.step(round?)`           | Single advance step, returns all `StateWithProbability[]` outcomes                                                                                                                                         |
 
 ### HitsSpec
 
@@ -87,11 +87,11 @@ type HitsSpec = number | { attacker?: number; defender?: number }
 
 ### Log Query Methods
 
-| Method                    | Description                                          |
-| ------------------------- | ---------------------------------------------------- |
-| `t.abilityLog(key)`       | Log entries where path includes `key`                |
-| `t.abilityLog(key, side)` | Same, filtered by combat side                        |
-| `t.dicePool()`            | Last DICE_POOL entry: `{ attacker, defender }` pools |
+| Method                    | Description                                                                                               |
+| ------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `t.abilityLog(key)`       | Log entries where path includes `key`                                                                     |
+| `t.abilityLog(key, side)` | Same, filtered by combat side                                                                             |
+| `t.dicePool(index?)`      | DICE_POOL entry at `index` (`.at()` semantics, default `-1` = last): `{ attacker, defender, hitSource? }` |
 
 For phase system, ability timings, unit stats, factions, and ability keys — see `docs/overview.md`.
 
@@ -110,6 +110,46 @@ expect(dicePool).toContainDice(
 ```
 
 Checks that the dice pool for `unitType` contains dice groups matching the given `[hitValue, diceCount]` pairs. Accepts one or more dice group arguments. Auto-loaded via setup file — no explicit import needed.
+
+## Custom Matcher: `toHaveBranches`
+
+Asserts the exact probability distribution over the branches returned by `t.advance()` (or `t.step()`). Use it when you need to verify the full set of outcomes and their probabilities, not just a single picked outcome.
+
+```typescript
+expect(branches).toHaveBranches(extractor, specs)
+```
+
+- `extractor: (branch: StateWithProbability) => X` — derives the value you want to group branches by (e.g. surviving unit count, pending hits).
+- `specs: { value: X; probability: number; predicate? }[]` — for each spec, the matcher sums the probability of all branches whose extracted `value` equals `spec.value` (compared structurally, element-wise for arrays) and an optional `predicate` holds, then asserts that total equals `spec.probability` (within `1e-9`).
+
+Branch extractors live in `tests/utils/branches.ts` and are curried so they drop straight into the matcher:
+
+| Helper                        | Per-branch value                                                  |
+| ----------------------------- | ----------------------------------------------------------------- |
+| `pendingHits(side)`           | total pending hits on `side`                                      |
+| `unitCount(side, baseType)`   | surviving units of `baseType` (incl. subtypes) on `side`          |
+| `currentUses(side, key)`      | effective `uses` of ability `key` on `side` (live overlay → base) |
+| `liveUses(branch, side, key)` | live-overlay `uses` only, or `undefined` if untouched             |
+| `all(...extractors)`          | tuple of the given extractors' values — group by a composite key  |
+
+`branchesByHit(branches, side, amount)` and `sumProb(branches)` are also available for manual filtering/aggregation.
+
+```typescript
+import { all, pendingHits, unitCount } from '../utils/branches'
+
+const branches = t.advance()
+
+// Group each branch by [attacker cruisers alive, defender pending hits]:
+expect(branches).toHaveBranches(
+  all(unitCount('attacker', 'CRUISER'), pendingHits('defender')),
+  [
+    { value: [1, 1], probability: 0.7 },
+    { value: [0, 0], probability: 0.3 },
+  ],
+)
+```
+
+The matcher is auto-loaded via setup file (no explicit import); the `branches` helpers must be imported from `../utils/branches`.
 
 ## Side-Reversal Testing (`forEachSide`)
 
@@ -169,7 +209,7 @@ it('modifies combat dice', () => {
     defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
   })
 
-  t.advanceTo('SPACE_COMBAT', 'START')
+  t.advanceTo('SPACE_COMBAT')
   t.advanceRound()
   const pool = t.dicePool()
 
@@ -204,7 +244,7 @@ it('absorbs a hit via sustain', () => {
     defender: { faction: 'ARBOREC', units: { DREADNOUGHT: 1 } },
   })
 
-  t.advanceTo('SPACE_COMBAT', 'START')
+  t.advanceTo('SPACE_COMBAT')
   t.advanceRound({ defender: 1 })
 
   expect(t.defender.units.DREADNOUGHT![0].isDamaged).toBe(true)
@@ -228,8 +268,8 @@ it('destroys a unit at start of combat', () => {
     defender: { faction: 'ARBOREC', units: { CRUISER: 3 } },
   })
 
-  // Advance past START where Assault Cannon fires
-  t.advanceTo('SPACE_COMBAT', 'DICE_ROLL')
+  // Stop before AFB — START_OF_COMBAT abilities (Assault Cannon) have already fired
+  t.advanceTo('AFB')
 
   expect(t.attacker.units.CRUISER).toHaveLength(3)
   expect(t.defender.units.CRUISER).toHaveLength(2)
@@ -254,7 +294,7 @@ it('disables opponent sustain', () => {
     },
   })
 
-  t.advanceTo('SPACE_COMBAT', 'START')
+  t.advanceTo('SPACE_COMBAT')
   t.advanceRound({ defender: 1 })
 
   // Dreadnought can't sustain (disabled by Mentak flagship)
@@ -302,7 +342,7 @@ it('creates subtype and modifies dice', () => {
     defender: { faction: 'ARBOREC', units: { CRUISER: 1 } },
   })
 
-  t.advanceTo('SPACE_COMBAT', 'START')
+  t.advanceTo('SPACE_COMBAT')
   t.advanceRound()
 
   // Verify ability fired
@@ -331,7 +371,7 @@ it('cancels hits', () => {
     defender: { faction: 'ARBOREC', units: { CRUISER: 2 } },
   })
 
-  t.advanceTo('SPACE_COMBAT', 'START')
+  t.advanceTo('SPACE_COMBAT')
   // 3 hits received, Shields Holding cancels 2 → 1 effective hit
   t.advanceRound({ attacker: 3 })
 
@@ -355,7 +395,7 @@ it('adds infantry at end of round', () => {
     defender: { faction: 'ARBOREC', units: { INFANTRY: 1 } },
   })
 
-  t.advanceTo('GROUND_COMBAT', 'START')
+  t.advanceTo('GROUND_COMBAT')
   t.advanceRound()
 
   // Ability fires at END_OF_COMBAT_ROUND
@@ -368,7 +408,7 @@ it('adds infantry at end of round', () => {
 Call `advanceRound` multiple times.
 
 ```typescript
-t.advanceTo('SPACE_COMBAT', 'START')
+t.advanceTo('SPACE_COMBAT')
 t.advanceRound({ defender: 1 }) // round 1
 t.advanceRound({ defender: 1 }) // round 2
 ```
@@ -402,7 +442,7 @@ expect(t.abilityLog('MY_ABILITY')).not.toHaveLength(0)
 expect(t.abilityLog('MY_ABILITY')).toHaveLength(0)
 
 // Ability uses remaining
-expect(t.state.abilities.attacker.ABILITY_KEY.uses).toBe(1)
+expect(t.state.attacker.abilities.ABILITY_KEY.uses).toBe(1)
 ```
 
 ## Faction-Ability Correctness

@@ -6,13 +6,13 @@ Abilities are organized in `src/data/abilities/` by category:
 
 ```
 src/data/abilities/
-  general/          — core abilities (SETTINGS, UNIT_PRIORITY, ABILITY_ORDER, PRE_DAMAGED)
+  general/          — core/unit abilities (SETTINGS, UNIT_PRIORITY, PRE_DAMAGED, PRE_GALVANIZED, SUSTAIN_DAMAGE, PLANETARY_SHIELD, DISABLE_PLANETARY_SHIELD)
+  advanced/         — phase/system abilities (ANTI_FIGHTER_BARRAGE, BOMBARDMENT, SPACE_CANNON_OFFENSE/DEFENSE, RETREAT, ABILITY_ORDER, CAPACITY, FLEET_POOL)
   technology/       — tech cards (ASSAULT_CANNON, PLASMA_SCORING, ...)
   action-card/      — action cards (BUNKER, MORALE_BOOST, SOLAR_FLARE, ...)
   environment/      — environment effects (NEBULA, ENTROPIC_SCAR)
   agenda/           — agenda cards (CONVENTIONS_OF_WAR, PROPHECY_OF_IXTH, ...)
   relic/            — relics (LIGHTRAIL_ORDNANCE, METALI_VOID_ARMAMENTS, ...)
-  unit/             — unit abilities (SUSTAIN_DAMAGE, PLANETARY_SHIELD, DISABLE_PLANETARY_SHIELD)
 ```
 
 Faction abilities live in `src/data/faction/[faction_name]/` alongside the faction definition.
@@ -25,22 +25,29 @@ Each ability is one file (kebab-case matching the key). File exports a single `A
 interface Ability<Params extends Record<string, unknown>> {
   key: string // Unique identifier, SCREAMING_SNAKE_CASE
   name: string // Display name for UI
+  description?: string // Tooltip text describing what the ability does
+  warning?: string // Optional warning paragraph appended to the tooltip
   icon?: string // Raw SVG string for display next to name
-  category: string // 'GENERAL' | 'TECHNOLOGY' | 'ACTION_CARD' | 'ENVIRONMENT' | 'AGENDA' | 'FACTION'
-  subcategory?: string // For FACTION: 'ABILITY' | 'TECHNOLOGY' | 'BREAKTHROUGH' | 'HERO' | 'UNIT' | 'FLAGSHIP' | 'MECH'
   params: AbilityBaseParams & Params // Default parameter values (includes isEnabled and uses from AbilityBaseParams)
-  headerUI?: string & keyof Params // Param key shown in ability header
+  paramsSchema?: {
+    safeParse: (data: unknown) => { success: boolean; data?: unknown }
+  } // Zod schema for param validation
+  headerUI?: 'isEnabled' | 'uses' | (string & keyof Params) // Param key shown in ability header
   readOnly?: boolean // Lock UI (user cannot toggle)
-  uiConfig?: UIConfig<Params> // Controls for params in UI
+  uiConfig?: UIConfig<AbilityBaseParams & Params> // Controls for params in UI
   side?: CombatSide // Restrict to attacker or defender
   context?: CombatMode // Restrict to SPACE or GROUND combat
   sync?: boolean // Both sides share identical config
   exclusiveGroup?: string // Mutually exclusive abilities sharing same group
   onParamSet?: (params, key, value) => params | void // Callback for param changes
   declareParamChange?: (params, settings: SettingsParams) => ParamChange[]
+  declareSubtype?: (params) => DeclaredSubtype[] // Declare variant subtypes (e.g. Cavalry)
+  sort?: (params, ctx, unitIds) => UnitId[] // Pre-sort this ability's unit invokes
   invoke: AbilityInvoke<Params>[] // Array of timing handlers
 }
 ```
+
+There is **no `category`/`subcategory` field**. An ability's category is derived from the registration slot it occupies (which `index.ts` array or faction slot it is added to), surfaced via `SLOT_DISPLAY` — abilities never declare it.
 
 **`params`** — includes `AbilityBaseParams` (`isEnabled: boolean`, `uses: number`) merged with custom `Params`. Example: `params: { isEnabled: false, uses: Infinity, strategy: 'BEST' }`.
 
@@ -154,30 +161,29 @@ CLEANUP_ROUND         — after AFTER_COMBAT_ROUND, resets per-round state (e.g.
 CLEANUP               — once after combat ends, after END_OF_COMBAT (pair with PREPARE for combat-level teardown)
 ```
 
+Triggered timings such as `WHEN_SUSTAIN_DAMAGE_USE`, `AFTER_SUSTAIN_DAMAGE_USE`, `WHEN_GALVANIZE`, and `WHEN_INDOCTRINATION` are not in the core `TimingContextMap` — they are added by individual ability files via `declare global` interface merging (see `general/pre-galvanized.ts`, `yin_brotherhood/indoctrination.ts`).
+
 ### Function Signatures by Timing
 
-**Void timings** (PREPARE, COMMIT_UNITS, START_OF_COMBAT, START_OF_COMBAT_ROUND, AFTER_UNIT_ABILITY_ROLL, AFTER_DICE_ROLL, BEFORE_ASSIGN_HITS, AFTER_ASSIGN_HITS_STEP, END_OF_COMBAT_ROUND, AFTER_COMBAT_ROUND, END_OF_COMBAT, CLEANUP_ROUND, CLEANUP):
+The `call`/`isCallable` signature is derived from the timing's entry in `TimingContextMap`. A timing maps to either `void` (no context arg) or a context type passed as the third argument.
+
+**Void timings** (`void` in `TimingContextMap` — PREPARE, COMMIT_UNITS, START_OF_COMBAT, START_OF_COMBAT_ROUND, BEFORE_DICE_ROLL, BEFORE_UNIT_ABILITY_ROLL, AFTER_UNIT_ABILITY_ROLL, AFTER_DICE_ROLL, BEFORE_ASSIGN_HITS, AFTER_ASSIGN_HITS_STEP, END_OF_COMBAT_ROUND, AFTER_COMBAT_ROUND, END_OF_COMBAT, CLEANUP_ROUND, CLEANUP, and all the `*_STEP` timings):
 
 ```typescript
 isCallable?: (params: Params, ctx: AbilityReadContext) => boolean
 call: (ctx: AbilityCallContext, params: Params) => void
 ```
 
-**Dice timings** (BEFORE_DICE_ROLL, BEFORE_UNIT_ABILITY_ROLL):
+There is **no separate "dice" context argument**. Dice modifiers are applied during `BEFORE_DICE_ROLL` / `BEFORE_UNIT_ABILITY_ROLL` by calling methods directly on `ctx.api.own` / `ctx.api.opponent` (e.g. `addDiceCount`, `addDiceGroup`, `applyBonusToResult`).
+
+**Destroy timings** (DESTROY, WHEN_DESTROY, AFTER_DESTROY) — context is `UnitId[]` (the destroyed unit ids):
 
 ```typescript
-isCallable?: (params: Params, ctx: AbilityReadContext, dice: DiceReadContext) => boolean
-call: (ctx: AbilityCallContext, params: Params, dice: DiceContext) => void
+isCallable?: (params: Params, ctx: AbilityReadContext, ids: UnitId[]) => boolean
+call: (ctx: AbilityCallContext, params: Params, ids: UnitId[]) => void
 ```
 
-**Destroy timings** (DESTROY, WHEN_DESTROY, AFTER_DESTROY):
-
-```typescript
-isCallable?: (params: Params, ctx: AbilityReadContext, units: OwnOpponentContext<Record<UnitType, UnitId[]>>) => boolean
-call: (ctx: AbilityCallContext, params: Params, units: OwnOpponentContext<Record<UnitType, UnitId[]>>) => OwnOpponentContext<Record<UnitType, UnitId[]>> | void
-```
-
-**UnitId timings** (WHEN_SUSTAIN_DAMAGE_USE, AFTER_SUSTAIN_DAMAGE_USE, WHEN_INDOCTRINATION, WHEN_GALVANIZE) — context is `UnitId`:
+**UnitId timings** (file-declared: WHEN_SUSTAIN_DAMAGE_USE, AFTER_SUSTAIN_DAMAGE_USE, WHEN_INDOCTRINATION, WHEN_GALVANIZE) — context is a single `UnitId`:
 
 ```typescript
 isCallable?: (params: Params, ctx: AbilityReadContext, unitId: UnitId) => boolean
@@ -193,16 +199,22 @@ Read-only. Cannot modify state.
 ```typescript
 interface AbilityReadContext {
   readonly state: Readonly<CombatStateData>
-  readonly api: {
-    readonly own: SideApi
-    readonly opponent: SideApi
-  }
+  readonly api: { readonly own: SideApi; readonly opponent: SideApi }
+  readonly utils: AbilityUtils // Helpers (getFlat, etc.)
+  readonly meta: MetaPhase // Innermost active meta-phase
+  readonly side: CombatSide // Absolute side this ability runs on
+  readonly abilities: OwnOpponentContext<RuntimeAbilityList> // All registered abilities per side
+  readonly this: Ability // The currently-running ability (use ctx.this.key, not literals)
+  readonly unitSource: UnitId | undefined // UnitId the ability is attached to, if any
   getUnit(): UnitId // Only for unit abilities — throws otherwise
+  isOwner(): boolean // True if current side's faction owns this ability
   getAbilitiesForTiming(
     timing: AbilityTiming | AbilityTiming[],
   ): { key: string; name: string }[]
 }
 ```
+
+`AbilityReadContext` also exposes `getPostRollSides()` and several `currentDiceRoll*` accessors valid only inside a dice-roll group (see `docs/dice-math.md`).
 
 ### AbilityCallContext (in `call`)
 
@@ -211,20 +223,24 @@ Mutable. State is an Immer draft.
 ```typescript
 interface AbilityCallContext {
   state: CombatStateData // Immer draft
-  api: {
-    own: SideApi // Full read-write API
-    opponent: SideApi
-  }
+  api: { own: SideApi; opponent: SideApi } // Full read-write API
+  readonly utils: AbilityUtils
+  readonly meta: MetaPhase
+  readonly side: CombatSide
+  readonly abilities: OwnOpponentContext<RuntimeAbilityList>
+  readonly this: Ability
+  readonly unitSource: UnitId | undefined
   logger?: Logger // Append to ability log via logger?.log(...)
   trigger<K extends AbilityTiming>(name: K, context: TimingContextMap[K]): void // Emit trigger event
   getUnit(): UnitId // Only for unit abilities — throws otherwise
+  isOwner(): boolean
   getAbilitiesForTiming(
     timing: AbilityTiming | AbilityTiming[],
   ): { key: string; name: string }[]
 }
 ```
 
-`own` / `opponent` are relative to the ability's side, not attacker/defender.
+`own` / `opponent` are relative to the ability's side, not attacker/defender. The call context additionally exposes dice-roll declaration helpers (`declareReroll`, `declareHitPoolTransform`), `transitionTo`, `rollDice`, and `resolveStep` — see `docs/dice-math.md` and the type definitions in `abilities-engine/types.ts`.
 
 ### `getUnit()`
 
@@ -244,26 +260,28 @@ Used in both `isCallable` and `call` contexts. The same `SideApi` class is used 
 
 ### Read Methods
 
+`GetUnitsOptions` is `{ includeVariants: boolean }` and is **required** wherever it appears.
+
 ```typescript
 getFaction(): FactionKey
-getUnits(unitType: UnitType, options?: { includeVariants: true }): UnitId[]
+getUnits(unitType: UnitType, options: GetUnitsOptions): UnitId[]
 hasUnit(unitId: UnitId): boolean
-hasUnitType(unitType: UnitType, options?: { includeVariants: true }): boolean
-countUnits(filter?: UnitType | UnitType[], options?: { includeVariants: true }): number
-getPendingHits(): number
+hasUnitType(unitType: UnitType, options: GetUnitsOptions): boolean
+countUnits(filter: UnitType | UnitType[] | undefined, options: GetUnitsOptions): number
+getPendingHits(filter?: { base?: true; bonus?: true }): number
 getHitPoolValidTargets(): UnitType[]
 getActiveBaseTypes(): UnitBaseType[]
 getParticipatingUnitTypes(options?: { combatMode?: CombatMode }): UnitType[]
-getUnitVariantsOptions(filter?: { include?, exclude?, excludeSubtypes?, combatMode?, includeNonParticipating? }): { label: string, value: string }[]
+getUnitVariantsOptions(filter?: ParamFilter): { label: string, value: string }[]
+getUnitVariantsOptions(paramKey: string): { label: string, value: string }[]   // reads filter/limit from the declareParam
 findUnitByPriority(priority: UnitType[]): UnitId | undefined
 getUnitStats(unitTypeOrId: string | UnitId): UnitStats
-getVariantKey(unitId: UnitId): string | undefined
+getUnitVariantKey(unitId: UnitId): string | undefined
 getUnitState(unitId: UnitId): UnitState
 getUnitBaseType(unitId: UnitId): UnitBaseType
-getUnitVariant(unitId: UnitId): UnitVariantId | undefined
 getAbilityConfig(key: string): Record<string, unknown>
-isUnitAbilityLost(ability: UnitAbility, unitType: string): boolean
-isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: string): boolean
+isUnitAbilityLost(ability: UnitAbility, unitType: UnitType): boolean
+isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: UnitType): boolean
 ```
 
 ### Write Methods (available in `call` only)
@@ -273,7 +291,7 @@ isUnitAbilityCannotBeUsed(ability: UnitAbility, unitType: string): boolean
 ```typescript
 destroyUnits(target: UnitBaseType | UnitId | UnitId[]): void  // Destroy by type (first found), UnitId, or UnitId[]; array variant fires destroy abilities once
 removeUnits(target: UnitBaseType | UnitId | UnitId[]): void   // Remove without triggering destroy abilities
-placeUnits(unitsToAdd: Partial<Record<UnitBaseType, number>>): void
+placeUnits(unitsToAdd: Partial<Record<UnitType, number>>): Record<UnitType, UnitId[]>  // Returns the placed UnitIds (keyed by variant key)
 modifyUnitType(key: UnitType, updates: Partial<UnitStats>): void   // Modify stats for all units of a type
 modifyUnitState(unitId: UnitId, updates: Partial<UnitState>): void // Modify per-unit mutable state
 ```
@@ -282,11 +300,16 @@ modifyUnitState(unitId: UnitId, updates: Partial<UnitState>): void // Modify per
 
 ```typescript
 reduceHits(amount: number): void
-addHits(hits: number, validTargets: UnitType[]): void
-applyBonusToResult(amount: number): void                             // All dice
-applyBonusToResult(amount: number, unit: UnitId): void               // By UnitId
-applyBonusToResult(amount: number, source: UnitType): void           // By unit type
-applyBonusToResult(amount: number, filter: (source: UnitType) => boolean): void
+addHits(hits: number): void                       // Unrestricted hits on the landing side
+addHits(hits: number, validTargets: UnitType[]): void  // Restricted; throws if the landing side's hitPool is non-empty
+
+// Apply a flat +/- to each combat roll result for this dice-roll group.
+// target omitted = all of this side's dice; { singleUnit } = one unit type;
+// { exclude } = all but the listed base types.
+applyBonusToResult(
+  amount: number,
+  target?: UnitType | { exclude: UnitBaseType[] } | { singleUnit: UnitType },
+): void
 ```
 
 #### Unit Ability Restrictions
@@ -310,9 +333,11 @@ removeUnitAbilityCannotBeUsed(ability: UnitAbility, reason: string, target?: Uni
 #### Subtype Operations
 
 ```typescript
-addSubtype(variantId: UnitType, subtype: UnitVariantId, statsFactory?: (parentStats: UnitStats) => UnitStats): void
-removeSubtype(variantId: UnitType, subtype: UnitVariantId): void
+addSubtype(unitId: UnitId, subtype: UnitVariantId): UnitType | undefined  // Returns the new variant key
+removeSubtype(unitId: UnitId, subtype: UnitVariantId): void
 ```
+
+Both take a `UnitId` (not a variant key). There is no `statsFactory` argument — subtype stats come from the ability's `declareSubtype` (`DeclaredSubtype.statsFactory`), which is invoked once at config time and pre-populates `s.unitStats[variantKey]`.
 
 #### Ability Config Mutations
 
@@ -324,30 +349,19 @@ updateAbilityConfig(updates: Record<string, unknown>): void
 updateAbilityConfig(key: string, updates: Record<string, unknown>): void
 ```
 
-## Dice API
+## Dice Modifiers
 
-### DiceReadApi (in `isCallable`)
-
-```typescript
-getAll(): DicePool
-get(source: string): readonly SourcedDiceGroup[] | undefined
-isEmpty(): boolean
-```
-
-### DiceApi (in `call`, extends DiceReadApi)
+There is no separate "DiceApi" object. Dice are modified during `BEFORE_DICE_ROLL` / `BEFORE_UNIT_ABILITY_ROLL` by calling these methods directly on `ctx.api.own` / `ctx.api.opponent`. Each call queues a modifier that the dice-math kernel applies (see `docs/dice-math.md`).
 
 ```typescript
-// Add dice count to existing group
-addDiceCount(count: number): void                           // To best unit (lowest hit value)
-addDiceCount(count: number, strategy: 'BEST' | 'WORST'): void
-addDiceCount(count: number, source: UnitBaseType): void     // To specific unit type
-addDiceCount(count: number, unit: UnitId): void             // To specific unit
-
-// Add new dice group to pool
-addDiceGroup(source: string, unit: UnitId, diceGroup: DiceGroup): void
+addDiceCount(count: number, target: 'BEST' | 'WORST' = 'BEST'): void  // Add dice to best/worst (lowest/highest hit value) source
+setDiceCount(count: number, unitType: UnitType): void                 // Set per-unit dice count for a unit type
+addDiceGroup(diceGroup: DiceGroup): void                              // Add a new dice group keyed under the current ability
 ```
 
-Dice format: `[hitValue, diceCount, sourceUnit]` (SourcedDiceGroup). Hit value is the threshold — needs to roll >= hitValue to hit.
+`DiceGroup` is `[hitValue, baseDice]` or `[hitValue, baseDice, bonusDice]` (`src/types/die.ts`). Hit value is the threshold — a die must roll ≥ hitValue to hit. Total dice per unit = `baseDice + bonusDice`.
+
+The call context also offers richer declarations for conditional/reroll/trigger effects — `applyConditionalBonusToResult`, `declareReroll`, `declareRollTrigger`, `declareCustomRoll` — documented in `docs/dice-math.md`.
 
 ## Registration
 
@@ -368,7 +382,6 @@ type Params = { isEnabled: boolean }
 export const myTech: Ability<Params> = {
   key: 'MY_TECH',
   name: 'My Tech',
-  category: 'TECHNOLOGY',
   params: { isEnabled: false, uses: Infinity },
   headerUI: 'isEnabled',
   invoke: [
@@ -380,7 +393,7 @@ export const myTech: Ability<Params> = {
 ```typescript
 // src/data/abilities/technology/index.ts
 import { myTech } from './my-tech'
-export default [, /* ...existing */ myTech]
+export default [/* ...existing */ myTech]
 ```
 
 ### Faction Abilities
@@ -416,17 +429,38 @@ export const my_faction: Faction = {
 
 Abilities attached to specific units via `ABILITIES` array in unit stats. These fire from living units (or destroyed units for AFTER_DESTROY):
 
+Use `ctx.this.key` for the restriction `reason` rather than hardcoding the ability key — it keeps the ability self-contained and rename-safe.
+
 ```typescript
 // src/data/faction/mentak_coalition/fourth-moon.ts
 export const fourthMoon: Ability = {
   key: 'FOURTH_MOON',
   name: 'Fourth Moon',
-  category: 'FACTION',
+  description: "Other players' ships in this system cannot use Sustain Damage.",
+  context: 'SPACE',
+  params: { isEnabled: true, uses: Infinity },
+  headerUI: 'isEnabled',
+  readOnly: true,
   invoke: [
     {
       timing: 'PREPARE',
       call: ctx => {
-        ctx.api.opponent.setUnitAbilityCannotBeUsed('SUSTAIN_DAMAGE', 'FOURTH_MOON', 'SHIPS')
+        ctx.api.opponent.setUnitAbilityCannotBeUsed(
+          'SUSTAIN_DAMAGE',
+          ctx.this.key,
+          'SHIPS',
+        )
+      },
+    },
+    {
+      timing: 'DESTROY',
+      isCallable: (_params, ctx, ids) => ids.includes(ctx.getUnit()),
+      call: ctx => {
+        ctx.api.opponent.removeUnitAbilityCannotBeUsed(
+          'SUSTAIN_DAMAGE',
+          ctx.this.key,
+          'SHIPS',
+        )
       },
     },
   ],
@@ -457,8 +491,8 @@ uiConfig: [
     { label: 'Best', value: 'BEST' },
     { label: 'Worst', value: 'WORST' },
   ]},
-  { key: 'targetPriority', label: 'Targets', type: 'order-list', items: [...] },
-  { key: 'units', label: 'Units', type: 'checkbox-list', items: [...] },
+  { key: 'targetPriority', label: 'Targets', type: 'unit-list', mode: 'order', items: [...] },
+  { key: 'units', label: 'Units', type: 'unit-list', mode: 'checkbox', sortable: true, items: [...] },
 ]
 
 // Dynamic (context-aware)
@@ -467,24 +501,29 @@ uiConfig: (ctx, params) => {
     {
       key: 'targetPriority',
       label: 'Target Priority',
-      type: 'order-list',
-      items: ctx.api.opponent.getUnitVariantsOptions({ exclude: ['FIGHTER'] }),
+      type: 'unit-list',
+      mode: 'order',
+      // Passing the param key reads the filter/limit from its declareParam:
+      items: ctx.api.opponent.getUnitVariantsOptions('targetPriority'),
     },
   ]
 }
 ```
 
-UI config item types:
+There are exactly four UI config item types. The list variants are all expressed as `unit-list` with a `mode`:
 
-| Type            | Param Type | Use Case                                          |
-| --------------- | ---------- | ------------------------------------------------- |
-| `checkbox`      | `boolean`  | Toggle                                            |
-| `number`        | `number`   | Counter with optional min/max                     |
-| `select`        | `string`   | Dropdown                                          |
-| `order-list`    | `string[]` | Reorderable list                                  |
-| `priority-list` | `string[]` | Reorderable priority list with ordering logic     |
-| `checkbox-list` | `string[]` | Multi-select                                      |
-| `number-list`   | items[]    | Per-item numeric values (items with optional max) |
+| Type        | Param Type                | Use Case                                                      |
+| ----------- | ------------------------- | ------------------------------------------------------------- |
+| `checkbox`  | `boolean`                 | Toggle                                                        |
+| `number`    | `number`                  | Counter with optional `min`/`max`                             |
+| `select`    | `string`                  | Dropdown (`items: SelectItem[] \| SelectGroup[]`)             |
+| `unit-list` | `UnitList<V>` (see below) | List of units; behavior set by `mode` (+ optional `sortable`) |
+
+`unit-list` modes:
+
+- `mode: 'order'` — reorderable priority list (param shape `[UnitType][]`)
+- `mode: 'checkbox'` — multi-select (param shape `[UnitType, boolean][]`)
+- `mode: 'number'` — per-item numeric values, items may carry a `max` (param shape `[UnitType, number][]`)
 
 ## Resolution Order
 

@@ -101,10 +101,6 @@ For abilities info — read `docs/abilities-list.md`.
 When implementing a new ability, read `docs/abilities.md` first — it contains the full development guide with API reference, patterns, and code examples.
 After implementation mark ability as done in `docs/abilities-list.md`.
 
-## Combat System
-
-For phase system, ability timings, unit stats, factions, and ability keys — read `docs/overview.md`.
-
 ## Ability Testing
 
 When writing or modifying ability tests, read `docs/testing.md` first — it contains the full testing guide with API reference, test patterns, and code examples.
