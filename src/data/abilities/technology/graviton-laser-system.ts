@@ -1,6 +1,10 @@
-import { type Ability, parseVariantId } from '@/combat'
+import { type Ability } from '@/combat'
 
-import type { UnitType } from '../../../types'
+declare global {
+  interface AbilityConfigMap {
+    GRAVITON_LASER_SYSTEM: Record<string, never>
+  }
+}
 
 export const gravitonLaserSystem: Ability = {
   key: 'GRAVITON_LASER_SYSTEM',
@@ -13,26 +17,5 @@ export const gravitonLaserSystem: Ability = {
     uses: Infinity,
   },
   headerUI: 'isEnabled',
-  invoke: [
-    {
-      timing: 'BEFORE_UNIT_ABILITY_ROLL',
-      context: 'SPACE_CANNON_OFFENSE',
-      call: ctx => {
-        const opp = ctx.api.opponent
-        const sc = opp.getAbilityConfig('SPACE_CANNON_OFFENSE')
-        const priority = sc?.customScoPriority
-          ? (sc.scoUnitPriority ?? [])
-          : (opp.getAbilityConfig('UNIT_PRIORITY')?.spaceUnitPriority ?? [])
-        const isFighter = ([v]: [UnitType]) =>
-          parseVariantId(v as UnitType).type === 'FIGHTER'
-        opp.updateAbilityConfig('SPACE_CANNON_OFFENSE', {
-          customScoPriority: true,
-          scoUnitPriority: [
-            ...priority.filter(p => !isFighter(p)),
-            ...priority.filter(p => isFighter(p)),
-          ],
-        })
-      },
-    },
-  ],
+  invoke: [],
 }

@@ -21,7 +21,7 @@ import {
 } from '../abilities-engine'
 import { AbilityContext } from '../abilities-engine/api/ability-api'
 import { extractDefaults } from '../abilities-engine/declare-param'
-import type { Ability } from '../abilities-engine/types'
+import type { AbilitiesOverride, Ability } from '../abilities-engine/types'
 import { CombatSideState } from '../combat-side-state/combat-side-state'
 import type {
   DiceMathBranch,
@@ -953,12 +953,12 @@ export class CombatState {
       attacker: CombatSideState.getPhasePriorityList(
         data.attacker,
         data.combatMode,
-        meta,
+        ctx.abilitiesOverride,
       ),
       defender: CombatSideState.getPhasePriorityList(
         data.defender,
         data.combatMode,
-        meta,
+        ctx.abilitiesOverride,
       ),
     }
 
@@ -1264,6 +1264,9 @@ export class CombatState {
      *  `_postAssignHits` covers the combined result. Used by chained
      *  `resolveStep` calls that must resolve atomically (Proxima). */
     deferCompletionCheck?: boolean
+    /** Ability params overrides scoped to this resolution. Stamped onto every
+     *  timing step the resolution pushes; consumed by the ability loop. */
+    abilitiesOverride?: Readonly<AbilitiesOverride>
   }): void {
     const { meta, firing, outerPhase, customDice, selfTarget } = config
     const innermostOuter = outerPhase[outerPhase.length - 1]
@@ -1278,6 +1281,7 @@ export class CombatState {
         allowedUnitTypes: baseConfig.allowedUnitTypes,
         customDice,
         selfTarget,
+        abilitiesOverride: config.abilitiesOverride,
       }),
       ...this.getAssignHitsScript(phase),
     ]
@@ -1287,6 +1291,9 @@ export class CombatState {
         fn: CombatState.prototype._postAssignHits,
         phase,
       })
+    }
+    if (config.abilitiesOverride) {
+      stampAbilitiesOverride(script, config.abilitiesOverride)
     }
     this.pushScript(script)
   }
@@ -1310,6 +1317,23 @@ function cleanupDestroyedUnitInvokes(
   if (ids.length === 0) return
   this.params.removeUnitInvokes('attacker', ids)
   this.params.removeUnitInvokes('defender', ids)
+}
+
+/** Set `abilitiesOverride` on every timing step in a freshly-built script
+ *  (recursing into groups). Method steps run no abilities and are skipped. */
+function stampAbilitiesOverride(
+  script: PendingStep[],
+  override: Readonly<AbilitiesOverride>,
+): void {
+  for (const entry of script) {
+    if (entry.kind === 'group') {
+      for (const s of entry.steps) {
+        if (s.kind === 'timing') s.abilitiesOverride = override
+      }
+    } else if (entry.kind === 'timing') {
+      entry.abilitiesOverride = override
+    }
+  }
 }
 
 /** Build a PhaseStepGroup that fires the DESTROY → WHEN_DESTROY →
@@ -1441,9 +1465,17 @@ export function buildUnitAbilityDiceRollGroup(args: {
   allowedUnitTypes?: ReadonlySet<UnitBaseType>
   selfTarget?: boolean
   customDice?: { attacker: SideDiceCollection; defender: SideDiceCollection }
+  abilitiesOverride?: Readonly<AbilitiesOverride>
 }): PhaseStepGroup {
-  const { phase, firing, hitSource, allowedUnitTypes, selfTarget, customDice } =
-    args
+  const {
+    phase,
+    firing,
+    hitSource,
+    allowedUnitTypes,
+    selfTarget,
+    customDice,
+    abilitiesOverride,
+  } = args
   return {
     kind: 'group',
     data: {
@@ -1453,6 +1485,7 @@ export function buildUnitAbilityDiceRollGroup(args: {
       customDice,
       allowedUnitTypes,
       isUnitAbility: true,
+      abilitiesOverride,
     },
     steps: [
       // Stored reverse of execution order. The swap (when self-targeting)

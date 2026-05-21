@@ -21,6 +21,7 @@ export {
 export { abilityUtils } from './api/ability-utils'
 export { declareParam } from './declare-param'
 export type {
+  AbilitiesOverride,
   Ability,
   AbilityBaseParams,
   AbilityCallContext,

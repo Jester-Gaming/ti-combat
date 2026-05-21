@@ -1043,7 +1043,20 @@ export class AbilitiesEngine {
       }
 
       const liveOverlay = state[side].liveAbilities[ability.key]
-      const freshParams = liveOverlay ? { ...params, ...liveOverlay } : params
+      const override = (
+        step?.abilitiesOverride as
+          | Record<string, boolean | Record<string, unknown>>
+          | undefined
+      )?.[ability.key]
+      let freshParams = liveOverlay ? { ...params, ...liveOverlay } : params
+      if (override !== undefined) {
+        freshParams = {
+          ...freshParams,
+          ...(typeof override === 'boolean'
+            ? { isEnabled: override }
+            : override),
+        }
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const inv = invoke as any

@@ -10,7 +10,11 @@ import type {
   UnitType,
 } from '@/types'
 
-import type { AbilityPassFrame, AbilityTiming } from '../abilities-engine'
+import type {
+  AbilitiesOverride,
+  AbilityPassFrame,
+  AbilityTiming,
+} from '../abilities-engine'
 import type { HitsDist } from '../dice-math/reroll-strategy'
 import type { ModifierDecl } from '../dice-math/types'
 // `PhaseStep` references `CombatState` in its method `fn` signature; the
@@ -214,6 +218,10 @@ export type PhaseStep = { phase: MetaPhase[]; data?: unknown } & (
        *  resume. Cloned per-branch through `clonePendingSteps` so each
        *  branch carries its own resume point. */
       frame?: AbilityPassFrame
+      /** Resolution-scoped, immutable ability params overrides set by
+       *  `resolveStep`'s `abilitiesOverride`. Highest precedence (over base +
+       *  live params) when the ability loop computes `freshParams`. */
+      abilitiesOverride?: Readonly<AbilitiesOverride>
     }
   | {
       kind: 'method'
@@ -280,6 +288,10 @@ export interface DiceRollContext {
    *  addDiceCount, declareReroll, etc.). Consumed by `_rollDice` in push
    *  order. Dropped when the group drains. */
   modifiers?: ModifierDecl[]
+  /** Resolution-scoped params overrides set by `resolveStep`'s
+   *  `abilitiesOverride`. Consumed by `_rollDice` to override the hit-assignment
+   *  priority list (UNIT_PRIORITY) for this unit-ability resolution. */
+  abilitiesOverride?: Readonly<AbilitiesOverride>
 }
 
 /** Type guard used by `SideApi.getDicePool` to recognize a dice-roll

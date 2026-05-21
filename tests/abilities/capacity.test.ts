@@ -35,8 +35,8 @@ describe.forEachSide('CAPACITY', () => {
         abilities: {
           CAPACITY: true,
           SPACE_CANNON_OFFENSE: {
-            customScoPriority: true,
-            scoUnitPriority: [['CARRIER'], ['CRUISER'], ['INFANTRY']],
+            customPriority: true,
+            unitPriority: [['CARRIER'], ['CRUISER'], ['INFANTRY']],
           },
         },
       },

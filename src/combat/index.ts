@@ -1,5 +1,6 @@
 export {
   AbilitiesEngine,
+  type AbilitiesOverride,
   type Ability,
   type AbilityBaseParams,
   type AbilityCallContext,

@@ -77,6 +77,7 @@ export function collectModifiers(input: CollectModifiersInput): Modifier[] {
       ownerSide: d.ownerSide,
       bonus: d.amount,
       limit,
+      preferred: d.preferred,
     }
     const idx: 0 | 1 = d.side === firing ? 0 : 1
     upsertSlot(condByKey, usesKey, idx, slot)

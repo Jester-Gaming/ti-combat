@@ -58,6 +58,7 @@ import type { DeclaredParamValue } from '../declare-param'
 import { isDeclaredParam } from '../declare-param'
 import { resolveVariantLimit } from '../param-limit'
 import type {
+  AbilitiesOverride,
   Ability,
   AbilityBaseParams,
   AbilityTiming,
@@ -1372,6 +1373,7 @@ export class AbilityContext {
       target?: 'OWN' | 'OPPONENT'
       firing?: CombatSide[]
       deferCompletionCheck?: boolean
+      abilitiesOverride?: AbilitiesOverride
     },
   ): void {
     if (!this.phaseStack) {
@@ -1406,6 +1408,7 @@ export class AbilityContext {
       customDice,
       selfTarget,
       deferCompletionCheck: overrides?.deferCompletionCheck,
+      abilitiesOverride: overrides?.abilitiesOverride,
     })
   }
 }

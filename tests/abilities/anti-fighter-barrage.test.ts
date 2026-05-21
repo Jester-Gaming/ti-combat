@@ -26,7 +26,7 @@ describe('ANTI_FIGHTER_BARRAGE', () => {
       defender: {
         faction: 'ARBOREC',
         units: { DESTROYER: 1, FIGHTER: 1 },
-        abilities: { ANTI_FIGHTER_BARRAGE: { resolve: false } },
+        abilities: { ANTI_FIGHTER_BARRAGE: false },
       },
     })
 

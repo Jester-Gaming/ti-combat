@@ -30,7 +30,7 @@ export interface SideConfig {
   faction: FactionKey
   units: Partial<Record<UnitBaseType, number>>
   upgrades?: UnitBaseType[]
-  abilities?: Record<string, true | Record<string, unknown>>
+  abilities?: Record<string, true | false | Record<string, unknown>>
 }
 
 export interface CombatStateConfig {
@@ -133,8 +133,8 @@ function buildSideAbilitiesConfig(config: SideConfig): SideAbilitiesConfig {
   if (!config.abilities) return result
 
   for (const [key, value] of Object.entries(config.abilities)) {
-    if (value === true) {
-      result[key] = { isEnabled: true }
+    if (value === true || value === false) {
+      result[key] = { isEnabled: value }
     } else {
       result[key] = { ...value }
     }

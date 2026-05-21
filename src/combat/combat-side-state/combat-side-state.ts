@@ -13,7 +13,11 @@ import type {
 } from '@/types'
 
 import { countUnitsByBaseType } from '../abilities-engine/param-limit'
-import type { DeclaredSubtype, ParamFilter } from '../abilities-engine/types'
+import type {
+  AbilitiesOverride,
+  DeclaredSubtype,
+  ParamFilter,
+} from '../abilities-engine/types'
 import type {
   CombatMode,
   CombatStateData,
@@ -314,7 +318,7 @@ function isFighterAtBottomPriority(unitPriority: readonly UnitType[]): boolean {
  *    its `unitPriority` is the opponent's default spaceUnitPriority
  *    (cheapest first) with FIGHTER moved to the end, and the opposing
  *    participating pool is itself sorted cheapest-at-tail. For SCO with
- *    a `customScoPriority` that reorders the non-fighter tiers, the
+ *    a `customPriority` that reorders the non-fighter tiers, the
  *    check correctly rejects the fast path. */
 function poolTailNonFightersFollowPriority(
   s: SideStateData,
@@ -956,18 +960,23 @@ export class CombatSideState {
   static getPhasePriorityList(
     s: SideStateData,
     mode: CombatMode,
-    meta: MetaPhase,
+    abilitiesOverride?: Readonly<AbilitiesOverride>,
   ): UnitType[] | undefined {
-    if (meta === 'SPACE_CANNON_OFFENSE') {
-      const sc = mergeConfig(s, 'SPACE_CANNON_OFFENSE')
-      if (sc?.customScoPriority) {
-        const parsed = parsePriorityList(sc.scoUnitPriority)
+    const key = mode === 'GROUND' ? 'groundUnitPriority' : 'spaceUnitPriority'
+
+    // Resolution-scoped override wins over base/live config — e.g. SCO passes
+    // the target side's custom unit priority via UNIT_PRIORITY.
+    const up = abilitiesOverride?.UNIT_PRIORITY
+    if (up !== undefined && typeof up !== 'boolean') {
+      const overridden = up[key]
+      if (overridden !== undefined) {
+        const parsed = parsePriorityList(overridden)
         if (parsed !== undefined) return parsed
       }
     }
+
     const unitPriority = mergeConfig(s, 'UNIT_PRIORITY')
     if (!unitPriority) return undefined
-    const key = mode === 'GROUND' ? 'groundUnitPriority' : 'spaceUnitPriority'
     return parsePriorityList(unitPriority[key])
   }
 

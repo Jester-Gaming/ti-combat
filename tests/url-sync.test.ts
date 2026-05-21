@@ -74,7 +74,7 @@ describe('URL round-trip', () => {
       spaceUnitPriority: [['FIGHTER'], ['DESTROYER']],
     }
     config.da['SPACE_CANNON_OFFENSE'] = {
-      scoUnitPriority: [['FIGHTER'], ['DESTROYER']],
+      unitPriority: [['FIGHTER'], ['DESTROYER']],
     }
     const search = configToSearchString(config)
     const decoded = searchParamsToConfig(`?${search}`, abilityLookup)

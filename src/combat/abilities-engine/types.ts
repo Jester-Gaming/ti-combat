@@ -370,6 +370,10 @@ export interface AbilityCallContext {
       target?: 'OWN' | 'OPPONENT'
       firing?: CombatSide[]
       deferCompletionCheck?: boolean
+      /** Ability params overrides for this resolution only — immutable and
+       *  applied over base + live params. Boolean shorthand = `{ isEnabled }`.
+       *  e.g. `{ SUSTAIN_DAMAGE: false }` to skip Sustain for this step. */
+      abilitiesOverride?: AbilitiesOverride
     },
   ): void
 }
@@ -495,6 +499,17 @@ type UIConfig<Params = Record<string, unknown>> =
 export interface AbilityBaseParams {
   isEnabled: boolean
   uses: number
+}
+
+/** Per-resolution params overrides passed to `ctx.resolveStep`. Keyed by
+ *  ability key (constrained to `AbilityConfigMap`). A boolean value is
+ *  shorthand for `{ isEnabled: <boolean> }`; an object is a partial params
+ *  patch. Overrides are immutable for the resolution and applied over base +
+ *  live params (they win over everything else). */
+export type AbilitiesOverride = {
+  [K in keyof AbilityConfigMap]?:
+    | boolean
+    | Partial<AbilityBaseParams & AbilityConfigMap[K]>
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
