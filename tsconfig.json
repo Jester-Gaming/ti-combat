@@ -1,10 +1,41 @@
 {
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" },
-    { "path": "./tsconfig.profile.json" },
-    { "path": "./tsconfig.snapshots.json" },
-    { "path": "./tsconfig.functions.json" }
-  ]
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Language / environment */
+    "target": "es2024",
+    "useDefineForClassFields": true,
+    "lib": ["es2024", "DOM", "DOM.Iterable"],
+    "types": [
+      "node",
+      "vite/client",
+      "vitest/globals",
+      "@cloudflare/workers-types"
+    ],
+    "jsx": "react-jsx",
+
+    /* Path Aliases */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["src", "tests", "vite.config.ts", "vite-plugins", "functions"]
 }
