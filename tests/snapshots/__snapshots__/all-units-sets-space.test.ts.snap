@@ -5410,7 +5410,7 @@ exports[`space combat — all units sets > 2D, 2PDS vs 2D, 2PDS 1`] = `
   {
     "attacker": "D-, 2PDS",
     "defender": "2PDS",
-    "probability": 0.213266736029,
+    "probability": 0.21326673603,
     "winner": "attacker",
   },
 ]

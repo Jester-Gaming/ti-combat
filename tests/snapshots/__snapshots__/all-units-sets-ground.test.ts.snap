@@ -144,16 +144,16 @@ exports[`ground combat — all units sets > 2M, 2I vs 2M, 2I 1`] = `
     "winner": "attacker",
   },
   {
-    "attacker": "M, M-, 2I",
-    "defender": "",
-    "probability": 0.021560399399,
-    "winner": "attacker",
-  },
-  {
     "attacker": "",
     "defender": "M, M-, 2I",
     "probability": 0.021560399399,
     "winner": "defender",
+  },
+  {
+    "attacker": "M, M-, 2I",
+    "defender": "",
+    "probability": 0.021560399399,
+    "winner": "attacker",
   },
   {
     "attacker": "",
@@ -174,16 +174,16 @@ exports[`ground combat — all units sets > 2M, 2I vs 2M, 2I 1`] = `
     "winner": "attacker",
   },
   {
-    "attacker": "2M-, I",
-    "defender": "",
-    "probability": 0.120044198898,
-    "winner": "attacker",
-  },
-  {
     "attacker": "",
     "defender": "2M-, I",
     "probability": 0.120044198898,
     "winner": "defender",
+  },
+  {
+    "attacker": "2M-, I",
+    "defender": "",
+    "probability": 0.120044198898,
+    "winner": "attacker",
   },
   {
     "attacker": "",
