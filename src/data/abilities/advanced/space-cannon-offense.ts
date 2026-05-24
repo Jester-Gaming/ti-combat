@@ -63,7 +63,7 @@ export const spaceCannonOffense: Ability<Params> = {
         const opp = ctx.api.opponent
         const sc = opp.getAbilityConfig('SPACE_CANNON_OFFENSE')
         const glsEnabled =
-          ctx.api.own.getAbilityConfig('GRAVITON_LASER_SYSTEM').isEnabled ===
+          ctx.api.own.getAbilityConfig('GRAVITON_LASER_SYSTEM')?.isEnabled ===
           true
 
         let priority: UnitList | undefined = sc.customPriority
