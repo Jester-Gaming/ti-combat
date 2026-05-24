@@ -18,6 +18,18 @@
   justify-content: space-between;
 }
 
+.description {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  font-family: var(--font-heading);
+  color: var(--color-text-muted);
+  margin: 0;
+
+  a {
+    color: var(--color-text-link);
+  }
+}
+
 .label {
   font-size: var(--text-sm);
   font-weight: 500;

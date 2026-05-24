@@ -109,6 +109,18 @@ export function SettingsPanel({
           </div>
         </section>
         <Divider />
+        <section>
+          <p className={styles.description}>
+            Source code is available on{' '}
+            <a href="https://github.com/dzhiriki/ti-combat">GitHub</a>. Feel
+            free to submit any issues. You can also contact me in{' '}
+            <a href="https://discordapp.com/users/103507967441121280">
+              Discord
+            </a>
+            , <a href="https://t.me/dzhiriki">Telegram</a> or by{' '}
+            <a href="mailto:feedback@ticombat.com">email</a>.
+          </p>
+        </section>
         <div className={styles.section}>
           <AbilitiesDialog />
         </div>

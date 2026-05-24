@@ -72,6 +72,7 @@
   /* === Layer 2: text === */
   --color-text-main: hsl(var(--color-light-900));
   --color-text-muted: hsl(var(--color-light-400));
+  --color-text-link: hsl(var(--color-cyan-300));
 
   /* === Layer 2: backgrounds (solid surfaces) === */
   --color-background-main: hsl(var(--color-light-50));
@@ -130,6 +131,7 @@
   /* Text */
   --color-text-main: hsl(var(--color-slate-900));
   --color-text-muted: hsl(var(--color-slate-600));
+  --color-text-link: hsl(var(--color-cyan-500));
 
   /* Backgrounds */
   --color-background-main: hsl(var(--color-slate-50));
