@@ -143,7 +143,6 @@ export function BattleCard({
               <UnitRowDual
                 key={unitKey}
                 name={attackerConfig[unitKey].name}
-                shortName={attackerConfig[unitKey].shortName}
                 limit={UNIT_LIMITS[unitKey]}
                 attackerHasUpgrade={attackerConfig[unitKey].hasUpgrade}
                 defenderHasUpgrade={defenderConfig[unitKey].hasUpgrade}

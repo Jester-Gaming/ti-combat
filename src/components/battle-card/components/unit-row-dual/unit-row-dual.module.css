@@ -9,34 +9,28 @@
   transition: all 0.15s;
 }
 
-.unitName {
+.unit {
   min-width: 0;
   flex-shrink: 0;
+  color: var(--color-text-main);
+  flex-grow: 1;
+  container-type: inline-size;
+}
+
+.unitName {
   text-align: center;
   font-size: var(--text-sm);
   font-weight: 500;
   letter-spacing: 0.025em;
   text-transform: uppercase;
   font-family: var(--font-heading);
-  color: var(--color-text-main);
-  flex-grow: 1;
-  container-type: inline-size;
-}
+  width: 100%;
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
-.fullName {
-  display: inline;
-}
-
-.shortName {
-  display: none;
-}
-
-@container (width < 90px) {
-  .fullName {
-    display: none;
-  }
-
-  .shortName {
-    display: inline;
+  @container (width < 90px) {
+    font-size: var(--text-xs);
   }
 }
