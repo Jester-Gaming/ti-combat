@@ -13,8 +13,10 @@
   cursor: pointer;
 
   &:not(:disabled):hover {
-    background: var(--color-background-muted);
-    border-color: var(--color-accent-70, var(--color-border-main));
+    @media (hover: hover) {
+      background: var(--color-background-muted);
+      border-color: var(--color-accent-70, var(--color-border-main));
+    }
   }
 
   &:active {
