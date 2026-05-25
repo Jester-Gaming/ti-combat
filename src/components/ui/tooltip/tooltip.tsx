@@ -17,38 +17,41 @@ export function Tooltip({
   className,
 }: TooltipProps): React.ReactElement {
   const popoverRef = useRef<HTMLSpanElement>(null)
-  const delayRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  // Captured on pointerdown: by the time click fires, the browser's light
+  // dismiss may have already closed an open popover, so we record the prior
+  // open state and the pointer type up front to drive the touch toggle.
+  const lastPointerTypeRef = useRef('')
+  const wasOpenRef = useRef(false)
 
-  const show = useCallback(() => {
+  const onPointerEnter = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return
     popoverRef.current?.showPopover()
   }, [])
 
-  const hide = useCallback(() => {
-    clearTimeout(delayRef.current)
+  const onPointerLeave = useCallback((e: React.PointerEvent) => {
+    if (e.pointerType === 'touch') return
     popoverRef.current?.hidePopover()
   }, [])
 
-  const onPointerEnter = useCallback(
-    (e: React.PointerEvent) => {
-      if (e.pointerType === 'touch') return
-      show()
-    },
-    [show],
-  )
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    lastPointerTypeRef.current = e.pointerType
+    wasOpenRef.current = popoverRef.current?.matches(':popover-open') ?? false
+  }, [])
 
-  const onPointerLeave = useCallback(
-    (e: React.PointerEvent) => {
-      if (e.pointerType === 'touch') return
-      hide()
-    },
-    [hide],
-  )
+  const onClick = useCallback((e: React.MouseEvent) => {
+    if (lastPointerTypeRef.current !== 'touch') return
+    e.stopPropagation()
+    if (wasOpenRef.current) popoverRef.current?.hidePopover()
+    else popoverRef.current?.showPopover()
+  }, [])
 
   return (
     <span
       className={clsx(styles.wrapper, className)}
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
+      onPointerDown={onPointerDown}
+      onClick={onClick}
     >
       {children}
       <span
