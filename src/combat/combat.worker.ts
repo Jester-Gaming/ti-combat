@@ -121,7 +121,9 @@ self.onmessage = (e: MessageEvent<SimulationInput>) => {
     collapseThreshold,
   )
 
-  const engine = new CombatEngine()
+  const engine = new CombatEngine({
+    logStats: true,
+  })
   console.time('Simulate')
   const outcomes = engine.simulate(combatState)
   console.timeEnd('Simulate')

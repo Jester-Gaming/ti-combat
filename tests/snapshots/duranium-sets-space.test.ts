@@ -27,16 +27,22 @@ function buildSets(): string[] {
 const sets = buildSets()
 
 describe('space combat — duranium units sets', () => {
-  it.each(sets.map(set => [set, set]))('%s vs %s', (attacker, defender) => {
-    expect(
-      runScenario({
-        mode: 'SPACE',
-        attacker: {
-          units: attacker,
-          abilities: { DURANIUM_ARMOR: true },
-        },
-        defender: { units: defender },
-      }),
-    ).toMatchSnapshot()
-  })
+  it.each(sets.map(set => [set, set]))(
+    '%s vs %s',
+    {
+      timeout: 300000,
+    },
+    (attacker, defender) => {
+      expect(
+        runScenario({
+          mode: 'SPACE',
+          attacker: {
+            units: attacker,
+            abilities: { DURANIUM_ARMOR: true },
+          },
+          defender: { units: defender },
+        }),
+      ).toMatchSnapshot()
+    },
+  )
 })

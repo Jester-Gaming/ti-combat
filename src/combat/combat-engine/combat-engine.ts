@@ -18,15 +18,18 @@ interface ExpansionResult {
 
 interface EngineOptions {
   maxRounds?: number
+  logStats?: boolean
 }
 
 const DEFAULT_MAX_ROUNDS = 1000
 
 export class CombatEngine {
   private maxRounds: number
+  private logStats: boolean
 
   constructor(options: EngineOptions = {}) {
     this.maxRounds = options.maxRounds ?? DEFAULT_MAX_ROUNDS
+    this.logStats = options.logStats ?? false
   }
 
   simulate(initialState: CombatState): CombatOutcome[] {
@@ -202,9 +205,11 @@ export class CombatEngine {
     }
     const result = expandNode(initialState, 0, initialMeta)
     if ('cycleTo' in result) return []
-    console.log('Unique states =', subtreeCache.size)
-    console.log('Unique nodes =', nodes)
-    console.log('Final nodes =', finalNodes)
+    if (this.logStats) {
+      console.log('Unique states =', subtreeCache.size)
+      console.log('Unique nodes =', nodes)
+      console.log('Final nodes =', finalNodes)
+    }
     return outcomeRecordToArray(result.outcomes)
   }
 }
