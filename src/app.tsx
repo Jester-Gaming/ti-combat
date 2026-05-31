@@ -46,7 +46,7 @@ function App() {
             </a>
           </h1>
           <SettingsPanel settings={settings} onSettingsChange={setSettings} />
-          <ShareButton />
+          {import.meta.env.VITE_SHARE_ENABLED === 'true' && <ShareButton />}
         </header>
 
         {/* Combat simulator */}
