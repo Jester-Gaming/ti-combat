@@ -44,13 +44,21 @@ export const UNIT_PRICE: Record<UnitBaseType, number> = {
   FLAGSHIP: 8,
   DREADNOUGHT: 4,
   CARRIER: 3,
-  PDS: 3,
   MECH: 2,
   CRUISER: 2,
   DESTROYER: 1,
   FIGHTER: 0.5,
   INFANTRY: 0.5,
+  PDS: 0,
   SPACE_DOCK: 0,
+}
+
+// Same as UNIT_PRICE but with override for PDS
+// Needed mostly for Hel Titan to properly place name
+// in the settings
+export const UNIT_WORTH: Record<UnitBaseType, number> = {
+  ...UNIT_PRICE,
+  PDS: 3,
 }
 
 export const UNIT_LIMITS: Record<UnitBaseType, number> = {

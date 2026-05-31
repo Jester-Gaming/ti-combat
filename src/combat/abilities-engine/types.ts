@@ -23,8 +23,8 @@ import type { ParamLimit } from './param-limit'
 export type { AbilitySlot }
 
 export type SyncSortSpec =
-  | 'price-asc'
-  | 'price-desc'
+  | 'worth-asc'
+  | 'worth-desc'
   | 'normal-asc'
   | 'normal-desc'
   | ((a: UnitBaseType, b: UnitBaseType) => number)

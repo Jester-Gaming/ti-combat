@@ -12,6 +12,7 @@ import {
   SHIPS,
   STRUCTURES,
   UNIT_LIMITS,
+  UNIT_PRICE,
 } from '@/constants/units'
 import type {
   CombatSide,
@@ -76,6 +77,17 @@ interface BattleCardProps {
   attackerActions?: ReactNode
   defenderActions?: ReactNode
   className?: string
+}
+
+function getTotalPrice(selections: Record<UnitBaseType, UnitSelection>) {
+  return Object.keys(selections).reduce(
+    (acc, unitType) => acc + selections[unitType].count * UNIT_PRICE[unitType],
+    0,
+  )
+}
+
+function getTotalAmount(selections: Record<UnitBaseType, UnitSelection>) {
+  return Object.values(selections).reduce((acc, item) => acc + item.count, 0)
 }
 
 export function BattleCard({
@@ -166,7 +178,7 @@ export function BattleCard({
         ))}
       </div>
 
-      <div className={styles.combatModeDivider}>
+      <div className={styles.amounts}>
         <Divider className="theme-attacker" />
         <ButtonIcon
           className="theme-attacker"
@@ -175,13 +187,12 @@ export function BattleCard({
         >
           <TrashIcon />
         </ButtonIcon>
+        <p className={styles.amount}>{getTotalAmount(attackerSelections)}</p>
+        <p className={styles.price}>${getTotalPrice(attackerSelections)}</p>
         <Divider className="theme-attacker" />
-        <ToggleGroup<CombatMode>
-          options={COMBAT_MODE_OPTIONS}
-          value={combatMode}
-          onChange={onCombatModeChange}
-        />
         <Divider className="theme-defender" />
+        <p className={styles.price}>${getTotalPrice(defenderSelections)}</p>
+        <p className={styles.amount}>{getTotalAmount(defenderSelections)}</p>
         <ButtonIcon
           className="theme-defender"
           onClick={() => onResetUnits('defender')}
@@ -189,6 +200,16 @@ export function BattleCard({
         >
           <TrashIcon />
         </ButtonIcon>
+        <Divider className="theme-defender" />
+      </div>
+
+      <div className={styles.combatMode}>
+        <Divider className="theme-attacker" />
+        <ToggleGroup<CombatMode>
+          options={COMBAT_MODE_OPTIONS}
+          value={combatMode}
+          onChange={onCombatModeChange}
+        />
         <Divider className="theme-defender" />
       </div>
 

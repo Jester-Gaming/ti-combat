@@ -30,7 +30,7 @@ export const alarum: Ability<Params> = {
       default: [] as UnitList<number>,
       defaultItemValue: 0,
       source: 'groundForces',
-      sort: 'price-desc',
+      sort: 'worth-desc',
       filter: {
         combatMode: 'GROUND',
         include: ['MECH', 'INFANTRY'],

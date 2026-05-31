@@ -76,12 +76,41 @@
   color: var(--color-text-muted);
 }
 
-.combatModeDivider {
+.amounts {
   display: grid;
   grid-template-columns:
-    var(--control-size) var(--control-size) 1fr auto 1fr
+    var(--control-size) var(--control-size) calc(1.25 * var(--control-size))
+    var(--control-size) 1fr 1fr var(--control-size) calc(
+      1.25 * var(--control-size)
+    )
     var(--control-size) var(--control-size);
-  margin-top: var(--space-8);
+  align-items: center;
+  margin-top: var(--space-4);
+  gap: var(--space-1);
+}
+
+.price {
+  color: var(--color-text-main);
+  text-align: center;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: calc(var(--control-size) / 2);
+  font-variant-numeric: tabular-nums;
+}
+
+.amount {
+  color: var(--color-text-main);
+  text-align: center;
+  margin: 0;
+  font-family: var(--font-heading);
+  font-size: calc(var(--control-size) / 2);
+  font-variant-numeric: tabular-nums;
+}
+
+.combatMode {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  margin-top: var(--space-4);
   margin-bottom: var(--space-4);
   align-items: center;
   gap: var(--space-1);

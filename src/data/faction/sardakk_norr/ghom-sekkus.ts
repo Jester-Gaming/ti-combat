@@ -27,7 +27,7 @@ export const ghomSekkus: Ability<Params> = {
     units: declareParam<UnitList<number>>({
       default: [],
       source: 'groundForces',
-      sort: 'price-desc',
+      sort: 'worth-desc',
       defaultItemValue: 0,
       filter: {
         combatMode: 'GROUND',

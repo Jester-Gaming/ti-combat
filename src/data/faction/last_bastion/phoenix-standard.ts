@@ -31,13 +31,13 @@ export const phoenixStandard: Ability<Params> = {
     spaceUnitPriority: declareParam({
       default: [],
       source: 'spaceCombatParticipating',
-      sort: 'price-desc',
+      sort: 'worth-desc',
       filter: { includeOnlyBaseTypes: true },
     }),
     groundUnitPriority: declareParam({
       default: [],
       source: 'groundCombatParticipating',
-      sort: 'price-desc',
+      sort: 'worth-desc',
       filter: { includeOnlyBaseTypes: true },
     }),
   },

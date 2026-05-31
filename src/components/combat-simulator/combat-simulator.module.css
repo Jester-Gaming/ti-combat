@@ -152,9 +152,3 @@
     max-width: 500px;
   }
 }
-
-.gearButton {
-  @media (width >= 1024px) {
-    display: none;
-  }
-}

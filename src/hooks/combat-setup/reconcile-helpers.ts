@@ -4,7 +4,7 @@ import {
   parseVariantId,
   type SyncSortSpec,
 } from '@/combat'
-import { UNIT_PRICE, UNIT_TYPES } from '@/constants/units'
+import { UNIT_TYPES, UNIT_WORTH } from '@/constants/units'
 import type { UnitBaseType, UnitVariantId } from '@/types'
 
 export function sortBaseTypes(
@@ -13,12 +13,12 @@ export function sortBaseTypes(
 ): UnitBaseType[] {
   if (typeof sort === 'function') return [...types].sort(sort)
   const compare =
-    sort === 'price-asc' || sort === 'price-desc'
-      ? (a: UnitBaseType, b: UnitBaseType) => UNIT_PRICE[a] - UNIT_PRICE[b]
+    sort === 'worth-asc' || sort === 'worth-desc'
+      ? (a: UnitBaseType, b: UnitBaseType) => UNIT_WORTH[a] - UNIT_WORTH[b]
       : (a: UnitBaseType, b: UnitBaseType) =>
           UNIT_TYPES.indexOf(a) - UNIT_TYPES.indexOf(b)
   const sorted = [...types].sort(compare)
-  return sort === 'price-desc' || sort === 'normal-desc'
+  return sort === 'worth-desc' || sort === 'normal-desc'
     ? sorted.reverse()
     : sorted
 }
@@ -26,14 +26,14 @@ export function sortBaseTypes(
 export function expandWithSubtypes(
   sortedTypes: UnitBaseType[],
   subtypes: DeclaredSubtype[],
-  sort: SyncSortSpec = 'price-asc',
+  sort: SyncSortSpec = 'worth-asc',
 ): string[] {
   // Custom comparators don't carry direction info — treat as ascending so
   // subtype variants follow their parent.
   const direction =
     typeof sort === 'function'
       ? 'asc'
-      : sort === 'price-desc' || sort === 'normal-desc'
+      : sort === 'worth-desc' || sort === 'normal-desc'
         ? 'desc'
         : 'asc'
   const simpleByType = new Map<UnitBaseType, DeclaredSubtype[]>()

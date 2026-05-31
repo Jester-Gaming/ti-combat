@@ -32,7 +32,7 @@ export const indoctrination: Ability<Params> = {
       source: 'groundForces',
       side: 'opponent',
       defaultItemValue: true,
-      sort: 'price-desc',
+      sort: 'worth-desc',
       filter: { include: ['INFANTRY'], combatMode: 'GROUND' },
     }),
   },

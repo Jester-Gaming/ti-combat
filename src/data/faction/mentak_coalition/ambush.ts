@@ -24,7 +24,7 @@ export const ambush: Ability<Params> = {
       default: [] as UnitList<boolean>,
       source: 'ships',
       side: 'own',
-      sort: 'price-desc',
+      sort: 'worth-desc',
       defaultItemValue: true,
       filter: {
         include: ['CRUISER', 'DESTROYER'] as UnitBaseType[],

@@ -81,7 +81,7 @@ export function declareParam<
     default: options.default,
     source: options.source,
     side: options.side ?? 'own',
-    sort: options.sort ?? 'price-asc',
+    sort: options.sort ?? 'worth-asc',
     defaultItemValue: options.defaultItemValue,
     compute: options.compute,
     filter: options.filter,

@@ -35,7 +35,7 @@ export const dunlainReaper: Ability<Params> = {
       source: 'groundForces',
       side: 'own',
       defaultItemValue: true,
-      sort: 'price-asc',
+      sort: 'worth-asc',
       filter: { include: ['INFANTRY'], combatMode: 'GROUND' },
     }),
   },

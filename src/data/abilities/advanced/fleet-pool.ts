@@ -25,7 +25,7 @@ export const fleetPool: Ability<Params> = {
       default: [],
       source: 'spaceCombatParticipating',
       side: 'own',
-      sort: 'price-desc',
+      sort: 'worth-desc',
       filter: {
         combatMode: 'SPACE',
       },

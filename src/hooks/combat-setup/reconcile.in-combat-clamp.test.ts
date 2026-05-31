@@ -31,7 +31,7 @@ function makeAbility(): Ability {
         default: [],
         source: 'units',
         defaultItemValue: 0,
-        sort: 'price-asc',
+        sort: 'worth-asc',
         limit: 'IN_COMBAT',
         filter: { includeOnlyBaseTypes: true },
       }),

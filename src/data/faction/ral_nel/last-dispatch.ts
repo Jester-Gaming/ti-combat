@@ -18,7 +18,7 @@ export const lastDispatch: Ability<Params> = {
       default: [],
       source: 'ships',
       side: 'opponent',
-      sort: 'price-desc',
+      sort: 'worth-desc',
       defaultItemValue: true,
     }),
   },

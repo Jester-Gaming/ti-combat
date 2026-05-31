@@ -1,7 +1,7 @@
 import { z } from 'zod/mini'
 
 import { type Ability, declareParam } from '@/combat'
-import { UNIT_PRICE } from '@/constants/units'
+import { UNIT_WORTH } from '@/constants/units'
 import type { UnitList } from '@/types'
 import { UnitListBooleanSchema } from '@/types'
 
@@ -38,7 +38,7 @@ export const impulseCore: Ability<Params> = {
       sort: (a, b) => {
         if (a === 'FIGHTER') return 1
         if (b === 'FIGHTER') return -1
-        return UNIT_PRICE[a] - UNIT_PRICE[b]
+        return UNIT_WORTH[a] - UNIT_WORTH[b]
       },
       filter: { combatMode: 'SPACE' },
     }),

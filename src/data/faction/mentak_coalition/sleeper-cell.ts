@@ -43,7 +43,7 @@ export const sleeperCell: Ability<Params> = {
     availableShips: declareParam<UnitList<number, UnitBaseType>>({
       default: SHIP_LIMITS_DEFAULT,
       source: 'ships',
-      sort: 'price-desc',
+      sort: 'worth-desc',
       defaultItemValue: 0,
       filter: { combatMode: 'SPACE', includeOnlyBaseTypes: true },
       limit: 'EXTRA',
