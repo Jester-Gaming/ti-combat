@@ -150,5 +150,13 @@ export const retreat: Ability<Params> = {
         })
       },
     },
+    {
+      timing: 'CLEANUP',
+      call: (ctx, params) => {
+        if (params._saved) {
+          restoreRetreatedUnits(ctx.state, ctx.side, params._saved)
+        }
+      },
+    },
   ],
 }
