@@ -11,17 +11,11 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { ToggleGroup } from '@/components/ui/toggle-group'
-import type { Settings, Theme } from '@/hooks/use-settings'
+import type { Settings } from '@/hooks/use-settings'
 
 import styles from './settings-panel.module.css'
 import { Divider } from './ui/divider'
 import { Tooltip } from './ui/tooltip'
-
-const themeOptions = [
-  { value: 'system' as const, label: 'System' },
-  { value: 'dark' as const, label: 'Dark' },
-  { value: 'light' as const, label: 'Light' },
-]
 
 type PrecisionKind = 'full' | 'limited'
 
@@ -68,14 +62,7 @@ export function SettingsPanel({
       <DialogContent className={styles.content}>
         <DialogTitle>Settings</DialogTitle>
         <Divider />
-        <section className={styles.section}>
-          <span className={styles.label}>Theme</span>
-          <ToggleGroup<Theme>
-            options={themeOptions}
-            value={settings.theme}
-            onChange={theme => onSettingsChange({ ...settings, theme })}
-          />
-        </section>
+
         <section className={styles.section}>
           <span className={styles.label}>
             Dice Roll Precision
@@ -109,18 +96,7 @@ export function SettingsPanel({
           </div>
         </section>
         <Divider />
-        <section>
-          <p className={styles.description}>
-            Source code is available on{' '}
-            <a href="https://github.com/dzhiriki/ti-combat">GitHub</a>. Feel
-            free to submit any issues. You can also contact me in{' '}
-            <a href="https://discordapp.com/users/103507967441121280">
-              Discord
-            </a>
-            , <a href="https://t.me/dzhiriki">Telegram</a> or by{' '}
-            <a href="mailto:feedback@ticombat.com">email</a>.
-          </p>
-        </section>
+
         <div className={styles.section}>
           <AbilitiesDialog />
         </div>

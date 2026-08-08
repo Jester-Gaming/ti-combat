@@ -171,7 +171,7 @@ body {
   font-weight: 400;
   letter-spacing: 0.025em;
   font-family: var(--font-heading);
-  color: var(--color-text-muted);
+  color: hsl(45deg 100% 55%);
 
   @media (width < 500px) {
     font-size: var(--text-sm);
@@ -182,4 +182,8 @@ body {
   color: inherit;
   text-decoration: none;
   cursor: pointer;
+}
+
+.titleWithSpacing {
+  margin-right: var(--space-3);
 }

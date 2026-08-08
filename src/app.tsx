@@ -1,10 +1,11 @@
+import { ReloadIcon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
 import { useEffect } from 'react'
 
 import { CombatSimulator } from '@/components/combat-simulator'
 import { SettingsPanel } from '@/components/settings-panel'
-import { ShareButton } from '@/components/share-button'
 import { ToastProvider } from '@/components/toast'
+import { ButtonIcon } from '@/components/ui/button-icon'
 import { useSettings } from '@/hooks/use-settings'
 
 import styles from './app.module.css'
@@ -38,15 +39,21 @@ function App() {
         <div className={styles.starfield} />
         <div className={styles.nebulaOverlay} />
 
-        {/* Header */}
         <header className={clsx(styles.header, styles.animateFadeUp)}>
-          <h1 className={styles.title}>
+          <h1 className={clsx(styles.title, styles.titleWithSpacing)}>
             <a href="/" className={styles.titleLink}>
-              Twilight Imperium Combat Calculator
+              Imperium Companion Combat Simulator
             </a>
           </h1>
+
+          <ButtonIcon
+            title="Reset combat"
+            onClick={() => (window.location.href = '/')}
+          >
+            <ReloadIcon />
+          </ButtonIcon>
+
           <SettingsPanel settings={settings} onSettingsChange={setSettings} />
-          {import.meta.env.VITE_SHARE_ENABLED === 'true' && <ShareButton />}
         </header>
 
         {/* Combat simulator */}
