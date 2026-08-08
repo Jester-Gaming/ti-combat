@@ -2,6 +2,11 @@
   min-width: 0;
   padding: var(--space-4);
   border-radius: var(--radius-lg);
+  background: color-mix(
+    in srgb,
+    var(--color-background-surface) 55%,
+    transparent
+  );
 }
 
 .header {

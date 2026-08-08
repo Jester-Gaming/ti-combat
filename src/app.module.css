@@ -160,9 +160,19 @@ body {
 
 .header {
   display: flex;
-  flex-shrink: 0;
   align-items: center;
   justify-content: center;
+  gap: var(--space-3);
+}
+
+.headerTitle {
+  text-align: center;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
 }
 
 .title {
@@ -185,5 +195,5 @@ body {
 }
 
 .titleWithSpacing {
-  margin-right: var(--space-3);
+  margin-right: var(--space-4);
 }

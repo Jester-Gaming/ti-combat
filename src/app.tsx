@@ -1,9 +1,10 @@
-import { ReloadIcon } from '@radix-ui/react-icons'
+import { Cross1Icon } from '@radix-ui/react-icons'
 import { clsx } from 'clsx'
 import { useEffect } from 'react'
 
 import { CombatSimulator } from '@/components/combat-simulator'
 import { SettingsPanel } from '@/components/settings-panel'
+import { Starfield } from '@/components/starfield'
 import { ToastProvider } from '@/components/toast'
 import { ButtonIcon } from '@/components/ui/button-icon'
 import { useSettings } from '@/hooks/use-settings'
@@ -34,26 +35,33 @@ function App() {
 
   return (
     <ToastProvider>
+      <Starfield />
       <div className={styles.root}>
         {/* Background layers */}
         <div className={styles.starfield} />
         <div className={styles.nebulaOverlay} />
 
         <header className={clsx(styles.header, styles.animateFadeUp)}>
-          <h1 className={clsx(styles.title, styles.titleWithSpacing)}>
-            <a href="/" className={styles.titleLink}>
-              Imperium Companion Combat Simulator
-            </a>
-          </h1>
+          <div className={styles.headerTitle}>
+            <h1 className={clsx(styles.title, styles.titleWithSpacing)}>
+              <a href="/" className={styles.titleLink}>
+                Imperium Companion Combat Simulator
+              </a>
+            </h1>
+          </div>
 
-          <ButtonIcon
-            title="Reset combat"
-            onClick={() => (window.location.href = '/')}
-          >
-            <ReloadIcon />
-          </ButtonIcon>
+          <div className={styles.headerActions}>
+            <SettingsPanel settings={settings} onSettingsChange={setSettings} />
 
-          <SettingsPanel settings={settings} onSettingsChange={setSettings} />
+            <ButtonIcon
+              title="Close combat simulator"
+              onClick={() =>
+                (window.location.href = 'https://imperiumcompanion.com')
+              }
+            >
+              <Cross1Icon />
+            </ButtonIcon>
+          </div>
         </header>
 
         {/* Combat simulator */}
