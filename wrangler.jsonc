@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "ti-combat",
+  "name": "imperium-companion-combat-simulator",
   "compatibility_date": "2026-08-08",
   "assets": {
     "directory": "./dist"
