@@ -2,6 +2,8 @@
   display: flex;
   width: var(--control-size);
   height: var(--control-size);
+  min-width: 44px;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
   position: relative;
@@ -13,6 +15,7 @@
   cursor: pointer;
   padding: 0;
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 
   &:not(:disabled):hover {
     @media (hover: hover) {
