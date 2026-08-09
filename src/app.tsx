@@ -56,9 +56,12 @@ function App() {
             <ButtonIcon
               className={styles.closeButton}
               title="Close combat simulator"
-              onClick={() =>
-                (window.location.href = 'https://imperiumcompanion.com')
-              }
+              onClick={() => {
+                window.parent.postMessage(
+                  { type: 'close-combat-simulator' },
+                  'https://imperiumcompanion.com',
+                )
+              }}
             >
               <Cross1Icon />
             </ButtonIcon>
