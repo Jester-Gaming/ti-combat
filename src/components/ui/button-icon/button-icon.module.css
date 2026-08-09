@@ -12,6 +12,7 @@
   transition: all 0.15s ease;
   cursor: pointer;
   padding: 0;
+  touch-action: manipulation;
 
   &:not(:disabled):hover {
     @media (hover: hover) {
