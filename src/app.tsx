@@ -54,6 +54,7 @@ function App() {
             <SettingsPanel settings={settings} onSettingsChange={setSettings} />
 
             <ButtonIcon
+              className={styles.closeButton}
               title="Close combat simulator"
               onClick={() =>
                 (window.location.href = 'https://imperiumcompanion.com')

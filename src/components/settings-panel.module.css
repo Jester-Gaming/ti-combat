@@ -43,6 +43,13 @@
 
 .button {
   margin-left: var(--space-4);
+  width: calc(var(--control-size) * 1.25);
+  height: calc(var(--control-size) * 1.25);
+}
+
+.button svg {
+  width: 1.25em;
+  height: 1.25em;
 }
 
 .precisionControls {
