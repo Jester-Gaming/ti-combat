@@ -59,7 +59,7 @@ function App() {
               onClick={() => {
                 window.parent.postMessage(
                   { type: 'close-combat-simulator' },
-                  'https://imperiumcompanion.com',
+                  '*',
                 )
               }}
             >
