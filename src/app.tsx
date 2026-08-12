@@ -45,7 +45,7 @@ function App() {
           <div className={styles.headerTitle}>
             <h1 className={clsx(styles.title, styles.titleWithSpacing)}>
               <a href="/" className={styles.titleLink}>
-                Imperium Companion Combat Simulator
+                Twilight Imperium Combat Simulator
               </a>
             </h1>
           </div>
